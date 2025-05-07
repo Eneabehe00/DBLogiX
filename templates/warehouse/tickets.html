@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Tickets - DBLogiX{% endblock %}
+
+{% block header %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="fas fa-receipt text-primary me-2"></i>Tickets
+        </h1>
+        <p class="lead text-muted">Gestione dei tickets dalla bilancia</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <!-- Search form -->
+        <form action="{{ url_for('warehouse.tickets') }}" method="get" class="mb-3">
+            {% if current_status %}
+            <input type="hidden" name="status" value="{{ current_status }}">
+            {% endif %}
+            <div class="input-group">
+                {{ search_form.query(class="form-control", placeholder="Cerca per numero ticket o codice a barre") }}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Cerca
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-4">
+        <!-- Status filter -->
+        <div class="d-flex justify-content-end">
+            <div class="btn-group w-100">
+                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
+                    Tutti
+                </a>
+                <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="btn btn-outline-warning {% if current_status == 'pending' %}active{% endif %}">
+                    Pendenti
+                </a>
+                <a href="{{ url_for('warehouse.tickets', status='processed') }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
+                    Processati
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">
+            <i class="fas fa-receipt me-2"></i>Elenco Tickets
+            {% if request.args.get('query') %}
+            <small class="text-muted">Risultati per: "{{ request.args.get('query') }}"</small>
+            {% endif %}
+            
+            {% if current_status == 'pending' %}
+            <span class="badge bg-warning">Pendenti</span>
+            {% elif current_status == 'processed' %}
+            <span class="badge bg-success">Processati</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if tickets.items %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Numero</th>
+                        <th>Data</th>
+                        <th>Codice</th>
+                        <th>Linee</th>
+                        <th>Stato</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets.items %}
+                    <tr>
+                        <td>{{ ticket.IdTicket }}</td>
+                        <td>#{{ ticket.NumTicket }}</td>
+                        <td>{{ ticket.formatted_date }}</td>
+                        <td class="text-truncate" style="max-width: 150px;">{{ ticket.CodigoBarras or '-' }}</td>
+                        <td>{{ ticket.NumLineas or 0 }}</td>
+                        <td>
+                            {% if ticket.is_processed %}
+                            <span class="badge bg-success">Processato</span>
+                            {% else %}
+                            <span class="badge bg-warning">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-center">
+            <p class="text-muted">Nessun ticket trovato.</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <!-- Pagination -->
+        {% if tickets.pages > 1 %}
+        <nav aria-label="Navigazione tickets">
+            <ul class="pagination justify-content-center mb-0">
+                {% if tickets.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, query=request.args.get('query'), status=current_status) }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                </li>
+                {% endif %}
+                
+                {% for page_num in tickets.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == tickets.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=page_num, query=request.args.get('query'), status=current_status) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if tickets.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.next_num, query=request.args.get('query'), status=current_status) }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,100 @@
+2025-05-07 13:16:19,586 - app - ERROR - Exception on /products [GET]
+Traceback (most recent call last):
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\warehouse.py", line 81, in product_catalog
+    return render_template('warehouse/products.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\products.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\base.html", line 130, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\products.html", line 105, in block 'content'
+    <a class="page-link" href="{{ url_for('warehouse.product_catalog', page=products.prev_num, query=request.args.get('query'), familia=request.args.get('familia'), subfamilia=request.args.get('subfamilia')) }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: jinja2.runtime.Context.call() got multiple values for keyword argument 'page'
+2025-05-07 13:16:19,612 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:19] "[35m[1mGET /products?page=2 HTTP/1.1[0m" 500 -
+2025-05-07 13:16:19,650 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:19] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:19,653 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:19] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:24,165 - __main__ - INFO - Starting DBLogiX application
+2025-05-07 13:16:24,762 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
+2025-05-07 13:16:24,951 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:115]
+2025-05-07 13:16:24,951 - app - INFO - DBLogiX startup
+2025-05-07 13:16:25,049 - __main__ - INFO - Database tables created (if they did not exist)
+2025-05-07 13:16:25,049 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
+2025-05-07 13:16:25,056 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.26:5000
+2025-05-07 13:16:25,056 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-05-07 13:16:29,147 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:29] "GET / HTTP/1.1" 200 -
+2025-05-07 13:16:29,278 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:29] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:29,288 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:29] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:31,297 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:31] "GET /tickets HTTP/1.1" 200 -
+2025-05-07 13:16:31,342 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:31] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:31,346 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:31] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:32,618 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:32] "GET /tickets?page=2 HTTP/1.1" 200 -
+2025-05-07 13:16:32,663 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:32] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:32,668 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:32] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:36,643 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:36] "GET /products HTTP/1.1" 200 -
+2025-05-07 13:16:36,685 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:36] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:36,689 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:36] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:37,896 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:37] "GET /products?page=2 HTTP/1.1" 200 -
+2025-05-07 13:16:37,938 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:37] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:37,941 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:37] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:45,037 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:45] "GET /products?familia=0&subfamilia=0 HTTP/1.1" 200 -
+2025-05-07 13:16:45,076 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:45] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:45,086 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:45] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:49,062 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:49] "GET /tickets HTTP/1.1" 200 -
+2025-05-07 13:16:49,102 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:49] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:49,105 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:49] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:53,361 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:53] "GET /admin/dashboard HTTP/1.1" 200 -
+2025-05-07 13:16:53,408 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:53,417 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:59,851 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:59] "GET /admin/users HTTP/1.1" 200 -
+2025-05-07 13:16:59,889 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:59] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:59,895 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:59] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:17:02,512 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:17:02] "GET /admin/scan-logs HTTP/1.1" 200 -
+2025-05-07 13:17:02,552 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:17:02] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:17:02,556 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:17:02] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:17:05,183 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:17:05] "GET /index HTTP/1.1" 200 -
+2025-05-07 13:17:05,221 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:17:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:17:05,228 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:17:05] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:18:21,227 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:21] "GET /admin/users HTTP/1.1" 200 -
+2025-05-07 13:18:21,279 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:21] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:18:21,282 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:21] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:18:24,506 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:24] "GET /index HTTP/1.1" 200 -
+2025-05-07 13:18:24,547 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:24] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:18:24,555 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:24] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:18:51,095 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:51] "GET /scanner HTTP/1.1" 200 -
+2025-05-07 13:18:51,130 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:51] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:18:51,134 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:18:51] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:19:06,480 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:19:06] "GET /index HTTP/1.1" 200 -
+2025-05-07 13:19:06,516 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:19:06] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:19:06,521 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:19:06] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:19:25,953 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:19:25] "GET /scanner HTTP/1.1" 200 -
+2025-05-07 13:19:25,991 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:19:25] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -

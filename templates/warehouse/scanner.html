@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Scanner QR Code - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<style>
+    #scanner-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    #qr-video {
+        width: 100%;
+        border-radius: 8px;
+        border: 2px solid #ccc;
+    }
+    
+    .scanner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    #scanner-result {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="fas fa-qrcode text-success me-2"></i>Scanner QR Code
+        </h1>
+        <p class="lead text-muted">Scansiona i codici QR dei ticket per visualizzarli o scaricarli</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-camera me-2"></i>Scanner
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="scanner-container" class="mb-3">
+                    <video id="qr-video" autoplay></video>
+                    <div id="scanner-loading" class="scanner-overlay">
+                        <div>
+                            <i class="fas fa-spinner fa-spin mb-2 d-block text-center"></i>
+                            Attivazione fotocamera...
+                        </div>
+                    </div>
+                    <div id="scanner-error" class="scanner-overlay" style="display: none;">
+                        <div>
+                            <i class="fas fa-exclamation-triangle mb-2 d-block text-center text-warning"></i>
+                            Errore fotocamera. Utilizza inserimento manuale.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button id="scanner-start" class="btn btn-success">
+                        <i class="fas fa-play me-2"></i>Avvia Scanner
+                    </button>
+                    <button id="scanner-stop" class="btn btn-secondary" style="display: none;">
+                        <i class="fas fa-stop me-2"></i>Ferma Scanner
+                    </button>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Posiziona un codice QR del ticket all'interno dell'inquadratura per la scansione automatica.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-keyboard me-2"></i>Inserimento Manuale
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('warehouse.scanner') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="ticket_id" class="form-label">{{ form.ticket_id.label }}</label>
+                        <div class="input-group">
+                            {{ form.ticket_id(class="form-control", id="ticket_id", placeholder="Es. T12345 o T12345-P67890") }}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Cerca
+                            </button>
+                        </div>
+                        <div class="form-text">Formato: T[numero_ticket] o T[numero_ticket]-P[id_prodotto]</div>
+                        {% for error in form.ticket_id.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </form>
+                
+                <div class="alert alert-secondary">
+                    <h6><i class="fas fa-info-circle me-2"></i>Esempi di codici:</h6>
+                    <ul class="mb-0">
+                        <li><strong>T12345</strong> - Ticket #12345</li>
+                        <li><strong>T12345-P67890</strong> - Ticket #12345, Prodotto #67890</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Result card, hidden by default -->
+        <div id="scanner-result" class="card mt-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Ticket Trovato
+                </h5>
+            </div>
+            <div class="card-body">
+                <h5 id="result-ticket-number" class="card-title"></h5>
+                <p id="result-ticket-date" class="card-text"></p>
+                <p id="result-ticket-status" class="card-text"></p>
+                
+                <div class="d-grid gap-2 mt-3">
+                    <a id="result-ticket-link" href="#" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i>Visualizza Dettagli
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const scannerContainer = document.getElementById('scanner-container');
+        const videoElement = document.getElementById('qr-video');
+        const loadingOverlay = document.getElementById('scanner-loading');
+        const errorOverlay = document.getElementById('scanner-error');
+        const startButton = document.getElementById('scanner-start');
+        const stopButton = document.getElementById('scanner-stop');
+        const resultCard = document.getElementById('scanner-result');
+        
+        // Result elements
+        const resultTicketNumber = document.getElementById('result-ticket-number');
+        const resultTicketDate = document.getElementById('result-ticket-date');
+        const resultTicketStatus = document.getElementById('result-ticket-status');
+        const resultTicketLink = document.getElementById('result-ticket-link');
+        
+        let scanner = null;
+        
+        // Initialize scanner
+        function initScanner() {
+            scanner = new Html5Qrcode("scanner-container");
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            
+            startButton.addEventListener('click', function() {
+                // Start scanner
+                scanner.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                ).then(() => {
+                    // Scanner started successfully
+                    loadingOverlay.style.display = 'none';
+                    startButton.style.display = 'none';
+                    stopButton.style.display = 'block';
+                }).catch((err) => {
+                    // Error starting scanner
+                    console.error("Error starting scanner:", err);
+                    loadingOverlay.style.display = 'none';
+                    errorOverlay.style.display = 'flex';
+                });
+            });
+            
+            stopButton.addEventListener('click', function() {
+                if (scanner) {
+                    scanner.stop().then(() => {
+                        stopButton.style.display = 'none';
+                        startButton.style.display = 'block';
+                    });
+                }
+            });
+        }
+        
+        // Success callback when QR code is detected
+        function onScanSuccess(decodedText, decodedResult) {
+            // Play a beep sound
+            const beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+            beep.play();
+            
+            // Stop scanner after successful scan
+            if (scanner) {
+                scanner.stop().then(() => {
+                    stopButton.style.display = 'none';
+                    startButton.style.display = 'block';
+                    
+                    // Process the scanned code
+                    processScannedCode(decodedText);
+                });
+            }
+        }
+        
+        // Error callback when scanning fails
+        function onScanFailure(error) {
+            // Handle scan failure silently
+            console.debug(`QR scan error: ${error}`);
+        }
+        
+        // Process the scanned QR code
+        function processScannedCode(code) {
+            // Send the code to the server API
+            fetch('{{ url_for("warehouse.api_scan") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code: code }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message and ticket details
+                    resultTicketNumber.textContent = `Ticket #${data.ticket_number}`;
+                    resultTicketDate.textContent = `Data: ${data.ticket_date}`;
+                    
+                    if (data.is_processed) {
+                        resultTicketStatus.innerHTML = '<span class="badge bg-success">Processato</span>';
+                    } else {
+                        resultTicketStatus.innerHTML = '<span class="badge bg-warning">Pendente</span>';
+                    }
+                    
+                    resultTicketLink.href = data.url;
+                    resultCard.style.display = 'block';
+                    
+                    // Scroll to the result card
+                    resultCard.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    // Show error message
+                    alert(`Errore: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error processing QR code:', error);
+                alert('Errore durante l\'elaborazione del codice QR. Riprova o utilizza l\'inserimento manuale.');
+            });
+        }
+        
+        // Initialize the scanner when the page loads
+        initScanner();
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,126 @@
+2025-05-07 13:16:14,650 ERROR: Exception on /tickets [GET] [in C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:1414]
+Traceback (most recent call last):
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\warehouse.py", line 135, in tickets
+    return render_template('warehouse/tickets.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\base.html", line 130, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\tickets.html", line 119, in block 'content'
+    <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, query=request.args.get('query'), status=current_status) }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: jinja2.runtime.Context.call() got multiple values for keyword argument 'page'
+2025-05-07 13:16:14,650 - app - ERROR - Exception on /tickets [GET]
+Traceback (most recent call last):
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\warehouse.py", line 135, in tickets
+    return render_template('warehouse/tickets.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\base.html", line 130, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\tickets.html", line 119, in block 'content'
+    <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, query=request.args.get('query'), status=current_status) }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: jinja2.runtime.Context.call() got multiple values for keyword argument 'page'
+2025-05-07 13:16:14,679 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:14] "[35m[1mGET /tickets?page=2 HTTP/1.1[0m" 500 -
+2025-05-07 13:16:14,758 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:14] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:14,764 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:14] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:17,056 ERROR: Exception on /tickets [GET] [in C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py:1414]
+Traceback (most recent call last):
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\warehouse.py", line 135, in tickets
+    return render_template('warehouse/tickets.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 1301, in render
+    self.environment.handle_exception()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\jinja2\environment.py", line 936, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\tickets.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\base.html", line 130, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\templates\warehouse\tickets.html", line 119, in block 'content'
+    <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, query=request.args.get('query'), status=current_status) }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: jinja2.runtime.Context.call() got multiple values for keyword argument 'page'
+2025-05-07 13:16:17,075 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:17] "[35m[1mGET /tickets?page=2 HTTP/1.1[0m" 500 -
+2025-05-07 13:16:17,115 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:17] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:17,118 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:17] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-07 13:16:18,257 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:18] "GET /products HTTP/1.1" 200 -
+2025-05-07 13:16:18,287 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:18] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-07 13:16:18,291 - werkzeug - INFO - 127.0.0.1 - - [07/May/2025 13:16:18] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -

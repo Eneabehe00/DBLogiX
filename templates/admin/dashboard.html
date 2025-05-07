@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block header %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2"><i class="fas fa-tachometer-alt me-2"></i>Dashboard Amministratore</h1>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <!-- User Stats -->
+    <div class="col-md-3 mb-3">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-users me-2"></i>Utenti
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h4 class="card-title">{{ total_users }}</h4>
+                    <span class="text-muted">Totali</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <h5>{{ admin_users }}</h5>
+                    <span class="text-muted">Amministratori</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activity Stats -->
+    <div class="col-md-3 mb-3">
+        <div class="card h-100 border-success">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-chart-line me-2"></i>Attività
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h4 class="card-title">{{ today_scans }}</h4>
+                    <span class="text-muted">Oggi</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <h5>{{ checkout_scans }}</h5>
+                    <span class="text-muted">Checkout</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <h5>{{ view_scans }}</h5>
+                    <span class="text-muted">Visualizzazioni</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Stats -->
+    <div class="col-md-3 mb-3">
+        <div class="card h-100 border-info">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-box me-2"></i>Prodotti
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h4 class="card-title">{{ products_count }}</h4>
+                    <span class="text-muted">Totali</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ticket Stats -->
+    <div class="col-md-3 mb-3">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning text-white">
+                <i class="fas fa-receipt me-2"></i>Ticket
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <h4 class="card-title">{{ total_tickets }}</h4>
+                    <span class="text-muted">Totali</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <h5>{{ pending_tickets }}</h5>
+                    <span class="text-muted">In attesa</span>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <h5>{{ processed_tickets }}</h5>
+                    <span class="text-muted">Processati</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Activity Chart -->
+    <div class="col-md-8 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i>Attività ultimi 7 giorni
+            </div>
+            <div class="card-body">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Most Active Users -->
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-medal me-2"></i>Utenti più attivi
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for user in active_users %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ user.username }}
+                        <span class="badge bg-primary rounded-pill">{{ user.scan_count }}</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-center">Nessuna attività registrata</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Activity data from backend
+    var activityData = {{ activity_data|safe }};
+    
+    // Create activity chart
+    var ctx = document.getElementById('activityChart').getContext('2d');
+    var activityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: activityData.labels,
+            datasets: [{
+                label: 'Scansioni',
+                data: activityData.data,
+                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

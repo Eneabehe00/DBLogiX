@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Prodotti - DBLogiX{% endblock %}
+
+{% block header %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="fas fa-box text-primary me-2"></i>Catalogo Prodotti
+        </h1>
+        <p class="lead text-muted">Elenco di tutti i prodotti disponibili</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <!-- Search form -->
+        <form action="{{ url_for('warehouse.product_catalog') }}" method="get" class="mb-3">
+            <div class="input-group">
+                {{ search_form.query(class="form-control", placeholder="Cerca per descrizione, ID o codice EAN") }}
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Cerca
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="col-md-4">
+        <!-- Filter form -->
+        <form action="{{ url_for('warehouse.product_catalog') }}" method="get" class="mb-3">
+            {% if request.args.get('query') %}
+            <input type="hidden" name="query" value="{{ request.args.get('query') }}">
+            {% endif %}
+            <div class="row g-2">
+                <div class="col-md-6">
+                    {{ filter_form.familia(class="form-select form-select-sm") }}
+                </div>
+                <div class="col-md-6">
+                    {{ filter_form.subfamilia(class="form-select form-select-sm") }}
+                </div>
+            </div>
+            <div class="mt-2 d-grid">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="fas fa-filter"></i> Filtra
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">
+            <i class="fas fa-box me-2"></i>Prodotti
+            {% if request.args.get('query') %}
+            <small class="text-muted">Risultati per: "{{ request.args.get('query') }}"</small>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if products.items %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Descrizione</th>
+                        <th>Prezzo</th>
+                        <th>Codice EAN</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products.items %}
+                    <tr>
+                        <td>{{ product.IdArticulo }}</td>
+                        <td>{{ product.Descripcion }}</td>
+                        <td>{{ product.Precio|price }}</td>
+                        <td>{{ product.CodEAN }}</td>
+                        <td>
+                            <a href="{{ url_for('warehouse.product_detail', product_id=product.IdArticulo) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-3 text-center">
+            <p class="text-muted">Nessun prodotto trovato.</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="card-footer">
+        <!-- Pagination -->
+        {% if products.pages > 1 %}
+        <nav aria-label="Navigazione prodotti">
+            <ul class="pagination justify-content-center mb-0">
+                {% if products.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('warehouse.product_catalog', page=products.prev_num, query=request.args.get('query'), familia=request.args.get('familia'), subfamilia=request.args.get('subfamilia')) }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-left"></i></span>
+                </li>
+                {% endif %}
+                
+                {% for page_num in products.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num == products.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('warehouse.product_catalog', page=page_num, query=request.args.get('query'), familia=request.args.get('familia'), subfamilia=request.args.get('subfamilia')) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if products.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('warehouse.product_catalog', page=products.next_num, query=request.args.get('query'), familia=request.args.get('familia'), subfamilia=request.args.get('subfamilia')) }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link"><i class="fas fa-chevron-right"></i></span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

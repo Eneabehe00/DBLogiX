@@ -152,4 +152,4 @@ Per contribuire al progetto:
 
 ## Licenza
 
-Questo progetto è rilasciato con licenza MIT. Vedi il file `LICENSE` per i dettagli. 
+Questo progetto è rilasciato con licenza MIT. Vedi il file `LICENSE` per i dettagli. # DBLogiX

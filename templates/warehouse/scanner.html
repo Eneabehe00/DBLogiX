@@ -2,19 +2,23 @@
 
 {% block title %}Scanner QR Code - DBLogiX{% endblock %}
 
+{% block header_title %}Scanner QR Code{% endblock %}
+
 {% block extra_css %}
 <style>
-    #scanner-container {
+    .scanner-container {
         position: relative;
         width: 100%;
         max-width: 500px;
         margin: 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
     }
     
     #qr-video {
         width: 100%;
         border-radius: 8px;
-        border: 2px solid #ccc;
     }
     
     .scanner-overlay {
@@ -29,22 +33,82 @@
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 1.5rem;
+        font-size: 1.2rem;
+    }
+    
+    .scanner-overlay i {
+        font-size: 2rem;
+        margin-bottom: 10px;
     }
     
     #scanner-result {
         display: none;
     }
+    
+    .format-code-block {
+        background-color: var(--light-bg);
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-family: monospace;
+    }
+    
+    .format-code-block .highlight {
+        color: var(--primary-color);
+        font-weight: bold;
+    }
+    
+    .scan-result-card {
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .product-details {
+        background-color: var(--light-bg);
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+    
+    .success-message {
+        display: none;
+        margin-top: 15px;
+    }
+    
+    .scanner-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .scanner-camera-inactive {
+        height: 300px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .scanner-camera-inactive i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+    }
 </style>
 {% endblock %}
 
 {% block header %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="display-5">
-            <i class="fas fa-qrcode text-success me-2"></i>Scanner QR Code
-        </h1>
-        <p class="lead text-muted">Scansiona i codici QR dei ticket per visualizzarli o scaricarli</p>
+<div class="d-flex align-items-center mb-4">
+    <div class="page-icon me-3 bg-success">
+        <i class="fas fa-qrcode"></i>
+    </div>
+    <div>
+        <h1 class="h2 mb-1">Scanner QR Code</h1>
+        <p class="text-muted">Scansiona i codici QR dei ticket per visualizzarli o scaricarli</p>
     </div>
 </div>
 {% endblock %}
@@ -52,52 +116,76 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-camera me-2"></i>Scanner
-                </h5>
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center bg-success text-white">
+                <i class="fas fa-camera me-2"></i>
+                <h5 class="mb-0">Scanner</h5>
             </div>
             <div class="card-body">
-                <div id="scanner-container" class="mb-3">
-                    <video id="qr-video" autoplay></video>
-                    <div id="scanner-loading" class="scanner-overlay">
-                        <div>
-                            <i class="fas fa-spinner fa-spin mb-2 d-block text-center"></i>
-                            Attivazione fotocamera...
-                        </div>
+                <div id="scanner-wrapper" class="mb-4">
+                    <!-- Stato inattivo dello scanner -->
+                    <div id="scanner-inactive" class="scanner-camera-inactive">
+                        <i class="fas fa-camera"></i>
+                        <h5>Fotocamera non attiva</h5>
+                        <p class="mb-0">Premi il pulsante "Avvia Scanner" per attivare la fotocamera e iniziare la scansione.</p>
                     </div>
-                    <div id="scanner-error" class="scanner-overlay" style="display: none;">
-                        <div>
-                            <i class="fas fa-exclamation-triangle mb-2 d-block text-center text-warning"></i>
-                            Errore fotocamera. Utilizza inserimento manuale.
+                    
+                    <!-- Scanner attivo (inizialmente nascosto) -->
+                    <div id="scanner-container" class="mb-0" style="display: none;">
+                        <video id="qr-video" autoplay></video>
+                        <div id="scanner-error" class="scanner-overlay" style="display: none;">
+                            <div class="text-center">
+                                <i class="fas fa-exclamation-triangle text-warning d-block"></i>
+                                Errore fotocamera. Verifica le autorizzazioni o utilizza l'inserimento manuale.
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="d-grid gap-2">
+                <div class="scanner-controls">
                     <button id="scanner-start" class="btn btn-success">
                         <i class="fas fa-play me-2"></i>Avvia Scanner
                     </button>
-                    <button id="scanner-stop" class="btn btn-secondary" style="display: none;">
+                    <button id="scanner-stop" class="btn btn-outline-secondary" style="display: none;">
                         <i class="fas fa-stop me-2"></i>Ferma Scanner
                     </button>
                 </div>
                 
-                <div class="alert alert-info mt-3">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Posiziona un codice QR del ticket all'interno dell'inquadratura per la scansione automatica.
+                <div class="alert alert-info mt-4">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="fas fa-info-circle fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="alert-heading">Come utilizzare lo scanner</h6>
+                            <p class="mb-0">Posiziona un codice QR del ticket all'interno dell'inquadratura per la scansione automatica.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="format-code-block mt-4">
+                    <h6 class="d-flex align-items-center">
+                        <i class="fas fa-info-circle me-2"></i>Formato QR Code:
+                    </h6>
+                    <div>
+                        <code>000003000801029042025110211</code>
+                        <div class="mt-2">
+                            <span class="highlight">000003</span> - Numero Scontrino (6 cifre)<br>
+                            <span class="highlight">000801</span> - Codice Articolo (6 cifre)<br>
+                            <span class="highlight">02904202</span> - Data (ggmmaaaa)<br>
+                            <span class="highlight">511021</span> - Ora (hhmmss)
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
     <div class="col-lg-6 mb-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-keyboard me-2"></i>Inserimento Manuale
-                </h5>
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center bg-primary text-white">
+                <i class="fas fa-keyboard me-2"></i>
+                <h5 class="mb-0">Inserimento Manuale</h5>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('warehouse.scanner') }}">
@@ -106,44 +194,87 @@
                     <div class="mb-3">
                         <label for="ticket_id" class="form-label">{{ form.ticket_id.label }}</label>
                         <div class="input-group">
-                            {{ form.ticket_id(class="form-control", id="ticket_id", placeholder="Es. T12345 o T12345-P67890") }}
+                            <span class="input-group-text"><i class="fas fa-barcode"></i></span>
+                            {{ form.ticket_id(class="form-control", id="ticket_id", placeholder="Formato: 000003000801029042025110211") }}
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search me-1"></i>Cerca
                             </button>
                         </div>
-                        <div class="form-text">Formato: T[numero_ticket] o T[numero_ticket]-P[id_prodotto]</div>
+                        <div class="form-text">
+                            <small>Formato: codice numerico a 27 cifre (formato nuovo) o T[number] (formato vecchio)</small>
+                        </div>
                         {% for error in form.ticket_id.errors %}
                         <div class="text-danger small">{{ error }}</div>
                         {% endfor %}
                     </div>
                 </form>
-                
-                <div class="alert alert-secondary">
-                    <h6><i class="fas fa-info-circle me-2"></i>Esempi di codici:</h6>
-                    <ul class="mb-0">
-                        <li><strong>T12345</strong> - Ticket #12345</li>
-                        <li><strong>T12345-P67890</strong> - Ticket #12345, Prodotto #67890</li>
-                    </ul>
-                </div>
             </div>
         </div>
         
         <!-- Result card, hidden by default -->
-        <div id="scanner-result" class="card mt-4">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    <i class="fas fa-check-circle me-2"></i>Ticket Trovato
-                </h5>
+        <div id="scanner-result" class="card shadow-sm mt-4 scan-result-card">
+            <div class="card-header d-flex align-items-center bg-success text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <h5 class="mb-0">Risultato Scansione</h5>
             </div>
             <div class="card-body">
-                <h5 id="result-ticket-number" class="card-title"></h5>
-                <p id="result-ticket-date" class="card-text"></p>
-                <p id="result-ticket-status" class="card-text"></p>
+                <h5 id="result-ticket-number" class="card-title d-flex align-items-center">
+                    <i class="fas fa-receipt me-2 text-success"></i>
+                    <span></span>
+                </h5>
+                <p id="result-ticket-date" class="card-text d-flex align-items-center">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                    <span></span>
+                </p>
+                <p id="result-ticket-status" class="card-text d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2 text-info"></i>
+                    <span></span>
+                </p>
                 
-                <div class="d-grid gap-2 mt-3">
-                    <a id="result-ticket-link" href="#" class="btn btn-primary">
-                        <i class="fas fa-eye me-2"></i>Visualizza Dettagli
-                    </a>
+                <div id="product-details" class="product-details" style="display: none;">
+                    <h6 class="d-flex align-items-center mb-3">
+                        <i class="fas fa-box me-2 text-primary"></i>Dettagli Prodotto
+                    </h6>
+                    <p id="result-product-name" class="mb-2 fw-bold"></p>
+                    <p id="result-product-code" class="mb-2">
+                        <i class="fas fa-tag me-2 text-muted"></i>
+                        <span class="text-muted"></span>
+                    </p>
+                    <p id="result-scan-date" class="mb-0">
+                        <i class="fas fa-clock me-2 text-muted"></i>
+                        <span class="text-muted"></span>
+                    </p>
+                </div>
+                
+                <div class="d-grid gap-2 mt-4">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <button id="btn-product-details" class="btn btn-info w-100">
+                                <i class="fas fa-info-circle me-2"></i>Dettagli Prodotto
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <a id="result-ticket-link" href="#" class="btn btn-primary w-100">
+                                <i class="fas fa-eye me-2"></i>Visualizza Ticket
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <button id="btn-checkout" class="btn btn-success mt-2">
+                        <i class="fas fa-check me-2"></i>Scarica da Magazzino
+                    </button>
+                </div>
+                
+                <div id="success-message" class="alert alert-success success-message mt-3">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="alert-heading">Operazione completata!</h6>
+                            <p class="mb-0">Prodotto scaricato con successo dal magazzino.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,25 +286,38 @@
 <script src="https://unpkg.com/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const scannerWrapper = document.getElementById('scanner-wrapper');
+        const scannerInactive = document.getElementById('scanner-inactive');
         const scannerContainer = document.getElementById('scanner-container');
         const videoElement = document.getElementById('qr-video');
-        const loadingOverlay = document.getElementById('scanner-loading');
         const errorOverlay = document.getElementById('scanner-error');
         const startButton = document.getElementById('scanner-start');
         const stopButton = document.getElementById('scanner-stop');
         const resultCard = document.getElementById('scanner-result');
         
         // Result elements
-        const resultTicketNumber = document.getElementById('result-ticket-number');
-        const resultTicketDate = document.getElementById('result-ticket-date');
-        const resultTicketStatus = document.getElementById('result-ticket-status');
+        const resultTicketNumber = document.getElementById('result-ticket-number').querySelector('span');
+        const resultTicketDate = document.getElementById('result-ticket-date').querySelector('span');
+        const resultTicketStatus = document.getElementById('result-ticket-status').querySelector('span');
         const resultTicketLink = document.getElementById('result-ticket-link');
+        const productDetails = document.getElementById('product-details');
+        const resultProductName = document.getElementById('result-product-name');
+        const resultProductCode = document.getElementById('result-product-code').querySelector('span');
+        const resultScanDate = document.getElementById('result-scan-date').querySelector('span');
+        const btnProductDetails = document.getElementById('btn-product-details');
+        const btnCheckout = document.getElementById('btn-checkout');
+        const successMessage = document.getElementById('success-message');
         
+        let scanData = null;
         let scanner = null;
+        let isInitialized = false;
         
         // Initialize scanner
         function initScanner() {
+            if (isInitialized) return;
+            
             scanner = new Html5Qrcode("scanner-container");
+            isInitialized = true;
             
             const config = {
                 fps: 10,
@@ -182,6 +326,14 @@
             };
             
             startButton.addEventListener('click', function() {
+                // Mostra il container dello scanner e nascondi lo stato inattivo
+                scannerInactive.style.display = 'none';
+                scannerContainer.style.display = 'block';
+                
+                // Disabilita temporaneamente il pulsante durante l'avvio
+                startButton.disabled = true;
+                startButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Attivazione...';
+                
                 // Start scanner
                 scanner.start(
                     { facingMode: "environment" },
@@ -190,91 +342,178 @@
                     onScanFailure
                 ).then(() => {
                     // Scanner started successfully
-                    loadingOverlay.style.display = 'none';
                     startButton.style.display = 'none';
                     stopButton.style.display = 'block';
+                    startButton.disabled = false;
+                    startButton.innerHTML = '<i class="fas fa-play me-2"></i>Avvia Scanner';
                 }).catch((err) => {
                     // Error starting scanner
-                    console.error("Error starting scanner:", err);
-                    loadingOverlay.style.display = 'none';
+                    console.error('Error starting scanner:', err);
                     errorOverlay.style.display = 'flex';
+                    scannerInactive.style.display = 'flex';
+                    scannerContainer.style.display = 'none';
+                    startButton.disabled = false;
+                    startButton.innerHTML = '<i class="fas fa-play me-2"></i>Avvia Scanner';
                 });
             });
             
             stopButton.addEventListener('click', function() {
-                if (scanner) {
-                    scanner.stop().then(() => {
-                        stopButton.style.display = 'none';
-                        startButton.style.display = 'block';
-                    });
-                }
-            });
-        }
-        
-        // Success callback when QR code is detected
-        function onScanSuccess(decodedText, decodedResult) {
-            // Play a beep sound
-            const beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
-            beep.play();
-            
-            // Stop scanner after successful scan
-            if (scanner) {
+                // Stop scanner
                 scanner.stop().then(() => {
                     stopButton.style.display = 'none';
                     startButton.style.display = 'block';
-                    
-                    // Process the scanned code
-                    processScannedCode(decodedText);
+                    scannerInactive.style.display = 'flex';
+                    scannerContainer.style.display = 'none';
+                }).catch((err) => {
+                    console.error('Error stopping scanner:', err);
                 });
-            }
+            });
+            
+            // Product details button
+            btnProductDetails.addEventListener('click', function() {
+                if (productDetails.style.display === 'none') {
+                    productDetails.style.display = 'block';
+                    this.innerHTML = '<i class="fas fa-times-circle me-2"></i>Nascondi Dettagli';
+                } else {
+                    productDetails.style.display = 'none';
+                    this.innerHTML = '<i class="fas fa-info-circle me-2"></i>Dettagli Prodotto';
+                }
+            });
+            
+            // Checkout button
+            btnCheckout.addEventListener('click', function() {
+                if (!scanData) return;
+                
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Elaborazione...';
+                
+                // Send checkout request
+                fetch('/warehouse/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        ticket_id: scanData.ticket_id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.disabled = false;
+                    
+                    if (data.success) {
+                        // Show success message
+                        successMessage.style.display = 'block';
+                        this.innerHTML = '<i class="fas fa-check me-2"></i>Scaricato con Successo';
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-outline-success');
+                        this.disabled = true;
+                    } else {
+                        // Show error
+                        this.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
+                        alert('Errore: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during checkout:', error);
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
+                    alert('Si è verificato un errore durante l\'operazione.');
+                });
+            });
         }
         
-        // Error callback when scanning fails
-        function onScanFailure(error) {
-            // Handle scan failure silently
-            console.debug(`QR scan error: ${error}`);
-        }
-        
-        // Process the scanned QR code
-        function processScannedCode(code) {
-            // Send the code to the server API
-            fetch('{{ url_for("warehouse.api_scan") }}', {
+        // Handle successful scan
+        function onScanSuccess(qrCodeMessage) {
+            // Stop scanner
+            scanner.pause();
+            
+            // Show loading state
+            resultCard.style.display = 'none';
+            stopButton.disabled = true;
+            stopButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Elaborazione...';
+            
+            // Send data to server for processing
+            fetch('/warehouse/process_qr', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
                 },
-                body: JSON.stringify({ code: code }),
+                body: JSON.stringify({
+                    qr_data: qrCodeMessage
+                })
             })
             .then(response => response.json())
             .then(data => {
+                stopButton.disabled = false;
+                stopButton.innerHTML = '<i class="fas fa-stop me-2"></i>Ferma Scanner';
+                
                 if (data.success) {
-                    // Show success message and ticket details
+                    // Store scan data
+                    scanData = data;
+                    
+                    // Update result card
                     resultTicketNumber.textContent = `Ticket #${data.ticket_number}`;
                     resultTicketDate.textContent = `Data: ${data.ticket_date}`;
                     
                     if (data.is_processed) {
-                        resultTicketStatus.innerHTML = '<span class="badge bg-success">Processato</span>';
+                        resultTicketStatus.innerHTML = 'Stato: <span class="badge bg-success">Processato</span>';
+                        btnCheckout.disabled = true;
+                        btnCheckout.innerHTML = '<i class="fas fa-check-circle me-2"></i>Già Scaricato';
+                        btnCheckout.classList.remove('btn-success');
+                        btnCheckout.classList.add('btn-outline-success');
                     } else {
-                        resultTicketStatus.innerHTML = '<span class="badge bg-warning">Pendente</span>';
+                        resultTicketStatus.innerHTML = 'Stato: <span class="badge bg-warning">Pendente</span>';
+                        btnCheckout.disabled = false;
+                        btnCheckout.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
+                        btnCheckout.classList.remove('btn-outline-success');
+                        btnCheckout.classList.add('btn-success');
                     }
                     
-                    resultTicketLink.href = data.url;
+                    // Update product details
+                    if (data.product) {
+                        resultProductName.textContent = data.product.name;
+                        resultProductCode.textContent = `Codice: ${data.product.code}`;
+                        resultScanDate.textContent = `Scansione: ${new Date().toLocaleString()}`;
+                    }
+                    
+                    // Set ticket link
+                    resultTicketLink.href = `/warehouse/ticket/${data.ticket_id}`;
+                    
+                    // Reset product details visibility
+                    productDetails.style.display = 'none';
+                    btnProductDetails.innerHTML = '<i class="fas fa-info-circle me-2"></i>Dettagli Prodotto';
+                    
+                    // Hide success message
+                    successMessage.style.display = 'none';
+                    
+                    // Show result card
                     resultCard.style.display = 'block';
                     
-                    // Scroll to the result card
-                    resultCard.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    // Show error message
-                    alert(`Errore: ${data.error}`);
+                    // Show error
+                    alert('Errore: ' + data.message);
+                    scanner.resume();
                 }
             })
             .catch(error => {
                 console.error('Error processing QR code:', error);
-                alert('Errore durante l\'elaborazione del codice QR. Riprova o utilizza l\'inserimento manuale.');
+                stopButton.disabled = false;
+                stopButton.innerHTML = '<i class="fas fa-stop me-2"></i>Ferma Scanner';
+                alert('Si è verificato un errore durante l\'elaborazione del codice QR.');
+                scanner.resume();
             });
         }
         
-        // Initialize the scanner when the page loads
+        // Handle scan failure
+        function onScanFailure(error) {
+            // Just log error, don't show to user
+            console.debug('QR scan error:', error);
+        }
+        
+        // Initialize scanner on page load
         initScanner();
     });
 </script>

@@ -113,8 +113,13 @@ class ScanLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     ticket_id = db.Column(db.Integer)
-    action = db.Column(db.String(20))  # 'view' or 'checkout'
+    action = db.Column(db.String(20))  # 'view', 'scan', 'scan_attempt', or 'checkout'
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    # New fields for the QR code data
+    raw_code = db.Column(db.String(50))
+    product_code = db.Column(db.Integer)
+    scan_date = db.Column(db.String(20))
+    scan_time = db.Column(db.String(20))
     
     def __repr__(self):
         return f'<ScanLog {self.id}: User {self.user_id} - Ticket {self.ticket_id}>' 

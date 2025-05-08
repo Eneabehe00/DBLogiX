@@ -2,82 +2,79 @@
 
 {% block title %}Home - DBLogiX{% endblock %}
 
+{% block header_title %}Dashboard{% endblock %}
+
 {% block header %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="display-5">
-            <i class="fas fa-warehouse text-primary me-2"></i>Dashboard
-        </h1>
-        <p class="lead text-muted">Panoramica del magazzino e attività recenti</p>
+<div class="d-flex align-items-center mb-4">
+    <div class="page-icon me-3">
+        <i class="fas fa-tachometer-alt"></i>
+    </div>
+    <div>
+        <h1 class="h2 mb-1">Dashboard</h1>
+        <p class="text-muted">Panoramica del magazzino e attività recenti</p>
     </div>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Stats cards -->
-    <div class="col-md-4 mb-4">
-        <div class="card border-primary h-100">
-            <div class="card-body text-center">
-                <h5 class="card-title">
-                    <i class="fas fa-box text-primary me-2"></i>Prodotti
-                </h5>
-                <p class="display-4">{{ products_count }}</p>
-                <a href="{{ url_for('warehouse.product_catalog') }}" class="btn btn-sm btn-primary">
-                    Visualizza Prodotti
-                </a>
+<!-- Stats Overview -->
+<div class="row mb-4">
+    <!-- Prodotti -->
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-boxes"></i>
             </div>
+            <div class="stat-value">{{ products_count }}</div>
+            <div class="stat-label">Prodotti</div>
+            <a href="{{ url_for('warehouse.product_catalog') }}" class="stretched-link"></a>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card border-warning h-100">
-            <div class="card-body text-center">
-                <h5 class="card-title">
-                    <i class="fas fa-receipt text-warning me-2"></i>Ticket Pendenti
-                </h5>
-                <p class="display-4">{{ pending_tickets }}</p>
-                <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="btn btn-sm btn-warning">
-                    Visualizza Ticket Pendenti
-                </a>
+    <!-- Ticket Pendenti -->
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-receipt"></i>
             </div>
+            <div class="stat-value text-warning">{{ pending_tickets }}</div>
+            <div class="stat-label">Ticket Pendenti</div>
+            <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="stretched-link"></a>
         </div>
     </div>
     
-    <div class="col-md-4 mb-4">
-        <div class="card border-success h-100">
-            <div class="card-body text-center">
-                <h5 class="card-title">
-                    <i class="fas fa-qrcode text-success me-2"></i>Scanner
-                </h5>
-                <p class="display-4">
-                    <i class="fas fa-camera"></i>
-                </p>
-                <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-sm btn-success">
-                    Apri Scanner
-                </a>
+    <!-- Scanner -->
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-qrcode"></i>
             </div>
+            <div class="stat-value text-success"><i class="fas fa-camera"></i></div>
+            <div class="stat-label">Scanner QR</div>
+            <a href="{{ url_for('warehouse.scanner') }}" class="stretched-link"></a>
         </div>
     </div>
-    
+</div>
+
+<!-- Activity Section -->
+<div class="row mb-4">
     <!-- Recent tickets -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i class="fas fa-clock me-2"></i>Ticket Recenti
-                </h5>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-clock text-primary me-2"></i>
+                <h5 class="mb-0">Ticket Recenti</h5>
             </div>
             <div class="card-body p-0">
                 {% if recent_tickets %}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th>Numero</th>
                                 <th>Data</th>
                                 <th>Stato</th>
-                                <th>Azioni</th>
+                                <th class="text-end">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -92,9 +89,9 @@
                                     <span class="badge bg-warning">Pendente</span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td class="text-end">
                                     <a href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" 
-                                       class="btn btn-sm btn-outline-primary">
+                                       class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Visualizza dettagli">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -104,37 +101,37 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="p-3 text-center">
+                <div class="p-4 text-center">
+                    <i class="fas fa-ticket-alt text-muted mb-3" style="font-size: 2rem;"></i>
                     <p class="text-muted">Nessun ticket recente trovato.</p>
                 </div>
                 {% endif %}
             </div>
-            <div class="card-footer text-center">
+            <div class="card-footer text-center p-2">
                 <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-primary">
-                    Visualizza Tutti i Ticket
+                    <i class="fas fa-list-ul me-1"></i> Visualizza Tutti i Ticket
                 </a>
             </div>
         </div>
     </div>
     
     <!-- Recent scan activity -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i class="fas fa-history me-2"></i>Attività Recenti
-                </h5>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-history text-primary me-2"></i>
+                <h5 class="mb-0">Attività Recenti</h5>
             </div>
             <div class="card-body p-0">
                 {% if recent_scans %}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th>Ticket</th>
                                 <th>Azione</th>
                                 <th>Data/Ora</th>
-                                <th>Dettagli</th>
+                                <th class="text-end">Dettagli</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,9 +146,9 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ scan.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
-                                <td>
+                                <td class="text-end">
                                     <a href="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) }}" 
-                                       class="btn btn-sm btn-outline-primary">
+                                       class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Visualizza ticket">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                 </td>
@@ -161,15 +158,16 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="p-3 text-center">
-                    <p class="text-muted">Nessuna attività recente.</p>
+                <div class="p-4 text-center">
+                    <i class="fas fa-history text-muted mb-3" style="font-size: 2rem;"></i>
+                    <p class="text-muted">Nessuna attività recente registrata.</p>
                 </div>
                 {% endif %}
             </div>
             {% if current_user.is_admin %}
-            <div class="card-footer text-center">
+            <div class="card-footer text-center p-2">
                 <a href="{{ url_for('admin.scan_logs') }}" class="btn btn-sm btn-outline-primary">
-                    Visualizza Tutte le Attività
+                    <i class="fas fa-list-alt me-1"></i> Visualizza Tutte le Attività
                 </a>
             </div>
             {% endif %}
@@ -177,51 +175,70 @@
     </div>
 </div>
 
-<div class="row mt-2">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    <i class="fas fa-star me-2 text-warning"></i>Azioni Rapide
-                </h5>
+<!-- Quick Actions -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex align-items-center">
+        <i class="fas fa-bolt text-warning me-2"></i>
+        <h5 class="mb-0">Azioni Rapide</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ url_for('warehouse.scanner') }}" class="card quick-action-card h-100">
+                    <div class="card-body text-center">
+                        <div class="quick-action-icon bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-qrcode"></i>
+                        </div>
+                        <h5 class="mt-3 mb-0">Scanner QR</h5>
+                    </div>
+                </a>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3 mb-3">
-                        <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-lg btn-outline-success w-100">
-                            <i class="fas fa-qrcode mb-2 d-block" style="font-size: 2rem;"></i>
-                            Scanner QR
-                        </a>
+            
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="card quick-action-card h-100">
+                    <div class="card-body text-center">
+                        <div class="quick-action-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <h5 class="mt-3 mb-0">Ticket Pendenti</h5>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="btn btn-lg btn-outline-warning w-100">
-                            <i class="fas fa-receipt mb-2 d-block" style="font-size: 2rem;"></i>
-                            Ticket Pendenti
-                        </a>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{{ url_for('warehouse.product_catalog') }}" class="btn btn-lg btn-outline-primary w-100">
-                            <i class="fas fa-boxes mb-2 d-block" style="font-size: 2rem;"></i>
-                            Catalogo Prodotti
-                        </a>
-                    </div>
-                    {% if current_user.is_admin %}
-                    <div class="col-md-3 mb-3">
-                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-lg btn-outline-dark w-100">
-                            <i class="fas fa-tachometer-alt mb-2 d-block" style="font-size: 2rem;"></i>
-                            Dashboard Admin
-                        </a>
-                    </div>
-                    {% else %}
-                    <div class="col-md-3 mb-3">
-                        <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-lg btn-outline-info w-100">
-                            <i class="fas fa-list mb-2 d-block" style="font-size: 2rem;"></i>
-                            Tutti i Ticket
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
+                </a>
             </div>
+            
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ url_for('warehouse.product_catalog') }}" class="card quick-action-card h-100">
+                    <div class="card-body text-center">
+                        <div class="quick-action-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <h5 class="mt-3 mb-0">Catalogo Prodotti</h5>
+                    </div>
+                </a>
+            </div>
+            
+            {% if current_user.is_admin %}
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ url_for('admin.dashboard') }}" class="card quick-action-card h-100">
+                    <div class="card-body text-center">
+                        <div class="quick-action-icon bg-dark bg-opacity-10 text-dark">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h5 class="mt-3 mb-0">Dashboard Admin</h5>
+                    </div>
+                </a>
+            </div>
+            {% else %}
+            <div class="col-sm-6 col-xl-3">
+                <a href="{{ url_for('warehouse.tickets') }}" class="card quick-action-card h-100">
+                    <div class="card-body text-center">
+                        <div class="quick-action-icon bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <h5 class="mt-3 mb-0">Tutti i Ticket</h5>
+                    </div>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

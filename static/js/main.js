@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Popover(popover);
     });
     
+    // Sidebar functionality
+    initSidebar();
+    
     // Handle confirmation dialogs
     const confirmButtons = document.querySelectorAll('[data-confirm]');
     confirmButtons.forEach(function(button) {
@@ -193,4 +196,115 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-}); 
+});
+
+/**
+ * Initialize sidebar functionality
+ */
+function initSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarCollapseBtn = document.getElementById('sidebarCollapseBtn');
+    const submenuToggles = document.querySelectorAll('.submenu-toggle');
+    
+    // Function to check if we're on mobile view
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+    
+    // Initialize sidebar state based on screen size
+    function initSidebarState() {
+        if (isMobile()) {
+            sidebar.classList.remove('collapsed');
+            content.classList.remove('expanded');
+        } else {
+            // On desktop, check localStorage for user preference
+            const sidebarState = localStorage.getItem('sidebarState');
+            if (sidebarState === 'collapsed') {
+                sidebar.classList.add('collapsed');
+                content.classList.add('expanded');
+            }
+        }
+    }
+    
+    // Toggle sidebar visibility
+    function toggleSidebar() {
+        sidebar.classList.toggle('collapsed');
+        content.classList.toggle('expanded');
+        
+        // Save state to localStorage (only on desktop)
+        if (!isMobile()) {
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarState', isCollapsed ? 'collapsed' : 'expanded');
+        }
+    }
+    
+    // Toggle submenu visibility
+    function toggleSubmenu(e) {
+        e.preventDefault();
+        
+        const parent = this.parentElement;
+        parent.classList.toggle('open');
+        
+        const submenu = this.nextElementSibling;
+        if (submenu.style.maxHeight) {
+            submenu.style.maxHeight = null;
+        } else {
+            submenu.style.maxHeight = submenu.scrollHeight + "px";
+        }
+    }
+    
+    // Add event listeners
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', toggleSidebar);
+    }
+    
+    if (sidebarCollapseBtn) {
+        sidebarCollapseBtn.addEventListener('click', toggleSidebar);
+    }
+    
+    submenuToggles.forEach(toggle => {
+        toggle.addEventListener('click', toggleSubmenu);
+    });
+    
+    // Handle auto-open active submenus
+    document.querySelectorAll('.sidebar-submenu.active').forEach(submenu => {
+        submenu.classList.add('open');
+        const submenuList = submenu.querySelector('.submenu');
+        if (submenuList) {
+            submenuList.style.maxHeight = submenuList.scrollHeight + "px";
+        }
+    });
+    
+    // Initialize sidebar
+    initSidebarState();
+    
+    // Reset sidebar state on window resize
+    window.addEventListener('resize', function() {
+        if (isMobile()) {
+            if (sidebar.classList.contains('collapsed')) {
+                sidebar.classList.remove('collapsed');
+                content.classList.remove('expanded');
+            }
+        } else {
+            // On desktop, restore from localStorage
+            const sidebarState = localStorage.getItem('sidebarState');
+            if (sidebarState === 'collapsed' && !sidebar.classList.contains('collapsed')) {
+                sidebar.classList.add('collapsed');
+                content.classList.add('expanded');
+            }
+        }
+    });
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(e) {
+        if (isMobile() && !sidebar.classList.contains('collapsed')) {
+            // Check if click is outside sidebar
+            if (!sidebar.contains(e.target) && e.target !== sidebarCollapseBtn && !sidebarCollapseBtn.contains(e.target)) {
+                sidebar.classList.add('collapsed');
+                content.classList.remove('expanded');
+            }
+        }
+    });
+} 

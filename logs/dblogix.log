@@ -1,67 +1,100 @@
-2025-05-08 12:29:19,609 - warehouse - INFO - Ticket #5: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:29:19,629 - warehouse - INFO - Ticket #4 (ID: 4): trovato ID articolo 1 dal QR
-2025-05-08 12:29:19,647 - warehouse - INFO - Ticket #4: trovato prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 12:29:19,651 - warehouse - INFO - Ticket #4: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:29:19,655 - warehouse - INFO - Ticket #3 (ID: 3): trovato ID articolo 22 dal QR
-2025-05-08 12:29:19,671 - warehouse - INFO - Ticket #3: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:29:19,671 - warehouse - INFO - Ticket #3: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:29:19,705 - warehouse - INFO - Ticket #2 (ID: 2): trovato ID articolo 22 dal QR
-2025-05-08 12:29:19,722 - warehouse - INFO - Ticket #2: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:29:19,722 - warehouse - INFO - Ticket #2: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:29:19,728 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
-2025-05-08 12:29:19,749 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
-2025-05-08 12:29:19,755 - warehouse - INFO - Ticket #1: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:29:19,768 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:19] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 12:29:19,938 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:19] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 12:29:19,961 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:19] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 12:29:57,994 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
-2025-05-08 12:29:58,008 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
-2025-05-08 12:29:58,011 - warehouse - INFO - Ticket #1: trovata data scadenza 2025-05-09 11:37:45 per prodotto ID 21
-2025-05-08 12:29:58,019 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:58] "GET /warehouse/tickets?status=expiring HTTP/1.1" 200 -
-2025-05-08 12:29:58,205 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:58] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 12:29:58,210 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:58] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 12:30:10,775 - warehouse - INFO - Ticket #6 (ID: 7): trovato ID articolo 5 dal QR
-2025-05-08 12:30:10,806 - warehouse - INFO - Ticket #6: trovato prodotto 'FRITTATINA NAPOLETANA DI PASTA ALLA GENOVESE' (ID: 5)
-2025-05-08 12:30:10,812 - warehouse - INFO - Ticket #6: trovata data scadenza 2025-05-18 12:23:57 per prodotto ID 5
-2025-05-08 12:30:10,815 - warehouse - INFO - Ticket #5 (ID: 6): trovato ID articolo 17 dal QR
-2025-05-08 12:30:10,837 - warehouse - INFO - Ticket #5: trovato prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
-2025-05-08 12:30:10,841 - warehouse - INFO - Ticket #5: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:30:10,849 - warehouse - INFO - Ticket #4 (ID: 4): trovato ID articolo 1 dal QR
-2025-05-08 12:30:10,869 - warehouse - INFO - Ticket #4: trovato prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 12:30:10,873 - warehouse - INFO - Ticket #4: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:30:10,877 - warehouse - INFO - Ticket #3 (ID: 3): trovato ID articolo 22 dal QR
-2025-05-08 12:30:10,897 - warehouse - INFO - Ticket #3: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:30:10,903 - warehouse - INFO - Ticket #3: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:30:10,909 - warehouse - INFO - Ticket #2 (ID: 2): trovato ID articolo 22 dal QR
-2025-05-08 12:30:10,926 - warehouse - INFO - Ticket #2: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:30:10,937 - warehouse - INFO - Ticket #2: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:30:10,940 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
-2025-05-08 12:30:10,974 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
-2025-05-08 12:30:10,977 - warehouse - INFO - Ticket #1: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
-2025-05-08 12:30:10,997 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:30:10] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 12:30:11,232 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:30:11] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 12:30:11,246 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:30:11] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 12:32:05,569 - warehouse - INFO - Ticket #7 (ID: 8): trovato ID articolo 22 dal QR
-2025-05-08 12:32:05,588 - warehouse - INFO - Ticket #7: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:32:05,588 - warehouse - INFO - Ticket #7: trovata data scadenza 2025-05-28 12:32:04 per prodotto ID 22
-2025-05-08 12:32:05,591 - warehouse - INFO - Ticket #6 (ID: 7): trovato ID articolo 5 dal QR
-2025-05-08 12:32:05,600 - warehouse - INFO - Ticket #6: trovato prodotto 'FRITTATINA NAPOLETANA DI PASTA ALLA GENOVESE' (ID: 5)
-2025-05-08 12:32:05,600 - warehouse - INFO - Ticket #6: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
-2025-05-08 12:32:05,603 - warehouse - INFO - Ticket #5 (ID: 6): trovato ID articolo 17 dal QR
-2025-05-08 12:32:05,612 - warehouse - INFO - Ticket #5: trovato prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
-2025-05-08 12:32:05,615 - warehouse - INFO - Ticket #5: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
-2025-05-08 12:32:05,615 - warehouse - INFO - Ticket #4 (ID: 4): trovato ID articolo 1 dal QR
-2025-05-08 12:32:05,626 - warehouse - INFO - Ticket #4: trovato prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 12:32:05,626 - warehouse - INFO - Ticket #4: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
-2025-05-08 12:32:05,630 - warehouse - INFO - Ticket #3 (ID: 3): trovato ID articolo 22 dal QR
-2025-05-08 12:32:05,640 - warehouse - INFO - Ticket #3: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:32:05,641 - warehouse - INFO - Ticket #3: trovata data scadenza 2025-05-28 12:32:04 per prodotto ID 22
-2025-05-08 12:32:05,641 - warehouse - INFO - Ticket #2 (ID: 2): trovato ID articolo 22 dal QR
-2025-05-08 12:32:05,649 - warehouse - INFO - Ticket #2: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 12:32:05,653 - warehouse - INFO - Ticket #2: trovata data scadenza 2025-05-28 12:32:04 per prodotto ID 22
-2025-05-08 12:32:05,655 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
-2025-05-08 12:32:05,661 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
-2025-05-08 12:32:05,661 - warehouse - INFO - Ticket #1: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
-2025-05-08 12:32:05,676 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:32:05] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 12:32:05,761 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:32:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 12:32:05,765 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:32:05] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:21:33,453 - __main__ - INFO - Starting DBLogiX application
+2025-05-08 15:21:34,089 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
+2025-05-08 15:21:34,276 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:125]
+2025-05-08 15:21:34,276 - app - INFO - DBLogiX startup
+2025-05-08 15:21:34,370 - __main__ - INFO - Database tables created (if they did not exist)
+2025-05-08 15:21:34,371 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
+2025-05-08 15:21:34,382 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.26:5000
+2025-05-08 15:21:34,388 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-05-08 15:21:40,421 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:21:40,421 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
+2025-05-08 15:21:40,421 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:21:40,421 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-08 15:21:40,441 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:21:40,441 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
+2025-05-08 15:21:40,487 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:40] "GET /warehouse/tickets?status=expiring HTTP/1.1" 200 -
+2025-05-08 15:21:40,603 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:40] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 15:21:40,603 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:40] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:21:58,264 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:58] "GET /warehouse/tickets?status=processed HTTP/1.1" 200 -
+2025-05-08 15:21:58,315 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:58] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 15:21:58,317 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:58] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:21:59,363 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:21:59,366 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:21:59,366 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
+2025-05-08 15:21:59,379 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:21:59,380 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
+2025-05-08 15:21:59,388 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:21:59,389 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
+2025-05-08 15:21:59,393 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:21:59,393 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
+2025-05-08 15:21:59,403 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:21:59,404 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
+2025-05-08 15:21:59,408 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:21:59,408 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-08 15:21:59,420 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:21:59,421 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
+2025-05-08 15:21:59,426 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:21:59,426 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
+2025-05-08 15:21:59,438 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:21:59,439 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
+2025-05-08 15:21:59,446 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-08 15:21:59,447 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
+2025-05-08 15:21:59,456 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:21:59,457 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
+2025-05-08 15:21:59,461 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-08 15:21:59,471 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-08 15:21:59,480 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:21:59,481 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
+2025-05-08 15:21:59,486 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:59] "GET /warehouse/tickets?status=pending HTTP/1.1" 200 -
+2025-05-08 15:21:59,531 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:59] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 15:21:59,539 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:21:59] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:22:00,350 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:22:00,351 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:22:00,351 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
+2025-05-08 15:22:00,365 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:22:00,367 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
+2025-05-08 15:22:00,375 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:00,376 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
+2025-05-08 15:22:00,383 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:00,384 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
+2025-05-08 15:22:00,392 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:22:00,393 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
+2025-05-08 15:22:00,401 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:22:00,402 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-08 15:22:00,409 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:00,409 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
+2025-05-08 15:22:00,419 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:00,419 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
+2025-05-08 15:22:00,426 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:22:00,426 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
+2025-05-08 15:22:00,433 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-08 15:22:00,434 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
+2025-05-08 15:22:00,443 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:00,443 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
+2025-05-08 15:22:00,451 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-08 15:22:00,458 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-08 15:22:00,466 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:00,467 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
+2025-05-08 15:22:00,469 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:00] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 15:22:00,519 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:00] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 15:22:00,525 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:00] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:22:08,599 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:08] "GET /warehouse/ticket/15 HTTP/1.1" 200 -
+2025-05-08 15:22:08,646 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:08] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 15:22:08,660 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:08] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:22:09,883 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:09] "[32mPOST /warehouse/ticket/15/checkout HTTP/1.1[0m" 302 -
+2025-05-08 15:22:09,917 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:09] "GET /warehouse/ticket/15 HTTP/1.1" 200 -
+2025-05-08 15:22:09,976 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:09] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 15:22:09,977 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:22:09] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 15:22:15,993 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:22:16,000 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-08 15:22:16,001 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
+2025-05-08 15:22:16,007 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 15:22:16,008 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
+2025-05-08 15:22:16,016 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:16,017 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
+2025-05-08 15:22:16,024 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 15:22:16,025 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
+2025-05-08 15:22:16,033 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)

@@ -148,13 +148,15 @@
                             {% if ticket_products[ticket.IdTicket]['product_id'] %}
                             <div class="text-muted small">
                                 ID: <strong>{{ ticket_products[ticket.IdTicket]['product_id'] }}</strong>
+                                {% if ticket.CodigoBarras and ticket.CodigoBarras|length >= 8 %}
                                 <br>
-                                QR: <span class="text-primary">{{ ticket.CodigoBarras[0:8] if ticket.CodigoBarras and ticket.CodigoBarras|length >= 8 else '-' }}</span>
+                                QR: <span class="text-primary">{{ ticket.CodigoBarras[0:8] }}</span>
+                                {% endif %}
                             </div>
                             {% endif %}
                         </div>
                         {% else %}
-                        -
+                        <span class="text-muted">Non disponibile</span>
                         {% endif %}
                     </td>
                     <td>
@@ -173,7 +175,16 @@
                                 {{ exp_date.strftime('%d/%m/%Y') }}
                             {% endif %}
                         {% else %}
-                            <span class="text-muted">Non disponibile</span>
+                            <span class="text-muted">
+                                {% if ticket.IdTicket in ticket_products and ticket_products[ticket.IdTicket]['product_id'] %}
+                                Non disponibile 
+                                <div class="font-italic small">
+                                    (ID: {{ ticket_products[ticket.IdTicket]['product_id'] }})
+                                </div>
+                                {% else %}
+                                Non disponibile
+                                {% endif %}
+                            </span>
                         {% endif %}
                     </td>
                     <td class="text-truncate" style="max-width: 150px;">{{ ticket.CodigoBarras or '-' }}</td>

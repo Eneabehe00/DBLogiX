@@ -6,9 +6,40 @@ from sqlalchemy import func, or_, select
 from datetime import datetime, timedelta
 import re
 import logging
+import logging.handlers
+import os
 
 warehouse_bp = Blueprint('warehouse', __name__)
+
+# Configurazione più robusta del logger
 logger = logging.getLogger(__name__)
+
+# Configura un handler che non faccia crash se ci sono problemi di permessi
+try:
+    # Assicuriamoci che la directory dei log esista
+    log_dir = 'logs'
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # Proviamo a usare un file handler, ma con un sistema di fallback
+    try:
+        file_handler = logging.handlers.RotatingFileHandler(
+            os.path.join(log_dir, 'warehouse.log'),
+            maxBytes=5*1024*1024,  # 5 MB
+            backupCount=3,
+            delay=True  # Apertura ritardata del file
+        )
+        file_handler.setLevel(logging.INFO)
+        logger.addHandler(file_handler)
+    except (PermissionError, OSError):
+        # Se non possiamo usare il file, usiamo lo stderr come fallback
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.WARNING)  # Usa WARNING invece di INFO per ridurre la verbosità
+        logger.addHandler(console_handler)
+        logger.warning("Impossibile scrivere sul file di log, usando lo stderr")
+except Exception as e:
+    # Non dovremmo avere errori qui, ma se succede qualcosa, non blocchiamo l'applicazione
+    print(f"Errore nella configurazione del logger: {str(e)}")
 
 @warehouse_bp.route('/')
 @warehouse_bp.route('/index')
@@ -115,142 +146,169 @@ def tickets():
     per_page = 20
     search_form = SearchForm()
     
-    # Initialize query
-    query = TicketHeader.query
-    
-    # Apply search if present
-    if request.args.get('query'):
-        search_term = f"%{request.args.get('query')}%"
-        query = query.filter(or_(
-            TicketHeader.NumTicket.like(search_term),
-            TicketHeader.CodigoBarras.like(search_term)
-        ))
-        search_form.query.data = request.args.get('query')
-    
-    # Apply status filter if present
-    status = request.args.get('status')
-    if status == 'pending':
-        query = query.filter_by(Enviado=0)
-    elif status == 'processed':
-        query = query.filter_by(Enviado=1)
-    elif status == 'expiring':
-        # For expiration filter, we need to join with TicketLine to get FechaCaducidad
-        today = datetime.now()
-        seven_days_from_now = today + timedelta(days=7)
+    # Usa lo stesso approccio con JOIN per tutti i filtri
+    try:
+        # Inizializza query base
+        query = TicketHeader.query
         
-        try:
-            # Alternativa più sicura per verificare se esiste già un join
-            # Ricostruiamo la query da zero per assicurarci che sia corretta
-            base_query = TicketHeader.query
+        # Applica ricerca se presente
+        if request.args.get('query'):
+            search_term = f"%{request.args.get('query')}%"
+            query = query.filter(or_(
+                TicketHeader.NumTicket.like(search_term),
+                TicketHeader.CodigoBarras.like(search_term)
+            ))
+            search_form.query.data = request.args.get('query')
+        
+        # Crea subquery per trovare la linea con la data di scadenza più vicina per ogni ticket
+        # Questa è la chiave: usiamo lo stesso approccio JOIN per tutti i filtri
+        subquery = db.session.query(
+            TicketLine.IdTicket,
+            TicketLine.IdArticulo,
+            TicketLine.FechaCaducidad,
+            func.row_number().over(
+                partition_by=TicketLine.IdTicket,
+                order_by=TicketLine.FechaCaducidad.asc()
+            ).label('row_num')
+        ).subquery()
+        
+        # Seleziona solo la prima riga per ogni ticket (quella con la data di scadenza più vicina)
+        first_expiring_line = db.session.query(subquery).filter(subquery.c.row_num == 1).subquery()
+        
+        # Applica filtro di stato
+        status = request.args.get('status')
+        if status == 'pending':
+            query = query.filter_by(Enviado=0)
+        elif status == 'processed':
+            query = query.filter_by(Enviado=1)
+        elif status == 'expiring':
+            today = datetime.now()
+            seven_days_from_now = today + timedelta(days=7)
             
-            # Applica le condizioni di ricerca se presenti
-            if request.args.get('query'):
-                search_term = f"%{request.args.get('query')}%"
-                base_query = base_query.filter(or_(
-                    TicketHeader.NumTicket.like(search_term),
-                    TicketHeader.CodigoBarras.like(search_term)
-                ))
-            
-            # Join con TicketLine e applicazione dei filtri di scadenza
-            query = base_query.join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)
-            query = query.filter(
+            # Correggo il filtro scadenza per mostrare SOLO prodotti con data di scadenza
+            # Usiamo una subquery per trovare solo i ticket con almeno un prodotto in scadenza
+            ticket_ids_with_expiry = db.session.query(TicketLine.IdTicket).filter(
                 TicketLine.FechaCaducidad.isnot(None),
                 TicketLine.FechaCaducidad <= seven_days_from_now,
                 TicketLine.FechaCaducidad >= today
+            ).distinct().subquery()
+            
+            # Usa la subquery per limitare i risultati solo ai ticket trovati
+            query = query.join(
+                ticket_ids_with_expiry,
+                TicketHeader.IdTicket == ticket_ids_with_expiry.c.IdTicket
             )
-            
-            # Distinct per evitare duplicati
-            query = query.distinct()
-            
-            # Esegui subito la query paginata con l'ordinamento per scadenza
-            tickets = query.order_by(TicketLine.FechaCaducidad.asc()).paginate(page=page, per_page=per_page)
-            
-            # Bypass dell'esecuzione normale della query sotto
-            skip_normal_query_execution = True
-        except Exception as e:
-            # Fallback in caso di errore
-            logger.error(f"Errore nella query expiring: {str(e)}")
-            # Se fallisce, torna ai ticket pendenti
-            query = TicketHeader.query.filter_by(Enviado=0)
-            skip_normal_query_execution = False
-    else:
-        skip_normal_query_execution = False
-    
-    # Execute paginated query with proper ordering
-    if status == 'expiring' and skip_normal_query_execution:
-        # La query è già stata eseguita sopra
-        pass
-    elif status == 'expiring':
-        # Se siamo qui, c'è stato un fallback dall'errore, usa comunque la data di ordinamento
-        tickets = query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
-    else:
-        # Default ordering by date
-        tickets = query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
-    
-    # Count tickets expiring soon (within 2 days)
-    two_days_from_now = datetime.now() + timedelta(days=2)
-    
-    # Count tickets with products expiring within 7 days
-    expiring_count = db.session.query(TicketHeader.IdTicket).distinct()\
-        .join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)\
-        .filter(TicketLine.FechaCaducidad.isnot(None))\
-        .filter(TicketLine.FechaCaducidad <= (datetime.now() + timedelta(days=7)))\
-        .count()
-    
-    # Get product information and expiration dates for each ticket
-    ticket_products = {}
-    for ticket in tickets.items:
-        # Per ogni ticket, estraiamo l'ID articolo direttamente dal codice a barre
-        product_id = None
-        product_name = "Prodotto sconosciuto"
-        expiration_date = None
         
-        # Estrai l'ID articolo dal codice a barre (posizioni 4-8)
-        if ticket.CodigoBarras and len(ticket.CodigoBarras) >= 8:
+        # Applica ordinamento
+        if status == 'expiring':
+            # Ottieni i ticket con ordine di scadenza (prima i più urgenti)
+            # Join con TicketLine per ordinare per data di scadenza
+            expiry_subquery = db.session.query(
+                TicketLine.IdTicket,
+                func.min(TicketLine.FechaCaducidad).label('min_expiry_date')
+            ).filter(
+                TicketLine.FechaCaducidad.isnot(None)
+            ).group_by(TicketLine.IdTicket).subquery()
+            
+            tickets = query.join(
+                expiry_subquery,
+                TicketHeader.IdTicket == expiry_subquery.c.IdTicket
+            ).order_by(expiry_subquery.c.min_expiry_date.asc()).paginate(page=page, per_page=per_page)
+        else:
+            # Ordinamento standard per data per gli altri filtri
+            tickets = query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
+        
+        # Conta i ticket in scadenza (entro 7 giorni)
+        today = datetime.now()
+        seven_days_from_now = today + timedelta(days=7)
+        expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
+            join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
+            filter(
+                TicketLine.FechaCaducidad.isnot(None),
+                TicketLine.FechaCaducidad <= seven_days_from_now,
+                TicketLine.FechaCaducidad >= today
+            ).count()
+        
+        # Per ogni ticket, ottieni l'articolo e la data di scadenza usando JOIN
+        ticket_products = {}
+        for ticket in tickets.items:
             try:
-                # Il formato del QR è: NumTicket(4)-IdArticolo(4)-Peso(5)-Timestamp(14)
-                product_id = int(ticket.CodigoBarras[4:8])
-                logger.info(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}): trovato ID articolo {product_id} dal QR")
-            except (ValueError, IndexError):
-                logger.warning(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}): impossibile estrarre ID articolo dal QR: {ticket.CodigoBarras}")
-                product_id = None
-        
-        # Ottieni le linee del ticket
-        ticket_lines = TicketLine.query.filter_by(IdTicket=ticket.IdTicket).all()
-        
-        # Se non abbiamo trovato l'ID dal QR ma abbiamo delle linee, prova ad usare la prima linea
-        if product_id is None and ticket_lines:
-            product_id = ticket_lines[0].IdArticulo
-            logger.info(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}): usando ID articolo {product_id} dalla prima linea")
-        
-        # Cerca il prodotto nel database usando l'ID articolo trovato
-        if product_id:
-            product = Product.query.filter_by(IdArticulo=product_id).first()
-            if product:
-                product_name = product.Descripcion
-                logger.info(f"Ticket #{ticket.NumTicket}: trovato prodotto '{product_name}' (ID: {product_id})")
-            else:
-                product_name = f"Prodotto #{product_id}"
-                logger.warning(f"Ticket #{ticket.NumTicket}: prodotto con ID {product_id} non trovato nel database")
-        
-        # Cerca la data di scadenza nelle linee del ticket
-        if ticket_lines and product_id:
-            # Prima cerca una linea con lo stesso ID prodotto
-            matching_line = next((line for line in ticket_lines if line.IdArticulo == product_id), None)
-            
-            if matching_line and matching_line.FechaCaducidad:
-                expiration_date = matching_line.FechaCaducidad
-                logger.info(f"Ticket #{ticket.NumTicket}: trovata data scadenza {expiration_date} per prodotto ID {product_id}")
-            elif ticket_lines[0].FechaCaducidad:
-                # Se non troviamo una linea corrispondente, usa la prima linea
-                expiration_date = ticket_lines[0].FechaCaducidad
-                logger.info(f"Ticket #{ticket.NumTicket}: usando data scadenza {expiration_date} dalla prima linea")
-        
-        ticket_products[ticket.IdTicket] = {
-            'product_name': product_name,
-            'product_id': product_id,
-            'expiration_date': expiration_date
-        }
+                # Ottieni il prodotto direttamente da una query JOIN con filtro per ID ticket
+                product_line = db.session.query(
+                    TicketLine.IdTicket,
+                    TicketLine.IdArticulo,
+                    TicketLine.Descripcion,
+                    TicketLine.FechaCaducidad
+                ).filter(
+                    TicketLine.IdTicket == ticket.IdTicket
+                ).first()
+                
+                # Estrai l'ID articolo dal codice QR per avere priorità
+                product_id_from_qr = None
+                if ticket.CodigoBarras and len(ticket.CodigoBarras) >= 8:
+                    try:
+                        product_id_from_qr = int(ticket.CodigoBarras[4:8])
+                    except (ValueError, TypeError):
+                        logger.warning(f"Ticket #{ticket.NumTicket}: ID articolo dal QR non valido")
+                
+                # Se abbiamo un ID dal QR, cerca la linea specifica
+                if product_id_from_qr:
+                    specific_line = db.session.query(
+                        TicketLine.IdTicket,
+                        TicketLine.IdArticulo,
+                        TicketLine.Descripcion,
+                        TicketLine.FechaCaducidad
+                    ).filter(
+                        TicketLine.IdTicket == ticket.IdTicket,
+                        TicketLine.IdArticulo == product_id_from_qr
+                    ).first()
+                    
+                    # Se abbiamo trovato una linea specifica, usala invece della prima
+                    if specific_line:
+                        product_line = specific_line
+                
+                # Se abbiamo trovato un prodotto associato al ticket
+                if product_line:
+                    product_id = product_line.IdArticulo
+                    
+                    # Ottieni il nome prodotto dalla tabella Prodotti se possibile
+                    product = Product.query.filter_by(IdArticulo=product_id).first()
+                    if product:
+                        product_name = product.Descripcion
+                    else:
+                        # Fallback: usa la descrizione dalla linea del ticket
+                        product_name = product_line.Descripcion or f"Prodotto #{product_id}"
+                    
+                    ticket_products[ticket.IdTicket] = {
+                        'product_name': product_name,
+                        'product_id': product_id,
+                        'expiration_date': product_line.FechaCaducidad
+                    }
+                    
+                    logger.info(f"Ticket #{ticket.NumTicket}: prodotto '{product_name}' (ID: {product_id})")
+                    if product_line.FechaCaducidad:
+                        logger.info(f"Ticket #{ticket.NumTicket}: data scadenza {product_line.FechaCaducidad}")
+                else:
+                    # Nessun prodotto trovato, usiamo valori predefiniti
+                    ticket_products[ticket.IdTicket] = {
+                        'product_name': "Nessun prodotto",
+                        'product_id': None,
+                        'expiration_date': None
+                    }
+            except Exception as e:
+                logger.error(f"Errore elaborazione ticket #{ticket.NumTicket}: {str(e)}")
+                ticket_products[ticket.IdTicket] = {
+                    'product_name': "Errore elaborazione",
+                    'product_id': None,
+                    'expiration_date': None
+                }
+    
+    except Exception as e:
+        # In caso di errore nella query, ritorna ai ticket in ordine di data
+        logger.error(f"Errore grave nella query ticket: {str(e)}")
+        tickets = TicketHeader.query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
+        ticket_products = {}
+        expiring_count = 0
     
     return render_template('warehouse/tickets.html', 
                           tickets=tickets,
@@ -336,7 +394,7 @@ def scanner():
         if ticket_code.isdigit() and len(ticket_code) == 27:
             # Parse the QR components
             ticket_num = int(ticket_code[:4])           # First 4 digits = NumTicket
-            product_id = int(ticket_code[4:8])          # Next 4 digits = IdArticulo
+            product_id = int(ticket_code[4:8])          # Next 4 digits = IdArticolo
             weight = int(ticket_code[8:13]) / 1000.0    # Next 5 digits = Peso (in grams, convert to kg)
             
             # Parse timestamp - format: DDMMYYYYHHMMSS

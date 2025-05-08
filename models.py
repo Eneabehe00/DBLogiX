@@ -73,6 +73,7 @@ class TicketLine(db.Model):
     IdArticulo = db.Column(db.Integer, db.ForeignKey('dat_articulo.IdArticulo'))
     Descripcion = db.Column(db.String(100))
     Peso = db.Column(db.Numeric(15, 3))
+    FechaCaducidad = db.Column(db.DateTime)
     
     # Relationship
     product = db.relationship('Product', 

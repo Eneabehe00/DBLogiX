@@ -1,4 +1,4 @@
-2025-05-08 12:22:49,733 - app - ERROR - Exception on /warehouse/tickets [GET]
+2025-05-08 12:28:21,164 - app - ERROR - Exception on /warehouse/tickets [GET]
 Traceback (most recent call last):
   File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
     self.dialect.do_execute(
@@ -44,8 +44,6 @@ Traceback (most recent call last):
     return current_app.ensure_sync(func)(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Users\eneab\Desktop\WA\DB-LogiX\warehouse.py", line 153, in tickets
-    tickets = query.order_by(TicketLine.FechaCaducidad.asc()).paginate(page=page, per_page=per_page)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask_sqlalchemy\query.py", line 98, in paginate
     return QueryPagination(
            ^^^^^^^^^^^^^^^^
@@ -114,8 +112,11 @@ sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1066, "Not uniq
 FROM dat_ticket_cabecera INNER JOIN dat_ticket_linea ON dat_ticket_cabecera.`IdTicket` = dat_ticket_linea.`IdTicket` LEFT OUTER JOIN dat_ticket_linea ON dat_ticket_cabecera.`IdTicket` = dat_ticket_linea.`IdTicket` 
 WHERE dat_ticket_linea.`FechaCaducidad` IS NOT NULL AND dat_ticket_linea.`FechaCaducidad` <= %(FechaCaducidad_1)s AND dat_ticket_linea.`FechaCaducidad` >= %(FechaCaducidad_2)s ORDER BY dat_ticket_linea.`FechaCaducidad` ASC 
  LIMIT %(param_1)s, %(param_2)s]
-[parameters: {'FechaCaducidad_1': datetime.datetime(2025, 5, 15, 12, 22, 49, 731019), 'FechaCaducidad_2': datetime.datetime(2025, 5, 8, 12, 22, 49, 731019), 'param_1': 0, 'param_2': 20}]
+[parameters: {'FechaCaducidad_1': datetime.datetime(2025, 5, 15, 12, 28, 21, 147953), 'FechaCaducidad_2': datetime.datetime(2025, 5, 8, 12, 28, 21, 147953), 'param_1': 0, 'param_2': 20}]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
-2025-05-08 12:22:49,836 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:22:49] "[35m[1mGET /warehouse/tickets?status=expiring HTTP/1.1[0m" 500 -
-2025-05-08 12:22:49,948 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:22:49] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 12:22:49,955 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:22:49] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 12:28:21,272 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:28:21] "[35m[1mGET /warehouse/tickets?status=expiring HTTP/1.1[0m" 500 -
+2025-05-08 12:28:21,384 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:28:21] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 12:28:21,396 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:28:21] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 12:28:28,923 - __main__ - INFO - Starting DBLogiX application
+2025-05-08 12:28:30,513 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
+2025-05-08 12:28:31,259 - app - INFO - DBLogiX startup

@@ -20,6 +20,20 @@
 {% endblock %}
 
 {% block content %}
+{% if expiring_soon %}
+<div class="alert alert-warning mb-4">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    <strong>Attenzione!</strong> Questo ticket contiene prodotti con scadenza entro 2 giorni.
+</div>
+{% endif %}
+
+{% if expired %}
+<div class="alert alert-danger mb-4">
+    <i class="fas fa-exclamation-circle me-2"></i>
+    <strong>Attenzione!</strong> Questo ticket contiene prodotti già scaduti.
+</div>
+{% endif %}
+
 <div class="row">
     <div class="col-md-6">
         <div class="card mb-4">
@@ -88,8 +102,8 @@
                         {% set product_id = lines[0].IdArticulo if lines else 0 %}
                         {% set product_weight = ((lines[0].Peso|float) * 1000)|int if lines else 0 %}
                         {% set weight_str = '%05d' % product_weight %}
-                        {% set now = now|default(current_time()) %}
-                        {% set timestamp = now.strftime('%d%m%Y%H%M%S') %}
+                        {% set now_datetime = now() %}
+                        {% set timestamp = now_datetime.strftime('%d%m%Y%H%M%S') %}
                         {% set ticket_num_str = '%04d' % ticket.NumTicket %}
                         {% set product_id_str = '%04d' % product_id %}
                         {% set qr_data = ticket_num_str + product_id_str + weight_str + timestamp %}
@@ -123,6 +137,7 @@
                         <th>Prodotto</th>
                         <th>Descrizione</th>
                         <th>Peso</th>
+                        <th>Scadenza</th>
                         <th>Azioni</th>
                     </tr>
                 </thead>
@@ -133,6 +148,25 @@
                         <td>{{ line.IdArticulo }}</td>
                         <td>{{ line.Descripcion }}</td>
                         <td>{{ line.Peso|weight }}</td>
+                        <td>
+                            {% if line.FechaCaducidad is defined and line.FechaCaducidad %}
+                                {% set exp_date = line.FechaCaducidad %}
+                                {% set today = now() %}
+                                {% set days_to_expire = (exp_date - today).days %}
+                                
+                                {% if days_to_expire <= 2 and days_to_expire >= 0 %}
+                                    <span class="badge bg-danger">{{ exp_date.strftime('%d/%m/%Y') }}</span>
+                                {% elif days_to_expire <= 7 and days_to_expire > 2 %}
+                                    <span class="badge bg-warning">{{ exp_date.strftime('%d/%m/%Y') }}</span>
+                                {% elif days_to_expire < 0 %}
+                                    <span class="badge bg-dark">Scaduto</span>
+                                {% else %}
+                                    {{ exp_date.strftime('%d/%m/%Y') }}
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Non disponibile</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if line.IdArticulo %}
                             <a href="{{ url_for('warehouse.product_detail', product_id=line.IdArticulo) }}" 

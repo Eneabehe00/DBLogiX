@@ -3,9 +3,12 @@ from flask_login import login_required, current_user
 from models import db, Product, TicketHeader, TicketLine, ScanLog
 from forms import SearchForm, FilterForm, ManualScanForm
 from sqlalchemy import func, or_, select
+from datetime import datetime, timedelta
 import re
+import logging
 
 warehouse_bp = Blueprint('warehouse', __name__)
+logger = logging.getLogger(__name__)
 
 @warehouse_bp.route('/')
 @warehouse_bp.route('/index')
@@ -130,14 +133,131 @@ def tickets():
         query = query.filter_by(Enviado=0)
     elif status == 'processed':
         query = query.filter_by(Enviado=1)
+    elif status == 'expiring':
+        # For expiration filter, we need to join with TicketLine to get FechaCaducidad
+        today = datetime.now()
+        seven_days_from_now = today + timedelta(days=7)
+        
+        try:
+            # Alternativa più sicura per verificare se esiste già un join
+            # Ricostruiamo la query da zero per assicurarci che sia corretta
+            base_query = TicketHeader.query
+            
+            # Applica le condizioni di ricerca se presenti
+            if request.args.get('query'):
+                search_term = f"%{request.args.get('query')}%"
+                base_query = base_query.filter(or_(
+                    TicketHeader.NumTicket.like(search_term),
+                    TicketHeader.CodigoBarras.like(search_term)
+                ))
+            
+            # Join con TicketLine e applicazione dei filtri di scadenza
+            query = base_query.join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)
+            query = query.filter(
+                TicketLine.FechaCaducidad.isnot(None),
+                TicketLine.FechaCaducidad <= seven_days_from_now,
+                TicketLine.FechaCaducidad >= today
+            )
+            
+            # Distinct per evitare duplicati
+            query = query.distinct()
+            
+            # Esegui subito la query paginata con l'ordinamento per scadenza
+            tickets = query.order_by(TicketLine.FechaCaducidad.asc()).paginate(page=page, per_page=per_page)
+            
+            # Bypass dell'esecuzione normale della query sotto
+            skip_normal_query_execution = True
+        except Exception as e:
+            # Fallback in caso di errore
+            logger.error(f"Errore nella query expiring: {str(e)}")
+            # Se fallisce, torna ai ticket pendenti
+            query = TicketHeader.query.filter_by(Enviado=0)
+            skip_normal_query_execution = False
+    else:
+        skip_normal_query_execution = False
     
-    # Execute paginated query
-    tickets = query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
+    # Execute paginated query with proper ordering
+    if status == 'expiring' and skip_normal_query_execution:
+        # La query è già stata eseguita sopra
+        pass
+    elif status == 'expiring':
+        # Se siamo qui, c'è stato un fallback dall'errore, usa comunque la data di ordinamento
+        tickets = query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
+    else:
+        # Default ordering by date
+        tickets = query.order_by(TicketHeader.Fecha.desc()).paginate(page=page, per_page=per_page)
+    
+    # Count tickets expiring soon (within 2 days)
+    two_days_from_now = datetime.now() + timedelta(days=2)
+    
+    # Count tickets with products expiring within 7 days
+    expiring_count = db.session.query(TicketHeader.IdTicket).distinct()\
+        .join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)\
+        .filter(TicketLine.FechaCaducidad.isnot(None))\
+        .filter(TicketLine.FechaCaducidad <= (datetime.now() + timedelta(days=7)))\
+        .count()
+    
+    # Get product information and expiration dates for each ticket
+    ticket_products = {}
+    for ticket in tickets.items:
+        # Per ogni ticket, estraiamo l'ID articolo direttamente dal codice a barre
+        product_id = None
+        product_name = "Prodotto sconosciuto"
+        expiration_date = None
+        
+        # Estrai l'ID articolo dal codice a barre (posizioni 4-8)
+        if ticket.CodigoBarras and len(ticket.CodigoBarras) >= 8:
+            try:
+                # Il formato del QR è: NumTicket(4)-IdArticolo(4)-Peso(5)-Timestamp(14)
+                product_id = int(ticket.CodigoBarras[4:8])
+                logger.info(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}): trovato ID articolo {product_id} dal QR")
+            except (ValueError, IndexError):
+                logger.warning(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}): impossibile estrarre ID articolo dal QR: {ticket.CodigoBarras}")
+                product_id = None
+        
+        # Ottieni le linee del ticket
+        ticket_lines = TicketLine.query.filter_by(IdTicket=ticket.IdTicket).all()
+        
+        # Se non abbiamo trovato l'ID dal QR ma abbiamo delle linee, prova ad usare la prima linea
+        if product_id is None and ticket_lines:
+            product_id = ticket_lines[0].IdArticulo
+            logger.info(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}): usando ID articolo {product_id} dalla prima linea")
+        
+        # Cerca il prodotto nel database usando l'ID articolo trovato
+        if product_id:
+            product = Product.query.filter_by(IdArticulo=product_id).first()
+            if product:
+                product_name = product.Descripcion
+                logger.info(f"Ticket #{ticket.NumTicket}: trovato prodotto '{product_name}' (ID: {product_id})")
+            else:
+                product_name = f"Prodotto #{product_id}"
+                logger.warning(f"Ticket #{ticket.NumTicket}: prodotto con ID {product_id} non trovato nel database")
+        
+        # Cerca la data di scadenza nelle linee del ticket
+        if ticket_lines and product_id:
+            # Prima cerca una linea con lo stesso ID prodotto
+            matching_line = next((line for line in ticket_lines if line.IdArticulo == product_id), None)
+            
+            if matching_line and matching_line.FechaCaducidad:
+                expiration_date = matching_line.FechaCaducidad
+                logger.info(f"Ticket #{ticket.NumTicket}: trovata data scadenza {expiration_date} per prodotto ID {product_id}")
+            elif ticket_lines[0].FechaCaducidad:
+                # Se non troviamo una linea corrispondente, usa la prima linea
+                expiration_date = ticket_lines[0].FechaCaducidad
+                logger.info(f"Ticket #{ticket.NumTicket}: usando data scadenza {expiration_date} dalla prima linea")
+        
+        ticket_products[ticket.IdTicket] = {
+            'product_name': product_name,
+            'product_id': product_id,
+            'expiration_date': expiration_date
+        }
     
     return render_template('warehouse/tickets.html', 
                           tickets=tickets,
+                          ticket_products=ticket_products,
                           search_form=search_form,
-                          current_status=status)
+                          current_status=status,
+                          expiring_count=expiring_count)
 
 @warehouse_bp.route('/ticket/<int:ticket_id>')
 @login_required
@@ -147,6 +267,19 @@ def ticket_detail(ticket_id):
     
     # Get all lines for this ticket
     lines = TicketLine.query.filter_by(IdTicket=ticket_id).all()
+    
+    # Check for soon-to-expire products
+    today = datetime.now()
+    expiring_soon = False
+    expired = False
+    
+    for line in lines:
+        if line.FechaCaducidad:
+            days_to_expire = (line.FechaCaducidad - today).days
+            if days_to_expire <= 2 and days_to_expire >= 0:
+                expiring_soon = True
+            elif days_to_expire < 0:
+                expired = True
     
     # Log this view
     log = ScanLog(
@@ -159,7 +292,9 @@ def ticket_detail(ticket_id):
     
     return render_template('warehouse/ticket_detail.html', 
                           ticket=ticket,
-                          lines=lines)
+                          lines=lines,
+                          expiring_soon=expiring_soon,
+                          expired=expired)
 
 @warehouse_bp.route('/ticket/<int:ticket_id>/checkout', methods=['POST'])
 @login_required
@@ -197,7 +332,7 @@ def scanner():
     if form.validate_on_submit():
         ticket_code = form.ticket_id.data.strip()
         
-        # Check for QR code format: NumTicket(4)-IdArticulo(4)-Peso(5)-Timestamp(14)
+        # Check for QR code format: NumTicket(4)-IdArticolo(4)-Peso(5)-Timestamp(14)
         if ticket_code.isdigit() and len(ticket_code) == 27:
             # Parse the QR components
             ticket_num = int(ticket_code[:4])           # First 4 digits = NumTicket
@@ -205,19 +340,48 @@ def scanner():
             weight = int(ticket_code[8:13]) / 1000.0    # Next 5 digits = Peso (in grams, convert to kg)
             
             # Parse timestamp - format: DDMMYYYYHHMMSS
-            timestamp = ticket_code[13:27]
-            day = timestamp[0:2]
-            month = timestamp[2:4]
-            year = timestamp[4:8]
-            hour = timestamp[8:10]
-            minute = timestamp[10:12]
-            second = timestamp[12:14]
+            timestamp_str = ticket_code[13:27]
+            day = timestamp_str[0:2]
+            month = timestamp_str[2:4]
+            year = timestamp_str[4:8]
+            hour = timestamp_str[8:10]
+            minute = timestamp_str[10:12]
+            second = timestamp_str[12:14]
             
             formatted_date = f"{day}/{month}/{year}"
             formatted_time = f"{hour}:{minute}:{second}"
             
-            # Find the ticket
-            ticket = TicketHeader.query.filter_by(NumTicket=ticket_num).first()
+            # Convert timestamp to datetime object (for comparison)
+            try:
+                timestamp_dt = datetime.strptime(timestamp_str, "%d%m%Y%H%M%S")
+            except ValueError:
+                timestamp_dt = None
+            
+            # Find tickets with matching NumTicket
+            tickets = TicketHeader.query.filter_by(NumTicket=ticket_num).all()
+            
+            # If there are multiple tickets with the same NumTicket, try to find the one closest to the timestamp
+            matching_ticket = None
+            if tickets:
+                if len(tickets) == 1:
+                    # If there's only one ticket, use it
+                    matching_ticket = tickets[0]
+                elif timestamp_dt:
+                    # Find the ticket with date closest to the timestamp in QR code
+                    min_diff = None
+                    for t in tickets:
+                        if t.Fecha:  # Make sure ticket has a date
+                            diff = abs((t.Fecha - timestamp_dt).total_seconds())
+                            if min_diff is None or diff < min_diff:
+                                min_diff = diff
+                                matching_ticket = t
+                    
+                    # If we still don't have a match, use the first one as fallback
+                    if not matching_ticket:
+                        matching_ticket = tickets[0]
+                else:
+                    # If no timestamp, use the first ticket as fallback
+                    matching_ticket = tickets[0]
             
             # Find the product
             product = Product.query.filter_by(IdArticulo=product_id).first()
@@ -225,7 +389,7 @@ def scanner():
             # Log the scan in scan_log table
             log = ScanLog(
                 user_id=current_user.id,
-                ticket_id=ticket.IdTicket if ticket else None,
+                ticket_id=matching_ticket.IdTicket if matching_ticket else None,
                 action='scan',
                 raw_code=ticket_code,
                 product_code=product_id,
@@ -235,9 +399,27 @@ def scanner():
             db.session.add(log)
             db.session.commit()
             
-            if ticket:
-                flash(f'QR Code elaborato: Ticket #{ticket_num}, Prodotto #{product_id}, Peso: {weight:.3f}kg', 'success')
-                return redirect(url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket))
+            if matching_ticket:
+                # Check if this product is in the ticket
+                ticket_line = TicketLine.query.filter_by(
+                    IdTicket=matching_ticket.IdTicket,
+                    IdArticulo=product_id
+                ).first()
+                
+                # Check for expiration date
+                expiration_msg = ""
+                if ticket_line and ticket_line.FechaCaducidad:
+                    today = datetime.now()
+                    days_to_expire = (ticket_line.FechaCaducidad - today).days
+                    
+                    if days_to_expire <= 2 and days_to_expire >= 0:
+                        expiration_msg = f" - ATTENZIONE: Prodotto in scadenza tra {days_to_expire} giorni!"
+                    elif days_to_expire < 0:
+                        expiration_msg = f" - ATTENZIONE: Prodotto SCADUTO da {abs(days_to_expire)} giorni!"
+                
+                flash(f'QR Code elaborato: Ticket #{ticket_num}, Prodotto #{product_id}, Peso: {weight:.3f}kg{expiration_msg}', 
+                      'warning' if expiration_msg else 'success')
+                return redirect(url_for('warehouse.ticket_detail', ticket_id=matching_ticket.IdTicket))
             else:
                 flash(f'Ticket {ticket_num} non trovato.', 'danger')
         else:
@@ -313,29 +495,59 @@ def process_qr():
     
     qr_data = data['qr_data'].strip()
     
-    # New QR code format: NumTicket(4)-IdArticulo(4)-Peso(5)-Timestamp(14)
+    # Check for QR code format: NumTicket(4)-IdArticolo(4)-Peso(5)-Timestamp(14)
     # Example: 001000220000108052025093508 (27 characters)
     if qr_data.isdigit() and len(qr_data) == 27:
         try:
             # Parse the QR components
             ticket_num = int(qr_data[:4])           # First 4 digits = NumTicket
-            product_id = int(qr_data[4:8])          # Next 4 digits = IdArticulo
+            product_id = int(qr_data[4:8])          # Next 4 digits = IdArticolo
             weight = int(qr_data[8:13]) / 1000.0    # Next 5 digits = Peso (in grams, convert to kg)
             
             # Parse timestamp - format: DDMMYYYYHHMMSS
-            timestamp = qr_data[13:27]
-            day = timestamp[0:2]
-            month = timestamp[2:4]
-            year = timestamp[4:8]
-            hour = timestamp[8:10]
-            minute = timestamp[10:12]
-            second = timestamp[12:14]
+            timestamp_str = qr_data[13:27]
+            day = timestamp_str[0:2]
+            month = timestamp_str[2:4]
+            year = timestamp_str[4:8]
+            hour = timestamp_str[8:10]
+            minute = timestamp_str[10:12]
+            second = timestamp_str[12:14]
             
             formatted_date = f"{day}/{month}/{year}"
             formatted_time = f"{hour}:{minute}:{second}"
             
-            # Find the ticket
-            ticket = TicketHeader.query.filter_by(NumTicket=ticket_num).first()
+            # Convert timestamp to datetime object (for comparison)
+            try:
+                timestamp_dt = datetime.strptime(timestamp_str, "%d%m%Y%H%M%S")
+            except ValueError:
+                # If timestamp can't be parsed, just log it but continue
+                timestamp_dt = None
+            
+            # Find tickets with matching NumTicket
+            tickets = TicketHeader.query.filter_by(NumTicket=ticket_num).all()
+            
+            # If there are multiple tickets with the same NumTicket, try to find the one closest to the timestamp
+            matching_ticket = None
+            if tickets:
+                if len(tickets) == 1:
+                    # If there's only one ticket, use it
+                    matching_ticket = tickets[0]
+                elif timestamp_dt:
+                    # Find the ticket with date closest to the timestamp in QR code
+                    min_diff = None
+                    for t in tickets:
+                        if t.Fecha:  # Make sure ticket has a date
+                            diff = abs((t.Fecha - timestamp_dt).total_seconds())
+                            if min_diff is None or diff < min_diff:
+                                min_diff = diff
+                                matching_ticket = t
+                    
+                    # If we still don't have a match, use the first one as fallback
+                    if not matching_ticket:
+                        matching_ticket = tickets[0]
+                else:
+                    # If no timestamp, use the first ticket as fallback
+                    matching_ticket = tickets[0]
             
             # Find the product
             product = Product.query.filter_by(IdArticulo=product_id).first()
@@ -343,7 +555,7 @@ def process_qr():
             # Log the scan in scan_log table
             log = ScanLog(
                 user_id=current_user.id,
-                ticket_id=ticket.IdTicket if ticket else None,
+                ticket_id=matching_ticket.IdTicket if matching_ticket else None,
                 action='scan',
                 raw_code=qr_data,
                 product_code=product_id,
@@ -354,28 +566,50 @@ def process_qr():
             db.session.commit()
             
             # If both ticket and product exist
-            if ticket and product:
+            if matching_ticket and product:
                 # Check if this product is in the ticket
                 ticket_line = TicketLine.query.filter_by(
-                    IdTicket=ticket.IdTicket,
+                    IdTicket=matching_ticket.IdTicket,
                     IdArticulo=product_id
                 ).first()
                 
-                # If ticket_line exists, update the weight if needed
+                # If ticket_line exists, proceed
                 if ticket_line:
+                    # Check expiration date
+                    expiration_info = None
+                    expiring_soon = False
+                    expired = False
+                    
+                    if ticket_line.FechaCaducidad:
+                        today = datetime.now()
+                        days_to_expire = (ticket_line.FechaCaducidad - today).days
+                        
+                        if days_to_expire <= 2 and days_to_expire >= 0:
+                            expiring_soon = True
+                        elif days_to_expire < 0:
+                            expired = True
+                            
+                        expiration_info = {
+                            'date': ticket_line.FechaCaducidad.strftime('%d/%m/%Y'),
+                            'days_remaining': days_to_expire,
+                            'expiring_soon': expiring_soon,
+                            'expired': expired
+                        }
+                    
                     return jsonify({
                         'success': True,
-                        'ticket_id': ticket.IdTicket,
-                        'ticket_number': ticket.NumTicket,
-                        'ticket_date': ticket.formatted_date,
+                        'ticket_id': matching_ticket.IdTicket,
+                        'ticket_number': matching_ticket.NumTicket,
+                        'ticket_date': matching_ticket.formatted_date,
                         'scan_date': f"{formatted_date} {formatted_time}",
-                        'is_processed': ticket.is_processed,
+                        'is_processed': matching_ticket.is_processed,
                         'product': {
                             'id': product.IdArticulo,
                             'name': product.Descripcion,
                             'code': product.IdArticulo,
                             'weight': float(weight)
                         },
+                        'expiration': expiration_info,
                         'scan_log_id': log.id
                     })
                 else:
@@ -389,17 +623,17 @@ def process_qr():
                     })
             
             # If ticket exists but product doesn't
-            elif ticket and not product:
+            elif matching_ticket and not product:
                 return jsonify({
                     'success': False,
                     'message': f'Product {product_id} not found',
-                    'ticket_id': ticket.IdTicket,
-                    'ticket_number': ticket.NumTicket,
+                    'ticket_id': matching_ticket.IdTicket,
+                    'ticket_number': matching_ticket.NumTicket,
                     'scan_log_id': log.id
                 })
             
             # If product exists but ticket doesn't
-            elif not ticket and product:
+            elif not matching_ticket and product:
                 return jsonify({
                     'success': False,
                     'message': f'Ticket {ticket_num} not found',

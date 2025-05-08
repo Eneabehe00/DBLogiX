@@ -4,6 +4,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import sys
+from datetime import datetime
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -92,7 +93,11 @@ def create_app():
         
         @app.context_processor
         def utility_processor():
-            return {'current_time': current_time}
+            from datetime import datetime
+            return {
+                'current_time': current_time,
+                'now': lambda: datetime.now()
+            }
         
         # Error handlers
         @app.errorhandler(404)
@@ -108,15 +113,27 @@ def create_app():
         if not app.debug and not os.environ.get('FLASK_DEBUG'):
             if not os.path.exists('logs'):
                 os.mkdir('logs')
-            file_handler = RotatingFileHandler('logs/dblogix.log', maxBytes=10240, backupCount=5)
-            file_handler.setFormatter(logging.Formatter(
-                '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-            ))
-            file_handler.setLevel(logging.INFO)
-            app.logger.addHandler(file_handler)
-            
-            app.logger.setLevel(logging.INFO)
-            app.logger.info('DBLogiX startup')
+            try:
+                file_handler = RotatingFileHandler('logs/dblogix.log', maxBytes=10240, backupCount=5, delay=True)
+                file_handler.setFormatter(logging.Formatter(
+                    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+                ))
+                file_handler.setLevel(logging.INFO)
+                app.logger.addHandler(file_handler)
+                
+                app.logger.setLevel(logging.INFO)
+                app.logger.info('DBLogiX startup')
+            except Exception as e:
+                print(f"Warning: Could not set up file logging: {str(e)}")
+                # Fall back to console logging
+                console_handler = logging.StreamHandler()
+                console_handler.setFormatter(logging.Formatter(
+                    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+                ))
+                console_handler.setLevel(logging.INFO)
+                app.logger.addHandler(console_handler)
+                app.logger.setLevel(logging.INFO)
+                app.logger.info('DBLogiX startup (console logging only)')
             
     except Exception as e:
         logger.error(f"Error initializing application: {str(e)}")

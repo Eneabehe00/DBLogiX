@@ -45,6 +45,12 @@
                     <a href="{{ url_for('warehouse.tickets', status='processed') }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
                         <i class="fas fa-check-circle me-1"></i> Processati
                     </a>
+                    <a href="{{ url_for('warehouse.tickets', status='expiring') }}" class="btn btn-outline-danger {% if current_status == 'expiring' %}active{% endif %}">
+                        <i class="fas fa-exclamation-circle me-1"></i> Scadenza
+                        {% if expiring_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
+                        {% endif %}
+                    </a>
                 </div>
             </div>
         </div>
@@ -69,6 +75,8 @@
                 <span class="text-warning">Pendenti</span>
                 {% elif current_status == 'processed' %}
                 <span class="text-success">Processati</span>
+                {% elif current_status == 'expiring' %}
+                <span class="text-danger">In Scadenza</span>
                 {% endif %}
                 <a href="{{ url_for('warehouse.tickets', query=request.args.get('query')) }}" class="close">
                     <i class="fas fa-times"></i>
@@ -101,6 +109,8 @@
             <span class="badge bg-warning ms-2">Pendenti</span>
             {% elif current_status == 'processed' %}
             <span class="badge bg-success ms-2">Processati</span>
+            {% elif current_status == 'expiring' %}
+            <span class="badge bg-danger ms-2">In Scadenza</span>
             {% endif %}
         </div>
         
@@ -114,13 +124,15 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th width="8%">ID</th>
-                    <th width="12%">Numero</th>
-                    <th width="15%">Data</th>
-                    <th width="30%">Codice</th>
-                    <th width="10%">Linee</th>
-                    <th width="15%">Stato</th>
-                    <th width="10%" class="text-end">Azioni</th>
+                    <th width="5%">ID</th>
+                    <th width="8%">Numero</th>
+                    <th width="12%">Data</th>
+                    <th width="20%">Prodotto</th>
+                    <th width="12%">Scadenza</th>
+                    <th width="20%">Codice</th>
+                    <th width="8%">Linee</th>
+                    <th width="8%">Stato</th>
+                    <th width="7%" class="text-end">Azioni</th>
                 </tr>
             </thead>
             <tbody>
@@ -129,6 +141,41 @@
                     <td>{{ ticket.IdTicket }}</td>
                     <td>#{{ ticket.NumTicket }}</td>
                     <td>{{ ticket.formatted_date }}</td>
+                    <td class="text-truncate" style="max-width: 150px;">
+                        {% if ticket.IdTicket in ticket_products %}
+                        <div>
+                            <strong>{{ ticket_products[ticket.IdTicket]['product_name'] }}</strong> 
+                            {% if ticket_products[ticket.IdTicket]['product_id'] %}
+                            <div class="text-muted small">
+                                ID: <strong>{{ ticket_products[ticket.IdTicket]['product_id'] }}</strong>
+                                <br>
+                                QR: <span class="text-primary">{{ ticket.CodigoBarras[0:8] if ticket.CodigoBarras and ticket.CodigoBarras|length >= 8 else '-' }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if ticket.IdTicket in ticket_products and ticket_products[ticket.IdTicket]['expiration_date'] %}
+                            {% set exp_date = ticket_products[ticket.IdTicket]['expiration_date'] %}
+                            {% set today = now() %}
+                            {% set days_to_expire = (exp_date - today).days %}
+                            
+                            {% if days_to_expire <= 2 and days_to_expire >= 0 %}
+                                <span class="badge bg-danger">{{ exp_date.strftime('%d/%m/%Y') }}</span>
+                            {% elif days_to_expire <= 7 and days_to_expire > 2 %}
+                                <span class="badge bg-warning">{{ exp_date.strftime('%d/%m/%Y') }}</span>
+                            {% elif days_to_expire < 0 %}
+                                <span class="badge bg-dark">Scaduto</span>
+                            {% else %}
+                                {{ exp_date.strftime('%d/%m/%Y') }}
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">Non disponibile</span>
+                        {% endif %}
+                    </td>
                     <td class="text-truncate" style="max-width: 150px;">{{ ticket.CodigoBarras or '-' }}</td>
                     <td>{{ ticket.NumLineas or 0 }}</td>
                     <td>

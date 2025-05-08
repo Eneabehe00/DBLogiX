@@ -1,83 +1,67 @@
-2025-05-08 10:18:42,008 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 10:18:42,780 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 10:18:42,980 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:119]
-2025-05-08 10:18:42,980 - app - INFO - DBLogiX startup
-2025-05-08 10:18:43,081 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 10:18:43,081 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 10:18:43,098 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.1.26:5000
-2025-05-08 10:18:43,100 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 10:18:47,235 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:47] "[33mGET / HTTP/1.1[0m" 404 -
-2025-05-08 10:18:47,464 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:47] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:18:47,535 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:18:51,503 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:51] "GET /warehouse/index HTTP/1.1" 200 -
-2025-05-08 10:18:51,607 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:51] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:18:51,620 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:51] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:18:53,152 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:53] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 10:18:53,202 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:18:53,214 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:18:54,348 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:54] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 10:18:54,444 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:54] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:18:54,456 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:54] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:18:55,313 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:55] "GET /warehouse/scanner HTTP/1.1" 200 -
-2025-05-08 10:18:55,463 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:55] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:18:55,471 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:55] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:19:05,890 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:05] "POST /warehouse/process_qr HTTP/1.1" 200 -
-2025-05-08 10:19:30,138 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:30] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 10:19:30,236 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:19:30,242 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:30] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:19:35,168 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:35] "GET /warehouse/ticket/36708 HTTP/1.1" 200 -
-2025-05-08 10:19:35,216 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:35] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:19:35,226 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:35] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:21,170 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:21] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 10:20:21,275 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:21] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:21,282 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:21] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:24,579 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:24] "GET /warehouse/ticket/36709 HTTP/1.1" 200 -
-2025-05-08 10:20:24,645 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:24] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:24,655 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:24] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:30,100 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:30] "GET /warehouse/product/17 HTTP/1.1" 200 -
-2025-05-08 10:20:30,234 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:30,239 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:30] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:45,712 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:45] "GET /warehouse/ticket/36610 HTTP/1.1" 200 -
-2025-05-08 10:20:45,768 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:45] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:45,773 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:45] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:52,446 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:52] "GET /warehouse/product/17 HTTP/1.1" 200 -
-2025-05-08 10:20:52,578 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:52] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:52,583 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:52] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:57,082 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:57] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 10:20:57,125 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:57] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:57,136 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:57] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:20:59,291 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:59] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 10:20:59,444 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:59] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:20:59,451 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:59] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:18,841 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:18] "GET /warehouse/ticket/36709 HTTP/1.1" 200 -
-2025-05-08 10:21:18,930 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:18] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:21:18,935 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:18] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:27,199 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:27] "GET /warehouse/product/17 HTTP/1.1" 200 -
-2025-05-08 10:21:27,344 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:27] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:21:27,351 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:27] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:36,397 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:36] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 10:21:36,505 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:36] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:21:36,513 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:36] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:44,241 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:44] "GET /warehouse/products?page=2 HTTP/1.1" 200 -
-2025-05-08 10:21:44,341 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:44] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:21:44,343 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:44] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:47,369 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:47] "GET /warehouse/product/22 HTTP/1.1" 200 -
-2025-05-08 10:21:47,482 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:47] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:21:47,486 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:56,649 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:56] "GET /warehouse/scanner HTTP/1.1" 200 -
-2025-05-08 10:21:56,759 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:56] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:21:56,767 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:56] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:21:59,997 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:59] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 10:22:00,077 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:00] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:22:00,083 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:00] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:22:02,958 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:02] "GET /warehouse/scanner HTTP/1.1" 200 -
-2025-05-08 10:22:03,048 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:03] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:22:03,055 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:03] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:22:05,578 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "[32mPOST /warehouse/scanner HTTP/1.1[0m" 302 -
-2025-05-08 10:22:05,859 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "GET /warehouse/ticket/27697 HTTP/1.1" 200 -
-2025-05-08 10:22:05,906 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 10:22:05,912 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 10:22:27,702 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:27] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 12:29:19,609 - warehouse - INFO - Ticket #5: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:29:19,629 - warehouse - INFO - Ticket #4 (ID: 4): trovato ID articolo 1 dal QR
+2025-05-08 12:29:19,647 - warehouse - INFO - Ticket #4: trovato prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 12:29:19,651 - warehouse - INFO - Ticket #4: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:29:19,655 - warehouse - INFO - Ticket #3 (ID: 3): trovato ID articolo 22 dal QR
+2025-05-08 12:29:19,671 - warehouse - INFO - Ticket #3: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:29:19,671 - warehouse - INFO - Ticket #3: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:29:19,705 - warehouse - INFO - Ticket #2 (ID: 2): trovato ID articolo 22 dal QR
+2025-05-08 12:29:19,722 - warehouse - INFO - Ticket #2: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:29:19,722 - warehouse - INFO - Ticket #2: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:29:19,728 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
+2025-05-08 12:29:19,749 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
+2025-05-08 12:29:19,755 - warehouse - INFO - Ticket #1: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:29:19,768 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:19] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 12:29:19,938 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:19] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 12:29:19,961 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:19] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 12:29:57,994 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
+2025-05-08 12:29:58,008 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
+2025-05-08 12:29:58,011 - warehouse - INFO - Ticket #1: trovata data scadenza 2025-05-09 11:37:45 per prodotto ID 21
+2025-05-08 12:29:58,019 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:58] "GET /warehouse/tickets?status=expiring HTTP/1.1" 200 -
+2025-05-08 12:29:58,205 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:58] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 12:29:58,210 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:29:58] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 12:30:10,775 - warehouse - INFO - Ticket #6 (ID: 7): trovato ID articolo 5 dal QR
+2025-05-08 12:30:10,806 - warehouse - INFO - Ticket #6: trovato prodotto 'FRITTATINA NAPOLETANA DI PASTA ALLA GENOVESE' (ID: 5)
+2025-05-08 12:30:10,812 - warehouse - INFO - Ticket #6: trovata data scadenza 2025-05-18 12:23:57 per prodotto ID 5
+2025-05-08 12:30:10,815 - warehouse - INFO - Ticket #5 (ID: 6): trovato ID articolo 17 dal QR
+2025-05-08 12:30:10,837 - warehouse - INFO - Ticket #5: trovato prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-08 12:30:10,841 - warehouse - INFO - Ticket #5: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:30:10,849 - warehouse - INFO - Ticket #4 (ID: 4): trovato ID articolo 1 dal QR
+2025-05-08 12:30:10,869 - warehouse - INFO - Ticket #4: trovato prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 12:30:10,873 - warehouse - INFO - Ticket #4: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:30:10,877 - warehouse - INFO - Ticket #3 (ID: 3): trovato ID articolo 22 dal QR
+2025-05-08 12:30:10,897 - warehouse - INFO - Ticket #3: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:30:10,903 - warehouse - INFO - Ticket #3: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:30:10,909 - warehouse - INFO - Ticket #2 (ID: 2): trovato ID articolo 22 dal QR
+2025-05-08 12:30:10,926 - warehouse - INFO - Ticket #2: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:30:10,937 - warehouse - INFO - Ticket #2: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:30:10,940 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
+2025-05-08 12:30:10,974 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
+2025-05-08 12:30:10,977 - warehouse - INFO - Ticket #1: usando data scadenza 2025-05-18 12:23:57 dalla prima linea
+2025-05-08 12:30:10,997 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:30:10] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 12:30:11,232 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:30:11] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 12:30:11,246 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:30:11] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 12:32:05,569 - warehouse - INFO - Ticket #7 (ID: 8): trovato ID articolo 22 dal QR
+2025-05-08 12:32:05,588 - warehouse - INFO - Ticket #7: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:32:05,588 - warehouse - INFO - Ticket #7: trovata data scadenza 2025-05-28 12:32:04 per prodotto ID 22
+2025-05-08 12:32:05,591 - warehouse - INFO - Ticket #6 (ID: 7): trovato ID articolo 5 dal QR
+2025-05-08 12:32:05,600 - warehouse - INFO - Ticket #6: trovato prodotto 'FRITTATINA NAPOLETANA DI PASTA ALLA GENOVESE' (ID: 5)
+2025-05-08 12:32:05,600 - warehouse - INFO - Ticket #6: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
+2025-05-08 12:32:05,603 - warehouse - INFO - Ticket #5 (ID: 6): trovato ID articolo 17 dal QR
+2025-05-08 12:32:05,612 - warehouse - INFO - Ticket #5: trovato prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-08 12:32:05,615 - warehouse - INFO - Ticket #5: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
+2025-05-08 12:32:05,615 - warehouse - INFO - Ticket #4 (ID: 4): trovato ID articolo 1 dal QR
+2025-05-08 12:32:05,626 - warehouse - INFO - Ticket #4: trovato prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-08 12:32:05,626 - warehouse - INFO - Ticket #4: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
+2025-05-08 12:32:05,630 - warehouse - INFO - Ticket #3 (ID: 3): trovato ID articolo 22 dal QR
+2025-05-08 12:32:05,640 - warehouse - INFO - Ticket #3: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:32:05,641 - warehouse - INFO - Ticket #3: trovata data scadenza 2025-05-28 12:32:04 per prodotto ID 22
+2025-05-08 12:32:05,641 - warehouse - INFO - Ticket #2 (ID: 2): trovato ID articolo 22 dal QR
+2025-05-08 12:32:05,649 - warehouse - INFO - Ticket #2: trovato prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-08 12:32:05,653 - warehouse - INFO - Ticket #2: trovata data scadenza 2025-05-28 12:32:04 per prodotto ID 22
+2025-05-08 12:32:05,655 - warehouse - INFO - Ticket #1 (ID: 1): trovato ID articolo 21 dal QR
+2025-05-08 12:32:05,661 - warehouse - INFO - Ticket #1: trovato prodotto 'CREMA DI FRIARIELLI' (ID: 21)
+2025-05-08 12:32:05,661 - warehouse - INFO - Ticket #1: usando data scadenza 2025-05-28 12:32:04 dalla prima linea
+2025-05-08 12:32:05,676 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:32:05] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 12:32:05,761 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:32:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 12:32:05,765 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 12:32:05] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -

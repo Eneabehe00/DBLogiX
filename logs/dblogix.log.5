@@ -1,90 +1,124 @@
-2025-05-08 15:16:16,849 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 15:16:17,422 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 15:16:17,612 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:125]
-2025-05-08 15:16:17,612 - app - INFO - DBLogiX startup
-2025-05-08 15:16:17,693 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 15:16:17,693 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 15:16:17,707 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.1.26:5000
-2025-05-08 15:16:17,708 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 15:16:20,129 - warehouse - ERROR - Errore grave nella query ticket: (pymysql.err.OperationalError) (1066, "Not unique table/alias: 'dat_ticket_linea'")
-[SQL: SELECT DISTINCT dat_ticket_cabecera.`IdTicket` AS `dat_ticket_cabecera_IdTicket`, dat_ticket_cabecera.`NumTicket` AS `dat_ticket_cabecera_NumTicket`, dat_ticket_cabecera.`Fecha` AS `dat_ticket_cabecera_Fecha`, dat_ticket_cabecera.`CodigoBarras` AS `dat_ticket_cabecera_CodigoBarras`, dat_ticket_cabecera.`NumLineas` AS `dat_ticket_cabecera_NumLineas`, dat_ticket_cabecera.`Enviado` AS `dat_ticket_cabecera_Enviado` 
-FROM dat_ticket_cabecera INNER JOIN dat_ticket_linea ON dat_ticket_cabecera.`IdTicket` = dat_ticket_linea.`IdTicket` LEFT OUTER JOIN dat_ticket_linea ON dat_ticket_cabecera.`IdTicket` = dat_ticket_linea.`IdTicket` 
-WHERE dat_ticket_linea.`FechaCaducidad` IS NOT NULL AND dat_ticket_linea.`FechaCaducidad` <= %(FechaCaducidad_1)s AND dat_ticket_linea.`FechaCaducidad` >= %(FechaCaducidad_2)s ORDER BY dat_ticket_linea.`FechaCaducidad` ASC 
- LIMIT %(param_1)s, %(param_2)s]
-[parameters: {'FechaCaducidad_1': datetime.datetime(2025, 5, 10, 15, 16, 20, 129167), 'FechaCaducidad_2': datetime.datetime(2025, 5, 8, 15, 16, 20, 129167), 'param_1': 0, 'param_2': 20}]
+2025-05-08 15:39:27,967 - app - ERROR - Exception on /warehouse/client/new [POST]
+Traceback (most recent call last):
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\cursors.py", line 153, in execute
+    result = self._query(query)
+             ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\cursors.py", line 322, in _query
+    conn.query(q)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 558, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 822, in _read_query_result
+    result.read()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 1200, in read
+    first_packet = self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 772, in _read_packet
+    packet.raise_for_error()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1364, "Field 'IdCliente' doesn't have a default value")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\Desktop\WA\DB-LogiX\warehouse.py", line 863, in client_new
+    # Save photo data
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\scoping.py", line 598, in commit
+    return self._proxied.commit()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 1969, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 1256, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 1231, in _prepare_impl
+    self.session.flush()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 4312, in flush
+    self._flush(objects)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 4447, in _flush
+    with util.safe_reraise():
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 4408, in _flush
+    flush_context.execute()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\persistence.py", line 1226, in _emit_insert_statements
+    result = connection.execute(
+             ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 516, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1639, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2343, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\cursors.py", line 153, in execute
+    result = self._query(query)
+             ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\cursors.py", line 322, in _query
+    conn.query(q)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 558, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 822, in _read_query_result
+    result.read()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 1200, in read
+    first_packet = self.connection._read_packet()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\connections.py", line 772, in _read_packet
+    packet.raise_for_error()
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\protocol.py", line 221, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "C:\Users\eneab\AppData\Local\Programs\Python\Python311\Lib\site-packages\pymysql\err.py", line 143, in raise_mysql_exception
+    raise errorclass(errno, errval)
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1364, "Field 'IdCliente' doesn't have a default value")
+[SQL: INSERT INTO dat_cliente (`IdEmpresa`, `Nombre`, `Direccion`, `CodPostal`, `Poblacion`, `Provincia`, `Pais`, `DNI`, `Telefono1`, `Telefono2`, `Telefono3`, `Email`, `TipoEmailTicket`, `TipoEmailAlbaran`, `TipoEmailFactura`, `Foto`, `IdTarifa`, `Ofertas`, `IdFormaPago`, `IdEstado`, `Observaciones`, `CodInterno`, `Descuento`, `PuntosFidelidad`, `CuentaPendiente`, `EANScanner`, `FormatoAlbaran`, `UsarRecargoEquivalencia`, `DtoProntoPago`, `NombreBanco`, `CodigoCuenta`, `NumeroVencimientos`, `DiasEntreVencimientos`, `TotalPorArticulo`, `AplicarTarifaEtiqueta`, `FormatoFactura`, `ModoFacturacion`, `Modificado`, `Operacion`, `Usuario`, `TimeStamp`) VALUES (%(IdEmpresa)s, %(Nombre)s, %(Direccion)s, %(CodPostal)s, %(Poblacion)s, %(Provincia)s, %(Pais)s, %(DNI)s, %(Telefono1)s, %(Telefono2)s, %(Telefono3)s, %(Email)s, %(TipoEmailTicket)s, %(TipoEmailAlbaran)s, %(TipoEmailFactura)s, %(Foto)s, %(IdTarifa)s, %(Ofertas)s, %(IdFormaPago)s, %(IdEstado)s, %(Observaciones)s, %(CodInterno)s, %(Descuento)s, %(PuntosFidelidad)s, %(CuentaPendiente)s, %(EANScanner)s, %(FormatoAlbaran)s, %(UsarRecargoEquivalencia)s, %(DtoProntoPago)s, %(NombreBanco)s, %(CodigoCuenta)s, %(NumeroVencimientos)s, %(DiasEntreVencimientos)s, %(TotalPorArticulo)s, %(AplicarTarifaEtiqueta)s, %(FormatoFactura)s, %(ModoFacturacion)s, %(Modificado)s, %(Operacion)s, %(Usuario)s, %(TimeStamp)s)]
+[parameters: {'IdEmpresa': None, 'Nombre': 'enea behe', 'Direccion': 'Via Gaspare Spontini, 6, ', 'CodPostal': '10154', 'Poblacion': 'Torino', 'Provincia': 'TO', 'Pais': 'Italia', 'DNI': '', 'Telefono1': '3200891972', 'Telefono2': '', 'Telefono3': '', 'Email': 'enea.behe@gmail.com', 'TipoEmailTicket': 0, 'TipoEmailAlbaran': 0, 'TipoEmailFactura': 0, 'Foto': None, 'IdTarifa': None, 'Ofertas': 0, 'IdFormaPago': None, 'IdEstado': None, 'Observaciones': '', 'CodInterno': '', 'Descuento': None, 'PuntosFidelidad': None, 'CuentaPendiente': None, 'EANScanner': '', 'FormatoAlbaran': '', 'UsarRecargoEquivalencia': 0, 'DtoProntoPago': None, 'NombreBanco': '', 'CodigoCuenta': '', 'NumeroVencimientos': None, 'DiasEntreVencimientos': None, 'TotalPorArticulo': 0, 'AplicarTarifaEtiqueta': 0, 'FormatoFactura': '', 'ModoFacturacion': None, 'Modificado': None, 'Operacion': None, 'Usuario': 'admin', 'TimeStamp': datetime.datetime(2025, 5, 8, 15, 39, 27, 963406)}]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
-2025-05-08 15:16:20,199 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:16:20] "GET /warehouse/tickets?status=expiring HTTP/1.1" 200 -
-2025-05-08 15:16:20,321 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:16:20] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:16:20,351 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:16:20] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:16:21,361 - warehouse - ERROR - Errore grave nella query ticket: (pymysql.err.OperationalError) (1066, "Not unique table/alias: 'dat_ticket_linea'")
-[SQL: SELECT DISTINCT dat_ticket_cabecera.`IdTicket` AS `dat_ticket_cabecera_IdTicket`, dat_ticket_cabecera.`NumTicket` AS `dat_ticket_cabecera_NumTicket`, dat_ticket_cabecera.`Fecha` AS `dat_ticket_cabecera_Fecha`, dat_ticket_cabecera.`CodigoBarras` AS `dat_ticket_cabecera_CodigoBarras`, dat_ticket_cabecera.`NumLineas` AS `dat_ticket_cabecera_NumLineas`, dat_ticket_cabecera.`Enviado` AS `dat_ticket_cabecera_Enviado` 
-FROM dat_ticket_cabecera INNER JOIN dat_ticket_linea ON dat_ticket_cabecera.`IdTicket` = dat_ticket_linea.`IdTicket` LEFT OUTER JOIN dat_ticket_linea ON dat_ticket_cabecera.`IdTicket` = dat_ticket_linea.`IdTicket` 
-WHERE dat_ticket_linea.`FechaCaducidad` IS NOT NULL AND dat_ticket_linea.`FechaCaducidad` <= %(FechaCaducidad_1)s AND dat_ticket_linea.`FechaCaducidad` >= %(FechaCaducidad_2)s ORDER BY dat_ticket_linea.`FechaCaducidad` ASC 
- LIMIT %(param_1)s, %(param_2)s]
-[parameters: {'FechaCaducidad_1': datetime.datetime(2025, 5, 10, 15, 16, 21, 359233), 'FechaCaducidad_2': datetime.datetime(2025, 5, 8, 15, 16, 21, 359233), 'param_1': 0, 'param_2': 20}]
-(Background on this error at: https://sqlalche.me/e/20/e3q8)
-2025-05-08 15:16:21,370 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:16:21] "GET /warehouse/tickets?status=expiring HTTP/1.1" 200 -
-2025-05-08 15:16:21,412 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:16:21] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:16:21,418 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:16:21] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:17:37,350 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:37,350 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
-2025-05-08 15:17:37,358 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:37,359 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
-2025-05-08 15:17:37,366 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:37,367 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
-2025-05-08 15:17:37,373 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:37,374 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
-2025-05-08 15:17:37,383 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:37,384 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
-2025-05-08 15:17:37,391 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:37,392 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
-2025-05-08 15:17:37,401 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:37,402 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
-2025-05-08 15:17:37,408 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-08 15:17:37,409 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
-2025-05-08 15:17:37,419 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:37,420 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
-2025-05-08 15:17:37,428 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
-2025-05-08 15:17:37,436 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-08 15:17:37,445 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:37,446 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
-2025-05-08 15:17:37,451 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:17:37] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 15:17:37,495 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:17:37] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:17:37,501 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:17:37] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:17:55,229 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:55,229 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
-2025-05-08 15:17:55,229 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:55,229 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
-2025-05-08 15:17:55,243 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:55,243 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
-2025-05-08 15:17:55,243 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:55,243 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
-2025-05-08 15:17:55,261 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:55,261 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
-2025-05-08 15:17:55,261 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:55,261 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
-2025-05-08 15:17:55,275 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:55,275 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
-2025-05-08 15:17:55,275 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:17:55,275 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
-2025-05-08 15:17:55,298 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-08 15:17:55,298 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
-2025-05-08 15:17:55,298 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:55,298 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
-2025-05-08 15:17:55,311 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
-2025-05-08 15:17:55,311 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-08 15:17:55,328 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:17:55,328 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
-2025-05-08 15:17:55,336 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:17:55] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-08 15:17:55,379 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:17:55] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:17:55,389 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:17:55] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:18:16,622 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
-2025-05-08 15:18:16,622 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
-2025-05-08 15:18:16,622 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-08 15:18:16,622 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
-2025-05-08 15:18:16,640 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-08 15:18:16,640 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
-2025-05-08 15:18:16,640 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)

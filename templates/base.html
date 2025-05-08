@@ -59,6 +59,12 @@
                         <span>Ticket</span>
                     </a>
                 </li>
+                <li class="{% if request.endpoint and request.endpoint == 'warehouse.clients' %}active{% endif %}">
+                    <a href="{{ url_for('warehouse.clients') }}">
+                        <i class="fas fa-users"></i>
+                        <span>Clienti</span>
+                    </a>
+                </li>
                 <li class="{% if request.endpoint and request.endpoint == 'warehouse.scanner' %}active{% endif %}">
                     <a href="{{ url_for('warehouse.scanner') }}">
                         <i class="fas fa-qrcode"></i>

@@ -4,6 +4,8 @@ from flask import current_app
 import logging
 import decimal
 from datetime import datetime
+import locale
+import base64
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -60,26 +62,25 @@ def test_db_connection(config=None):
         return False, f"Connection failed: {str(e)}"
 
 def format_price(value):
-    """Format a price value with currency symbol.
-    
-    Args:
-        value: A numeric price value.
-    
-    Returns:
-        string: Formatted price with Euro symbol.
-    """
+    """Format a price value with euro symbol"""
     if value is None:
-        return "€0,00"
+        return '€ 0,00'
+    try:
+        # Set locale for European format (comma as decimal separator)
+        locale.setlocale(locale.LC_ALL, 'it_IT.UTF-8')
+    except:
+        # Fallback if locale not available
+        try:
+            locale.setlocale(locale.LC_ALL, 'it_IT')
+        except:
+            # If still fails, use the default locale
+            pass
     
     try:
-        if isinstance(value, decimal.Decimal):
-            # Handle Decimal objects directly to avoid float precision issues
-            formatted_value = f"€{value:.2f}".replace('.', ',')
-        else:
-            formatted_value = f"€{float(value):.2f}".replace('.', ',')
-        return formatted_value
-    except (ValueError, TypeError):
-        return "€0,00"
+        return locale.currency(float(value), symbol='€', grouping=True)
+    except:
+        # If conversion fails, return a default formatted value
+        return f'€ {float(value):.2f}'.replace('.', ',')
 
 def format_weight(value):
     """Format a weight value with unit.
@@ -139,4 +140,14 @@ def safe_execute_query(query, params=None, fetch_all=True):
 
 def current_time():
     """Return the current datetime object for use in templates."""
-    return datetime.now() 
+    return datetime.now()
+
+def b64encode(data):
+    """Encode binary data as base64 for use in templates."""
+    if data is None:
+        return ''
+    try:
+        return base64.b64encode(data).decode('utf-8')
+    except Exception as e:
+        print(f"Error encoding image: {str(e)}")
+        return '' 

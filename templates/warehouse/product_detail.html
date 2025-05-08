@@ -44,6 +44,10 @@
                             <td>{{ product.Precio|price }}</td>
                         </tr>
                         <tr>
+                            <th scope="row">IVA</th>
+                            <td>{{ product.IvaFormatted }}</td>
+                        </tr>
+                        <tr>
                             <th scope="row">Codice EAN</th>
                             <td>{{ product.CodEAN or 'Non impostato' }}</td>
                         </tr>

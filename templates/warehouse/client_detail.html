@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Cliente: {{ client.Nombre }} - DBLogiX{% endblock %}
+
+{% block header_title %}
+<h1>Dettaglio Cliente</h1>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .client-card {
+        margin-bottom: 20px;
+    }
+    .client-photo {
+        max-width: 150px;
+        max-height: 150px;
+        border-radius: 5px;
+    }
+    .photo-container {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .action-buttons {
+        margin-bottom: 20px;
+    }
+    .section-title {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="action-buttons">
+                <a href="{{ url_for('warehouse.clients') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Torna alla Lista
+                </a>
+                <a href="{{ url_for('warehouse.client_edit', client_id=client.IdCliente) }}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Modifica
+                </a>
+                <button type="button" class="btn btn-danger" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#deleteModal"
+                        data-client-id="{{ client.IdCliente }}"
+                        data-client-name="{{ client.Nombre }}">
+                    <i class="fas fa-trash"></i> Elimina
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card client-card">
+                <div class="card-body">
+                    <div class="photo-container">
+                        {% if client.Foto %}
+                        <img src="data:image/jpeg;base64,{{ client.Foto|b64encode }}" class="client-photo" alt="Foto cliente">
+                        {% else %}
+                        <div class="client-photo d-flex justify-content-center align-items-center bg-light">
+                            <i class="fas fa-user fa-5x text-secondary"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-center">{{ client.Nombre }}</h3>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item">
+                            <small class="text-muted">ID Cliente:</small>
+                            <div>{{ client.IdCliente }}</div>
+                        </div>
+                        <div class="list-group-item">
+                            <small class="text-muted">DNI:</small>
+                            <div>{{ client.DNI or '-' }}</div>
+                        </div>
+                        <div class="list-group-item">
+                            <small class="text-muted">Codice Interno:</small>
+                            <div>{{ client.CodInterno or '-' }}</div>
+                        </div>
+                        <div class="list-group-item">
+                            <small class="text-muted">Codice EAN:</small>
+                            <div>{{ client.EANScanner or '-' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card client-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informazioni Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Dati anagrafici -->
+                    <h5 class="section-title">Dati anagrafici</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Indirizzo:</dt>
+                                <dd class="col-sm-8">{{ client.Direccion or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Codice Postale:</dt>
+                                <dd class="col-sm-8">{{ client.CodPostal or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Città:</dt>
+                                <dd class="col-sm-8">{{ client.Poblacion or '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Provincia:</dt>
+                                <dd class="col-sm-8">{{ client.Provincia or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Paese:</dt>
+                                <dd class="col-sm-8">{{ client.Pais or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">ID Impresa:</dt>
+                                <dd class="col-sm-8">{{ client.IdEmpresa or '-' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- Contatti -->
+                    <h5 class="section-title">Contatti</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Telefono 1:</dt>
+                                <dd class="col-sm-8">{{ client.Telefono1 or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Telefono 2:</dt>
+                                <dd class="col-sm-8">{{ client.Telefono2 or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Telefono 3:</dt>
+                                <dd class="col-sm-8">{{ client.Telefono3 or '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Email:</dt>
+                                <dd class="col-sm-8">{{ client.Email or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Email Ticket:</dt>
+                                <dd class="col-sm-8">{% if client.TipoEmailTicket == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Email Albaran:</dt>
+                                <dd class="col-sm-8">{% if client.TipoEmailAlbaran == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Email Fattura:</dt>
+                                <dd class="col-sm-8">{% if client.TipoEmailFactura == 1 %}Sì{% else %}No{% endif %}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagamenti e Sconti -->
+                    <h5 class="section-title">Pagamenti e Sconti</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Tariffa:</dt>
+                                <dd class="col-sm-8">{{ client.IdTarifa or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Forma di Pagamento:</dt>
+                                <dd class="col-sm-8">{{ client.IdFormaPago or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Stato:</dt>
+                                <dd class="col-sm-8">{{ client.IdEstado or '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Sconto:</dt>
+                                <dd class="col-sm-8">{% if client.Descuento %}{{ client.Descuento }}%{% else %}-{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Sconto Pronto Pagamento:</dt>
+                                <dd class="col-sm-8">{% if client.DtoProntoPago %}{{ client.DtoProntoPago }}%{% else %}-{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Offerte:</dt>
+                                <dd class="col-sm-8">{% if client.Ofertas == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Conto Pendente:</dt>
+                                <dd class="col-sm-8">{% if client.CuentaPendiente %}{{ client.CuentaPendiente }}€{% else %}-{% endif %}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- Dati Bancari -->
+                    <h5 class="section-title">Dati Bancari</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Nome Banca:</dt>
+                                <dd class="col-sm-8">{{ client.NombreBanco or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Codice Conto:</dt>
+                                <dd class="col-sm-8">{{ client.CodigoCuenta or '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Numero Scadenze:</dt>
+                                <dd class="col-sm-8">{{ client.NumeroVencimientos or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Giorni tra Scadenze:</dt>
+                                <dd class="col-sm-8">{{ client.DiasEntreVencimientos or '-' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- Altre Opzioni -->
+                    <h5 class="section-title">Altre Opzioni</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Punti Fedeltà:</dt>
+                                <dd class="col-sm-8">{{ client.PuntosFidelidad or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Formato Albaran:</dt>
+                                <dd class="col-sm-8">{{ client.FormatoAlbaran or '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Formato Fattura:</dt>
+                                <dd class="col-sm-8">{{ client.FormatoFactura or '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Usa Ricaricare Equivalenza:</dt>
+                                <dd class="col-sm-8">{% if client.UsarRecargoEquivalencia == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Totale per Articolo:</dt>
+                                <dd class="col-sm-8">{% if client.TotalPorArticulo == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Applica Tariffa Etichetta:</dt>
+                                <dd class="col-sm-8">{% if client.AplicarTarifaEtiqueta == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Modalità Fatturazione:</dt>
+                                <dd class="col-sm-8">{{ client.ModoFacturacion or '-' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <!-- Osservazioni -->
+                    <h5 class="section-title">Osservazioni</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body bg-light">
+                                    {{ client.Observaciones or 'Nessuna osservazione' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Metadati -->
+                    <h5 class="section-title">Metadati</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Ultima Modifica:</dt>
+                                <dd class="col-sm-8">{{ client.TimeStamp.strftime('%d/%m/%Y %H:%M') if client.TimeStamp else '-' }}</dd>
+                                
+                                <dt class="col-sm-4">Utente:</dt>
+                                <dd class="col-sm-8">{{ client.Usuario or '-' }}</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Stato Modificato:</dt>
+                                <dd class="col-sm-8">{% if client.Modificado == 1 %}Sì{% else %}No{% endif %}</dd>
+                                
+                                <dt class="col-sm-4">Operazione:</dt>
+                                <dd class="col-sm-8">{{ client.Operacion or '-' }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Conferma Eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Sei sicuro di voler eliminare il cliente <strong>{{ client.Nombre }}</strong>?
+                Questa azione non può essere annullata.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="post" action="{{ url_for('warehouse.client_delete', client_id=client.IdCliente) }}">
+                    <button type="submit" class="btn btn-danger">Elimina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Custom filter for encoding binary data as base64
+    if (!('b64encode' in Jinja)) {
+        Jinja.filters.b64encode = function(data) {
+            return btoa(String.fromCharCode.apply(null, new Uint8Array(data)));
+        };
+    }
+</script>
+{% endblock %} 

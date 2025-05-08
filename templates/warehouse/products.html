@@ -108,7 +108,8 @@
             <thead>
                 <tr>
                     <th width="10%">ID</th>
-                    <th width="45%">Descrizione</th>
+                    <th width="35%">Descrizione</th>
+                    <th width="10%">IVA</th>
                     <th width="15%">Prezzo</th>
                     <th width="20%">Codice EAN</th>
                     <th width="10%" class="text-end">Azioni</th>
@@ -119,6 +120,7 @@
                 <tr>
                     <td>{{ product.IdArticulo }}</td>
                     <td>{{ product.Descripcion }}</td>
+                    <td>{{ product.IvaFormatted }}</td>
                     <td>{{ product.Precio|price }}</td>
                     <td>{{ product.CodEAN }}</td>
                     <td class="table-actions">

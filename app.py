@@ -81,7 +81,7 @@ def create_app():
         app.register_blueprint(admin_bp, url_prefix='/admin')
         
         # Register template filters
-        from utils import format_price, format_weight, current_time
+        from utils import format_price, format_weight, current_time, b64encode
         
         @app.template_filter('price')
         def price_filter(value):
@@ -90,6 +90,10 @@ def create_app():
         @app.template_filter('weight')
         def weight_filter(value):
             return format_weight(value)
+        
+        @app.template_filter('b64encode')
+        def b64encode_filter(value):
+            return b64encode(value)
         
         @app.context_processor
         def utility_processor():
@@ -149,14 +153,15 @@ app = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
-    from models import User, Product, TicketHeader, TicketLine, ScanLog
+    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client
     return {
         'db': db, 
         'User': User, 
         'Product': Product, 
         'TicketHeader': TicketHeader, 
         'TicketLine': TicketLine,
-        'ScanLog': ScanLog
+        'ScanLog': ScanLog,
+        'Client': Client
     }
 
 # Run application if this file is executed directly

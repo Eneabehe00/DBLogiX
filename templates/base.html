@@ -41,25 +41,25 @@
             </div>
             
             <ul class="sidebar-menu">
-                <li class="{% if request.endpoint == 'warehouse.index' %}active{% endif %}">
+                <li class="{% if request.endpoint and request.endpoint == 'warehouse.index' %}active{% endif %}">
                     <a href="{{ url_for('warehouse.index') }}">
                         <i class="fas fa-home"></i>
                         <span>Home</span>
                     </a>
                 </li>
-                <li class="{% if request.endpoint == 'warehouse.product_catalog' %}active{% endif %}">
+                <li class="{% if request.endpoint and request.endpoint == 'warehouse.product_catalog' %}active{% endif %}">
                     <a href="{{ url_for('warehouse.product_catalog') }}">
                         <i class="fas fa-box"></i>
                         <span>Prodotti</span>
                     </a>
                 </li>
-                <li class="{% if request.endpoint == 'warehouse.tickets' %}active{% endif %}">
+                <li class="{% if request.endpoint and request.endpoint == 'warehouse.tickets' %}active{% endif %}">
                     <a href="{{ url_for('warehouse.tickets') }}">
                         <i class="fas fa-receipt"></i>
                         <span>Ticket</span>
                     </a>
                 </li>
-                <li class="{% if request.endpoint == 'warehouse.scanner' %}active{% endif %}">
+                <li class="{% if request.endpoint and request.endpoint == 'warehouse.scanner' %}active{% endif %}">
                     <a href="{{ url_for('warehouse.scanner') }}">
                         <i class="fas fa-qrcode"></i>
                         <span>Scanner</span>
@@ -67,32 +67,32 @@
                 </li>
                 
                 {% if current_user.is_admin %}
-                <li class="sidebar-submenu {% if 'admin.' in request.endpoint %}active open{% endif %}">
+                <li class="sidebar-submenu {% if request.endpoint and 'admin.' in request.endpoint %}active open{% endif %}">
                     <a href="#" class="submenu-toggle">
                         <i class="fas fa-cog"></i>
                         <span>Amministrazione</span>
                         <i class="submenu-arrow fas fa-chevron-right"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="{% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                        <li class="{% if request.endpoint and request.endpoint == 'admin.dashboard' %}active{% endif %}">
                             <a href="{{ url_for('admin.dashboard') }}">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <span>Dashboard</span>
                             </a>
                         </li>
-                        <li class="{% if request.endpoint == 'admin.manage_users' %}active{% endif %}">
+                        <li class="{% if request.endpoint and request.endpoint == 'admin.manage_users' %}active{% endif %}">
                             <a href="{{ url_for('admin.manage_users') }}">
                                 <i class="fas fa-users"></i>
                                 <span>Gestione Utenti</span>
                             </a>
                         </li>
-                        <li class="{% if request.endpoint == 'admin.scan_logs' %}active{% endif %}">
+                        <li class="{% if request.endpoint and request.endpoint == 'admin.scan_logs' %}active{% endif %}">
                             <a href="{{ url_for('admin.scan_logs') }}">
                                 <i class="fas fa-history"></i>
                                 <span>Log Attività</span>
                             </a>
                         </li>
-                        <li class="{% if request.endpoint == 'admin.db_config' %}active{% endif %}">
+                        <li class="{% if request.endpoint and request.endpoint == 'admin.db_config' %}active{% endif %}">
                             <a href="{{ url_for('admin.db_config') }}">
                                 <i class="fas fa-database"></i>
                                 <span>Configurazione DB</span>

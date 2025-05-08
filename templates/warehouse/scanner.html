@@ -133,7 +133,7 @@
                     <!-- Scanner attivo (inizialmente nascosto) -->
                     <div id="scanner-container" class="mb-0" style="display: none;">
                         <video id="qr-video" autoplay></video>
-                        <div id="scanner-error" class="scanner-overlay" style="display: none;">
+                        <div id="error-overlay" class="scanner-overlay" style="display: none;">
                             <div class="text-center">
                                 <i class="fas fa-exclamation-triangle text-warning d-block"></i>
                                 Errore fotocamera. Verifica le autorizzazioni o utilizza l'inserimento manuale.
@@ -143,10 +143,10 @@
                 </div>
                 
                 <div class="scanner-controls">
-                    <button id="scanner-start" class="btn btn-success">
+                    <button id="btn-start-scanner" class="btn btn-success">
                         <i class="fas fa-play me-2"></i>Avvia Scanner
                     </button>
-                    <button id="scanner-stop" class="btn btn-outline-secondary" style="display: none;">
+                    <button id="btn-stop-scanner" class="btn btn-outline-secondary" style="display: none;">
                         <i class="fas fa-stop me-2"></i>Ferma Scanner
                     </button>
                 </div>
@@ -168,12 +168,12 @@
                         <i class="fas fa-info-circle me-2"></i>Formato QR Code:
                     </h6>
                     <div>
-                        <code>000003000801029042025110211</code>
+                        <code>001000220000108052025093508</code>
                         <div class="mt-2">
-                            <span class="highlight">000003</span> - Numero Scontrino (6 cifre)<br>
-                            <span class="highlight">000801</span> - Codice Articolo (6 cifre)<br>
-                            <span class="highlight">02904202</span> - Data (ggmmaaaa)<br>
-                            <span class="highlight">511021</span> - Ora (hhmmss)
+                            <span class="highlight">0010</span> - Numero Ticket (4 cifre)<br>
+                            <span class="highlight">0022</span> - Codice Articolo (4 cifre)<br>
+                            <span class="highlight">00001</span> - Peso in grammi (5 cifre)<br>
+                            <span class="highlight">08052025093508</span> - Timestamp (14 cifre - ggmmaaaahhmiss)
                         </div>
                     </div>
                 </div>
@@ -195,13 +195,13 @@
                         <label for="ticket_id" class="form-label">{{ form.ticket_id.label }}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="fas fa-barcode"></i></span>
-                            {{ form.ticket_id(class="form-control", id="ticket_id", placeholder="Formato: 000003000801029042025110211") }}
+                            {{ form.ticket_id(class="form-control", id="ticket_id", placeholder="Formato: 001000220000108052025093508") }}
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search me-1"></i>Cerca
                             </button>
                         </div>
                         <div class="form-text">
-                            <small>Formato: codice numerico a 27 cifre (formato nuovo) o T[number] (formato vecchio)</small>
+                            <small>Formato: codice numerico a 27 cifre (TTTTAAAAPPPPPSSSSSSSSSSSSS)</small>
                         </div>
                         {% for error in form.ticket_id.errors %}
                         <div class="text-danger small">{{ error }}</div>
@@ -211,70 +211,47 @@
             </div>
         </div>
         
-        <!-- Result card, hidden by default -->
-        <div id="scanner-result" class="card shadow-sm mt-4 scan-result-card">
-            <div class="card-header d-flex align-items-center bg-success text-white">
-                <i class="fas fa-check-circle me-2"></i>
-                <h5 class="mb-0">Risultato Scansione</h5>
-            </div>
+        <!-- Result Card -->
+        <div id="result-card" class="card shadow-sm mb-4" style="display: none;">
             <div class="card-body">
-                <h5 id="result-ticket-number" class="card-title d-flex align-items-center">
-                    <i class="fas fa-receipt me-2 text-success"></i>
-                    <span></span>
-                </h5>
-                <p id="result-ticket-date" class="card-text d-flex align-items-center">
-                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
-                    <span></span>
-                </p>
-                <p id="result-ticket-status" class="card-text d-flex align-items-center">
-                    <i class="fas fa-info-circle me-2 text-info"></i>
-                    <span></span>
-                </p>
-                
-                <div id="product-details" class="product-details" style="display: none;">
-                    <h6 class="d-flex align-items-center mb-3">
-                        <i class="fas fa-box me-2 text-primary"></i>Dettagli Prodotto
-                    </h6>
-                    <p id="result-product-name" class="mb-2 fw-bold"></p>
-                    <p id="result-product-code" class="mb-2">
-                        <i class="fas fa-tag me-2 text-muted"></i>
-                        <span class="text-muted"></span>
-                    </p>
-                    <p id="result-scan-date" class="mb-0">
-                        <i class="fas fa-clock me-2 text-muted"></i>
-                        <span class="text-muted"></span>
-                    </p>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 id="result-ticket-number" class="mb-0">Ticket #0000</h5>
+                        <p id="result-ticket-date" class="text-muted mb-0">Data: 00/00/0000</p>
+                    </div>
+                    <span id="result-ticket-status" class="badge bg-warning">Pendente</span>
                 </div>
                 
-                <div class="d-grid gap-2 mt-4">
-                    <div class="row g-2">
-                        <div class="col-md-6">
-                            <button id="btn-product-details" class="btn btn-info w-100">
-                                <i class="fas fa-info-circle me-2"></i>Dettagli Prodotto
-                            </button>
-                        </div>
-                        <div class="col-md-6">
-                            <a id="result-ticket-link" href="#" class="btn btn-primary w-100">
-                                <i class="fas fa-eye me-2"></i>Visualizza Ticket
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <button id="btn-checkout" class="btn btn-success mt-2">
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button id="btn-product-details" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-info-circle me-2"></i>Dettagli Prodotto
+                    </button>
+                    <a id="result-ticket-link" href="#" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-file-alt me-2"></i>Vedi Ticket
+                    </a>
+                </div>
+                
+                <!-- Product Details Section -->
+                <div id="product-details" class="bg-light p-3 rounded mb-3 d-none">
+                    <h6 id="result-product-name" class="mb-2">Nome Prodotto</h6>
+                    <p id="result-product-code" class="mb-1 small text-muted">Codice: 0000</p>
+                    <p id="result-product-weight" class="mb-1 small text-muted">Peso: 0.000 kg</p>
+                    <p id="result-scan-date" class="mb-0 small text-muted">Scansione: 00/00/0000 00:00:00</p>
+                </div>
+                
+                <div id="success-message" class="alert alert-success d-none" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>Operazione completata con successo
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Indietro
+                    </a>
+                    <button id="btn-checkout" class="btn btn-success">
                         <i class="fas fa-check me-2"></i>Scarica da Magazzino
                     </button>
-                </div>
-                
-                <div id="success-message" class="alert alert-success success-message mt-3">
-                    <div class="d-flex">
-                        <div class="me-3">
-                            <i class="fas fa-check-circle fa-2x"></i>
-                        </div>
-                        <div>
-                            <h6 class="alert-heading">Operazione completata!</h6>
-                            <p class="mb-0">Prodotto scaricato con successo dal magazzino.</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -286,30 +263,31 @@
 <script src="https://unpkg.com/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Page elements
         const scannerWrapper = document.getElementById('scanner-wrapper');
         const scannerInactive = document.getElementById('scanner-inactive');
         const scannerContainer = document.getElementById('scanner-container');
         const videoElement = document.getElementById('qr-video');
-        const errorOverlay = document.getElementById('scanner-error');
-        const startButton = document.getElementById('scanner-start');
-        const stopButton = document.getElementById('scanner-stop');
-        const resultCard = document.getElementById('scanner-result');
-        
-        // Result elements
-        const resultTicketNumber = document.getElementById('result-ticket-number').querySelector('span');
-        const resultTicketDate = document.getElementById('result-ticket-date').querySelector('span');
-        const resultTicketStatus = document.getElementById('result-ticket-status').querySelector('span');
+        const errorOverlay = document.getElementById('error-overlay');
+        const startButton = document.getElementById('btn-start-scanner');
+        const stopButton = document.getElementById('btn-stop-scanner');
+        const resultCard = document.getElementById('result-card');
+        const resultTicketNumber = document.getElementById('result-ticket-number');
+        const resultTicketDate = document.getElementById('result-ticket-date');
+        const resultTicketStatus = document.getElementById('result-ticket-status');
         const resultTicketLink = document.getElementById('result-ticket-link');
         const productDetails = document.getElementById('product-details');
         const resultProductName = document.getElementById('result-product-name');
-        const resultProductCode = document.getElementById('result-product-code').querySelector('span');
-        const resultScanDate = document.getElementById('result-scan-date').querySelector('span');
+        const resultProductCode = document.getElementById('result-product-code');
+        const resultProductWeight = document.getElementById('result-product-weight');
+        const resultScanDate = document.getElementById('result-scan-date');
         const btnProductDetails = document.getElementById('btn-product-details');
         const btnCheckout = document.getElementById('btn-checkout');
         const successMessage = document.getElementById('success-message');
         
-        let scanData = null;
+        // Variables
         let scanner = null;
+        let scanData = null;
         let isInitialized = false;
         
         // Initialize scanner
@@ -409,6 +387,12 @@
                         this.classList.remove('btn-success');
                         this.classList.add('btn-outline-success');
                         this.disabled = true;
+                        
+                        // Update ticket status
+                        resultTicketStatus.innerHTML = 'Stato: <span class="badge bg-success">Processato</span>';
+                        
+                        // Update scan data
+                        scanData.is_processed = true;
                     } else {
                         // Show error
                         this.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
@@ -472,19 +456,25 @@
                         btnCheckout.classList.add('btn-success');
                     }
                     
-                    // Update product details
+                    // Update product details if available
                     if (data.product) {
+                        productDetails.style.display = 'block';
+                        btnProductDetails.style.display = 'block';
                         resultProductName.textContent = data.product.name;
                         resultProductCode.textContent = `Codice: ${data.product.code}`;
-                        resultScanDate.textContent = `Scansione: ${new Date().toLocaleString()}`;
+                        resultScanDate.textContent = `Scansione: ${data.scan_date} ${data.scan_time}`;
+                    } else {
+                        productDetails.style.display = 'none';
+                        btnProductDetails.style.display = 'none';
                     }
                     
-                    // Set ticket link
-                    resultTicketLink.href = `/warehouse/ticket/${data.ticket_id}`;
-                    
-                    // Reset product details visibility
-                    productDetails.style.display = 'none';
-                    btnProductDetails.innerHTML = '<i class="fas fa-info-circle me-2"></i>Dettagli Prodotto';
+                    // Set ticket link if available
+                    if (data.ticket_id) {
+                        resultTicketLink.href = `/warehouse/ticket/${data.ticket_id}`;
+                        resultTicketLink.style.display = 'block';
+                    } else {
+                        resultTicketLink.style.display = 'none';
+                    }
                     
                     // Hide success message
                     successMessage.style.display = 'none';

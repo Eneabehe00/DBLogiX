@@ -85,12 +85,21 @@
             <div class="card-body text-center">
                 <div class="d-flex justify-content-center align-items-center">
                     <div>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=T{{ ticket.NumTicket }}" 
+                        {% set product_id = lines[0].IdArticulo if lines else 0 %}
+                        {% set product_weight = ((lines[0].Peso|float) * 1000)|int if lines else 0 %}
+                        {% set weight_str = '%05d' % product_weight %}
+                        {% set now = now|default(current_time()) %}
+                        {% set timestamp = now.strftime('%d%m%Y%H%M%S') %}
+                        {% set ticket_num_str = '%04d' % ticket.NumTicket %}
+                        {% set product_id_str = '%04d' % product_id %}
+                        {% set qr_data = ticket_num_str + product_id_str + weight_str + timestamp %}
+                        
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_data }}" 
                              alt="QR Code for Ticket {{ ticket.NumTicket }}" 
                              class="img-fluid border p-2 mb-3"
                              style="background-color: white;">
                         <p class="mb-1">Ticket: #{{ ticket.NumTicket }}</p>
-                        <p class="text-muted">Scansiona per informazioni rapide</p>
+                        <p class="text-muted small">Formato: {{ ticket_num_str }}-{{ product_id_str }}-{{ weight_str }}-{{ timestamp }}</p>
                     </div>
                 </div>
             </div>

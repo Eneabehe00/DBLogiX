@@ -76,11 +76,11 @@ def create_app():
         from admin import admin_bp
         
         app.register_blueprint(auth_bp, url_prefix='/auth')
-        app.register_blueprint(warehouse_bp, url_prefix='')
+        app.register_blueprint(warehouse_bp, url_prefix='/warehouse')
         app.register_blueprint(admin_bp, url_prefix='/admin')
         
         # Register template filters
-        from utils import format_price, format_weight
+        from utils import format_price, format_weight, current_time
         
         @app.template_filter('price')
         def price_filter(value):
@@ -89,6 +89,10 @@ def create_app():
         @app.template_filter('weight')
         def weight_filter(value):
             return format_weight(value)
+        
+        @app.context_processor
+        def utility_processor():
+            return {'current_time': current_time}
         
         # Error handlers
         @app.errorhandler(404)

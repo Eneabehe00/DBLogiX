@@ -3,6 +3,7 @@ from config import REMOTE_DB_CONFIG, get_direct_connection_config
 from flask import current_app
 import logging
 import decimal
+from datetime import datetime
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -134,4 +135,8 @@ def safe_execute_query(query, params=None, fetch_all=True):
             conn.close()
         error_msg = f"Query execution error: {str(e)}"
         logger.error(error_msg)
-        return False, error_msg 
+        return False, error_msg
+
+def current_time():
+    """Return the current datetime object for use in templates."""
+    return datetime.now() 

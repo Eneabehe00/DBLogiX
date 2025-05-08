@@ -1,93 +1,83 @@
-2025-05-08 07:48:46,765 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 07:48:47,499 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 07:48:47,801 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:115]
-2025-05-08 07:48:47,801 - app - INFO - DBLogiX startup
-2025-05-08 07:48:47,927 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 07:48:47,929 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 07:48:47,976 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2025-05-08 10:18:42,008 - __main__ - INFO - Starting DBLogiX application
+2025-05-08 10:18:42,780 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
+2025-05-08 10:18:42,980 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:119]
+2025-05-08 10:18:42,980 - app - INFO - DBLogiX startup
+2025-05-08 10:18:43,081 - __main__ - INFO - Database tables created (if they did not exist)
+2025-05-08 10:18:43,081 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
+2025-05-08 10:18:43,098 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
  * Running on http://192.168.1.26:5000
-2025-05-08 07:48:47,983 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 07:49:00,118 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:00] "GET / HTTP/1.1" 200 -
-2025-05-08 07:49:00,328 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:00] "GET /static/css/style.css HTTP/1.1" 200 -
-2025-05-08 07:49:00,340 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:00] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:49:04,005 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:04] "GET / HTTP/1.1" 200 -
-2025-05-08 07:49:04,088 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:04] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:49:04,100 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:04] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:49:11,746 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:11] "GET /products HTTP/1.1" 200 -
-2025-05-08 07:49:11,803 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:11] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:49:11,811 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:11] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:49:14,885 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:14] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 07:49:14,977 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:14] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:49:14,983 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:14] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:49:21,899 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:21] "GET /scanner HTTP/1.1" 200 -
-2025-05-08 07:49:22,004 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:22] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:49:22,011 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:22] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:49:37,019 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:37] "GET /admin/dashboard HTTP/1.1" 200 -
-2025-05-08 07:49:37,119 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:37] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:49:37,126 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:37] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:49:39,756 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:39] "GET /scanner HTTP/1.1" 200 -
-2025-05-08 07:49:39,876 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:39] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:49:39,886 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:49:39] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:50:37,859 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:50:37] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 07:50:37,955 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:50:37] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:50:37,975 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:50:37] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:58:17,587 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:17] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 07:58:17,706 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:17] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:58:17,709 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:17] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:58:34,063 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 07:58:34,681 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 07:58:34,861 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:115]
-2025-05-08 07:58:34,861 - app - INFO - DBLogiX startup
-2025-05-08 07:58:34,955 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 07:58:34,955 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 07:58:34,974 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.1.26:5000
-2025-05-08 07:58:34,974 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 07:58:46,033 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:46] "GET / HTTP/1.1" 200 -
-2025-05-08 07:58:46,232 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:46] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:58:46,254 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:46] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:58:49,831 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:49] "GET /scanner HTTP/1.1" 200 -
-2025-05-08 07:58:49,920 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:49] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:58:49,925 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:58:49] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:59:52,695 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:59:52] "GET /products HTTP/1.1" 200 -
-2025-05-08 07:59:52,788 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:59:52] "GET /static/css/style.css HTTP/1.1" 200 -
-2025-05-08 07:59:52,798 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:59:52] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 07:59:54,189 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:59:54] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 07:59:54,244 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:59:54] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 07:59:54,256 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 07:59:54] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:01:22,891 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:01:22] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 08:01:22,959 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:01:22] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:01:22,972 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:01:22] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:02:24,272 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:02:24] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 08:02:24,393 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:02:24] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:02:24,398 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:02:24] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:04:50,023 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 08:04:50,806 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 08:04:51,023 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:115]
-2025-05-08 08:04:51,023 - app - INFO - DBLogiX startup
-2025-05-08 08:04:51,147 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 08:04:51,151 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 08:04:51,207 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.1.26:5000
-2025-05-08 08:04:51,210 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 08:24:03,732 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:24:03] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 08:24:03,957 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:24:03] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:24:03,959 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:24:03] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:25:30,279 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:25:30] "GET /scanner HTTP/1.1" 200 -
-2025-05-08 08:25:30,366 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:25:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:25:30,370 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:25:30] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:27:51,863 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:27:51] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 08:27:51,987 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:27:51] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:27:51,991 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:27:51] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:27:53,454 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:27:53] "GET /products HTTP/1.1" 200 -
-2025-05-08 08:27:53,582 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:27:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:27:53,588 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:27:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 08:28:00,041 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:28:00] "GET /tickets HTTP/1.1" 200 -
-2025-05-08 08:28:00,130 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:28:00] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 08:28:00,134 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 08:28:00] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:18:43,100 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-05-08 10:18:47,235 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:47] "[33mGET / HTTP/1.1[0m" 404 -
+2025-05-08 10:18:47,464 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:47] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:18:47,535 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:18:51,503 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:51] "GET /warehouse/index HTTP/1.1" 200 -
+2025-05-08 10:18:51,607 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:51] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:18:51,620 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:51] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:18:53,152 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:53] "GET /warehouse/products HTTP/1.1" 200 -
+2025-05-08 10:18:53,202 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:18:53,214 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:18:54,348 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:54] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 10:18:54,444 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:54] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:18:54,456 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:54] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:18:55,313 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:55] "GET /warehouse/scanner HTTP/1.1" 200 -
+2025-05-08 10:18:55,463 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:55] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:18:55,471 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:18:55] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:19:05,890 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:05] "POST /warehouse/process_qr HTTP/1.1" 200 -
+2025-05-08 10:19:30,138 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:30] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 10:19:30,236 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:19:30,242 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:30] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:19:35,168 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:35] "GET /warehouse/ticket/36708 HTTP/1.1" 200 -
+2025-05-08 10:19:35,216 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:35] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:19:35,226 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:19:35] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:21,170 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:21] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 10:20:21,275 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:21] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:21,282 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:21] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:24,579 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:24] "GET /warehouse/ticket/36709 HTTP/1.1" 200 -
+2025-05-08 10:20:24,645 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:24] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:24,655 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:24] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:30,100 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:30] "GET /warehouse/product/17 HTTP/1.1" 200 -
+2025-05-08 10:20:30,234 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:30] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:30,239 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:30] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:45,712 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:45] "GET /warehouse/ticket/36610 HTTP/1.1" 200 -
+2025-05-08 10:20:45,768 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:45] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:45,773 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:45] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:52,446 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:52] "GET /warehouse/product/17 HTTP/1.1" 200 -
+2025-05-08 10:20:52,578 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:52] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:52,583 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:52] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:57,082 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:57] "GET /warehouse/products HTTP/1.1" 200 -
+2025-05-08 10:20:57,125 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:57] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:57,136 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:57] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:20:59,291 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:59] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 10:20:59,444 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:59] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:20:59,451 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:20:59] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:18,841 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:18] "GET /warehouse/ticket/36709 HTTP/1.1" 200 -
+2025-05-08 10:21:18,930 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:18] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:21:18,935 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:18] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:27,199 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:27] "GET /warehouse/product/17 HTTP/1.1" 200 -
+2025-05-08 10:21:27,344 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:27] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:21:27,351 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:27] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:36,397 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:36] "GET /warehouse/products HTTP/1.1" 200 -
+2025-05-08 10:21:36,505 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:36] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:21:36,513 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:36] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:44,241 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:44] "GET /warehouse/products?page=2 HTTP/1.1" 200 -
+2025-05-08 10:21:44,341 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:44] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:21:44,343 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:44] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:47,369 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:47] "GET /warehouse/product/22 HTTP/1.1" 200 -
+2025-05-08 10:21:47,482 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:47] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:21:47,486 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:47] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:56,649 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:56] "GET /warehouse/scanner HTTP/1.1" 200 -
+2025-05-08 10:21:56,759 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:56] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:21:56,767 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:56] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:21:59,997 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:21:59] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-08 10:22:00,077 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:00] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:22:00,083 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:00] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:22:02,958 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:02] "GET /warehouse/scanner HTTP/1.1" 200 -
+2025-05-08 10:22:03,048 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:03] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:22:03,055 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:03] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:22:05,578 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "[32mPOST /warehouse/scanner HTTP/1.1[0m" 302 -
+2025-05-08 10:22:05,859 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "GET /warehouse/ticket/27697 HTTP/1.1" 200 -
+2025-05-08 10:22:05,906 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-08 10:22:05,912 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:05] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-08 10:22:27,702 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 10:22:27] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -

@@ -197,166 +197,53 @@ def scanner():
     if form.validate_on_submit():
         ticket_code = form.ticket_id.data.strip()
         
-        # Parse ticket code (expected format: T[number]-P[product])
-        match = re.match(r'T(\d+)(?:-P(\d+))?', ticket_code)
-        
-        if match:
-            ticket_num = int(match.group(1))
-            product_id = int(match.group(2)) if match.group(2) else None
+        # Check for QR code format: NumTicket(4)-IdArticulo(4)-Peso(5)-Timestamp(14)
+        if ticket_code.isdigit() and len(ticket_code) == 27:
+            # Parse the QR components
+            ticket_num = int(ticket_code[:4])           # First 4 digits = NumTicket
+            product_id = int(ticket_code[4:8])          # Next 4 digits = IdArticulo
+            weight = int(ticket_code[8:13]) / 1000.0    # Next 5 digits = Peso (in grams, convert to kg)
             
-            # Try to find the ticket
+            # Parse timestamp - format: DDMMYYYYHHMMSS
+            timestamp = ticket_code[13:27]
+            day = timestamp[0:2]
+            month = timestamp[2:4]
+            year = timestamp[4:8]
+            hour = timestamp[8:10]
+            minute = timestamp[10:12]
+            second = timestamp[12:14]
+            
+            formatted_date = f"{day}/{month}/{year}"
+            formatted_time = f"{hour}:{minute}:{second}"
+            
+            # Find the ticket
             ticket = TicketHeader.query.filter_by(NumTicket=ticket_num).first()
             
-            if ticket:
-                return redirect(url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket))
-            else:
-                flash(f'Ticket {ticket_num} not found.', 'danger')
-        else:
-            flash('Invalid ticket format. Expected: T[number]-P[product]', 'danger')
-    
-    return render_template('warehouse/scanner.html', form=form)
-
-@warehouse_bp.route('/api/scan', methods=['POST'])
-@login_required
-def api_scan():
-    """API endpoint for scanner to process QR codes"""
-    data = request.json
-    
-    if not data or 'code' not in data:
-        return jsonify({'success': False, 'error': 'No code provided'}), 400
-    
-    ticket_code = data['code'].strip()
-    
-    # Try first to parse the new format ticket code (format: 000003000801029042025110211)
-    if ticket_code.isdigit() and len(ticket_code) == 27:
-        try:
-            # Parse the different components
-            ticket_num = int(ticket_code[:6])  # First 6 digits = receipt number
-            product_code = int(ticket_code[6:12])  # Next 6 digits = product code
-            date_str = ticket_code[12:20]  # Next 8 digits = date (DDMMYYYY)
-            time_str = ticket_code[20:26]  # Next 6 digits = time (HHMMSS)
+            # Find the product
+            product = Product.query.filter_by(IdArticulo=product_id).first()
             
-            # Format date for display: DDMMYYYY to DD/MM/YYYY
-            formatted_date = f"{date_str[:2]}/{date_str[2:4]}/{date_str[4:]}"
-            # Format time for display: HHMMSS to HH:MM:SS
-            formatted_time = f"{time_str[:2]}:{time_str[2:4]}:{time_str[4:]}"
-            
-            # Try to find the ticket
-            ticket = TicketHeader.query.filter_by(NumTicket=ticket_num).first()
-            
-            if not ticket:
-                # Create a log entry even if ticket isn't found
-                log = ScanLog(
-                    user_id=current_user.id,
-                    ticket_id=ticket_num,  # Use the number since we don't have an ID
-                    action='scan_attempt',
-                    raw_code=ticket_code,
-                    product_code=product_code,
-                    scan_date=formatted_date,
-                    scan_time=formatted_time
-                )
-                db.session.add(log)
-                db.session.commit()
-                
-                # Try to find the product
-                product = Product.query.filter_by(IdArticulo=product_code).first()
-                
-                if product:
-                    return jsonify({
-                        'success': True,
-                        'ticket_number': ticket_num,
-                        'ticket_date': f"{formatted_date} {formatted_time}",
-                        'is_processed': False,
-                        'product_id': product.IdArticulo,
-                        'product_name': product.Descripcion,
-                        'is_new_format': True,
-                        'scan_log_id': log.id
-                    })
-                else:
-                    return jsonify({
-                        'success': False,
-                        'error': f'Product code {product_code} not found.',
-                        'is_new_format': True,
-                        'ticket_number': ticket_num,
-                        'ticket_date': f"{formatted_date} {formatted_time}",
-                        'scan_log_id': log.id
-                    }), 404
-            
-            # Create a log entry for successful scan
+            # Log the scan in scan_log table
             log = ScanLog(
                 user_id=current_user.id,
-                ticket_id=ticket.IdTicket,
+                ticket_id=ticket.IdTicket if ticket else None,
                 action='scan',
                 raw_code=ticket_code,
-                product_code=product_code,
+                product_code=product_id,
                 scan_date=formatted_date,
                 scan_time=formatted_time
             )
             db.session.add(log)
-            
-            # Find the specific product in the ticket
-            ticket_line = TicketLine.query.filter_by(
-                IdTicket=ticket.IdTicket, 
-                IdArticulo=product_code
-            ).first()
-            
-            product = None
-            if ticket_line:
-                product = Product.query.filter_by(IdArticulo=product_code).first()
-            
             db.session.commit()
             
-            return jsonify({
-                'success': True,
-                'ticket_id': ticket.IdTicket,
-                'ticket_number': ticket.NumTicket,
-                'ticket_date': ticket.formatted_date,
-                'scan_date': f"{formatted_date} {formatted_time}",
-                'is_processed': ticket.is_processed,
-                'is_new_format': True,
-                'product_id': product.IdArticulo if product else None,
-                'product_name': product.Descripcion if product else None,
-                'scan_log_id': log.id,
-                'url': url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket)
-            })
-            
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'error': f'Error processing the QR code: {str(e)}',
-                'is_new_format': True
-            }), 400
+            if ticket:
+                flash(f'QR Code elaborato: Ticket #{ticket_num}, Prodotto #{product_id}, Peso: {weight:.3f}kg', 'success')
+                return redirect(url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket))
+            else:
+                flash(f'Ticket {ticket_num} non trovato.', 'danger')
+        else:
+            flash('Formato QR code non valido. Inserisci un codice a 27 cifre nel formato corretto.', 'danger')
     
-    # Fall back to the old format (T[number]-P[product])
-    match = re.match(r'T(\d+)(?:-P(\d+))?', ticket_code)
-    
-    if not match:
-        return jsonify({
-            'success': False, 
-            'error': 'Invalid ticket format. Expected: T[number]-P[product] or numeric format'
-        }), 400
-    
-    ticket_num = int(match.group(1))
-    product_id = int(match.group(2)) if match.group(2) else None
-    
-    # Try to find the ticket
-    ticket = TicketHeader.query.filter_by(NumTicket=ticket_num).first()
-    
-    if not ticket:
-        return jsonify({
-            'success': False, 
-            'error': f'Ticket {ticket_num} not found.'
-        }), 404
-    
-    # Return success with ticket details
-    return jsonify({
-        'success': True,
-        'ticket_id': ticket.IdTicket,
-        'ticket_number': ticket.NumTicket,
-        'ticket_date': ticket.formatted_date,
-        'is_processed': ticket.is_processed,
-        'url': url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket)
-    })
+    return render_template('warehouse/scanner.html', form=form)
 
 # Add a new endpoint to process product checkout
 @warehouse_bp.route('/api/checkout', methods=['POST'])
@@ -409,4 +296,180 @@ def api_checkout():
             'message': 'Ticket processed successfully'
         })
     
-    return jsonify({'success': False, 'error': 'Missing scan_log_id or ticket_id'}), 400 
+    return jsonify({'success': False, 'error': 'Missing scan_log_id or ticket_id'}), 400
+
+# Process QR code scan
+@warehouse_bp.route('process_qr', methods=['POST'])
+@login_required
+def process_qr():
+    """Process the QR code and return its contents in JSON format"""
+    data = request.json
+    
+    if not data or 'qr_data' not in data:
+        return jsonify({
+            'success': False, 
+            'message': 'No QR code data provided'
+        }), 400
+    
+    qr_data = data['qr_data'].strip()
+    
+    # New QR code format: NumTicket(4)-IdArticulo(4)-Peso(5)-Timestamp(14)
+    # Example: 001000220000108052025093508 (27 characters)
+    if qr_data.isdigit() and len(qr_data) == 27:
+        try:
+            # Parse the QR components
+            ticket_num = int(qr_data[:4])           # First 4 digits = NumTicket
+            product_id = int(qr_data[4:8])          # Next 4 digits = IdArticulo
+            weight = int(qr_data[8:13]) / 1000.0    # Next 5 digits = Peso (in grams, convert to kg)
+            
+            # Parse timestamp - format: DDMMYYYYHHMMSS
+            timestamp = qr_data[13:27]
+            day = timestamp[0:2]
+            month = timestamp[2:4]
+            year = timestamp[4:8]
+            hour = timestamp[8:10]
+            minute = timestamp[10:12]
+            second = timestamp[12:14]
+            
+            formatted_date = f"{day}/{month}/{year}"
+            formatted_time = f"{hour}:{minute}:{second}"
+            
+            # Find the ticket
+            ticket = TicketHeader.query.filter_by(NumTicket=ticket_num).first()
+            
+            # Find the product
+            product = Product.query.filter_by(IdArticulo=product_id).first()
+            
+            # Log the scan in scan_log table
+            log = ScanLog(
+                user_id=current_user.id,
+                ticket_id=ticket.IdTicket if ticket else None,
+                action='scan',
+                raw_code=qr_data,
+                product_code=product_id,
+                scan_date=formatted_date,
+                scan_time=formatted_time
+            )
+            db.session.add(log)
+            db.session.commit()
+            
+            # If both ticket and product exist
+            if ticket and product:
+                # Check if this product is in the ticket
+                ticket_line = TicketLine.query.filter_by(
+                    IdTicket=ticket.IdTicket,
+                    IdArticulo=product_id
+                ).first()
+                
+                # If ticket_line exists, update the weight if needed
+                if ticket_line:
+                    return jsonify({
+                        'success': True,
+                        'ticket_id': ticket.IdTicket,
+                        'ticket_number': ticket.NumTicket,
+                        'ticket_date': ticket.formatted_date,
+                        'scan_date': f"{formatted_date} {formatted_time}",
+                        'is_processed': ticket.is_processed,
+                        'product': {
+                            'id': product.IdArticulo,
+                            'name': product.Descripcion,
+                            'code': product.IdArticulo,
+                            'weight': float(weight)
+                        },
+                        'scan_log_id': log.id
+                    })
+                else:
+                    # Product is not in the ticket
+                    return jsonify({
+                        'success': False,
+                        'message': f'Product {product_id} not found in ticket {ticket_num}',
+                        'ticket_number': ticket_num,
+                        'product_id': product_id,
+                        'scan_log_id': log.id
+                    })
+            
+            # If ticket exists but product doesn't
+            elif ticket and not product:
+                return jsonify({
+                    'success': False,
+                    'message': f'Product {product_id} not found',
+                    'ticket_id': ticket.IdTicket,
+                    'ticket_number': ticket.NumTicket,
+                    'scan_log_id': log.id
+                })
+            
+            # If product exists but ticket doesn't
+            elif not ticket and product:
+                return jsonify({
+                    'success': False,
+                    'message': f'Ticket {ticket_num} not found',
+                    'product_id': product.IdArticulo,
+                    'product_name': product.Descripcion,
+                    'scan_log_id': log.id
+                })
+            
+            # Neither ticket nor product exists
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f'Ticket {ticket_num} and Product {product_id} not found',
+                    'scan_log_id': log.id
+                })
+                
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error processing QR code: {str(e)}'
+            }), 400
+    
+    # Invalid QR format
+    return jsonify({
+        'success': False,
+        'message': f'Invalid QR code format. Expected 27 digits.'
+    }), 400
+
+# Process checkout from QR scanner
+@warehouse_bp.route('checkout', methods=['POST'])
+@login_required
+def checkout():
+    """Checkout a ticket/product from QR scanner"""
+    data = request.json
+    
+    if not data:
+        return jsonify({
+            'success': False, 
+            'message': 'No data provided'
+        }), 400
+    
+    ticket_id = data.get('ticket_id')
+    
+    if not ticket_id:
+        return jsonify({
+            'success': False, 
+            'message': 'No ticket ID provided'
+        }), 400
+    
+    # Find the ticket
+    ticket = TicketHeader.query.get(ticket_id)
+    if not ticket:
+        return jsonify({
+            'success': False, 
+            'message': f'Ticket {ticket_id} not found'
+        }), 404
+    
+    # Update ticket status to processed
+    ticket.Enviado = 1
+    
+    # Log this action
+    log = ScanLog(
+        user_id=current_user.id,
+        ticket_id=ticket.IdTicket,
+        action='checkout'
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Ticket processed successfully'
+    }) 

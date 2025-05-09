@@ -1,71 +1,100 @@
-2025-05-08 15:39:28,027 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:28] "[35m[1mPOST /warehouse/client/new HTTP/1.1[0m" 500 -
-2025-05-08 15:39:28,076 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:28] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:39:28,085 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:28] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:39:39,299 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 15:39:39,907 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 15:39:40,103 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:129]
-2025-05-08 15:39:40,103 - app - INFO - DBLogiX startup
-2025-05-08 15:39:40,234 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 15:39:40,237 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 15:39:40,251 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2025-05-09 07:59:40,860 - __main__ - INFO - Starting DBLogiX application
+2025-05-09 07:59:42,771 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
+2025-05-09 07:59:43,237 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:129]
+2025-05-09 07:59:43,237 - app - INFO - DBLogiX startup
+2025-05-09 07:59:43,375 - __main__ - INFO - Database tables created (if they did not exist)
+2025-05-09 07:59:43,390 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
+2025-05-09 07:59:43,431 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5000
  * Running on http://192.168.1.26:5000
-2025-05-08 15:39:40,252 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 15:39:44,515 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:44] "GET /warehouse/clients HTTP/1.1" 200 -
-2025-05-08 15:39:44,669 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:44] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:39:44,693 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:44] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:39:46,440 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:46] "GET /warehouse/client/new HTTP/1.1" 200 -
-2025-05-08 15:39:46,481 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:46] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:39:46,492 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:46] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:39:49,874 - warehouse - ERROR - Errore salvataggio cliente: (pymysql.err.IntegrityError) (1048, "Column 'IdEmpresa' cannot be null")
-[SQL: INSERT INTO dat_cliente (`IdCliente`, `IdEmpresa`, `Nombre`, `Direccion`, `CodPostal`, `Poblacion`, `Provincia`, `Pais`, `DNI`, `Telefono1`, `Telefono2`, `Telefono3`, `Email`, `TipoEmailTicket`, `TipoEmailAlbaran`, `TipoEmailFactura`, `Foto`, `IdTarifa`, `Ofertas`, `IdFormaPago`, `IdEstado`, `Observaciones`, `CodInterno`, `Descuento`, `PuntosFidelidad`, `CuentaPendiente`, `EANScanner`, `FormatoAlbaran`, `UsarRecargoEquivalencia`, `DtoProntoPago`, `NombreBanco`, `CodigoCuenta`, `NumeroVencimientos`, `DiasEntreVencimientos`, `TotalPorArticulo`, `AplicarTarifaEtiqueta`, `FormatoFactura`, `ModoFacturacion`, `Modificado`, `Operacion`, `Usuario`, `TimeStamp`) VALUES (%(IdCliente)s, %(IdEmpresa)s, %(Nombre)s, %(Direccion)s, %(CodPostal)s, %(Poblacion)s, %(Provincia)s, %(Pais)s, %(DNI)s, %(Telefono1)s, %(Telefono2)s, %(Telefono3)s, %(Email)s, %(TipoEmailTicket)s, %(TipoEmailAlbaran)s, %(TipoEmailFactura)s, %(Foto)s, %(IdTarifa)s, %(Ofertas)s, %(IdFormaPago)s, %(IdEstado)s, %(Observaciones)s, %(CodInterno)s, %(Descuento)s, %(PuntosFidelidad)s, %(CuentaPendiente)s, %(EANScanner)s, %(FormatoAlbaran)s, %(UsarRecargoEquivalencia)s, %(DtoProntoPago)s, %(NombreBanco)s, %(CodigoCuenta)s, %(NumeroVencimientos)s, %(DiasEntreVencimientos)s, %(TotalPorArticulo)s, %(AplicarTarifaEtiqueta)s, %(FormatoFactura)s, %(ModoFacturacion)s, %(Modificado)s, %(Operacion)s, %(Usuario)s, %(TimeStamp)s)]
-[parameters: {'IdCliente': 3, 'IdEmpresa': None, 'Nombre': 'enea behe', 'Direccion': 'Via Gaspare Spontini, 6, ', 'CodPostal': '10154', 'Poblacion': 'Torino', 'Provincia': 'TO', 'Pais': 'Italia', 'DNI': '', 'Telefono1': '3200891972', 'Telefono2': '', 'Telefono3': '', 'Email': 'enea.behe@gmail.com', 'TipoEmailTicket': 0, 'TipoEmailAlbaran': 0, 'TipoEmailFactura': 0, 'Foto': None, 'IdTarifa': None, 'Ofertas': 0, 'IdFormaPago': None, 'IdEstado': None, 'Observaciones': '', 'CodInterno': '', 'Descuento': None, 'PuntosFidelidad': None, 'CuentaPendiente': None, 'EANScanner': '', 'FormatoAlbaran': '', 'UsarRecargoEquivalencia': 0, 'DtoProntoPago': None, 'NombreBanco': '', 'CodigoCuenta': '', 'NumeroVencimientos': None, 'DiasEntreVencimientos': None, 'TotalPorArticulo': 0, 'AplicarTarifaEtiqueta': 0, 'FormatoFactura': '', 'ModoFacturacion': None, 'Modificado': None, 'Operacion': None, 'Usuario': 'admin', 'TimeStamp': datetime.datetime(2025, 5, 8, 15, 39, 49, 873775)}]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-2025-05-08 15:39:49,890 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:49] "POST /warehouse/client/new HTTP/1.1" 200 -
-2025-05-08 15:39:49,932 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:49] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:39:49,943 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:49] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:39:57,370 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:57] "GET /warehouse/clients HTTP/1.1" 200 -
-2025-05-08 15:39:57,404 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:57] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:39:57,412 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:39:57] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:41:00,560 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:41:00] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 15:41:00,623 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:41:00] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:41:00,625 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:41:00] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:44:27,017 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:44:27] "GET /warehouse/clients HTTP/1.1" 200 -
-2025-05-08 15:44:27,082 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:44:27] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:44:27,105 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:44:27] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:46:41,269 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:46:41] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 15:46:41,320 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:46:41] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:46:41,324 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:46:41] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:46:54,820 - __main__ - INFO - Starting DBLogiX application
-2025-05-08 15:46:55,429 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-08 15:46:55,618 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:129]
-2025-05-08 15:46:55,618 - app - INFO - DBLogiX startup
-2025-05-08 15:46:55,701 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-08 15:46:55,701 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-08 15:46:55,719 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.1.26:5000
-2025-05-08 15:46:55,720 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-08 15:46:57,885 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:46:57] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 15:46:58,032 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:46:58] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:46:58,045 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:46:58] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:47:11,953 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:11] "GET /warehouse/product/1 HTTP/1.1" 200 -
-2025-05-08 15:47:12,000 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:12] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:47:12,006 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:12] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:47:17,346 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:17] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 15:47:17,396 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:17] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:47:17,404 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:17] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:47:54,635 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:54] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-08 15:47:54,681 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:54] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:47:54,692 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:54] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:47:59,768 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:59] "GET /warehouse/products?page=2 HTTP/1.1" 200 -
-2025-05-08 15:47:59,820 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:59] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:47:59,833 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:47:59] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:48:04,102 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:48:04] "GET /warehouse/products?page=1 HTTP/1.1" 200 -
-2025-05-08 15:48:04,148 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:48:04] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:48:04,152 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:48:04] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-08 15:50:43,509 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:50:43] "GET /warehouse/clients HTTP/1.1" 200 -
-2025-05-08 15:50:43,558 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:50:43] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-08 15:50:43,566 - werkzeug - INFO - 127.0.0.1 - - [08/May/2025 15:50:43] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 07:59:43,461 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-05-09 07:59:45,425 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-09 07:59:45,448 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-09 07:59:45,450 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
+2025-05-09 07:59:45,473 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 07:59:45,482 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
+2025-05-09 07:59:45,506 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 07:59:45,512 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
+2025-05-09 07:59:45,534 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 07:59:45,538 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
+2025-05-09 07:59:45,562 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 07:59:45,567 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
+2025-05-09 07:59:45,589 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 07:59:45,619 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-09 07:59:45,629 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 07:59:45,631 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
+2025-05-09 07:59:45,649 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 07:59:45,649 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
+2025-05-09 07:59:45,661 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 07:59:45,663 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
+2025-05-09 07:59:45,672 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-09 07:59:45,672 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
+2025-05-09 07:59:45,685 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 07:59:45,685 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
+2025-05-09 07:59:45,698 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-09 07:59:45,710 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-09 07:59:45,720 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 07:59:45,720 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
+2025-05-09 07:59:45,833 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:45] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-09 07:59:46,132 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:46] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 07:59:46,143 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:46] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 07:59:48,146 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:48] "GET /warehouse/clients HTTP/1.1" 200 -
+2025-05-09 07:59:48,313 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:48] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 07:59:48,319 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:48] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 07:59:50,446 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:50] "GET /warehouse/client/new HTTP/1.1" 200 -
+2025-05-09 07:59:50,639 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:50] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 07:59:50,647 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:50] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 07:59:53,339 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:53] "GET /warehouse/scanner HTTP/1.1" 200 -
+2025-05-09 07:59:53,563 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 07:59:53,567 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 07:59:55,745 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:55] "GET /warehouse/index HTTP/1.1" 200 -
+2025-05-09 07:59:55,919 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:55] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 07:59:55,932 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:55] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 08:11:38,144 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:38] "GET /warehouse/products HTTP/1.1" 200 -
+2025-05-09 08:11:38,328 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:38] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 08:11:38,330 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:38] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 08:11:53,653 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:53] "GET /warehouse/clients HTTP/1.1" 200 -
+2025-05-09 08:11:53,843 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 08:11:53,880 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 08:11:55,421 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-09 08:11:55,445 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
+2025-05-09 08:11:55,453 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
+2025-05-09 08:11:55,476 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:11:55,480 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
+2025-05-09 08:11:55,505 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:11:55,511 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
+2025-05-09 08:11:55,538 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:11:55,544 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
+2025-05-09 08:11:55,568 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:11:55,573 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
+2025-05-09 08:11:55,599 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:11:55,607 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-09 08:11:55,626 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:11:55,636 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
+2025-05-09 08:11:55,656 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:11:55,666 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
+2025-05-09 08:11:55,688 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:11:55,696 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
+2025-05-09 08:11:55,720 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-09 08:11:55,726 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
+2025-05-09 08:11:55,742 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:11:55,756 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
+2025-05-09 08:11:55,777 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-09 08:11:55,804 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-09 08:11:55,831 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:11:55,835 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
+2025-05-09 08:11:55,859 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:55] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-09 08:11:56,044 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:56] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-09 08:11:56,048 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:56] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-09 08:12:01,835 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:12:01,840 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
+2025-05-09 08:12:01,862 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:12:01,862 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
+2025-05-09 08:12:01,893 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-09 08:12:01,897 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
+2025-05-09 08:12:01,928 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:12:01,934 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
+2025-05-09 08:12:01,970 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-09 08:12:01,974 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-09 08:12:02,069 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14

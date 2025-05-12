@@ -233,61 +233,50 @@ def tickets():
         ticket_products = {}
         for ticket in tickets.items:
             try:
-                # Ottieni il prodotto direttamente da una query JOIN con filtro per ID ticket
-                product_line = db.session.query(
+                # Sostituisci la query che prende solo il primo prodotto
+                # con una query che fa un join appropriato tra TicketLine e Product
+                product_info = db.session.query(
                     TicketLine.IdTicket,
                     TicketLine.IdArticulo,
-                    TicketLine.Descripcion,
-                    TicketLine.FechaCaducidad
+                    TicketLine.Descripcion.label('linea_descripcion'),
+                    TicketLine.FechaCaducidad,
+                    Product.Descripcion.label('producto_descripcion')
+                ).join(
+                    Product, 
+                    TicketLine.IdArticulo == Product.IdArticulo
                 ).filter(
                     TicketLine.IdTicket == ticket.IdTicket
                 ).first()
                 
-                # Estrai l'ID articolo dal codice QR per avere priorità
-                product_id_from_qr = None
-                if ticket.CodigoBarras and len(ticket.CodigoBarras) >= 8:
+                # Fallback per QR code se non troviamo prodotti nel join
+                if not product_info and ticket.CodigoBarras and len(ticket.CodigoBarras) >= 8:
                     try:
                         product_id_from_qr = int(ticket.CodigoBarras[4:8])
+                        # Cerca il prodotto usando l'ID dal QR
+                        product = Product.query.filter_by(IdArticulo=product_id_from_qr).first()
+                        if product:
+                            ticket_products[ticket.IdTicket] = {
+                                'product_name': product.Descripcion,
+                                'product_id': product.IdArticulo,
+                                'expiration_date': None
+                            }
+                            continue
                     except (ValueError, TypeError):
                         logger.warning(f"Ticket #{ticket.NumTicket}: ID articolo dal QR non valido")
                 
-                # Se abbiamo un ID dal QR, cerca la linea specifica
-                if product_id_from_qr:
-                    specific_line = db.session.query(
-                        TicketLine.IdTicket,
-                        TicketLine.IdArticulo,
-                        TicketLine.Descripcion,
-                        TicketLine.FechaCaducidad
-                    ).filter(
-                        TicketLine.IdTicket == ticket.IdTicket,
-                        TicketLine.IdArticulo == product_id_from_qr
-                    ).first()
-                    
-                    # Se abbiamo trovato una linea specifica, usala invece della prima
-                    if specific_line:
-                        product_line = specific_line
-                
-                # Se abbiamo trovato un prodotto associato al ticket
-                if product_line:
-                    product_id = product_line.IdArticulo
-                    
-                    # Ottieni il nome prodotto dalla tabella Prodotti se possibile
-                    product = Product.query.filter_by(IdArticulo=product_id).first()
-                    if product:
-                        product_name = product.Descripcion
-                    else:
-                        # Fallback: usa la descrizione dalla linea del ticket
-                        product_name = product_line.Descripcion or f"Prodotto #{product_id}"
+                if product_info:
+                    # Usa la descrizione dal prodotto se disponibile, altrimenti dalla linea ticket
+                    product_name = product_info.producto_descripcion or product_info.linea_descripcion or f"Prodotto #{product_info.IdArticulo}"
                     
                     ticket_products[ticket.IdTicket] = {
                         'product_name': product_name,
-                        'product_id': product_id,
-                        'expiration_date': product_line.FechaCaducidad
+                        'product_id': product_info.IdArticulo,
+                        'expiration_date': product_info.FechaCaducidad
                     }
                     
-                    logger.info(f"Ticket #{ticket.NumTicket}: prodotto '{product_name}' (ID: {product_id})")
-                    if product_line.FechaCaducidad:
-                        logger.info(f"Ticket #{ticket.NumTicket}: data scadenza {product_line.FechaCaducidad}")
+                    logger.info(f"Ticket #{ticket.NumTicket}: prodotto '{product_name}' (ID: {product_info.IdArticulo})")
+                    if product_info.FechaCaducidad:
+                        logger.info(f"Ticket #{ticket.NumTicket}: data scadenza {product_info.FechaCaducidad}")
                 else:
                     # Nessun prodotto trovato, usiamo valori predefiniti
                     ticket_products[ticket.IdTicket] = {
@@ -321,10 +310,80 @@ def tickets():
 @login_required
 def ticket_detail(ticket_id):
     """Detailed view of a single ticket"""
+    # Get the search form for ticket search functionality
+    search_form = SearchForm()
+    
+    # Handle any search form data from URL parameters
+    if request.args.get('query'):
+        search_form.query.data = request.args.get('query')
+    
+    # Get the ticket by ID
     ticket = TicketHeader.query.get_or_404(ticket_id)
     
-    # Get all lines for this ticket
-    lines = TicketLine.query.filter_by(IdTicket=ticket_id).all()
+    # Get all lines for this ticket with explicit join to Product table
+    # Ensures correct association between ticket and products
+    lines = db.session.query(TicketLine).filter(
+        TicketLine.IdTicket == ticket_id
+    ).outerjoin(
+        Product, TicketLine.IdArticulo == Product.IdArticulo
+    ).order_by(
+        TicketLine.IdTicket,
+        TicketLine.IdArticulo
+    ).all()
+    
+    # Recupera il prodotto principale usando la stessa logica della pagina tickets
+    main_product_info = db.session.query(
+        TicketLine.IdTicket,
+        TicketLine.IdArticulo,
+        TicketLine.Descripcion.label('linea_descripcion'),
+        TicketLine.FechaCaducidad,
+        Product.Descripcion.label('producto_descripcion')
+    ).join(
+        Product, 
+        TicketLine.IdArticulo == Product.IdArticulo
+    ).filter(
+        TicketLine.IdTicket == ticket_id
+    ).first()
+    
+    # Estrai l'ID articolo dal codice QR per avere priorità
+    product_id_from_qr = None
+    if ticket.CodigoBarras and len(ticket.CodigoBarras) >= 8:
+        try:
+            product_id_from_qr = int(ticket.CodigoBarras[4:8])
+            # Se troviamo un ID prodotto nel QR, cerchiamo specificamente quel prodotto
+            if product_id_from_qr:
+                specific_product = db.session.query(
+                    TicketLine.IdTicket,
+                    TicketLine.IdArticulo,
+                    TicketLine.Descripcion.label('linea_descripcion'),
+                    TicketLine.FechaCaducidad,
+                    Product.Descripcion.label('producto_descripcion')
+                ).join(
+                    Product, 
+                    TicketLine.IdArticulo == Product.IdArticulo
+                ).filter(
+                    TicketLine.IdTicket == ticket_id,
+                    TicketLine.IdArticulo == product_id_from_qr
+                ).first()
+                
+                if specific_product:
+                    main_product_info = specific_product
+        except (ValueError, TypeError):
+            logger.warning(f"Ticket #{ticket.NumTicket}: ID articolo dal QR non valido")
+    
+    # Prepara i dati del prodotto principale
+    main_product = {
+        'id': None,
+        'name': "Nessun prodotto",
+        'description': None,
+        'expiration_date': None
+    }
+    
+    if main_product_info:
+        main_product['id'] = main_product_info.IdArticulo
+        main_product['name'] = main_product_info.producto_descripcion or main_product_info.linea_descripcion
+        main_product['description'] = main_product_info.linea_descripcion
+        main_product['expiration_date'] = main_product_info.FechaCaducidad
     
     # Check for soon-to-expire products
     today = datetime.now()
@@ -339,6 +398,16 @@ def ticket_detail(ticket_id):
             elif days_to_expire < 0:
                 expired = True
     
+    # Count the total expiring tickets for the badge in filter
+    seven_days_from_now = today + timedelta(days=7)
+    expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
+        join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
+        filter(
+            TicketLine.FechaCaducidad.isnot(None),
+            TicketLine.FechaCaducidad <= seven_days_from_now,
+            TicketLine.FechaCaducidad >= today
+        ).count()
+    
     # Log this view
     log = ScanLog(
         user_id=current_user.id,
@@ -352,7 +421,10 @@ def ticket_detail(ticket_id):
                           ticket=ticket,
                           lines=lines,
                           expiring_soon=expiring_soon,
-                          expired=expired)
+                          expired=expired,
+                          search_form=search_form,
+                          expiring_count=expiring_count,
+                          main_product=main_product)
 
 @warehouse_bp.route('/ticket/<int:ticket_id>/checkout', methods=['POST'])
 @login_required

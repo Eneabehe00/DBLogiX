@@ -1,0 +1,10 @@
+Errore nel recupero delle linee del ticket #2: Textual SQL expression '\n            SELECT * FRO...' should be explicitly declared as text('\n            SELECT * FRO...')
+Errore nel recupero delle linee del ticket #2: Textual SQL expression '\n            SELECT * FRO...' should be explicitly declared as text('\n            SELECT * FRO...')
+Errore nel recupero diretto SQL: (1146, "Table 'sys_datos.ticketline' doesn't exist")
+Errore nel recupero diretto SQL: (1146, "Table 'sys_datos.ticketline' doesn't exist")
+Errore nel recupero diretto SQL: (1146, "Table 'sys_datos.ticketline' doesn't exist")
+Errore nel recupero diretto SQL: (1146, "Table 'sys_datos.ticketline' doesn't exist")
+Errore nel recupero diretto SQL: (1146, "Table 'sys_datos.ticketline' doesn't exist")
+Errore nel recupero diretto SQL: not all arguments converted during string formatting
+Errore nel recupero diretto SQL: not all arguments converted during string formatting
+Errore nel recupero diretto SQL: not all arguments converted during string formatting

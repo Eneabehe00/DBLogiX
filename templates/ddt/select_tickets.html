@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Seleziona Ticket per DDT{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}">DDT</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('ddt.new') }}">Seleziona Cliente</a></li>
+            <li class="breadcrumb-item active">Seleziona Ticket</li>
+        </ol>
+    </nav>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Cliente Selezionato</h5>
+                </div>
+                <div class="card-body">
+                    <h5>{{ cliente.Nombre }}</h5>
+                    <p><strong>Indirizzo:</strong> {{ cliente.Direccion or 'N/A' }}, {{ cliente.Poblacion or 'N/A' }}</p>
+                    <p><strong>P.IVA/CF:</strong> {{ cliente.DNI or 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Filtra Ticket</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ddt.select_tickets', cliente_id=cliente.IdCliente) }}" class="row g-3">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="col-md-5">
+                            <label for="from_date" class="form-label">Data Inizio</label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" 
+                                   value="{{ form.from_date.data }}" required>
+                        </div>
+                        
+                        <div class="col-md-5">
+                            <label for="to_date" class="form-label">Data Fine</label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" 
+                                   value="{{ form.to_date.data }}" required>
+                        </div>
+                        
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-info w-100">
+                                <i class="fas fa-filter"></i> Filtra
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Seleziona Ticket</h5>
+            <button id="btnCreaDDT" class="btn btn-success" disabled>
+                <i class="fas fa-file-invoice"></i> Crea DDT
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="statusMessage" class="alert alert-info mb-3">
+                <span id="statusContent">Seleziona almeno un ticket per creare il DDT.</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 50px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="checkSelectAll">
+                                </div>
+                            </th>
+                            <th>ID Ticket</th>
+                            <th>Data</th>
+                            <th>N. Linee</th>
+                            <th>Dettagli</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if tickets %}
+                            {% for ticket in tickets %}
+                            <tr class="ticket-row">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input ticket-checkbox" type="checkbox" 
+                                               value="{{ ticket.IdTicket }}"
+                                               data-ticket="{{ ticket.IdTicket }}"
+                                               data-empresa="{{ ticket.IdEmpresa }}"
+                                               data-tienda="{{ ticket.IdTienda }}"
+                                               data-balanza-maestra="{{ ticket.IdBalanzaMaestra }}"
+                                               data-balanza-esclava="{{ ticket.IdBalanzaEsclava }}"
+                                               data-tipo-venta="{{ ticket.TipoVenta }}">
+                                    </div>
+                                </td>
+                                <td>{{ ticket.IdTicket }}</td>
+                                <td>{{ ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else 'N/A' }}</td>
+                                <td>{{ ticket.NumLineas or 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" class="btn btn-sm btn-info" target="_blank">
+                                        <i class="fas fa-eye"></i> Dettagli
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Nessun ticket disponibile nel periodo selezionato o tutti i ticket sono già stati associati a DDT.
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="formCreaDDT" action="{{ url_for('ddt.create') }}" method="POST" class="d-none">
+    {{ create_form.csrf_token }}
+    <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+    <input type="hidden" name="cliente_nome" value="{{ cliente.Nombre }}">
+    <input type="hidden" name="id_empresa" value="{{ id_empresa }}">
+    <input type="hidden" name="tickets" id="hiddenSelectedTickets" value="">
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    console.log('Inizializzazione pagina di selezione ticket...');
+    
+    // Elements
+    const $btnCreaDDT = $('#btnCreaDDT');
+    const $checkSelectAll = $('#checkSelectAll');
+    const $ticketCheckboxes = $('.ticket-checkbox');
+    const $formCreaDDT = $('#formCreaDDT');
+    const $hiddenSelectedTickets = $('#hiddenSelectedTickets');
+    const $statusMessage = $('#statusMessage');
+    const $statusContent = $('#statusContent');
+    
+    console.log('Ticket trovati:', $ticketCheckboxes.length);
+    
+    // Funzione per mostrare messaggi di stato
+    function showStatus(message) {
+        $statusContent.text(message);
+        $statusMessage.removeClass('d-none').show();
+        console.log('Stato:', message);
+    }
+    
+    // Funzione per aggiornare il pulsante Crea DDT
+    function updateCreaDDTButton() {
+        const selectedCount = $('.ticket-checkbox:checked').length;
+        console.log('Ticket selezionati:', selectedCount);
+        
+        if (selectedCount > 0) {
+            $btnCreaDDT.prop('disabled', false).html(`<i class="fas fa-file-invoice"></i> Crea DDT (${selectedCount})`);
+            showStatus(`Hai selezionato ${selectedCount} ticket. Puoi procedere con la creazione del DDT.`);
+        } else {
+            $btnCreaDDT.prop('disabled', true).html(`<i class="fas fa-file-invoice"></i> Crea DDT`);
+            showStatus('Seleziona almeno un ticket per creare il DDT.');
+        }
+    }
+    
+    // Rendere l'intera riga cliccabile per selezionare il ticket
+    $('.ticket-row').on('click', function(e) {
+        // Evita che il click sulla riga attivi il click su altri elementi come link
+        if (!$(e.target).is('a, button, input, .btn, i')) {
+            const $checkbox = $(this).find('.ticket-checkbox');
+            $checkbox.prop('checked', !$checkbox.prop('checked')).trigger('change');
+        }
+    });
+    
+    // Gestione checkbox "Seleziona tutti"
+    $checkSelectAll.on('change', function() {
+        const isChecked = $(this).prop('checked');
+        console.log('Seleziona tutti:', isChecked);
+        
+        $ticketCheckboxes.prop('checked', isChecked).trigger('change');
+        updateCreaDDTButton();
+    });
+    
+    // Gestione click sui singoli checkbox
+    $ticketCheckboxes.on('change', function() {
+        // Aggiorna lo stato "Seleziona tutti" in base allo stato corrente
+        const allChecked = $('.ticket-checkbox:checked').length === $ticketCheckboxes.length;
+        $checkSelectAll.prop('checked', allChecked && $ticketCheckboxes.length > 0);
+        
+        // Aggiorna UI
+        updateCreaDDTButton();
+    });
+    
+    // Gestione pulsante "Crea DDT"
+    $btnCreaDDT.on('click', function(e) {
+        e.preventDefault();
+        console.log('Creazione DDT iniziata...');
+        
+        const selectedTickets = [];
+        const $checkedBoxes = $('.ticket-checkbox:checked');
+        
+        if ($checkedBoxes.length === 0) {
+            alert('Devi selezionare almeno un ticket per creare il DDT.');
+            return;
+        }
+        
+        // Raccolta dati dai ticket selezionati
+        $checkedBoxes.each(function() {
+            const $this = $(this);
+            selectedTickets.push({
+                id_ticket: $this.data('ticket'),
+                id_empresa: $this.data('empresa'),
+                id_tienda: $this.data('tienda'),
+                id_balanza_maestra: $this.data('balanza-maestra'),
+                id_balanza_esclava: $this.data('balanza-esclava'),
+                tipo_venta: $this.data('tipo-venta')
+            });
+        });
+        
+        console.log('Ticket da includere nel DDT:', selectedTickets.length);
+        
+        // Aggiorna form e invia
+        $hiddenSelectedTickets.val(JSON.stringify(selectedTickets));
+        showStatus(`Creazione DDT con ${selectedTickets.length} ticket...`);
+        
+        setTimeout(function() {
+            $formCreaDDT.submit();
+        }, 100);
+    });
+    
+    // Inizializza lo stato dei pulsanti
+    updateCreaDDTButton();
+    console.log('Inizializzazione completata.');
+});
+</script>
+{% endblock %} 

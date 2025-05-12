@@ -1,5 +1,7 @@
-from flask import Flask, render_template
-from flask_login import LoginManager
+from flask import Flask, render_template, jsonify
+from flask_login import LoginManager, login_required
+from flask_wtf.csrf import CSRFProtect
+from flask_cors import CORS
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -15,12 +17,18 @@ from models import db
 def create_app():
     app = Flask(__name__)
     
+    # Initialize CSRF protection
+    csrf = CSRFProtect(app)
+    
     # Load configuration
     try:
         app.config.from_object('config.Config')
         
         # Override config with environment variables if present
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'dev-key-for-dblogix'))
+        
+        # Set debug mode to True
+        app.config['DEBUG'] = True
         
         # Database configuration can be updated from environment
         db_host = os.environ.get('DB_HOST')
@@ -75,10 +83,12 @@ def create_app():
         from warehouse import warehouse_bp
         from auth import auth_bp
         from admin import admin_bp
+        from ddt import ddt_bp
         
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(warehouse_bp, url_prefix='/warehouse')
         app.register_blueprint(admin_bp, url_prefix='/admin')
+        app.register_blueprint(ddt_bp, url_prefix='/ddt')
         
         # Register template filters
         from utils import format_price, format_weight, current_time, b64encode
@@ -118,18 +128,7 @@ def create_app():
             if not os.path.exists('logs'):
                 os.mkdir('logs')
             try:
-                file_handler = RotatingFileHandler('logs/dblogix.log', maxBytes=10240, backupCount=5, delay=True)
-                file_handler.setFormatter(logging.Formatter(
-                    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-                ))
-                file_handler.setLevel(logging.INFO)
-                app.logger.addHandler(file_handler)
-                
-                app.logger.setLevel(logging.INFO)
-                app.logger.info('DBLogiX startup')
-            except Exception as e:
-                print(f"Warning: Could not set up file logging: {str(e)}")
-                # Fall back to console logging
+                # Utilizzo StreamHandler invece di RotatingFileHandler per evitare problemi di permessi
                 console_handler = logging.StreamHandler()
                 console_handler.setFormatter(logging.Formatter(
                     '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
@@ -137,8 +136,24 @@ def create_app():
                 console_handler.setLevel(logging.INFO)
                 app.logger.addHandler(console_handler)
                 app.logger.setLevel(logging.INFO)
-                app.logger.info('DBLogiX startup (console logging only)')
+                app.logger.info('DBLogiX startup (console logging)')
+            except Exception as e:
+                print(f"Warning: Could not set up logging: {str(e)}")
+                # Fall back to print
+                print('DBLogiX startup - logging disabled due to error')
             
+        # Setup debug toolbar
+        try:
+            from flask_debugtoolbar import DebugToolbarExtension
+            app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+            toolbar = DebugToolbarExtension(app)
+            logger.info("Debug toolbar enabled")
+        except ImportError:
+            logger.warning("Flask-DebugToolbar not installed. Debug toolbar will not be available.")
+            
+        # Enable CORS
+        CORS(app)
+        
     except Exception as e:
         logger.error(f"Error initializing application: {str(e)}")
         print(f"Application initialization error: {str(e)}")
@@ -153,7 +168,7 @@ app = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
-    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client
+    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, DDTHead, DDTLine, Company
     return {
         'db': db, 
         'User': User, 
@@ -161,8 +176,27 @@ def make_shell_context():
         'TicketHeader': TicketHeader, 
         'TicketLine': TicketLine,
         'ScanLog': ScanLog,
-        'Client': Client
+        'Client': Client,
+        'DDTHead': DDTHead,
+        'DDTLine': DDTLine,
+        'Company': Company
     }
+
+@app.route('/debug')
+def debug_info():
+    """Print debug info to help diagnose issues"""
+    from flask import session, request
+    import sys
+    
+    debug_info = {
+        "Python Version": sys.version,
+        "Flask Routes": [str(rule) for rule in app.url_map.iter_rules()],
+        "Request Headers": dict(request.headers),
+        "Session Data": dict(session) if session else "No session data",
+        "Config": {k: str(v) for k, v in app.config.items() if k != 'SECRET_KEY'}
+    }
+    
+    return jsonify(debug_info)
 
 # Run application if this file is executed directly
 if __name__ == '__main__':

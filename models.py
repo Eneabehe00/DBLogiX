@@ -103,6 +103,11 @@ class TicketHeader(db.Model):
     __tablename__ = 'dat_ticket_cabecera'
     
     IdTicket = db.Column(db.Integer, primary_key=True)
+    IdEmpresa = db.Column(db.Integer, default=1)
+    IdTienda = db.Column(db.Integer, default=1)
+    IdBalanzaMaestra = db.Column(db.Integer, default=1)
+    IdBalanzaEsclava = db.Column(db.Integer, default=1)
+    TipoVenta = db.Column(db.Integer, default=1)
     NumTicket = db.Column(db.Integer)
     Fecha = db.Column(db.DateTime)
     CodigoBarras = db.Column(db.String(50))
@@ -185,4 +190,140 @@ class ScanLog(db.Model):
     scan_time = db.Column(db.String(20))
     
     def __repr__(self):
-        return f'<ScanLog {self.id}: User {self.user_id} - Ticket {self.ticket_id}>' 
+        return f'<ScanLog {self.id}: User {self.user_id} - Ticket {self.ticket_id}>'
+
+
+class Company(db.Model):
+    __tablename__ = 'dat_empresa'
+    
+    IdEmpresa = db.Column(db.Integer, primary_key=True)
+    NombreEmpresa = db.Column(db.String(100))
+    CIF_VAT = db.Column(db.String(50))
+    Telefono1 = db.Column(db.String(20))
+    Direccion = db.Column(db.String(200))
+    CodPostal = db.Column(db.String(10))
+    Poblacion = db.Column(db.String(100))
+    Provincia = db.Column(db.String(100))
+    # Adding only the fields we need for the DDT functionality
+    
+    def __repr__(self):
+        return f'<Company {self.IdEmpresa}: {self.NombreEmpresa}>'
+
+
+class DDTHead(db.Model):
+    __tablename__ = 'ddt_head'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_cliente = db.Column(db.Integer, db.ForeignKey('dat_cliente.IdCliente'), nullable=False)
+    id_empresa = db.Column(db.Integer, db.ForeignKey('dat_empresa.IdEmpresa'), nullable=False)
+    data_creazione = db.Column(db.DateTime, default=datetime.utcnow)
+    totale_senza_iva = db.Column(db.Numeric(10, 2), default=0)
+    totale_iva = db.Column(db.Numeric(10, 2), default=0)
+    totale_importo = db.Column(db.Numeric(10, 2), default=0)
+    
+    # Relationships
+    cliente = db.relationship('Client', 
+                              primaryjoin="DDTHead.id_cliente == Client.IdCliente",
+                              foreign_keys=[id_cliente])
+    empresa = db.relationship('Company',
+                               primaryjoin="DDTHead.id_empresa == Company.IdEmpresa",
+                               foreign_keys=[id_empresa])
+    lines = db.relationship('DDTLine', backref='ddt', lazy='dynamic',
+                            cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f'<DDTHead {self.id}: Cliente {self.id_cliente}>'
+    
+    def calculate_totals(self):
+        """Calculate and update the totals for this DDT"""
+        total_senza_iva = 0
+        total_iva = 0
+        
+        for ddt_line in self.lines:
+            # Get the ticket
+            ticket = TicketHeader.query.filter_by(
+                IdTicket=ddt_line.id_ticket
+            ).first()
+            
+            if not ticket:
+                continue
+            
+            # Get ticket lines
+            ticket_lines = TicketLine.query.filter_by(
+                IdTicket=ticket.IdTicket
+            ).all()
+            
+            # Calculate totals for each line
+            for t_line in ticket_lines:
+                product = Product.query.get(t_line.IdArticulo)
+                if not product:
+                    continue
+                
+                # Determine VAT rate
+                vat_rate = 0
+                if product.IdIva == 1:
+                    vat_rate = 0.04  # 4%
+                elif product.IdIva == 2:
+                    vat_rate = 0.10  # 10%
+                elif product.IdIva == 3:
+                    vat_rate = 0.22  # 22%
+                
+                # Calculate price without VAT
+                price_with_vat = float(product.PrecioConIVA)
+                price_without_vat = price_with_vat / (1 + vat_rate)
+                
+                # Multiply by weight/quantity
+                line_total = price_without_vat * float(t_line.Peso)
+                line_vat = line_total * vat_rate
+                
+                total_senza_iva += line_total
+                total_iva += line_vat
+        
+        # Update totals
+        self.totale_senza_iva = total_senza_iva
+        self.totale_iva = total_iva
+        self.totale_importo = total_senza_iva + total_iva
+        db.session.commit()
+        
+        return {
+            'totale_senza_iva': self.totale_senza_iva,
+            'totale_iva': self.totale_iva,
+            'totale_importo': self.totale_importo
+        }
+
+
+class DDTLine(db.Model):
+    __tablename__ = 'ddt_line'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_ddt = db.Column(db.Integer, db.ForeignKey('ddt_head.id'), nullable=False)
+    id_empresa = db.Column(db.Integer, nullable=False)
+    id_tienda = db.Column(db.Integer, nullable=False)
+    id_balanza_maestra = db.Column(db.Integer, nullable=False)
+    id_balanza_esclava = db.Column(db.Integer, nullable=False)
+    tipo_venta = db.Column(db.Integer, nullable=False)
+    id_ticket = db.Column(db.BigInteger, nullable=False)
+    
+    # Add composite foreign key constraint in __table_args__
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ['id_empresa', 'id_tienda', 'id_balanza_maestra', 
+             'id_balanza_esclava', 'tipo_venta', 'id_ticket'],
+            ['dat_ticket_cabecera.IdEmpresa', 'dat_ticket_cabecera.IdTienda',
+             'dat_ticket_cabecera.IdBalanzaMaestra', 'dat_ticket_cabecera.IdBalanzaEsclava',
+             'dat_ticket_cabecera.TipoVenta', 'dat_ticket_cabecera.IdTicket']
+        ),
+    )
+    
+    # Relationship to ticket header
+    ticket = db.relationship('TicketHeader',
+                             primaryjoin="and_(DDTLine.id_ticket == TicketHeader.IdTicket, "
+                                         "DDTLine.id_empresa == TicketHeader.IdEmpresa, "
+                                         "DDTLine.id_tienda == TicketHeader.IdTienda, "
+                                         "DDTLine.id_balanza_maestra == TicketHeader.IdBalanzaMaestra, "
+                                         "DDTLine.id_balanza_esclava == TicketHeader.IdBalanzaEsclava, "
+                                         "DDTLine.tipo_venta == TicketHeader.TipoVenta)",
+                             foreign_keys=[id_ticket, id_empresa, id_tienda, id_balanza_maestra, id_balanza_esclava, tipo_venta])
+    
+    def __repr__(self):
+        return f'<DDTLine {self.id}: DDT {self.id_ddt} - Ticket {self.id_ticket}>' 

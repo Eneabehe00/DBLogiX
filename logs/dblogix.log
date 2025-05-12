@@ -1,100 +1,74 @@
-2025-05-09 07:59:40,860 - __main__ - INFO - Starting DBLogiX application
-2025-05-09 07:59:42,771 - app - INFO - Database configuration: 192.168.1.17:3306/sys_datos
-2025-05-09 07:59:43,237 INFO: DBLogiX startup [in C:\Users\eneab\Desktop\WA\DB-LogiX\app.py:129]
-2025-05-09 07:59:43,237 - app - INFO - DBLogiX startup
-2025-05-09 07:59:43,375 - __main__ - INFO - Database tables created (if they did not exist)
-2025-05-09 07:59:43,390 - __main__ - INFO - Running application on 0.0.0.0:5000 (debug=False)
-2025-05-09 07:59:43,431 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on all addresses (0.0.0.0)
- * Running on http://127.0.0.1:5000
- * Running on http://192.168.1.26:5000
-2025-05-09 07:59:43,461 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-05-09 07:59:45,425 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
-2025-05-09 07:59:45,448 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
-2025-05-09 07:59:45,450 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
-2025-05-09 07:59:45,473 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 07:59:45,482 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
-2025-05-09 07:59:45,506 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 07:59:45,512 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
-2025-05-09 07:59:45,534 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 07:59:45,538 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
-2025-05-09 07:59:45,562 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 07:59:45,567 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
-2025-05-09 07:59:45,589 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 07:59:45,619 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
-2025-05-09 07:59:45,629 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 07:59:45,631 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
-2025-05-09 07:59:45,649 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 07:59:45,649 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
-2025-05-09 07:59:45,661 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 07:59:45,663 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
-2025-05-09 07:59:45,672 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-09 07:59:45,672 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
-2025-05-09 07:59:45,685 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 07:59:45,685 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
-2025-05-09 07:59:45,698 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
-2025-05-09 07:59:45,710 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-09 07:59:45,720 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 07:59:45,720 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
-2025-05-09 07:59:45,833 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:45] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-09 07:59:46,132 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:46] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 07:59:46,143 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:46] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 07:59:48,146 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:48] "GET /warehouse/clients HTTP/1.1" 200 -
-2025-05-09 07:59:48,313 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:48] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 07:59:48,319 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:48] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 07:59:50,446 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:50] "GET /warehouse/client/new HTTP/1.1" 200 -
-2025-05-09 07:59:50,639 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:50] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 07:59:50,647 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:50] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 07:59:53,339 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:53] "GET /warehouse/scanner HTTP/1.1" 200 -
-2025-05-09 07:59:53,563 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 07:59:53,567 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 07:59:55,745 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:55] "GET /warehouse/index HTTP/1.1" 200 -
-2025-05-09 07:59:55,919 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:55] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 07:59:55,932 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 07:59:55] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 08:11:38,144 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:38] "GET /warehouse/products HTTP/1.1" 200 -
-2025-05-09 08:11:38,328 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:38] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 08:11:38,330 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:38] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 08:11:53,653 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:53] "GET /warehouse/clients HTTP/1.1" 200 -
-2025-05-09 08:11:53,843 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:53] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 08:11:53,880 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:53] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 08:11:55,421 - warehouse - INFO - Ticket #15: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
-2025-05-09 08:11:55,445 - warehouse - INFO - Ticket #14: prodotto 'CROCCHE' DI PATATE (COTTO)' (ID: 23)
-2025-05-09 08:11:55,453 - warehouse - INFO - Ticket #14: data scadenza 2025-05-10 15:18:17
-2025-05-09 08:11:55,476 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:11:55,480 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
-2025-05-09 08:11:55,505 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:11:55,511 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
-2025-05-09 08:11:55,538 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:11:55,544 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
-2025-05-09 08:11:55,568 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:11:55,573 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
-2025-05-09 08:11:55,599 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:11:55,607 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
-2025-05-09 08:11:55,626 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:11:55,636 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
-2025-05-09 08:11:55,656 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:11:55,666 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
-2025-05-09 08:11:55,688 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:11:55,696 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
-2025-05-09 08:11:55,720 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-09 08:11:55,726 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
-2025-05-09 08:11:55,742 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:11:55,756 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
-2025-05-09 08:11:55,777 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
-2025-05-09 08:11:55,804 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
-2025-05-09 08:11:55,831 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:11:55,835 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
-2025-05-09 08:11:55,859 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:55] "GET /warehouse/tickets HTTP/1.1" 200 -
-2025-05-09 08:11:56,044 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:56] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-05-09 08:11:56,048 - werkzeug - INFO - 127.0.0.1 - - [09/May/2025 08:11:56] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
-2025-05-09 08:12:01,835 - warehouse - INFO - Ticket #13: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:12:01,840 - warehouse - INFO - Ticket #13: data scadenza 2025-05-18 15:17:55
-2025-05-09 08:12:01,862 - warehouse - INFO - Ticket #12: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:12:01,862 - warehouse - INFO - Ticket #12: data scadenza 2025-05-28 15:17:38
-2025-05-09 08:12:01,893 - warehouse - INFO - Ticket #11: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
-2025-05-09 08:12:01,897 - warehouse - INFO - Ticket #11: data scadenza 2025-05-28 15:04:52
-2025-05-09 08:12:01,928 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:12:01,934 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
-2025-05-09 08:12:01,970 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
-2025-05-09 08:12:01,974 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
-2025-05-09 08:12:02,069 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
+2025-05-12 08:30:10,468 - warehouse - INFO - Ticket #10: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-12 08:30:10,484 - warehouse - INFO - Ticket #10: data scadenza 2025-05-18 15:04:13
+2025-05-12 08:30:10,493 - warehouse - INFO - Ticket #9: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-12 08:30:10,493 - warehouse - INFO - Ticket #9: data scadenza 2025-05-09 15:03:32
+2025-05-12 08:30:10,506 - warehouse - INFO - Ticket #8: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-12 08:30:10,506 - warehouse - INFO - Ticket #8: data scadenza 2025-05-28 14:56:14
+2025-05-12 08:30:10,523 - warehouse - INFO - Ticket #7: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-12 08:30:10,523 - warehouse - INFO - Ticket #7: data scadenza 2025-05-28 14:55:12
+2025-05-12 08:30:10,573 - warehouse - INFO - Ticket #6: prodotto 'CROCCHE' DI PATATE' (ID: 1)
+2025-05-12 08:30:10,577 - warehouse - INFO - Ticket #6: data scadenza 2025-05-09 14:50:02
+2025-05-12 08:30:10,591 - warehouse - INFO - Ticket #5: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-12 08:30:10,596 - warehouse - INFO - Ticket #5: data scadenza 2025-05-18 14:48:43
+2025-05-12 08:30:10,611 - warehouse - INFO - Ticket #4: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-12 08:30:10,615 - warehouse - INFO - Ticket #4: data scadenza 2025-05-28 14:48:03
+2025-05-12 08:30:10,628 - warehouse - INFO - Ticket #3: prodotto 'FRIARIELLI NAPOLETANI' (ID: 17)
+2025-05-12 08:30:10,643 - warehouse - INFO - Ticket #2: prodotto 'CREMA DI CACIOCAVALLO' (ID: 19)
+2025-05-12 08:30:10,662 - warehouse - INFO - Ticket #1: prodotto 'CIPOLLE ROSSE CARAMELLATE' (ID: 22)
+2025-05-12 08:30:10,669 - warehouse - INFO - Ticket #1: data scadenza 2025-05-28 12:36:43
+2025-05-12 08:30:10,773 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "GET /warehouse/tickets HTTP/1.1" 200 -
+2025-05-12 08:30:10,884 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-12 08:30:10,901 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:10,925 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "[36mGET /_debug_toolbar/static/js/jquery-migrate.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:10,933 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "[36mGET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:10,938 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "[36mGET /_debug_toolbar/static/js/jquery.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:10,949 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:10] "[36mGET /_debug_toolbar/static/js/toolbar.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:11,029 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:11] "GET /_debug_toolbar/static/css/toolbar.css?0.6479546525481159 HTTP/1.1" 200 -
+2025-05-12 08:30:11,063 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:11] "[36mGET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,488 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "GET /warehouse/index HTTP/1.1" 200 -
+2025-05-12 08:30:12,614 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,621 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,629 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /_debug_toolbar/static/js/jquery.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,631 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /_debug_toolbar/static/js/jquery-migrate.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,642 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /_debug_toolbar/static/js/toolbar.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,643 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:12,773 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "GET /_debug_toolbar/static/css/toolbar.css?0.9588185697469345 HTTP/1.1" 200 -
+2025-05-12 08:30:12,791 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:12] "[36mGET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,414 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "GET /warehouse/scanner HTTP/1.1" 200 -
+2025-05-12 08:30:14,587 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,604 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,624 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /_debug_toolbar/static/js/jquery.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,642 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /_debug_toolbar/static/js/jquery-migrate.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,653 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,663 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /_debug_toolbar/static/js/toolbar.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:14,750 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "GET /_debug_toolbar/static/css/toolbar.css?0.05382663996965509 HTTP/1.1" 200 -
+2025-05-12 08:30:14,766 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:14] "[36mGET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,655 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "GET /ddt/ HTTP/1.1" 200 -
+2025-05-12 08:30:15,752 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,777 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,787 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /_debug_toolbar/static/js/jquery.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,794 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /_debug_toolbar/static/js/jquery-migrate.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,822 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,833 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /_debug_toolbar/static/js/toolbar.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:15,920 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "GET /_debug_toolbar/static/css/toolbar.css?0.8230969997254454 HTTP/1.1" 200 -
+2025-05-12 08:30:15,947 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:15] "[36mGET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,595 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "GET /ddt/new HTTP/1.1" 200 -
+2025-05-12 08:30:18,790 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,800 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,812 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /_debug_toolbar/static/js/jquery.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,820 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /_debug_toolbar/static/js/jquery-migrate.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,826 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,829 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /_debug_toolbar/static/js/toolbar.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:18,928 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "GET /_debug_toolbar/static/css/toolbar.css?0.10712785208287978 HTTP/1.1" 200 -
+2025-05-12 08:30:18,960 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:18] "[36mGET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1[0m" 304 -
+2025-05-12 08:30:22,106 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:22] "GET /ddt/api/clients/search?term=bac HTTP/1.1" 200 -
+2025-05-12 08:30:23,655 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:23] "[32mPOST /ddt/new HTTP/1.1[0m" 302 -
+2025-05-12 08:30:23,814 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:23] "GET /ddt/select_tickets/2 HTTP/1.1" 200 -
+2025-05-12 08:30:23,998 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:23] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-05-12 08:30:24,027 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "[36mGET /static/js/main.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:24,027 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "[36mGET /_debug_toolbar/static/js/jquery.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:24,034 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "[36mGET /_debug_toolbar/static/js/jquery-migrate.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:24,038 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "[36mGET /_debug_toolbar/static/js/jquery.tablesorter.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:24,039 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "[36mGET /_debug_toolbar/static/js/toolbar.js HTTP/1.1[0m" 304 -
+2025-05-12 08:30:24,144 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "GET /_debug_toolbar/static/css/toolbar.css?0.5126868168902181 HTTP/1.1" 200 -
+2025-05-12 08:30:24,171 - werkzeug - INFO - 127.0.0.1 - - [12/May/2025 08:30:24] "[36mGET /_debug_toolbar/static/img/djdt_vertical.png HTTP/1.1[0m" 304 -

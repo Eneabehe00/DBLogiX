@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Documenti di Trasporto{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Documenti di Trasporto (DDT)</h1>
+        <a href="{{ url_for('ddt.new') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nuovo DDT
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Elenco DDT</h5>
+        </div>
+        <div class="card-body">
+            {% if ddts.items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Data Creazione</th>
+                            <th>Totale Imponibile</th>
+                            <th>Totale IVA</th>
+                            <th>Totale DDT</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ddt in ddts.items %}
+                        <tr>
+                            <td>{{ ddt.id }}</td>
+                            <td>
+                                {% if ddt.cliente %}
+                                    {{ ddt.cliente.Nombre }}
+                                {% else %}
+                                    Cliente non trovato
+                                {% endif %}
+                            </td>
+                            <td>{{ ddt.data_creazione.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>€ {{ "%.2f"|format(ddt.totale_senza_iva|float) }}</td>
+                            <td>€ {{ "%.2f"|format(ddt.totale_iva|float) }}</td>
+                            <td>€ {{ "%.2f"|format(ddt.totale_importo|float) }}</td>
+                            <td>
+                                <a href="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i> Dettagli
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="DDT pagination">
+                <ul class="pagination justify-content-center">
+                    {% if ddts.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('ddt.index', page=ddts.prev_num) }}">Precedente</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Precedente</span>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in ddts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == ddts.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('ddt.index', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if ddts.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('ddt.index', page=ddts.next_num) }}">Successivo</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Successivo</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                <h5>Nessun DDT trovato</h5>
+                <p>Non ci sono documenti di trasporto nel sistema. Clicca su "Nuovo DDT" per crearne uno.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -106,4 +106,29 @@ class ClientForm(FlaskForm):
     
     foto = FileField('Foto')
     
-    submit = SubmitField('Salva') 
+    submit = SubmitField('Salva')
+
+class DDTClientSelectForm(FlaskForm):
+    cliente_id = IntegerField('Cliente ID', validators=[DataRequired()])
+    cliente_nome = StringField('Cliente', validators=[DataRequired()])
+    submit = SubmitField('Seleziona Cliente')
+
+class DDTTicketFilterForm(FlaskForm):
+    from_date = StringField('Data Inizio', validators=[DataRequired()])
+    to_date = StringField('Data Fine', validators=[DataRequired()])
+    submit = SubmitField('Filtra')
+
+class DDTCreateForm(FlaskForm):
+    cliente_id = IntegerField('Cliente ID', validators=[DataRequired()])
+    cliente_nome = StringField('Cliente', validators=[])
+    tickets = TextAreaField('Tickets IDs (JSON)', validators=[DataRequired()])
+    id_empresa = IntegerField('ID Azienda', validators=[DataRequired()])
+    submit = SubmitField('Crea DDT')
+
+class DDTDeleteForm(FlaskForm):
+    confirm = BooleanField('Conferma Eliminazione', validators=[DataRequired()])
+    submit = SubmitField('Elimina DDT')
+
+class DDTExportForm(FlaskForm):
+    format = SelectField('Formato', choices=[('pdf', 'PDF')], default='pdf')
+    submit = SubmitField('Esporta') 

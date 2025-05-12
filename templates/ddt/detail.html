@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}DDT #{{ ddt.id }} - {{ cliente.Nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}">DDT</a></li>
+            <li class="breadcrumb-item active">Dettaglio DDT #{{ ddt.id }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Dettaglio DDT #{{ ddt.id }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Informazioni DDT</h6>
+                            <p><strong>Data Creazione:</strong> {{ ddt.data_creazione.strftime('%d/%m/%Y %H:%M') }}</p>
+                            <p><strong>Numero DDT:</strong> {{ ddt.id }}</p>
+                            <p><strong>Totale Articoli:</strong> {{ total_items }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Totali</h6>
+                            <p><strong>Imponibile:</strong> € {{ "%.2f"|format(ddt.totale_senza_iva|float) }}</p>
+                            <p><strong>IVA:</strong> € {{ "%.2f"|format(ddt.totale_iva|float) }}</p>
+                            <p><strong>Totale:</strong> € {{ "%.2f"|format(ddt.totale_importo|float) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">Cliente</h5>
+                        </div>
+                        <div class="card-body">
+                            <h5>{{ cliente.Nombre }}</h5>
+                            <p><strong>Indirizzo:</strong> {{ cliente.Direccion or 'N/A' }}, {{ cliente.Poblacion or 'N/A' }}</p>
+                            <p><strong>P.IVA/CF:</strong> {{ cliente.DNI or 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Azienda</h5>
+                        </div>
+                        <div class="card-body">
+                            <h5>{{ empresa.NombreEmpresa }}</h5>
+                            <p><strong>Indirizzo:</strong> {{ empresa.Direccion or 'N/A' }}, {{ empresa.Poblacion or 'N/A' }}</p>
+                            <p><strong>P.IVA:</strong> {{ empresa.CIF_VAT or 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Ticket e Prodotti</h5>
+        </div>
+        <div class="card-body">
+            {% if tickets %}
+                {% for item in tickets %}
+                    <div class="ticket-section mb-4">
+                        <div class="ticket-header bg-light p-3 mb-3 border rounded">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h5 class="mb-0">Ticket #{{ item.ticket.IdTicket }}</h5>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-0"><strong>Data:</strong> {{ item.ticket.Fecha.strftime('%d/%m/%Y %H:%M') if item.ticket.Fecha else 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="mb-0"><strong>Articoli:</strong> {{ item.products|length }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Descrizione</th>
+                                        <th>Peso/Qta.</th>
+                                        <th>Prezzo Unit.</th>
+                                        <th>IVA %</th>
+                                        <th>Imponibile</th>
+                                        <th>IVA</th>
+                                        <th>Totale</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in item.products %}
+                                    <tr>
+                                        <td>{{ product.id }}</td>
+                                        <td>{{ product.description }}</td>
+                                        <td>{{ product.peso }}</td>
+                                        <td>€ {{ "%.2f"|format(product.price_without_vat) }}</td>
+                                        <td>
+                                            {% if product.iva_id == 1 %}
+                                                4%
+                                            {% elif product.iva_id == 2 %}
+                                                10%
+                                            {% elif product.iva_id == 3 %}
+                                                22%
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                        <td>€ {{ "%.2f"|format(product.line_total) }}</td>
+                                        <td>€ {{ "%.2f"|format(product.line_vat) }}</td>
+                                        <td>€ {{ "%.2f"|format(product.line_total_with_vat) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Nessun ticket trovato per questo DDT.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Elimina DDT</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        L'eliminazione del DDT è un'operazione irreversibile e comporterà la rimozione di tutte le righe associate.
+                    </p>
+                    <form action="{{ url_for('ddt.delete', ddt_id=ddt.id) }}" method="POST">
+                        {{ delete_form.hidden_tag() }}
+                        <div class="mb-3 form-check">
+                            {{ delete_form.confirm(class="form-check-input") }}
+                            <label class="form-check-label" for="confirm">
+                                Confermo di voler eliminare definitivamente questo DDT
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash-alt"></i> Elimina DDT
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Esporta DDT</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <i class="fas fa-file-export me-2"></i>
+                        Esporta questo DDT in formato PDF per la stampa o l'invio al cliente.
+                    </p>
+                    <form action="{{ url_for('ddt.export', ddt_id=ddt.id) }}" method="POST">
+                        {{ export_form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label for="format" class="form-label">Formato</label>
+                            {{ export_form.format(class="form-select") }}
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-download"></i> Esporta
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

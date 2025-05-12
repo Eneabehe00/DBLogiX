@@ -82,27 +82,35 @@ def format_price(value):
         # If conversion fails, return a default formatted value
         return f'€ {float(value):.2f}'.replace('.', ',')
 
-def format_weight(value):
+def format_weight(value, comportamiento=0):
     """Format a weight value with unit.
     
     Args:
         value: A numeric weight value.
+        comportamiento: 0 for unit, 1 for kg. Default is 0.
     
     Returns:
-        string: Formatted weight with kg unit.
+        string: Formatted weight with appropriate unit (unit or kg).
     """
     if value is None:
-        return "0,000 kg"
+        return "0" if comportamiento == 0 else "0,000 kg"
     
     try:
-        if isinstance(value, decimal.Decimal):
-            # Handle Decimal objects directly to avoid float precision issues
-            formatted_value = f"{value:.3f} kg".replace('.', ',')
-        else:
-            formatted_value = f"{float(value):.3f} kg".replace('.', ',')
+        if comportamiento == 0:  # Unità
+            if isinstance(value, decimal.Decimal):
+                # Per le unità mostriamo senza decimali
+                formatted_value = f"{int(value)} unità"
+            else:
+                formatted_value = f"{int(float(value))} unità"
+        else:  # Kg
+            if isinstance(value, decimal.Decimal):
+                # Handle Decimal objects directly to avoid float precision issues
+                formatted_value = f"{value:.3f} kg".replace('.', ',')
+            else:
+                formatted_value = f"{float(value):.3f} kg".replace('.', ',')
         return formatted_value
     except (ValueError, TypeError):
-        return "0,000 kg"
+        return "0" if comportamiento == 0 else "0,000 kg"
 
 def safe_execute_query(query, params=None, fetch_all=True):
     """Execute a SQL query safely and return the results.

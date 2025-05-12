@@ -98,8 +98,8 @@ def create_app():
             return format_price(value)
         
         @app.template_filter('weight')
-        def weight_filter(value):
-            return format_weight(value)
+        def weight_filter(value, comportamiento=0):
+            return format_weight(value, comportamiento)
         
         @app.template_filter('b64encode')
         def b64encode_filter(value):

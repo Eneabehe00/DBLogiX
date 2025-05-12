@@ -89,7 +89,7 @@
                             <tr>
                                 <td>#{{ line.header.NumTicket }}</td>
                                 <td>{{ line.header.formatted_date }}</td>
-                                <td>{{ line.Peso|weight }}</td>
+                                <td>{{ line.Peso|weight(line.comportamiento) }}</td>
                                 <td>
                                     <a href="{{ url_for('warehouse.ticket_detail', ticket_id=line.IdTicket) }}" 
                                        class="btn btn-sm btn-outline-primary">

@@ -107,7 +107,7 @@
                                     <tr>
                                         <td>{{ product.id }}</td>
                                         <td>{{ product.description }}</td>
-                                        <td>{{ product.peso }}</td>
+                                        <td>{{ product.peso }} {% if product.comportamiento == 0 %}unità{% else %}kg{% endif %}</td>
                                         <td>€ {{ "%.2f"|format(product.price_without_vat) }}</td>
                                         <td>
                                             {% if product.iva_id == 1 %}

@@ -141,6 +141,7 @@ class TicketLine(db.Model):
     Descripcion = db.Column(db.String(100))
     Peso = db.Column(db.Numeric(15, 3))
     FechaCaducidad = db.Column(db.DateTime)
+    comportamiento = db.Column(db.Integer, default=0)  # 0 = unità, 1 = kg
     
     # Relationship
     product = db.relationship('Product', 

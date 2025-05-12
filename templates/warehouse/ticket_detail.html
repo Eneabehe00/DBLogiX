@@ -148,7 +148,7 @@
                         <td>{{ line.IdLineaTicket }}</td>
                         <td>{{ line.IdArticulo }}</td>
                         <td>{{ line.Descripcion }}</td>
-                        <td>{{ line.Peso|weight }}</td>
+                        <td>{{ line.Peso|weight(line.comportamiento) }}</td>
                         <td>
                             {% if line.FechaCaducidad is defined and line.FechaCaducidad %}
                                 {% set exp_date = line.FechaCaducidad %}

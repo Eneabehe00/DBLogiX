@@ -299,6 +299,7 @@ def detail(ddt_id):
                 'id': product.IdArticulo,
                 'description': product.Descripcion,
                 'peso': line.Peso,
+                'comportamiento': line.comportamiento,
                 'price_with_vat': price_with_vat,
                 'price_without_vat': price_without_vat,
                 'vat_rate': vat_rate,
@@ -662,6 +663,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
                 'id': product.IdArticulo,
                 'description': product.Descripcion,
                 'peso': t_line.Peso,
+                'comportamiento': t_line.comportamiento,
                 'price_with_vat': price_with_vat,
                 'price_without_vat': price_without_vat,
                 'vat_rate': vat_rate,
@@ -720,7 +722,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
             Paragraph(f"{product['ticket_id']}", styles['DDTSmall']),
             Paragraph(f"{product['id']}", styles['DDTSmall']),
             Paragraph(f"{product['description']}", styles['DDTSmall']),
-            Paragraph(f"{product['peso']}", styles['DDTSmall']),
+            Paragraph(f"{product['peso']} {'unità' if product.get('comportamiento', 0) == 0 else 'kg'}", styles['DDTSmall']),
             Paragraph(f"€ {product['price_without_vat']:.2f}", styles['DDTSmall']),
             Paragraph(f"{iva_percentage}", styles['DDTSmall']),
             Paragraph(f"€ {product['line_total']:.2f}", styles['DDTSmall']),
@@ -901,7 +903,7 @@ def ticket_details(ticket_id, empresa_id):
                 ticket_data["items"].append({
                     "id": product.IdArticulo,
                     "description": product.Descripcion,
-                    "quantity": f"{line.Peso} Kg" if line.Peso else "N/A",
+                    "quantity": f"{line.Peso} {'unità' if line.comportamiento == 0 else 'Kg'}" if line.Peso else "N/A",
                     "price": f"€ {product.PrecioConIVA}" if product.PrecioConIVA else "N/A"
                 })
             except Exception as e:
@@ -966,6 +968,7 @@ def search_tickets():
                 "id": line.IdLinea,
                 "descripcion": product.Descripcion,
                 "peso": float(line.Peso) if line.Peso else 0,
+                "comportamiento": line.comportamiento,
                 "precio": float(product.PrecioConIVA) if product.PrecioConIVA else 0
             })
         

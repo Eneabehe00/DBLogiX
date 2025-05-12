@@ -80,6 +80,7 @@
                 
                 {% if not ticket.is_processed %}
                 <form action="{{ url_for('warehouse.ticket_checkout', ticket_id=ticket.IdTicket) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-success mt-3 w-100">
                         <i class="fas fa-check me-2"></i>Segna come Processato
                     </button>

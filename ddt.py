@@ -60,15 +60,6 @@ def select_tickets(cliente_id):
     cliente = Client.query.get_or_404(cliente_id)
     form = DDTTicketFilterForm()
     
-    # Default date range (last 30 days)
-    today = datetime.now()
-    default_from = (today - timedelta(days=30)).strftime('%Y-%m-%d')
-    default_to = today.strftime('%Y-%m-%d')
-    
-    if request.method == 'GET':
-        form.from_date.data = default_from
-        form.to_date.data = default_to
-    
     # Get current empresa ID - use first available empresa for demo
     # In a real app, you would get this from the user's session/profile
     empresa = Company.query.first()
@@ -83,20 +74,21 @@ def select_tickets(cliente_id):
         to_date = datetime.strptime(form.to_date.data, '%Y-%m-%d')
         # Add a day to to_date to include the full day
         to_date = to_date + timedelta(days=1)
+        
+        # Query for tickets not already included in any DDT
+        tickets = TicketHeader.query.filter(
+            TicketHeader.Fecha.between(from_date, to_date),
+            TicketHeader.Enviado == 0,  # Solo ticket pendenti
+            not_(exists().where(
+                and_(
+                    DDTLine.id_ticket == TicketHeader.IdTicket,
+                    DDTLine.id_empresa == TicketHeader.IdEmpresa
+                )
+            ))
+        ).order_by(TicketHeader.Fecha.desc()).all()
     else:
-        from_date = datetime.strptime(default_from, '%Y-%m-%d')
-        to_date = datetime.strptime(default_to, '%Y-%m-%d') + timedelta(days=1)
-    
-    # Query for tickets not already included in any DDT
-    tickets = TicketHeader.query.filter(
-        TicketHeader.Fecha.between(from_date, to_date),
-        not_(exists().where(
-            and_(
-                DDTLine.id_ticket == TicketHeader.IdTicket,
-                DDTLine.id_empresa == TicketHeader.IdEmpresa
-            )
-        ))
-    ).order_by(TicketHeader.Fecha.desc()).all()
+        # Se il form non è stato ancora inviato, non mostrare alcun ticket
+        tickets = []
     
     # Also create the create form for the hidden form CSRF token
     create_form = DDTCreateForm()
@@ -220,7 +212,11 @@ def create():
                 id_ticket=ticket['id_ticket']
             )
             db.session.add(ddt_line)
-            print(f"Added DDT line for ticket {ticket['id_ticket']}")
+            
+            # Aggiorna lo stato del ticket a 'processato'
+            ticket_exists.Enviado = 1
+            
+            print(f"Added DDT line for ticket {ticket['id_ticket']} and set status to processed")
         
         # Calculate totals
         db.session.flush()
@@ -259,10 +255,14 @@ def detail(ddt_id):
     total_items = 0
     
     for ddt_line in ddt.lines:
-        # Get ticket
+        # Get ticket usando todas las claves primarias compuestas
         ticket = TicketHeader.query.filter_by(
             IdTicket=ddt_line.id_ticket,
-            IdEmpresa=ddt_line.id_empresa
+            IdEmpresa=ddt_line.id_empresa,
+            IdTienda=ddt_line.id_tienda,
+            IdBalanzaMaestra=ddt_line.id_balanza_maestra,
+            IdBalanzaEsclava=ddt_line.id_balanza_esclava,
+            TipoVenta=ddt_line.tipo_venta
         ).first()
         
         if not ticket:
@@ -340,11 +340,29 @@ def delete(ddt_id):
     if form.validate_on_submit() and form.confirm.data:
         try:
             # Start transaction
+            # Prima di eliminare il DDT, ottieni tutti i ticket associati
+            ddt_lines = DDTLine.query.filter_by(id_ddt=ddt.id).all()
+            
+            # Per ogni linea DDT, trova il ticket corrispondente e reimpostalo come pendente
+            for line in ddt_lines:
+                ticket = TicketHeader.query.filter_by(
+                    IdTicket=line.id_ticket,
+                    IdEmpresa=line.id_empresa,
+                    IdTienda=line.id_tienda,
+                    IdBalanzaMaestra=line.id_balanza_maestra,
+                    IdBalanzaEsclava=line.id_balanza_esclava,
+                    TipoVenta=line.tipo_venta
+                ).first()
+                
+                if ticket:
+                    ticket.Enviado = 0  # Reimposta il ticket come pendente
+                    print(f"Reset ticket {ticket.IdTicket} to pending state")
+            
             # The cascade delete will take care of the DDT lines
             db.session.delete(ddt)
             db.session.commit()
             
-            flash('DDT eliminato con successo.', 'success')
+            flash('DDT eliminato con successo e ticket reimpostati come pendenti.', 'success')
             return redirect(url_for('ddt.index'))
         
         except Exception as e:
@@ -620,7 +638,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         if not ticket:
             continue
         
-        # Get the ticket lines
+        # Get the ticket lines with articles for this ticket
         ticket_lines = TicketLine.query.filter_by(
             IdTicket=ticket.IdTicket
         ).all()
@@ -904,19 +922,26 @@ def ticket_details(ticket_id, empresa_id):
 def search_tickets():
     """API endpoint to search for tickets by client ID"""
     client_id = request.form.get('client_id')
+    from_date = request.form.get('from_date')
+    to_date = request.form.get('to_date')
     
     if not client_id:
         return jsonify({"success": False, "error": "Client ID is required"})
     
-    # Default date range (last 30 days)
-    today = datetime.now()
-    from_date = today - timedelta(days=30)
-    to_date = today + timedelta(days=1)  # Include today
+    if not from_date or not to_date:
+        return jsonify({"success": False, "error": "Date range is required"})
+    
+    try:
+        from_date = datetime.strptime(from_date, '%Y-%m-%d')
+        to_date = datetime.strptime(to_date, '%Y-%m-%d') + timedelta(days=1)  # Include full day
+    except ValueError:
+        return jsonify({"success": False, "error": "Invalid date format"})
     
     # Query for tickets for this client not already included in any DDT
     tickets = TicketHeader.query.filter(
         TicketHeader.Fecha.between(from_date, to_date),
         TicketHeader.IdCliente == client_id,
+        TicketHeader.Enviado == 0,  # Solo ticket pendenti
         not_(exists().where(
             and_(
                 DDTLine.id_ticket == TicketHeader.IdTicket,

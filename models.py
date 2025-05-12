@@ -242,7 +242,12 @@ class DDTHead(db.Model):
         for ddt_line in self.lines:
             # Get the ticket
             ticket = TicketHeader.query.filter_by(
-                IdTicket=ddt_line.id_ticket
+                IdTicket=ddt_line.id_ticket,
+                IdEmpresa=ddt_line.id_empresa,
+                IdTienda=ddt_line.id_tienda,
+                IdBalanzaMaestra=ddt_line.id_balanza_maestra,
+                IdBalanzaEsclava=ddt_line.id_balanza_esclava,
+                TipoVenta=ddt_line.tipo_venta
             ).first()
             
             if not ticket:

@@ -5,29 +5,81 @@
 {% block head %}
 {{ super() }}
 <style>
-    .product-expired {
-        background-color: rgba(220, 53, 69, 0.1);
+    .product-card {
+        border-left: 5px solid #0d6efd;
+        transition: all 0.3s;
     }
-    .product-expiring-soon {
-        background-color: rgba(255, 193, 7, 0.1);
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
-    .badge-pill {
-        border-radius: 50rem;
-        padding-right: 0.6em;
-        padding-left: 0.6em;
+    .ticket-info-card {
+        border-radius: 12px;
+        overflow: hidden;
     }
-    .ticket-summary-card {
-        border-left: 4px solid #007bff;
+    .ticket-info-card.processed {
+        border-left: 5px solid #28a745;
     }
-    .ticket-summary-card.processed {
-        border-left: 4px solid #28a745;
-    }
-    .ticket-summary-card.pending {
-        border-left: 4px solid #ffc107;
+    .ticket-info-card.pending {
+        border-left: 5px solid #ffc107;
     }
     .info-label {
         font-weight: 600;
         color: #495057;
+    }
+    .ticket-header {
+        position: relative;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, #3a8ffe 0%, #004cff 100%);
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    .ticket-header .ticket-id {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+    .ticket-status {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    .ticket-status.processed {
+        background-color: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+    }
+    .ticket-status.pending {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+    }
+    .info-section {
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .section-title {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    .action-btn {
+        border-radius: 30px;
+        padding: 8px 20px;
+        font-weight: 500;
+    }
+    .expiry-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
     }
     .search-filter-section {
         background-color: #f8f9fa;
@@ -69,415 +121,449 @@
     .filter-badge .close:hover {
         color: #343a40;
     }
-    .product-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 65px;
-        height: 65px;
-    }
 </style>
 {% endblock %}
 
-{% block header %}
-<div class="row mb-3">
-    <div class="col">
-        <h1 class="display-5">
-            <i class="fas fa-receipt text-primary me-2"></i>Dettaglio Ticket #{{ ticket.NumTicket }}
-        </h1>
+{% block content %}
+<!-- Ticket Header -->
+<div class="ticket-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="ticket-id">#{{ ticket.NumTicket }}</div>
         <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.tickets') }}">Tickets</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Ticket #{{ ticket.NumTicket }}</li>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.tickets') }}" class="text-white">Tickets</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Ticket #{{ ticket.NumTicket }}</li>
             </ol>
         </nav>
-    </div>
-</div>
-{% endblock %}
-
-{% block content %}
-<!-- Search & Filters -->
-<div class="search-filter-section">
-    <div class="row g-3">
-        <div class="col-md-7">
-            <!-- Search form -->
-            <form action="{{ url_for('warehouse.tickets') }}" method="get">
-                {% if request.args.get('status') %}
-                <input type="hidden" name="status" value="{{ request.args.get('status') }}">
-                {% endif %}
-                <div class="search-input-group">
-                    <i class="fas fa-search"></i>
-                    {{ search_form.query(class="form-control", placeholder="Cerca per numero ticket o codice a barre") }}
-                </div>
-            </form>
-        </div>
-        <div class="col-md-5">
-            <!-- Status filter -->
-            <div class="d-flex justify-content-end h-100 align-items-center">
-                <div class="btn-group w-100 shadow-sm">
-                    <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary {% if not request.args.get('status') %}active{% endif %}">
-                        <i class="fas fa-list-ul me-1"></i> Tutti
-                    </a>
-                    <a href="{{ url_for('warehouse.tickets', status='pending', query=request.args.get('query', '')) }}" class="btn btn-outline-warning {% if request.args.get('status') == 'pending' %}active{% endif %}">
-                        <i class="fas fa-clock me-1"></i> Pendenti
-                    </a>
-                    <a href="{{ url_for('warehouse.tickets', status='processed', query=request.args.get('query', '')) }}" class="btn btn-outline-success {% if request.args.get('status') == 'processed' %}active{% endif %}">
-                        <i class="fas fa-check-circle me-1"></i> Processati
-                    </a>
-                    <a href="{{ url_for('warehouse.tickets', status='expiring', query=request.args.get('query', '')) }}" class="btn btn-outline-danger {% if request.args.get('status') == 'expiring' %}active{% endif %}">
-                        <i class="fas fa-exclamation-circle me-1"></i> Scadenza
-                        {% if expiring_count > 0 %}
-                        <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
-                        {% endif %}
-                    </a>
-                </div>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="display-5 mb-0">
+                    <i class="fas fa-receipt me-2"></i>Dettaglio Ticket
+                </h1>
+                <p class="lead mt-2 mb-0">
+                    <span class="ticket-status {% if ticket.is_processed %}processed{% else %}pending{% endif %}">
+                        <i class="fas {% if ticket.is_processed %}fa-check-circle{% else %}fa-clock{% endif %} me-1"></i>
+                        {% if ticket.is_processed %}Processato{% else %}In attesa{% endif %}
+                    </span>
+                    <span class="text-white-50">·</span>
+                    <span class="text-white-50">{{ ticket.formatted_date }}</span>
+                </p>
             </div>
-        </div>
-    </div>
-    
-    {% if request.args.get('query') or request.args.get('status') %}
-    <div class="mt-3">
-        <div class="d-flex flex-wrap align-items-center">
-            <span class="me-2">Filtri attivi:</span>
-            
-            {% if request.args.get('query') %}
-            <span class="filter-badge">
-                <i class="fas fa-search"></i> {{ request.args.get('query') }}
-                <a href="{{ url_for('warehouse.tickets', status=request.args.get('status', '')) }}" class="close">
-                    <i class="fas fa-times"></i>
-                </a>
-            </span>
-            {% endif %}
-            
-            {% if request.args.get('status') %}
-            <span class="filter-badge">
-                <i class="fas fa-filter"></i> Stato: 
-                {% if request.args.get('status') == 'pending' %}
-                <span class="text-warning">Pendenti</span>
-                {% elif request.args.get('status') == 'processed' %}
-                <span class="text-success">Processati</span>
-                {% elif request.args.get('status') == 'expiring' %}
-                <span class="text-danger">In Scadenza</span>
-                {% endif %}
-                <a href="{{ url_for('warehouse.tickets', query=request.args.get('query', '')) }}" class="close">
-                    <i class="fas fa-times"></i>
-                </a>
-            </span>
-            {% endif %}
-            
-            <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-secondary ms-auto">
-                <i class="fas fa-times me-1"></i> Rimuovi tutti i filtri
-            </a>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Alert per prodotti in scadenza o scaduti -->
-{% if expiring_soon or expired %}
-<div class="alert {% if expired %}alert-danger{% else %}alert-warning{% endif %} alert-dismissible fade show mb-4" role="alert">
-    <div class="d-flex align-items-center">
-        <i class="fas {% if expired %}fa-exclamation-circle{% else %}fa-exclamation-triangle{% endif %} fa-2x me-3"></i>
-        <div>
-            <h5 class="alert-heading mb-1">{% if expired %}Prodotti scaduti!{% else %}Attenzione!{% endif %}</h5>
-            <p class="mb-0">
-                {% if expired %}
-                Questo ticket contiene prodotti già <strong>scaduti</strong>.
-                {% else %}
-                Questo ticket contiene prodotti con scadenza entro <strong>2 giorni</strong>.
-                {% endif %}
-            </p>
-        </div>
-    </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endif %}
-
-<!-- Prodotto principale del ticket -->
-<div class="card mb-4 bg-light">
-    <div class="card-body">
-        <div class="d-flex align-items-center">
-            <div class="product-icon bg-primary text-white rounded-circle p-3 me-3">
-                <i class="fas fa-shopping-basket fa-2x"></i>
-            </div>
-            <div>
-                <h4 class="mb-1">
-                    {{ main_product.name }}
-                </h4>
-                <div class="d-flex flex-wrap">
-                    <span class="badge bg-secondary me-2">ID: {{ main_product.id }}</span>
-                    
-                    {% set line_shown = false %}
-                    {% for line in lines %}
-                        {% if line.IdArticulo == main_product.id and not line_shown %}
-                            {% set line_shown = true %}
-                            <span class="badge bg-info me-2">Peso: {{ line.Peso }} {% if line.comportamiento == 1 %}kg{% else %}unità{% endif %}</span>
-                            {% if line.FechaCaducidad %}
-                                {% set days_to_expire = (line.FechaCaducidad - now()).days %}
-                                {% if days_to_expire < 0 %}
-                                    <span class="badge bg-danger">Scaduto da {{ days_to_expire|abs }} giorni</span>
-                                {% elif days_to_expire <= 2 %}
-                                    <span class="badge bg-warning">Scade fra {{ days_to_expire }} giorn{{ 'o' if days_to_expire == 1 else 'i' }}</span>
-                                {% else %}
-                                    <span class="badge bg-success">Scadenza: {{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</span>
-                                {% endif %}
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Riepilogo Ticket -->
-<div class="card mb-4 ticket-summary-card {% if ticket.is_processed %}processed{% else %}pending{% endif %}">
-    <div class="card-header {% if ticket.is_processed %}bg-success{% else %}bg-warning{% endif %} text-white">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas {% if ticket.is_processed %}fa-check-circle{% else %}fa-clock{% endif %} me-2"></i>
-                Riepilogo Ticket #{{ ticket.NumTicket }} - 
-                <span class="badge bg-light text-primary">{{ main_product.name }}</span>
-                {% if ticket.is_processed %}
-                    <span class="badge bg-light text-success">Processato</span>
-                {% else %}
-                    <span class="badge bg-light text-warning">In attesa</span>
-                {% endif %}
-            </h5>
-            <div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 {% if not ticket.is_processed %}
                 <form action="{{ url_for('warehouse.ticket_checkout', ticket_id=ticket.IdTicket) }}" method="post" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-light">
+                    <button type="submit" class="btn btn-light action-btn">
                         <i class="fas fa-check me-1"></i>Segna come Processato
                     </button>
                 </form>
                 {% endif %}
+                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-light action-btn ms-2">
+                    <i class="fas fa-arrow-left me-1"></i>Indietro
+                </a>
             </div>
         </div>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6 class="text-muted mb-3">Informazioni Ticket</h6>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">ID Ticket:</div>
-                    <div class="col-7">{{ ticket.IdTicket }}</div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">Numero Ticket:</div>
-                    <div class="col-7">#{{ ticket.NumTicket }}</div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">Data:</div>
-                    <div class="col-7">{{ ticket.formatted_date }}</div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">Prodotto principale:</div>
-                    <div class="col-7">
-                        {% if main_product.id %}
-                            <strong class="text-primary">{{ main_product.name }}</strong>
-                            <div class="small text-muted">ID: {{ main_product.id }}</div>
-                        {% else %}
-                            <span class="text-muted">Nessun prodotto</span>
-                        {% endif %}
+</div>
+
+<div class="container-fluid">
+    <!-- Alert per prodotti in scadenza o scaduti -->
+    {% if expiring_soon or expired %}
+    <div class="alert {% if expired %}alert-danger{% else %}alert-warning{% endif %} alert-dismissible fade show mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas {% if expired %}fa-exclamation-circle{% else %}fa-exclamation-triangle{% endif %} fa-2x me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">{% if expired %}Prodotti scaduti!{% else %}Attenzione!{% endif %}</h5>
+                <p class="mb-0">
+                    {% if expired %}
+                    Questo ticket contiene prodotti già <strong>scaduti</strong>.
+                    {% else %}
+                    Questo ticket contiene prodotti con scadenza entro <strong>2 giorni</strong>.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <!-- Quick Search e Filter Section -->
+    <div class="search-filter-section mb-4">
+        <div class="row g-3">
+            <div class="col-md-7">
+                <!-- Search form -->
+                <form action="{{ url_for('warehouse.tickets') }}" method="get">
+                    {% if request.args.get('status') %}
+                    <input type="hidden" name="status" value="{{ request.args.get('status') }}">
+                    {% endif %}
+                    <div class="search-input-group">
+                        <i class="fas fa-search"></i>
+                        {{ search_form.query(class="form-control", placeholder="Cerca per numero ticket o codice a barre") }}
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-5">
+                <!-- Status filter -->
+                <div class="d-flex justify-content-end h-100 align-items-center">
+                    <div class="btn-group w-100 shadow-sm">
+                        <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary {% if not request.args.get('status') %}active{% endif %}">
+                            <i class="fas fa-list-ul me-1"></i> Tutti
+                        </a>
+                        <a href="{{ url_for('warehouse.tickets', status='pending', query=request.args.get('query', '')) }}" class="btn btn-outline-warning {% if request.args.get('status') == 'pending' %}active{% endif %}">
+                            <i class="fas fa-clock me-1"></i> Pendenti
+                        </a>
+                        <a href="{{ url_for('warehouse.tickets', status='processed', query=request.args.get('query', '')) }}" class="btn btn-outline-success {% if request.args.get('status') == 'processed' %}active{% endif %}">
+                            <i class="fas fa-check-circle me-1"></i> Processati
+                        </a>
+                        <a href="{{ url_for('warehouse.tickets', status='expiring', query=request.args.get('query', '')) }}" class="btn btn-outline-danger {% if request.args.get('status') == 'expiring' %}active{% endif %}">
+                            <i class="fas fa-exclamation-circle me-1"></i> Scadenza
+                            {% if expiring_count > 0 %}
+                            <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
+                            {% endif %}
+                        </a>
                     </div>
                 </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">Codice a Barre:</div>
-                    <div class="col-7">
-                        {% if ticket.CodigoBarras %}
-                            <code>{{ ticket.CodigoBarras }}</code>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Colonna principale -->
+        <div class="col-lg-8">
+            <!-- Card prodotto principale -->
+            <div class="card mb-4 product-card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary rounded-circle p-3 text-white me-3">
+                            <i class="fas fa-shopping-basket fa-2x"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-1">
+                                {% if main_product.id %}
+                                <a href="{{ url_for('warehouse.product_detail', product_id=main_product.id) }}" class="text-decoration-none text-primary">
+                                    {{ main_product.name }}
+                                </a>
+                                {% else %}
+                                {{ main_product.name }}
+                                {% endif %}
+                            </h4>
+                            <div class="d-flex flex-wrap">
+                                {% if main_product.id %}
+                                <span class="badge bg-secondary me-2">ID: {{ main_product.id }}</span>
+                                {% endif %}
+                                
+                                {% set line_shown = false %}
+                                {% for line in lines %}
+                                    {% if main_product.id and line.IdArticulo == main_product.id and not line_shown %}
+                                        {% set line_shown = true %}
+                                        <span class="badge bg-info me-2">Peso: {{ line.Peso }} {% if line.comportamiento == 1 %}kg{% else %}unità{% endif %}</span>
+                                        {% if line.FechaCaducidad %}
+                                            {% set days_to_expire = (line.FechaCaducidad - now()).days %}
+                                            {% if days_to_expire < 0 %}
+                                                <span class="badge bg-danger expiry-badge">Scaduto da {{ days_to_expire|abs }} giorni</span>
+                                            {% elif days_to_expire <= 2 %}
+                                                <span class="badge bg-warning expiry-badge">Scade fra {{ days_to_expire }} giorn{{ 'o' if days_to_expire == 1 else 'i' }}</span>
+                                            {% else %}
+                                                <span class="badge bg-success expiry-badge">Scadenza: {{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if lines|length > 0 %}
+                    <div class="alert alert-light mb-0">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2 text-primary"></i>Informazioni aggiuntive</h6>
+                        <p class="mb-0">Questo ticket contiene <strong>{{ lines|length }}</strong> prodott{{ 'o' if lines|length == 1 else 'i' }}.</p>
+                        
+                        {% set expired_count = 0 %}
+                        {% set expiring_count = 0 %}
+                        {% for line in lines %}
+                            {% if line.FechaCaducidad %}
+                                {% set days_to_expire = (line.FechaCaducidad - now()).days %}
+                                {% if days_to_expire < 0 %}
+                                    {% set expired_count = expired_count + 1 %}
+                                {% elif days_to_expire <= 2 %}
+                                    {% set expiring_count = expiring_count + 1 %}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if expired_count > 0 %}
+                            <p class="mb-0 mt-1 text-danger">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                {{ expired_count }} prodott{{ 'o è' if expired_count == 1 else 'i sono' }} scadut{{ 'o' if expired_count == 1 else 'i' }}.
+                            </p>
+                        {% endif %}
+                        
+                        {% if expiring_count > 0 %}
+                            <p class="mb-0 mt-1 text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                {{ expiring_count }} prodott{{ 'o' if expiring_count == 1 else 'i' }} in scadenza entro 2 giorni.
+                            </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Dettagli del ticket -->
+            <div class="card ticket-info-card mb-4 shadow-sm {% if ticket.is_processed %}processed{% else %}pending{% endif %}">
+                <div class="card-header {% if ticket.is_processed %}bg-success{% else %}bg-warning{% endif %} text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas {% if ticket.is_processed %}fa-check-circle{% else %}fa-clock{% endif %} me-2"></i>
+                        Dettagli Ticket
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="section-title">Informazioni Base</h6>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">ID Ticket:</div>
+                                <div class="col-7">{{ ticket.IdTicket }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">Numero Ticket:</div>
+                                <div class="col-7">#{{ ticket.NumTicket }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">Data:</div>
+                                <div class="col-7">{{ ticket.formatted_date }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">Codice a Barre:</div>
+                                <div class="col-7">
+                                    {% if ticket.CodigoBarras %}
+                                        <code>{{ ticket.CodigoBarras }}</code>
+                                    {% else %}
+                                        <span class="text-muted">Non impostato</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="section-title">Dettagli Aggiuntivi</h6>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">Numero Linee:</div>
+                                <div class="col-7">
+                                    <span class="badge bg-primary">{{ lines|length }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">ID Azienda:</div>
+                                <div class="col-7">{{ ticket.IdEmpresa }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">ID Negozio:</div>
+                                <div class="col-7">{{ ticket.IdTienda }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-5 info-label">Tipo Vendita:</div>
+                                <div class="col-7">{{ ticket.TipoVenta }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col">
+                            <h6 class="section-title">Lista Rapida Prodotti</h6>
+                            <div class="list-group">
+                                {% for line in lines %}
+                                    {% set is_expired = line.FechaCaducidad and (line.FechaCaducidad - now()).days < 0 %}
+                                    {% set expiring_soon = line.FechaCaducidad and (line.FechaCaducidad - now()).days <= 2 and (line.FechaCaducidad - now()).days >= 0 %}
+                                    
+                                    <div class="list-group-item list-group-item-action {% if is_expired %}list-group-item-danger{% elif expiring_soon %}list-group-item-warning{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-0">{{ line.Descripcion }}</h6>
+                                                <div class="small text-muted">
+                                                    ID: {{ line.IdArticulo }} - 
+                                                    Peso: {{ line.Peso }} {% if line.comportamiento == 1 %}kg{% else %}unità{% endif %}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                {% if line.FechaCaducidad %}
+                                                    {% set days_to_expire = (line.FechaCaducidad - now()).days %}
+                                                    {% if days_to_expire < 0 %}
+                                                        <span class="badge bg-danger">{{ days_to_expire|abs }} giorni fa</span>
+                                                    {% elif days_to_expire <= 2 %}
+                                                        <span class="badge bg-warning">{{ days_to_expire }} giorn{{ 'o' if days_to_expire == 1 else 'i' }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">{{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                                
+                                                {% if line.IdArticulo %}
+                                                <a href="{{ url_for('warehouse.product_detail', product_id=line.IdArticulo) }}" 
+                                                   class="btn btn-sm btn-outline-primary ms-2" title="Dettaglio prodotto">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                
+                                {% if not lines %}
+                                <div class="list-group-item text-center py-4">
+                                    <i class="fas fa-shopping-basket fa-2x mb-3 text-muted"></i>
+                                    <h6 class="mb-1">Nessun prodotto trovato</h6>
+                                    <p class="text-muted mb-0">Questo ticket non contiene prodotti o linee di dettaglio.</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Card stato ticket -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-tag me-2 text-primary"></i>Stato Ticket
+                    </h5>
+                    <hr>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="badge rounded-pill {% if ticket.is_processed %}bg-success{% else %}bg-warning{% endif %} p-2">
+                                <i class="fas {% if ticket.is_processed %}fa-check-circle{% else %}fa-clock{% endif %} fa-lg"></i>
+                            </span>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-0">{% if ticket.is_processed %}Processato{% else %}In attesa{% endif %}</h6>
+                            <small class="text-muted">
+                                {% if ticket.is_processed %}
+                                Ticket verificato e processato
+                                {% else %}
+                                Ticket in attesa di elaborazione
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    {% if not ticket.is_processed %}
+                    <form action="{{ url_for('warehouse.ticket_checkout', ticket_id=ticket.IdTicket) }}" method="post" class="mt-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-check me-1"></i>Segna come Processato
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Card scadenze -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-calendar-alt me-2 text-primary"></i>Scadenze
+                    </h5>
+                    <hr>
+                    
+                    {% set expired_count = 0 %}
+                    {% set expiring_count = 0 %}
+                    {% set valid_count = 0 %}
+                    {% set unknown_count = 0 %}
+                    
+                    {% for line in lines %}
+                        {% if line.FechaCaducidad %}
+                            {% set days_to_expire = (line.FechaCaducidad - now()).days %}
+                            {% if days_to_expire < 0 %}
+                                {% set expired_count = expired_count + 1 %}
+                            {% elif days_to_expire <= 2 %}
+                                {% set expiring_count = expiring_count + 1 %}
+                            {% else %}
+                                {% set valid_count = valid_count + 1 %}
+                            {% endif %}
                         {% else %}
-                            <span class="text-muted">Non impostato</span>
+                            {% set unknown_count = unknown_count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <div class="list-group">
+                        {% if expired_count > 0 %}
+                        <div class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-exclamation-circle me-2"></i>Scaduti
+                            </div>
+                            <span class="badge bg-danger rounded-pill">{{ expired_count }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if expiring_count > 0 %}
+                        <div class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-exclamation-triangle me-2"></i>In scadenza
+                            </div>
+                            <span class="badge bg-warning rounded-pill">{{ expiring_count }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if valid_count > 0 %}
+                        <div class="list-group-item list-group-item-success d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-check-circle me-2"></i>Validi
+                            </div>
+                            <span class="badge bg-success rounded-pill">{{ valid_count }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if unknown_count > 0 %}
+                        <div class="list-group-item list-group-item-secondary d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-question-circle me-2"></i>Senza data
+                            </div>
+                            <span class="badge bg-secondary rounded-pill">{{ unknown_count }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if lines|length == 0 %}
+                        <div class="list-group-item text-center py-3">
+                            <i class="fas fa-calendar-times text-muted mb-2"></i>
+                            <p class="mb-0 text-muted">Nessun prodotto nel ticket</p>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
             
-            <div class="col-md-6">
-                <h6 class="text-muted mb-3">Dettagli Aggiuntivi</h6>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">Numero Linee:</div>
-                    <div class="col-7">
-                        <span class="badge bg-primary">{{ ticket.NumLineas or lines|length or '0' }}</span>
-                    </div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">ID Azienda:</div>
-                    <div class="col-7">{{ ticket.IdEmpresa }}</div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">ID Negozio:</div>
-                    <div class="col-7">{{ ticket.IdTienda }}</div>
-                </div>
-                <div class="row mb-2">
-                    <div class="col-5 info-label">Tipo Vendita:</div>
-                    <div class="col-7">{{ ticket.TipoVenta }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Tabella Prodotti -->
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">
-            <i class="fas fa-shopping-basket me-2"></i>
-            Prodotti nel Ticket <span class="badge bg-light text-primary ms-2">{{ lines|length }}</span>
-        </h5>
-    </div>
-    <div class="card-body p-0">
-        {% if lines %}
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID Linea</th>
-                        <th>ID Articolo</th>
-                        <th>Descrizione</th>
-                        <th>Quantità</th>
-                        <th>Unità</th>
-                        <th>Scadenza</th>
-                        <th>Stato</th>
-                        <th>Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for line in lines %}
-                    {% set is_expired = line.FechaCaducidad and (line.FechaCaducidad - now()).days < 0 %}
-                    {% set expiring_soon = line.FechaCaducidad and (line.FechaCaducidad - now()).days <= 2 and (line.FechaCaducidad - now()).days >= 0 %}
+            <!-- Statistiche ticket -->
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title">
+                        <i class="fas fa-chart-bar me-2 text-primary"></i>Statistiche
+                    </h5>
+                    <hr>
                     
-                    <tr class="{% if is_expired %}product-expired{% elif expiring_soon %}product-expiring-soon{% endif %}">
-                        <td>{{ line.IdLineaTicket }}</td>
-                        <td>{{ line.IdArticulo }}</td>
-                        <td>
-                            <strong>{{ line.Descripcion }}</strong>
-                            {% if line.product %}
-                            <div class="small text-muted">{{ line.product.Descripcion }}</div>
-                            {% endif %}
-                        </td>
-                        <td>{{ line.Peso }}</td>
-                        <td>
-                            {% if line.comportamiento == 1 %}
-                                <span class="badge bg-info">kg</span>
-                            {% else %}
-                                <span class="badge bg-secondary">unità</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if line.FechaCaducidad %}
-                                {% set days_to_expire = (line.FechaCaducidad - now()).days %}
-                                
-                                {% if days_to_expire < 0 %}
-                                    <span class="badge bg-danger badge-pill">
-                                        Scaduto da {{ days_to_expire|abs }} giorni
-                                    </span>
-                                    <div class="small text-danger">{{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</div>
-                                {% elif days_to_expire <= 2 %}
-                                    <span class="badge bg-warning badge-pill">
-                                        Scade fra {{ days_to_expire }} giorn{{ 'o' if days_to_expire == 1 else 'i' }}
-                                    </span>
-                                    <div class="small text-warning">{{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</div>
-                                {% elif days_to_expire <= 7 %}
-                                    <span class="badge bg-info badge-pill">
-                                        Scade fra {{ days_to_expire }} giorni
-                                    </span>
-                                    <div class="small">{{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</div>
-                                {% else %}
-                                    <span class="badge bg-success badge-pill">Valido</span>
-                                    <div class="small">{{ line.FechaCaducidad.strftime('%d/%m/%Y') }}</div>
-                                {% endif %}
-                            {% else %}
-                                <span class="text-muted">Non disponibile</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if is_expired %}
-                                <span class="badge bg-danger">Superato</span>
-                            {% elif expiring_soon %}
-                                <span class="badge bg-warning">In scadenza</span>
-                            {% elif ticket.is_processed %}
-                                <span class="badge bg-success">Processato</span>
-                            {% else %}
-                                <span class="badge bg-secondary">In attesa</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group">
-                                {% if line.IdArticulo %}
-                                <a href="{{ url_for('warehouse.product_detail', product_id=line.IdArticulo) }}" 
-                                   class="btn btn-sm btn-outline-primary" title="Dettaglio prodotto">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% else %}
-                                <button class="btn btn-sm btn-outline-secondary" disabled title="Dettaglio non disponibile">
-                                    <i class="fas fa-eye-slash"></i>
-                                </button>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="p-5 text-center">
-            <div class="text-muted mb-3">
-                <i class="fas fa-shopping-basket fa-3x"></i>
-            </div>
-            <h5>Nessun prodotto trovato</h5>
-            <p class="text-muted">Questo ticket non contiene prodotti o linee di dettaglio.</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Legenda stati -->
-<div class="card mt-4">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">
-            <i class="fas fa-info-circle me-2"></i>Legenda
-        </h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h6>Stati Prodotto</h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <span class="badge bg-danger">Superato</span>
-                        <span class="ms-2">Prodotto con data di scadenza superata</span>
-                    </li>
-                    <li class="mb-2">
-                        <span class="badge bg-warning">In scadenza</span>
-                        <span class="ms-2">Prodotto che scade entro 2 giorni</span>
-                    </li>
-                    <li class="mb-2">
-                        <span class="badge bg-success">Processato</span>
-                        <span class="ms-2">Prodotto verificato e processato</span>
-                    </li>
-                    <li>
-                        <span class="badge bg-secondary">In attesa</span>
-                        <span class="ms-2">Prodotto in attesa di elaborazione</span>
-                    </li>
-                </ul>
-            </div>
-            <div class="col-md-6">
-                <h6>Unità di Misura</h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <span class="badge bg-info">kg</span>
-                        <span class="ms-2">Prodotto venduto a peso (comportamiento = 1)</span>
-                    </li>
-                    <li>
-                        <span class="badge bg-secondary">unità</span>
-                        <span class="ms-2">Prodotto venduto a unità (comportamiento = 0)</span>
-                    </li>
-                </ul>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span>Numero prodotti</span>
+                            <span class="badge bg-primary rounded-pill">{{ lines|length }}</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span>Peso totale</span>
+                            {% set total_weight = 0 %}
+                            {% for line in lines %}
+                                {% set total_weight = total_weight + line.Peso|float %}
+                            {% endfor %}
+                            <span class="badge bg-info rounded-pill">{{ total_weight|round(2) }} kg</span>
+                        </li>
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <span>Ticket #</span>
+                            <span class="badge bg-secondary rounded-pill">{{ ticket.NumTicket }}</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

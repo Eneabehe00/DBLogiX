@@ -85,12 +85,14 @@ def create_app():
         from admin import admin_bp
         from ddt import ddt_bp
         from clients import clients_bp
+        from articles import articles_bp
         
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(warehouse_bp, url_prefix='/warehouse')
         app.register_blueprint(admin_bp, url_prefix='/admin')
         app.register_blueprint(ddt_bp, url_prefix='/ddt')
         app.register_blueprint(clients_bp, url_prefix='/clients')
+        app.register_blueprint(articles_bp, url_prefix='/articles')
         
         # Register template filters
         from utils import format_price, format_weight, current_time, b64encode
@@ -170,7 +172,7 @@ app = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
-    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, DDTHead, DDTLine, Company
+    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, DDTHead, DDTLine, Company, Article
     return {
         'db': db, 
         'User': User, 
@@ -181,7 +183,8 @@ def make_shell_context():
         'Client': Client,
         'DDTHead': DDTHead,
         'DDTLine': DDTLine,
-        'Company': Company
+        'Company': Company,
+        'Article': Article
     }
 
 @app.route('/debug')

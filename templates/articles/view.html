@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}View Article - {{ article.Descripcion }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}">Articles</a></li>
+            <li class="breadcrumb-item active" aria-current="page">View Article</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ article.Descripcion }}</h1>
+        <div>
+            <a href="{{ url_for('articles.edit', id=article.IdArticulo) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{{ url_for('articles.delete', id=article.IdArticulo) }}" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Delete
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">General Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <tbody>
+                            <tr>
+                                <th>ID</th>
+                                <td>{{ article.IdArticulo }}</td>
+                            </tr>
+                            <tr>
+                                <th>Description</th>
+                                <td>{{ article.Descripcion }}</td>
+                            </tr>
+                            <tr>
+                                <th>Alt Description</th>
+                                <td>{{ article.Descripcion1 or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Type</th>
+                                <td>{{ article.IdTipo }}</td>
+                            </tr>
+                            <tr>
+                                <th>Family</th>
+                                <td>{{ article.IdFamilia or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Subfamily</th>
+                                <td>{{ article.IdSubFamilia or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>EAN</th>
+                                <td>{{ article.EANScanner or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    {% if article.EnVenta %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Favorite</th>
+                                <td>
+                                    {% if article.Favorito %}
+                                    <span class="badge bg-primary">Yes</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated</th>
+                                <td>{{ article.TimeStamp.strftime('%d/%m/%Y %H:%M') if article.TimeStamp else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated By</th>
+                                <td>{{ article.Usuario or 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Pricing Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <tbody>
+                            <tr>
+                                <th>Price (without VAT)</th>
+                                <td>{{ article.PrecioSinIVA|price if article.PrecioSinIVA else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>VAT ID</th>
+                                <td>{{ article.IdIVA or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Price (with VAT)</th>
+                                <td>{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Discount</th>
+                                <td>{{ article.Descuento or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Offer Price</th>
+                                <td>{{ article.PrecioOferta|price if article.PrecioOferta else 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Stock Information</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <tbody>
+                            <tr>
+                                <th>Current Stock</th>
+                                <td>{{ article.StockActual|weight if article.StockActual else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Min Weight</th>
+                                <td>{{ article.PesoMinimo|weight if article.PesoMinimo else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Max Weight</th>
+                                <td>{{ article.PesoMaximo|weight if article.PesoMaximo else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Target Weight</th>
+                                <td>{{ article.PesoObjetivo|weight if article.PesoObjetivo else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Stock Management</th>
+                                <td>
+                                    {% if article.IncluirGestionStock %}
+                                    <span class="badge bg-success">Enabled</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Additional Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Ingredients/Description</h6>
+                            <div class="p-3 bg-light mb-3 rounded">
+                                {{ article.Texto1 or 'No information available' }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Nutritional Values</h6>
+                            <div class="p-3 bg-light mb-3 rounded">
+                                {{ article.TextoLibre or 'No information available' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

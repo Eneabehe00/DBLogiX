@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}Articles Management{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Articles Management</h1>
+        <div>
+            <a href="{{ url_for('articles.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Article
+            </a>
+            <a href="{{ url_for('articles.import_from_csv') }}" class="btn btn-secondary">
+                <i class="fas fa-file-import"></i> Import from CSV
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ url_for('articles.search') }}" method="post" class="row g-3">
+                {{ search_form.hidden_tag() }}
+                <div class="col-md-10">
+                    {{ search_form.query(class="form-control", placeholder="Search by ID, description or EAN code") }}
+                </div>
+                <div class="col-md-2">
+                    {{ search_form.submit(class="btn btn-primary w-100") }}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Description</th>
+                            <th>EAN</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in articles.items %}
+                        <tr>
+                            <td>{{ article.IdArticulo }}</td>
+                            <td>{{ article.Descripcion }}</td>
+                            <td>{{ article.EANScanner or 'N/A' }}</td>
+                            <td>{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                            <td>
+                                {% if article.EnVenta %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('articles.edit', id=article.IdArticulo) }}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('articles.delete', id=article.IdArticulo) }}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No articles found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if articles.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if articles.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('articles.index', page=articles.prev_num, query=query) }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in articles.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != articles.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('articles.index', page=page_num, query=query) }}">{{ page_num }}</a>
+                            </li>
+                            {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if articles.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('articles.index', page=articles.next_num, query=query) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Article - {{ article.Descripcion }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}">Articles</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('articles.view', id=article.IdArticulo) }}">{{ article.Descripcion }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="card-title">Edit Article #{{ article.IdArticulo }}</h1>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('articles.edit', id=article.IdArticulo) }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">General Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="descripcion" class="form-label">Description *</label>
+                                    {{ form.descripcion(class="form-control" + (" is-invalid" if form.descripcion.errors else "")) }}
+                                    {% for error in form.descripcion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="descripcion1" class="form-label">Alternative Description</label>
+                                    {{ form.descripcion1(class="form-control" + (" is-invalid" if form.descripcion1.errors else "")) }}
+                                    {% for error in form.descripcion1.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_tipo" class="form-label">Type *</label>
+                                            {{ form.id_tipo(class="form-control" + (" is-invalid" if form.id_tipo.errors else "")) }}
+                                            {% for error in form.id_tipo.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="ean_scanner" class="form-label">EAN Code</label>
+                                            {{ form.ean_scanner(class="form-control" + (" is-invalid" if form.ean_scanner.errors else "")) }}
+                                            {% for error in form.ean_scanner.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_familia" class="form-label">Family</label>
+                                            {{ form.id_familia(class="form-control" + (" is-invalid" if form.id_familia.errors else "")) }}
+                                            {% for error in form.id_familia.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_subfamilia" class="form-label">Subfamily</label>
+                                            {{ form.id_subfamilia(class="form-control" + (" is-invalid" if form.id_subfamilia.errors else "")) }}
+                                            {% for error in form.id_subfamilia.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_departamento" class="form-label">Department</label>
+                                            {{ form.id_departamento(class="form-control" + (" is-invalid" if form.id_departamento.errors else "")) }}
+                                            {% for error in form.id_departamento.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_seccion" class="form-label">Section</label>
+                                            {{ form.id_seccion(class="form-control" + (" is-invalid" if form.id_seccion.errors else "")) }}
+                                            {% for error in form.id_seccion.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.favorito(class="form-check-input") }}
+                                    <label class="form-check-label" for="favorito">
+                                        Favorite
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Pricing Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="precio_sin_iva" class="form-label">Price (without VAT)</label>
+                                            {{ form.precio_sin_iva(class="form-control" + (" is-invalid" if form.precio_sin_iva.errors else "")) }}
+                                            {% for error in form.precio_sin_iva.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="id_iva" class="form-label">VAT ID</label>
+                                            {{ form.id_iva(class="form-control" + (" is-invalid" if form.id_iva.errors else "")) }}
+                                            {% for error in form.id_iva.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="precio_con_iva" class="form-label">Price (with VAT)</label>
+                                    {{ form.precio_con_iva(class="form-control" + (" is-invalid" if form.precio_con_iva.errors else "")) }}
+                                    {% for error in form.precio_con_iva.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Stock Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="stock_actual" class="form-label">Current Stock</label>
+                                    {{ form.stock_actual(class="form-control" + (" is-invalid" if form.stock_actual.errors else "")) }}
+                                    {% for error in form.stock_actual.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="peso_minimo" class="form-label">Min Weight</label>
+                                            {{ form.peso_minimo(class="form-control" + (" is-invalid" if form.peso_minimo.errors else "")) }}
+                                            {% for error in form.peso_minimo.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="peso_maximo" class="form-label">Max Weight</label>
+                                            {{ form.peso_maximo(class="form-control" + (" is-invalid" if form.peso_maximo.errors else "")) }}
+                                            {% for error in form.peso_maximo.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="peso_objetivo" class="form-label">Target Weight</label>
+                                            {{ form.peso_objetivo(class="form-control" + (" is-invalid" if form.peso_objetivo.errors else "")) }}
+                                            {% for error in form.peso_objetivo.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.fecha_caducidad_activada(class="form-check-input") }}
+                                            <label class="form-check-label" for="fecha_caducidad_activada">
+                                                Enable Expiry Date
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="dias_caducidad" class="form-label">Expiry Days</label>
+                                            {{ form.dias_caducidad(class="form-control" + (" is-invalid" if form.dias_caducidad.errors else "")) }}
+                                            {% for error in form.dias_caducidad.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.en_venta(class="form-check-input") }}
+                                    <label class="form-check-label" for="en_venta">
+                                        For Sale
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    {{ form.incluir_gestion_stock(class="form-check-input") }}
+                                    <label class="form-check-label" for="incluir_gestion_stock">
+                                        Include in Stock Management
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Additional Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="texto1" class="form-label">Ingredients/Description</label>
+                                    {{ form.texto1(class="form-control" + (" is-invalid" if form.texto1.errors else ""), rows=5) }}
+                                    {% for error in form.texto1.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto_libre" class="form-label">Nutritional Values</label>
+                                    {{ form.texto_libre(class="form-control" + (" is-invalid" if form.texto_libre.errors else ""), rows=5) }}
+                                    {% for error in form.texto_libre.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="btn btn-secondary">Cancel</a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

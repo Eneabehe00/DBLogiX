@@ -72,4 +72,37 @@ class DDTDeleteForm(FlaskForm):
 
 class DDTExportForm(FlaskForm):
     format = SelectField('Formato', choices=[('pdf', 'PDF')], default='pdf')
-    submit = SubmitField('Esporta') 
+    submit = SubmitField('Esporta')
+
+class ArticleSearchForm(FlaskForm):
+    query = StringField('Search', validators=[DataRequired()])
+    submit = SubmitField('Search')
+
+class ArticleForm(FlaskForm):
+    descripcion = StringField('Descripcion', validators=[DataRequired(), Length(max=100)])
+    descripcion1 = StringField('Descripcion1', validators=[Optional(), Length(max=100)])
+    id_tipo = IntegerField('Tipo', validators=[DataRequired()], default=1)
+    id_familia = IntegerField('Familia', validators=[Optional()])
+    id_subfamilia = IntegerField('SubFamilia', validators=[Optional()])
+    id_departamento = IntegerField('Departamento', validators=[Optional()])
+    id_seccion = IntegerField('Seccion', validators=[Optional()])
+    favorito = BooleanField('Favorito', default=True)
+    precio_sin_iva = DecimalField('Precio Sin IVA', validators=[Optional()], places=6)
+    id_iva = IntegerField('IVA', validators=[Optional()])
+    precio_con_iva = DecimalField('Precio Con IVA', validators=[Optional()], places=3)
+    ean_scanner = StringField('EAN', validators=[Optional(), Length(max=50)])
+    texto1 = TextAreaField('Ingredientes/Descrizione', validators=[Optional()])
+    texto_libre = TextAreaField('Valori Nutrizionali', validators=[Optional()])
+    stock_actual = DecimalField('Stock Actual', validators=[Optional()], places=3)
+    peso_minimo = DecimalField('Peso Minimo', validators=[Optional()], places=3)
+    peso_maximo = DecimalField('Peso Maximo', validators=[Optional()], places=3)
+    peso_objetivo = DecimalField('Peso Objetivo', validators=[Optional()], places=3)
+    fecha_caducidad_activada = BooleanField('Fecha Caducidad Activada', default=True)
+    dias_caducidad = IntegerField('Días Caducidad', validators=[Optional()])
+    en_venta = BooleanField('En Venta', default=True)
+    incluir_gestion_stock = BooleanField('Incluir Gestion Stock', default=True)
+    submit = SubmitField('Save')
+
+class ArticleDeleteForm(FlaskForm):
+    confirm = BooleanField('Confirm Deletion', validators=[DataRequired()])
+    submit = SubmitField('Delete') 

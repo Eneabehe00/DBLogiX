@@ -332,4 +332,43 @@ class DDTLine(db.Model):
                              foreign_keys=[id_ticket, id_empresa, id_tienda, id_balanza_maestra, id_balanza_esclava, tipo_venta])
     
     def __repr__(self):
-        return f'<DDTLine {self.id}: DDT {self.id_ddt} - Ticket {self.id_ticket}>' 
+        return f'<DDTLine {self.id}: DDT {self.id_ddt} - Ticket {self.id_ticket}>'
+
+
+class Article(Product):
+    """This is an alias for the Product model that points to the same database table."""
+    
+    # Add fields needed by the form that aren't in Product
+    Descripcion1 = db.Column(db.String(100))
+    IdTipo = db.Column(db.Integer, default=1)
+    IdDepartamento = db.Column(db.Integer)
+    IdSeccion = db.Column(db.Integer)
+    Favorito = db.Column(db.Boolean, default=1)
+    PesoMinimo = db.Column(db.Float)
+    PesoMaximo = db.Column(db.Float)
+    PesoObjetivo = db.Column(db.Float)
+    FechaCaducidadActivada = db.Column(db.Boolean, default=1)
+    DiasCaducidad = db.Column(db.Integer)
+    PrecioSinIVA = db.Column(db.Numeric(12, 6))
+    Texto1 = db.Column(db.Text)
+    TextoLibre = db.Column(db.Text)
+    StockActual = db.Column(db.Float)
+    EnVenta = db.Column(db.Boolean, default=1)
+    IncluirGestionStock = db.Column(db.Boolean, default=1)
+    IdEmpresa = db.Column(db.Integer, default=1)
+    Usuario = db.Column(db.String(20))
+    TimeStamp = db.Column(db.DateTime, default=datetime.utcnow)
+    Marca = db.Column(db.Integer, default=1)
+    Modificado = db.Column(db.Boolean)
+    
+    # Correctly map IdIVA to match case in database
+    @property
+    def IdIVA(self):
+        return self.IdIva
+    
+    @IdIVA.setter
+    def IdIVA(self, value):
+        self.IdIva = value
+    
+    def __repr__(self):
+        return f'<Article {self.IdArticulo}: {self.Descripcion}>' 

@@ -72,69 +72,14 @@ def index():
 @warehouse_bp.route('/products')
 @login_required
 def product_catalog():
-    """Product catalog with search and filter functionality"""
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    
-    # Initialize forms
-    search_form = SearchForm()
-    filter_form = FilterForm()
-    
-    # Get distinct families and subfamilies for filter dropdowns
-    families = db.session.query(Product.IdFamilia).distinct().all()
-    filter_form.familia.choices = [(0, 'All')] + [(f[0], f'Family {f[0]}') for f in families if f[0] is not None]
-    
-    subfamilies = db.session.query(Product.IdSubFamilia).distinct().all()
-    filter_form.subfamilia.choices = [(0, 'All')] + [(s[0], f'Subfamily {s[0]}') for s in subfamilies if s[0] is not None]
-    
-    # Initialize query
-    query = Product.query
-    
-    # Apply filters if present
-    if request.args.get('familia') and int(request.args.get('familia')) > 0:
-        familia_id = int(request.args.get('familia'))
-        query = query.filter(Product.IdFamilia == familia_id)
-        filter_form.familia.data = familia_id
-    
-    if request.args.get('subfamilia') and int(request.args.get('subfamilia')) > 0:
-        subfamilia_id = int(request.args.get('subfamilia'))
-        query = query.filter(Product.IdSubFamilia == subfamilia_id)
-        filter_form.subfamilia.data = subfamilia_id
-        
-    # Apply search if present
-    if request.args.get('query'):
-        search_term = f"%{request.args.get('query')}%"
-        query = query.filter(or_(
-            Product.Descripcion.like(search_term),
-            Product.CodEAN.like(search_term),
-            Product.IdArticulo.like(search_term)
-        ))
-        search_form.query.data = request.args.get('query')
-    
-    # Execute paginated query
-    products = query.order_by(Product.IdArticulo).paginate(page=page, per_page=per_page)
-    
-    return render_template('warehouse/products.html', 
-                          products=products,
-                          search_form=search_form,
-                          filter_form=filter_form)
+    """Product catalog with search and filter functionality - redirects to articles"""
+    return redirect(url_for('articles.index'))
 
 @warehouse_bp.route('/product/<int:product_id>')
 @login_required
 def product_detail(product_id):
-    """Detailed view of a single product"""
-    product = Product.query.get_or_404(product_id)
-    
-    # Get recent ticket lines for this product (limit to 10)
-    recent_usage = TicketLine.query.filter_by(
-        IdArticulo=product_id
-    ).join(TicketHeader).order_by(
-        TicketHeader.Fecha.desc()
-    ).limit(10).all()
-    
-    return render_template('warehouse/product_detail.html', 
-                          product=product,
-                          recent_usage=recent_usage)
+    """Detailed view of a single product - redirects to article view"""
+    return redirect(url_for('articles.view', id=product_id))
 
 # Ticket management
 

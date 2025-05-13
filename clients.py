@@ -6,6 +6,7 @@ from datetime import datetime
 import csv
 import os
 from werkzeug.utils import secure_filename
+from sqlalchemy import text
 
 clients_bp = Blueprint('clients', __name__, template_folder='templates')
 
@@ -26,53 +27,114 @@ def new():
             max_id = db.session.query(db.func.max(Client.IdCliente)).scalar() or 0
             new_id = max_id + 1
             
-            # Create a new client
-            client = Client(
-                IdCliente=new_id,
-                IdEmpresa=1,  # Default company ID
-                Nombre=request.form.get('Nombre', ''),
-                Direccion=request.form.get('Direccion', ''),
-                CodPostal=request.form.get('CodPostal', ''),
-                Poblacion=request.form.get('Poblacion', ''),
-                Provincia=request.form.get('Provincia', ''),
-                Pais=request.form.get('Pais', 'IT'),  # Default to Italy
-                DNI=request.form.get('DNI', ''),
-                Telefono1=request.form.get('Telefono1', ''),
-                Telefono2=request.form.get('Telefono2', ''),
-                Telefono3=request.form.get('Telefono3', ''),
-                Email=request.form.get('Email', ''),
-                TipoEmailTicket=int(request.form.get('TipoEmailTicket', 0)),
-                TipoEmailAlbaran=int(request.form.get('TipoEmailAlbaran', 0)),
-                TipoEmailFactura=int(request.form.get('TipoEmailFactura', 0)),
-                Foto='',  # Default empty
-                IdTarifa=request.form.get('IdTarifa'),
-                Ofertas=int(request.form.get('Ofertas', 0)),
-                IdFormaPago=request.form.get('IdFormaPago'),
-                IdEstado=request.form.get('IdEstado'),
-                Observaciones=request.form.get('Observaciones', ''),
-                CodInterno=request.form.get('CodInterno', ''),
-                Descuento=request.form.get('Descuento'),
-                PuntosFidelidad=request.form.get('PuntosFidelidad'),
-                CuentaPendiente=request.form.get('CuentaPendiente'),
-                EANScanner=request.form.get('EANScanner', ''),
-                FormatoAlbaran=request.form.get('FormatoAlbaran', '32'),  # Default based on examples
-                UsarRecargoEquivalencia=int(request.form.get('UsarRecargoEquivalencia', 0)),
-                DtoProntoPago=request.form.get('DtoProntoPago'),
-                NombreBanco=request.form.get('NombreBanco', ''),
-                CodigoCuenta=request.form.get('CodigoCuenta', ''),
-                NumeroVencimientos=request.form.get('NumeroVencimientos'),
-                DiasEntreVencimientos=request.form.get('DiasEntreVencimientos'),
-                TotalPorArticulo=int(request.form.get('TotalPorArticulo', 0)),
-                AplicarTarifaEtiqueta=int(request.form.get('AplicarTarifaEtiqueta', 1)),  # Default based on examples
-                FormatoFactura=request.form.get('FormatoFactura'),
-                ModoFacturacion=request.form.get('ModoFacturacion'),
-                Modificado=1,  # 1 for active
-                Operacion='A',  # 'A' for Added
-                Usuario=current_user.username,  # User who created it
-                TimeStamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current timestamp
-            )
+            # Handle checkbox fields (they're only present in the request if checked)
+            tipo_email_ticket = 1 if request.form.get('TipoEmailTicket') else 0
+            tipo_email_albaran = 1 if request.form.get('TipoEmailAlbaran') else 0
+            tipo_email_factura = 1 if request.form.get('TipoEmailFactura') else 0
+            total_por_articulo = 1 if request.form.get('TotalPorArticulo') else 0
+            aplicar_tarifa_etiqueta = 1 if request.form.get('AplicarTarifaEtiqueta') else 0
+            usar_recargo_equivalencia = 0  # Default value
             
-            db.session.add(client)
+            # Convert empty strings to None for numeric fields
+            descuento = request.form.get('Descuento') or None
+            if descuento == '0':
+                descuento = 0  # Keep zero as a valid value
+                
+            puntos_fidelidad = request.form.get('PuntosFidelidad') or None
+            if puntos_fidelidad == '0':
+                puntos_fidelidad = 0  # Keep zero as a valid value
+                
+            cuenta_pendiente = request.form.get('CuentaPendiente') or None
+            dto_pronto_pago = request.form.get('DtoProntoPago') or None
+            numero_vencimientos = request.form.get('NumeroVencimientos') or None
+            dias_entre_vencimientos = request.form.get('DiasEntreVencimientos') or None
+            
+            # Format string values to match field lengths
+            nombre = request.form.get('Nombre', '')[:50]  # varchar(50)
+            direccion = request.form.get('Direccion', '')[:50]  # varchar(50)
+            cod_postal = request.form.get('CodPostal', '')[:8]  # varchar(8)
+            poblacion = request.form.get('Poblacion', '')[:25]  # varchar(25)
+            provincia = request.form.get('Provincia', '')[:25]  # varchar(25)
+            pais = request.form.get('Pais', 'IT')[:10]  # varchar(10)
+            dni = request.form.get('DNI', '')[:30]  # varchar(30)
+            telefono1 = request.form.get('Telefono1', '')[:20]  # varchar(20)
+            telefono2 = request.form.get('Telefono2', '')[:20]  # varchar(20)
+            telefono3 = request.form.get('Telefono3', '')[:20]  # varchar(20)
+            email = request.form.get('Email', '')[:100]  # varchar(100)
+            cod_interno = request.form.get('CodInterno', '')[:25]  # varchar(25)
+            ean_scanner = request.form.get('EANScanner', '')[:50]  # varchar(50)
+            nombre_banco = request.form.get('NombreBanco', '')[:100]  # varchar(100)
+            codigo_cuenta = request.form.get('CodigoCuenta', '')[:100]  # varchar(100)
+            
+            # Set default integer value for FormatoAlbaran
+            formato_albaran = 32  # Default value based on examples
+            
+            # Insert client directly with SQL to avoid SQLAlchemy type issues
+            sql = text("""
+            INSERT INTO dat_cliente (
+                IdCliente, IdEmpresa, Nombre, Direccion, CodPostal, Poblacion, Provincia, Pais, 
+                DNI, Telefono1, Telefono2, Telefono3, Email, TipoEmailTicket, TipoEmailAlbaran, 
+                TipoEmailFactura, Foto, IdTarifa, Ofertas, IdFormaPago, IdEstado, Observaciones, 
+                CodInterno, Descuento, PuntosFidelidad, CuentaPendiente, EANScanner, FormatoAlbaran, 
+                UsarRecargoEquivalencia, DtoProntoPago, NombreBanco, CodigoCuenta, NumeroVencimientos, 
+                DiasEntreVencimientos, TotalPorArticulo, AplicarTarifaEtiqueta, FormatoFactura, 
+                ModoFacturacion, Modificado, Operacion, Usuario, TimeStamp
+            ) VALUES (
+                :IdCliente, :IdEmpresa, :Nombre, :Direccion, :CodPostal, :Poblacion, :Provincia, :Pais,
+                :DNI, :Telefono1, :Telefono2, :Telefono3, :Email, :TipoEmailTicket, :TipoEmailAlbaran,
+                :TipoEmailFactura, :Foto, :IdTarifa, :Ofertas, :IdFormaPago, :IdEstado, :Observaciones,
+                :CodInterno, :Descuento, :PuntosFidelidad, :CuentaPendiente, :EANScanner, :FormatoAlbaran,
+                :UsarRecargoEquivalencia, :DtoProntoPago, :NombreBanco, :CodigoCuenta, :NumeroVencimientos,
+                :DiasEntreVencimientos, :TotalPorArticulo, :AplicarTarifaEtiqueta, :FormatoFactura,
+                :ModoFacturacion, :Modificado, :Operacion, :Usuario, NULL
+            )
+            """)
+            
+            params = {
+                'IdCliente': new_id,
+                'IdEmpresa': 1,
+                'Nombre': nombre,
+                'Direccion': direccion,
+                'CodPostal': cod_postal,
+                'Poblacion': poblacion,
+                'Provincia': provincia,
+                'Pais': pais,
+                'DNI': dni,
+                'Telefono1': telefono1,
+                'Telefono2': telefono2,
+                'Telefono3': telefono3,
+                'Email': email,
+                'TipoEmailTicket': tipo_email_ticket,
+                'TipoEmailAlbaran': tipo_email_albaran,
+                'TipoEmailFactura': tipo_email_factura,
+                'Foto': '',
+                'IdTarifa': request.form.get('IdTarifa') or None,
+                'Ofertas': int(request.form.get('Ofertas', 0)),
+                'IdFormaPago': request.form.get('IdFormaPago') or None,
+                'IdEstado': request.form.get('IdEstado') or None,
+                'Observaciones': request.form.get('Observaciones', ''),
+                'CodInterno': cod_interno,
+                'Descuento': descuento,
+                'PuntosFidelidad': puntos_fidelidad,
+                'CuentaPendiente': cuenta_pendiente,
+                'EANScanner': ean_scanner,
+                'FormatoAlbaran': formato_albaran,
+                'UsarRecargoEquivalencia': usar_recargo_equivalencia,
+                'DtoProntoPago': dto_pronto_pago,
+                'NombreBanco': nombre_banco,
+                'CodigoCuenta': codigo_cuenta,
+                'NumeroVencimientos': numero_vencimientos,
+                'DiasEntreVencimientos': dias_entre_vencimientos,
+                'TotalPorArticulo': total_por_articulo,
+                'AplicarTarifaEtiqueta': aplicar_tarifa_etiqueta,
+                'FormatoFactura': None,
+                'ModoFacturacion': None,
+                'Modificado': 1,
+                'Operacion': 'A',
+                'Usuario': current_user.username,
+            }
+            
+            db.session.execute(sql, params)
             db.session.commit()
             flash('Cliente creato con successo!', 'success')
             return redirect(url_for('clients.index'))
@@ -98,6 +160,27 @@ def edit(id):
     
     if request.method == 'POST':
         try:
+            # Convert empty strings to None for numeric fields
+            descuento = request.form.get('Descuento') or None
+            puntos_fidelidad = request.form.get('PuntosFidelidad') or None
+            cuenta_pendiente = request.form.get('CuentaPendiente') or None
+            dto_pronto_pago = request.form.get('DtoProntoPago') or None
+            numero_vencimientos = request.form.get('NumeroVencimientos') or None
+            dias_entre_vencimientos = request.form.get('DiasEntreVencimientos') or None
+            
+            # Handle integer fields properly
+            formato_albaran = request.form.get('FormatoAlbaran')
+            if formato_albaran:
+                formato_albaran = int(formato_albaran)
+            
+            formato_factura = request.form.get('FormatoFactura')
+            if formato_factura:
+                formato_factura = int(formato_factura)
+            
+            modo_facturacion = request.form.get('ModoFacturacion')
+            if modo_facturacion:
+                modo_facturacion = int(modo_facturacion)
+            
             client.Nombre = request.form.get('Nombre', client.Nombre)
             client.Direccion = request.form.get('Direccion', client.Direccion)
             client.CodPostal = request.form.get('CodPostal', client.CodPostal)
@@ -112,31 +195,31 @@ def edit(id):
             client.TipoEmailTicket = int(request.form.get('TipoEmailTicket', client.TipoEmailTicket))
             client.TipoEmailAlbaran = int(request.form.get('TipoEmailAlbaran', client.TipoEmailAlbaran))
             client.TipoEmailFactura = int(request.form.get('TipoEmailFactura', client.TipoEmailFactura))
-            client.IdTarifa = request.form.get('IdTarifa', client.IdTarifa)
+            client.IdTarifa = request.form.get('IdTarifa') or None
             client.Ofertas = int(request.form.get('Ofertas', client.Ofertas))
-            client.IdFormaPago = request.form.get('IdFormaPago', client.IdFormaPago)
-            client.IdEstado = request.form.get('IdEstado', client.IdEstado)
+            client.IdFormaPago = request.form.get('IdFormaPago') or None
+            client.IdEstado = request.form.get('IdEstado') or None
             client.Observaciones = request.form.get('Observaciones', client.Observaciones)
             client.CodInterno = request.form.get('CodInterno', client.CodInterno)
-            client.Descuento = request.form.get('Descuento', client.Descuento)
-            client.PuntosFidelidad = request.form.get('PuntosFidelidad', client.PuntosFidelidad)
-            client.CuentaPendiente = request.form.get('CuentaPendiente', client.CuentaPendiente)
+            client.Descuento = descuento
+            client.PuntosFidelidad = puntos_fidelidad
+            client.CuentaPendiente = cuenta_pendiente
             client.EANScanner = request.form.get('EANScanner', client.EANScanner)
-            client.FormatoAlbaran = request.form.get('FormatoAlbaran', client.FormatoAlbaran)
+            client.FormatoAlbaran = formato_albaran
             client.UsarRecargoEquivalencia = int(request.form.get('UsarRecargoEquivalencia', client.UsarRecargoEquivalencia))
-            client.DtoProntoPago = request.form.get('DtoProntoPago', client.DtoProntoPago)
+            client.DtoProntoPago = dto_pronto_pago
             client.NombreBanco = request.form.get('NombreBanco', client.NombreBanco)
             client.CodigoCuenta = request.form.get('CodigoCuenta', client.CodigoCuenta)
-            client.NumeroVencimientos = request.form.get('NumeroVencimientos', client.NumeroVencimientos)
-            client.DiasEntreVencimientos = request.form.get('DiasEntreVencimientos', client.DiasEntreVencimientos)
+            client.NumeroVencimientos = numero_vencimientos
+            client.DiasEntreVencimientos = dias_entre_vencimientos
             client.TotalPorArticulo = int(request.form.get('TotalPorArticulo', client.TotalPorArticulo))
             client.AplicarTarifaEtiqueta = int(request.form.get('AplicarTarifaEtiqueta', client.AplicarTarifaEtiqueta))
-            client.FormatoFactura = request.form.get('FormatoFactura', client.FormatoFactura)
-            client.ModoFacturacion = request.form.get('ModoFacturacion', client.ModoFacturacion)
+            client.FormatoFactura = formato_factura
+            client.ModoFacturacion = modo_facturacion
             client.Modificado = 1  # Active
-            client.Operacion = 'M'  # 'M' for Modified
+            client.Operacion = 'M'  # 'M' for Modified (as char)
             client.Usuario = current_user.username  # Current user
-            client.TimeStamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current timestamp
+            # Let the database handle the timestamp
             
             db.session.commit()
             flash('Cliente aggiornato con successo!', 'success')
@@ -194,20 +277,58 @@ def import_csv():
                         if existing_client:
                             # Update existing client
                             for key, value in row.items():
-                                if hasattr(existing_client, key):
+                                if hasattr(existing_client, key) and key != 'TimeStamp':
+                                    # Convert numeric values from strings if needed
+                                    if key in ['Descuento', 'PuntosFidelidad', 'CuentaPendiente', 'DtoProntoPago', 
+                                              'NumeroVencimientos', 'DiasEntreVencimientos']:
+                                        if not value:
+                                            value = None
+                                    
+                                    # Handle Operacion specially
+                                    if key == 'Operacion':
+                                        if value == 'A':
+                                            value = 'A'
+                                        elif value == 'M':
+                                            value = 'M'
+                                        else:
+                                            try:
+                                                value = int(value)
+                                            except:
+                                                value = '0'
+                                    
                                     setattr(existing_client, key, value)
+                            
                             existing_client.Operacion = 'M'  # Modified
                             existing_client.Usuario = current_user.username
-                            existing_client.TimeStamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            # Let database handle timestamp
                         else:
                             # Create new client
                             new_client = Client()
                             for key, value in row.items():
-                                if hasattr(new_client, key):
+                                if hasattr(new_client, key) and key != 'TimeStamp':
+                                    # Convert numeric values from strings if needed
+                                    if key in ['Descuento', 'PuntosFidelidad', 'CuentaPendiente', 'DtoProntoPago', 
+                                              'NumeroVencimientos', 'DiasEntreVencimientos']:
+                                        if not value:
+                                            value = None
+                                    
+                                    # Handle Operacion specially
+                                    if key == 'Operacion':
+                                        if value == 'A':
+                                            value = 'A'
+                                        elif value == 'M':
+                                            value = 'M'
+                                        else:
+                                            try:
+                                                value = int(value)
+                                            except:
+                                                value = '0'
+                                    
                                     setattr(new_client, key, value)
+                            
                             new_client.Operacion = 'A'  # Added
                             new_client.Usuario = current_user.username
-                            new_client.TimeStamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            # Let database handle timestamp
                             db.session.add(new_client)
                         
                         clients_imported += 1

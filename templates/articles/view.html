@@ -2,6 +2,46 @@
 
 {% block title %}View Article - {{ article.Descripcion }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .card-header-tabs {
+        margin-right: 0;
+        margin-left: 0;
+        margin-bottom: -0.75rem;
+    }
+    .tab-content {
+        padding: 1.25rem;
+    }
+    .tab-pane {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .nav-tabs .nav-link {
+        padding: 0.75rem 1rem;
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+    }
+    .nav-tabs .nav-link.active {
+        font-weight: 600;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+    .badge {
+        font-size: 85%;
+    }
+    .lot-details-container {
+        transition: all 0.3s ease;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container my-4">
     <nav aria-label="breadcrumb">
@@ -34,168 +74,411 @@
     {% endif %}
     {% endwith %}
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">General Information</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <tbody>
-                            <tr>
-                                <th>ID</th>
-                                <td>{{ article.IdArticulo }}</td>
-                            </tr>
-                            <tr>
-                                <th>Description</th>
-                                <td>{{ article.Descripcion }}</td>
-                            </tr>
-                            <tr>
-                                <th>Alt Description</th>
-                                <td>{{ article.Descripcion1 or 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Type</th>
-                                <td>{{ article.IdTipo }}</td>
-                            </tr>
-                            <tr>
-                                <th>Family</th>
-                                <td>{{ article.IdFamilia or 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Subfamily</th>
-                                <td>{{ article.IdSubFamilia or 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>EAN</th>
-                                <td>{{ article.EANScanner or 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Status</th>
-                                <td>
-                                    {% if article.EnVenta %}
-                                    <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Inactive</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Favorite</th>
-                                <td>
-                                    {% if article.Favorito %}
-                                    <span class="badge bg-primary">Yes</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">No</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Last Updated</th>
-                                <td>{{ article.TimeStamp.strftime('%d/%m/%Y %H:%M') if article.TimeStamp else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Last Updated By</th>
-                                <td>{{ article.Usuario or 'N/A' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <!-- Modern Tabs for Product Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+                        <i class="fas fa-info-circle me-1"></i> General
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="false">
+                        <i class="fas fa-tags me-1"></i> Pricing
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="stock-tab" data-bs-toggle="tab" data-bs-target="#stock" type="button" role="tab" aria-controls="stock" aria-selected="false">
+                        <i class="fas fa-boxes me-1"></i> Stock
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="traceability-tab" data-bs-toggle="tab" data-bs-target="#traceability" type="button" role="tab" aria-controls="traceability" aria-selected="false">
+                        <i class="fas fa-search-location me-1"></i> Tracciabilità
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="texts-tab" data-bs-toggle="tab" data-bs-target="#texts" type="button" role="tab" aria-controls="texts" aria-selected="false">
+                        <i class="fas fa-font me-1"></i> Testi
+                    </button>
+                </li>
+            </ul>
         </div>
-
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Pricing Information</h5>
+        
+        <div class="card-body">
+            <div class="tab-content">
+                <!-- General Tab -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%">ID</th>
+                                    <td>{{ article.IdArticulo }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Description</th>
+                                    <td>{{ article.Descripcion }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Alt Description</th>
+                                    <td>{{ article.Descripcion1 or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type</th>
+                                    <td>{{ article.tipo.Descripcion if article.tipo else article.IdTipo }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Family</th>
+                                    <td>{{ article.familia.Descripcion if article.familia else (article.IdFamilia or 'N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Subfamily</th>
+                                    <td>{{ article.subfamilia.Descripcion if article.subfamilia else (article.IdSubFamilia or 'N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Department</th>
+                                    <td>{{ article.departamento.Descripcion if article.departamento else (article.IdDepartamento or 'N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Section</th>
+                                    <td>{{ article.seccion.Descripcion if article.seccion else (article.IdSeccion or 'N/A') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>EAN</th>
+                                    <td>{{ article.EANScanner or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td>
+                                        {% if article.EnVenta %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Favorite</th>
+                                    <td>
+                                        {% if article.Favorito %}
+                                        <span class="badge bg-primary">Yes</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Last Updated</th>
+                                    <td>{{ article.TimeStamp.strftime('%d/%m/%Y %H:%M') if article.TimeStamp else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Updated By</th>
+                                    <td>{{ article.Usuario or 'N/A' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <tbody>
-                            <tr>
-                                <th>Price (without VAT)</th>
-                                <td>{{ article.PrecioSinIVA|price if article.PrecioSinIVA else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>VAT ID</th>
-                                <td>{{ article.IdIVA or 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Price (with VAT)</th>
-                                <td>{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Discount</th>
-                                <td>{{ article.Descuento or 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Offer Price</th>
-                                <td>{{ article.PrecioOferta|price if article.PrecioOferta else 'N/A' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                
+                <!-- Pricing Tab -->
+                <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%">Price (without VAT)</th>
+                                    <td>{{ article.PrecioSinIVA|price if article.PrecioSinIVA else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>VAT ID</th>
+                                    <td>{{ article.IdIVA or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Price (with VAT)</th>
+                                    <td>{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Discount</th>
+                                    <td>{{ article.Descuento or 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Offer Price</th>
+                                    <td>{{ article.PrecioOferta|price if article.PrecioOferta else 'N/A' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Stock Information</h5>
+                
+                <!-- Stock Tab -->
+                <div class="tab-pane fade" id="stock" role="tabpanel" aria-labelledby="stock-tab">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%">Current Stock</th>
+                                    <td>{{ article.StockActual|weight if article.StockActual else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Min Weight</th>
+                                    <td>{{ article.PesoMinimo|weight if article.PesoMinimo else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Max Weight</th>
+                                    <td>{{ article.PesoMaximo|weight if article.PesoMaximo else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Target Weight</th>
+                                    <td>{{ article.PesoObjetivo|weight if article.PesoObjetivo else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Stock Management</th>
+                                    <td>
+                                        {% if article.IncluirGestionStock %}
+                                        <span class="badge bg-success">Enabled</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Expiry Date Enabled</th>
+                                    <td>
+                                        {% if article.FechaCaducidadActivada %}
+                                        <span class="badge bg-success">Enabled</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Expiry Days</th>
+                                    <td>{{ article.DiasCaducidad or 'N/A' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table table-striped">
-                        <tbody>
-                            <tr>
-                                <th>Current Stock</th>
-                                <td>{{ article.StockActual|weight if article.StockActual else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Min Weight</th>
-                                <td>{{ article.PesoMinimo|weight if article.PesoMinimo else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Max Weight</th>
-                                <td>{{ article.PesoMaximo|weight if article.PesoMaximo else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Target Weight</th>
-                                <td>{{ article.PesoObjetivo|weight if article.PesoObjetivo else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <th>Stock Management</th>
-                                <td>
-                                    {% if article.IncluirGestionStock %}
-                                    <span class="badge bg-success">Enabled</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Disabled</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Additional Information</h5>
-                </div>
-                <div class="card-body">
+                
+                <!-- Traceability Tab -->
+                <div class="tab-pane fade" id="traceability" role="tabpanel" aria-labelledby="traceability-tab">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>Ingredients/Description</h6>
-                            <div class="p-3 bg-light mb-3 rounded">
-                                {{ article.Texto1 or 'No information available' }}
+                        <div class="col-md-12 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Classe di Tracciabilità</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <tbody>
+                                                <tr>
+                                                    <th style="width: 30%">ID Classe</th>
+                                                    <td>{{ article.IdClase or 'N/A' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Nome Classe</th>
+                                                    <td>{{ clase_nombre }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Nutritional Values</h6>
-                            <div class="p-3 bg-light mb-3 rounded">
-                                {{ article.TextoLibre or 'No information available' }}
+                        
+                        <div class="col-md-12">
+                            <div class="card h-100 mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0">Lotti Associati</h5>
+                                    {% if lotes_asociados %}
+                                    <span class="badge bg-primary rounded-pill">{{ lotes_asociados|length }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    {% if lotes_asociados %}
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Nome Lotto</th>
+                                                    <th>Peso</th>
+                                                    <th>Data Scadenza</th>
+                                                    <th>Azioni</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for lote in lotes_asociados %}
+                                                <tr class="lot-row" data-id="{{ lote.IdElemAsociado }}">
+                                                    <td>{{ lote.IdElemAsociado }}</td>
+                                                    <td>{{ lote.NombreElemAsociado }}</td>
+                                                    <td>{{ lote.Peso }}</td>
+                                                    <td>{{ lote.FechaCaducidad|default('N/A', true) }}</td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-primary view-lote" data-id="{{ lote.IdElemAsociado }}">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- Lot Details Container -->
+                                    <div id="lot-details-container" class="mt-4 d-none">
+                                        <h5 class="border-bottom pb-2">Dettagli Lotto: <span id="lot-name"></span></h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>ID Parametro</th>
+                                                        <th>Parametro</th>
+                                                        <th>Valore</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="lot-parameters-body">
+                                                    <!-- Parameters will be loaded dynamically -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    {% else %}
+                                    <div class="alert alert-info">
+                                        Nessun lotto associato trovato per questo articolo.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Texts Tab -->
+                <div class="tab-pane fade" id="texts" role="tabpanel" aria-labelledby="texts-tab">
+                    <ul class="nav nav-pills mb-4" id="textsSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="text1-5-tab" data-bs-toggle="pill" data-bs-target="#text1-5" 
+                                type="button" role="tab" aria-controls="text1-5" aria-selected="true">
+                                Testi 1-5
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text6-10-tab" data-bs-toggle="pill" data-bs-target="#text6-10" 
+                                type="button" role="tab" aria-controls="text6-10" aria-selected="false">
+                                Testi 6-10
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text11-15-tab" data-bs-toggle="pill" data-bs-target="#text11-15" 
+                                type="button" role="tab" aria-controls="text11-15" aria-selected="false">
+                                Testi 11-15
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text16-20-tab" data-bs-toggle="pill" data-bs-target="#text16-20" 
+                                type="button" role="tab" aria-controls="text16-20" aria-selected="false">
+                                Testi 16-20
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="textolibre-tab" data-bs-toggle="pill" data-bs-target="#textolibre" 
+                                type="button" role="tab" aria-controls="textolibre" aria-selected="false">
+                                Testo Libero
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3 border rounded" id="textTabsContent">
+                        <!-- Textos 1-5 Tab -->
+                        <div class="tab-pane fade show active" id="text1-5" role="tabpanel" aria-labelledby="text1-5-tab">
+                            <div class="row">
+                                {% for i in range(1, 6) %}
+                                <div class="col-md-12 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header py-2">
+                                            <h6 class="mb-0">Texto {{ i }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {{ article['Texto' + i|string] or 'No information available' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Textos 6-10 Tab -->
+                        <div class="tab-pane fade" id="text6-10" role="tabpanel" aria-labelledby="text6-10-tab">
+                            <div class="row">
+                                {% for i in range(6, 11) %}
+                                <div class="col-md-12 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header py-2">
+                                            <h6 class="mb-0">Texto {{ i }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {{ article['Texto' + i|string] or 'No information available' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Textos 11-15 Tab -->
+                        <div class="tab-pane fade" id="text11-15" role="tabpanel" aria-labelledby="text11-15-tab">
+                            <div class="row">
+                                {% for i in range(11, 16) %}
+                                <div class="col-md-12 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header py-2">
+                                            <h6 class="mb-0">Texto {{ i }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {{ article['Texto' + i|string] or 'No information available' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Textos 16-20 Tab -->
+                        <div class="tab-pane fade" id="text16-20" role="tabpanel" aria-labelledby="text16-20-tab">
+                            <div class="row">
+                                {% for i in range(16, 21) %}
+                                <div class="col-md-12 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header py-2">
+                                            <h6 class="mb-0">Texto {{ i }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {{ article['Texto' + i|string] or 'No information available' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Texto Libre Tab -->
+                        <div class="tab-pane fade" id="textolibre" role="tabpanel" aria-labelledby="textolibre-tab">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-header py-2">
+                                            <h6 class="mb-0">Testo Libero</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {{ article.TextoLibre or 'No information available' }}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -204,4 +487,81 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const lotDetailsContainer = document.getElementById('lot-details-container');
+        const lotParametersBody = document.getElementById('lot-parameters-body');
+        const lotName = document.getElementById('lot-name');
+        
+        // Add event listeners to all view-lote buttons
+        document.querySelectorAll('.view-lote').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const lotId = this.getAttribute('data-id');
+                getLotDetails(lotId);
+                
+                // Get the lot name from the row
+                const row = this.closest('tr');
+                const lotNameText = row.cells[1].textContent;
+                lotName.textContent = lotNameText;
+            });
+        });
+        
+        // Function to get lot details
+        function getLotDetails(lotId) {
+            fetch(`/articles/get-lot-details/${lotId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayLotDetails(data.data);
+                    } else {
+                        // Show error
+                        lotParametersBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Error: ${data.error || 'Unknown error'}</td></tr>`;
+                        lotDetailsContainer.classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    lotParametersBody.innerHTML = `<tr><td colspan="3" class="text-center text-danger">Error: ${error.message || 'Unknown error'}</td></tr>`;
+                    lotDetailsContainer.classList.remove('d-none');
+                });
+        }
+        
+        // Function to display lot details
+        function displayLotDetails(details) {
+            // Clear previous data
+            lotParametersBody.innerHTML = '';
+            
+            if (details.length === 0) {
+                lotParametersBody.innerHTML = `<tr><td colspan="3" class="text-center">Nessun dettaglio trovato per questo lotto.</td></tr>`;
+            } else {
+                // Create rows for parameters
+                details.forEach(param => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${param.IdParametro}</td>
+                        <td>${param.Parametro}</td>
+                        <td>${param.Valor}</td>
+                    `;
+                    lotParametersBody.appendChild(row);
+                });
+            }
+            
+            // Show the details
+            lotDetailsContainer.classList.remove('d-none');
+        }
+        
+        // Also allow clicking on the row to view lot details
+        document.querySelectorAll('.lot-row').forEach(function(row) {
+            row.addEventListener('click', function() {
+                const lotId = this.getAttribute('data-id');
+                const lotNameText = this.cells[1].textContent;
+                lotName.textContent = lotNameText;
+                getLotDetails(lotId);
+            });
+        });
+    });
+</script>
 {% endblock %} 

@@ -355,11 +355,197 @@ class Article(Product):
     StockActual = db.Column(db.Float)
     EnVenta = db.Column(db.Boolean, default=1)
     IncluirGestionStock = db.Column(db.Boolean, default=1)
+    IdClase = db.Column(db.Integer)
     IdEmpresa = db.Column(db.Integer, default=1)
     Usuario = db.Column(db.String(20))
     TimeStamp = db.Column(db.DateTime, default=datetime.utcnow)
     Marca = db.Column(db.Integer, default=1)
     Modificado = db.Column(db.Boolean)
+    
+    # Add non-database attributes for the form
+    # These will not be queried from or saved to the database
+    # But they will be available as properties in Python code
+    _TastoDirecto = None
+    _Texto2 = None
+    _Texto3 = None
+    _Texto4 = None
+    _Texto5 = None
+    _Texto6 = None
+    _Texto7 = None
+    _Texto8 = None
+    _Texto9 = None
+    _Texto10 = None
+    _Texto11 = None
+    _Texto12 = None
+    _Texto13 = None
+    _Texto14 = None
+    _Texto15 = None
+    _Texto16 = None
+    _Texto17 = None
+    _Texto18 = None
+    _Texto19 = None
+    _Texto20 = None
+    
+    # Property accessors for non-database fields
+    @property
+    def TastoDirecto(self):
+        return self._TastoDirecto
+    
+    @TastoDirecto.setter
+    def TastoDirecto(self, value):
+        self._TastoDirecto = value
+    
+    @property
+    def Texto2(self):
+        return self._Texto2
+    
+    @Texto2.setter
+    def Texto2(self, value):
+        self._Texto2 = value
+    
+    @property
+    def Texto3(self):
+        return self._Texto3
+    
+    @Texto3.setter
+    def Texto3(self, value):
+        self._Texto3 = value
+    
+    @property
+    def Texto4(self):
+        return self._Texto4
+    
+    @Texto4.setter
+    def Texto4(self, value):
+        self._Texto4 = value
+    
+    @property
+    def Texto5(self):
+        return self._Texto5
+    
+    @Texto5.setter
+    def Texto5(self, value):
+        self._Texto5 = value
+    
+    @property
+    def Texto6(self):
+        return self._Texto6
+    
+    @Texto6.setter
+    def Texto6(self, value):
+        self._Texto6 = value
+    
+    @property
+    def Texto7(self):
+        return self._Texto7
+    
+    @Texto7.setter
+    def Texto7(self, value):
+        self._Texto7 = value
+    
+    @property
+    def Texto8(self):
+        return self._Texto8
+    
+    @Texto8.setter
+    def Texto8(self, value):
+        self._Texto8 = value
+    
+    @property
+    def Texto9(self):
+        return self._Texto9
+    
+    @Texto9.setter
+    def Texto9(self, value):
+        self._Texto9 = value
+    
+    @property
+    def Texto10(self):
+        return self._Texto10
+    
+    @Texto10.setter
+    def Texto10(self, value):
+        self._Texto10 = value
+    
+    @property
+    def Texto11(self):
+        return self._Texto11
+    
+    @Texto11.setter
+    def Texto11(self, value):
+        self._Texto11 = value
+    
+    @property
+    def Texto12(self):
+        return self._Texto12
+    
+    @Texto12.setter
+    def Texto12(self, value):
+        self._Texto12 = value
+    
+    @property
+    def Texto13(self):
+        return self._Texto13
+    
+    @Texto13.setter
+    def Texto13(self, value):
+        self._Texto13 = value
+    
+    @property
+    def Texto14(self):
+        return self._Texto14
+    
+    @Texto14.setter
+    def Texto14(self, value):
+        self._Texto14 = value
+    
+    @property
+    def Texto15(self):
+        return self._Texto15
+    
+    @Texto15.setter
+    def Texto15(self, value):
+        self._Texto15 = value
+    
+    @property
+    def Texto16(self):
+        return self._Texto16
+    
+    @Texto16.setter
+    def Texto16(self, value):
+        self._Texto16 = value
+    
+    @property
+    def Texto17(self):
+        return self._Texto17
+    
+    @Texto17.setter
+    def Texto17(self, value):
+        self._Texto17 = value
+    
+    @property
+    def Texto18(self):
+        return self._Texto18
+    
+    @Texto18.setter
+    def Texto18(self, value):
+        self._Texto18 = value
+    
+    @property
+    def Texto19(self):
+        return self._Texto19
+    
+    @Texto19.setter
+    def Texto19(self, value):
+        self._Texto19 = value
+    
+    @property
+    def Texto20(self):
+        return self._Texto20
+    
+    @Texto20.setter
+    def Texto20(self, value):
+        self._Texto20 = value
     
     # Correctly map IdIVA to match case in database
     @property

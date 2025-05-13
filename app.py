@@ -109,6 +109,17 @@ def create_app():
         def b64encode_filter(value):
             return b64encode(value)
         
+        @app.template_filter('date')
+        def date_filter(value):
+            if value is None:
+                return ""
+            if isinstance(value, str):
+                try:
+                    value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    return value
+            return value.strftime('%d/%m/%Y %H:%M') if value else ""
+        
         @app.context_processor
         def utility_processor():
             from datetime import datetime

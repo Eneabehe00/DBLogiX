@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuovo Cliente - DBLogiX{% endblock %}
+
+{% block header_title %}<i class="fas fa-user-plus"></i> Nuovo Cliente{% endblock %}
+
+{% block header %}
+<div class="page-actions">
+    <a href="{{ url_for('clients.index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Torna alla Lista
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">Inserisci i dettagli del nuovo cliente</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('clients.new') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="row">
+                <!-- Dati principali -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Informazioni Principali</h6>
+                    
+                    <div class="mb-3">
+                        <label for="Nombre" class="form-label">Nome / Ragione Sociale *</label>
+                        <input type="text" class="form-control" id="Nombre" name="Nombre" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="DNI" class="form-label">P.IVA / Codice Fiscale</label>
+                        <input type="text" class="form-control" id="DNI" name="DNI">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Direccion" class="form-label">Indirizzo</label>
+                        <input type="text" class="form-control" id="Direccion" name="Direccion">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="CodPostal" class="form-label">CAP</label>
+                                <input type="text" class="form-control" id="CodPostal" name="CodPostal">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="Poblacion" class="form-label">Città</label>
+                                <input type="text" class="form-control" id="Poblacion" name="Poblacion">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="Provincia" class="form-label">Provincia</label>
+                                <input type="text" class="form-control" id="Provincia" name="Provincia">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="Pais" class="form-label">Paese</label>
+                                <input type="text" class="form-control" id="Pais" name="Pais" value="IT">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contatti -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Informazioni di Contatto</h6>
+                    
+                    <div class="mb-3">
+                        <label for="Telefono1" class="form-label">Telefono Principale</label>
+                        <input type="text" class="form-control" id="Telefono1" name="Telefono1">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Telefono2" class="form-label">Telefono Secondario</label>
+                        <input type="text" class="form-control" id="Telefono2" name="Telefono2">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Telefono3" class="form-label">Telefono Alternativo</label>
+                        <input type="text" class="form-control" id="Telefono3" name="Telefono3">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="Email" name="Email">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3 form-check mt-4">
+                                <input type="checkbox" class="form-check-input" id="TipoEmailTicket" name="TipoEmailTicket" value="1">
+                                <label class="form-check-label" for="TipoEmailTicket">Email Ticket</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3 form-check mt-4">
+                                <input type="checkbox" class="form-check-input" id="TipoEmailAlbaran" name="TipoEmailAlbaran" value="1">
+                                <label class="form-check-label" for="TipoEmailAlbaran">Email DDT</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3 form-check mt-4">
+                                <input type="checkbox" class="form-check-input" id="TipoEmailFactura" name="TipoEmailFactura" value="1">
+                                <label class="form-check-label" for="TipoEmailFactura">Email Fattura</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <!-- Informazioni Commerciali -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Informazioni Commerciali</h6>
+                    
+                    <div class="mb-3">
+                        <label for="CodInterno" class="form-label">Codice Interno</label>
+                        <input type="text" class="form-control" id="CodInterno" name="CodInterno">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Descuento" class="form-label">Sconto (%)</label>
+                        <input type="number" step="0.01" class="form-control" id="Descuento" name="Descuento" value="0">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="PuntosFidelidad" class="form-label">Punti Fedeltà</label>
+                        <input type="number" class="form-control" id="PuntosFidelidad" name="PuntosFidelidad" value="0">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="Observaciones" class="form-label">Note / Osservazioni</label>
+                        <textarea class="form-control" id="Observaciones" name="Observaciones" rows="3"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Impostazioni Aggiuntive -->
+                <div class="col-md-6">
+                    <h6 class="mb-3">Impostazioni Aggiuntive</h6>
+                    
+                    <div class="mb-3">
+                        <label for="NombreBanco" class="form-label">Nome Banca</label>
+                        <input type="text" class="form-control" id="NombreBanco" name="NombreBanco">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="CodigoCuenta" class="form-label">Codice IBAN</label>
+                        <input type="text" class="form-control" id="CodigoCuenta" name="CodigoCuenta">
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="TotalPorArticulo" name="TotalPorArticulo" value="1">
+                        <label class="form-check-label" for="TotalPorArticulo">Totale per Articolo</label>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="AplicarTarifaEtiqueta" name="AplicarTarifaEtiqueta" value="1" checked>
+                        <label class="form-check-label" for="AplicarTarifaEtiqueta">Applica Tariffa Etichetta</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 d-flex justify-content-end">
+                <button type="button" class="btn btn-outline-secondary me-2" onclick="window.location.href='{{ url_for('clients.index') }}'">Annulla</button>
+                <button type="submit" class="btn btn-primary">Salva Cliente</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

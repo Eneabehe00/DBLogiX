@@ -84,11 +84,13 @@ def create_app():
         from auth import auth_bp
         from admin import admin_bp
         from ddt import ddt_bp
+        from clients import clients_bp
         
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(warehouse_bp, url_prefix='/warehouse')
         app.register_blueprint(admin_bp, url_prefix='/admin')
         app.register_blueprint(ddt_bp, url_prefix='/ddt')
+        app.register_blueprint(clients_bp, url_prefix='/clients')
         
         # Register template filters
         from utils import format_price, format_weight, current_time, b64encode

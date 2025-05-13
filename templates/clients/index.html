@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestione Clienti - DBLogiX{% endblock %}
+
+{% block header_title %}<i class="fas fa-address-book"></i> Gestione Clienti{% endblock %}
+
+{% block header %}
+<div class="page-actions">
+    <a href="{{ url_for('clients.new') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Nuovo Cliente
+    </a>
+    <a href="{{ url_for('clients.import_csv') }}" class="btn btn-info">
+        <i class="fas fa-file-import"></i> Importa CSV
+    </a>
+    <a href="{{ url_for('clients.export_csv') }}" class="btn btn-secondary">
+        <i class="fas fa-file-export"></i> Esporta CSV
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Lista Clienti</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="searchInput" class="form-control" placeholder="Cerca cliente...">
+                <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Indirizzo</th>
+                        <th>Città</th>
+                        <th>Telefono</th>
+                        <th>Email</th>
+                        <th>Ultimo Aggiornamento</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="clientTable">
+                    {% for client in clients %}
+                    <tr>
+                        <td>{{ client.IdCliente }}</td>
+                        <td>{{ client.Nombre }}</td>
+                        <td>{{ client.Direccion }}</td>
+                        <td>{{ client.Poblacion }}</td>
+                        <td>{{ client.Telefono1 }}</td>
+                        <td>{{ client.Email }}</td>
+                        <td>{{ client.TimeStamp.strftime('%d/%m/%Y %H:%M') if client.TimeStamp else 'N/A' }}</td>
+                        <td class="actions">
+                            <a href="{{ url_for('clients.view', id=client.IdCliente) }}" class="btn btn-sm btn-info" title="Visualizza">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('clients.edit', id=client.IdCliente) }}" class="btn btn-sm btn-warning" title="Modifica">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger delete-client" data-bs-toggle="modal" data-bs-target="#deleteModal" data-id="{{ client.IdCliente }}" data-name="{{ client.Nombre }}" title="Elimina">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">Nessun cliente trovato</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Conferma Eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Sei sicuro di voler eliminare il cliente <span id="clientName"></span>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form id="deleteForm" method="POST" action="">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Elimina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle delete modal
+        $('.delete-client').on('click', function() {
+            const clientId = $(this).data('id');
+            const clientName = $(this).data('name');
+            
+            $('#clientName').text(clientName);
+            $('#deleteForm').attr('action', "{{ url_for('clients.delete', id=0) }}".replace('0', clientId));
+        });
+        
+        // Client search functionality
+        $('#searchInput').on('keyup', function() {
+            const value = $(this).val().toLowerCase();
+            $('#clientTable tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+        
+        $('#searchButton').on('click', function() {
+            const value = $('#searchInput').val().toLowerCase();
+            $('#clientTable tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+    });
+</script>
+{% endblock %} 

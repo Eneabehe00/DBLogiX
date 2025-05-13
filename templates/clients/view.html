@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Dettagli Cliente - DBLogiX{% endblock %}
+
+{% block header_title %}<i class="fas fa-user"></i> Dettagli Cliente{% endblock %}
+
+{% block header %}
+<div class="page-actions">
+    <a href="{{ url_for('clients.index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Torna alla Lista
+    </a>
+    <a href="{{ url_for('clients.edit', id=client.IdCliente) }}" class="btn btn-warning">
+        <i class="fas fa-edit"></i> Modifica
+    </a>
+    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+        <i class="fas fa-trash"></i> Elimina
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Informazioni Principali</h5>
+            </div>
+            <div class="card-body">
+                <div class="client-details">
+                    <div class="detail-item">
+                        <span class="detail-label">ID Cliente:</span>
+                        <span class="detail-value">{{ client.IdCliente }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Nome / Ragione Sociale:</span>
+                        <span class="detail-value">{{ client.Nombre }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">P.IVA / Codice Fiscale:</span>
+                        <span class="detail-value">{{ client.DNI or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Indirizzo:</span>
+                        <span class="detail-value">{{ client.Direccion or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">CAP:</span>
+                        <span class="detail-value">{{ client.CodPostal or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Città:</span>
+                        <span class="detail-value">{{ client.Poblacion or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Provincia:</span>
+                        <span class="detail-value">{{ client.Provincia or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Paese:</span>
+                        <span class="detail-value">{{ client.Pais or 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Informazioni Commerciali</h5>
+            </div>
+            <div class="card-body">
+                <div class="client-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Codice Interno:</span>
+                        <span class="detail-value">{{ client.CodInterno or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Sconto:</span>
+                        <span class="detail-value">{{ client.Descuento or '0' }}%</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Punti Fedeltà:</span>
+                        <span class="detail-value">{{ client.PuntosFidelidad or '0' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Note / Osservazioni:</span>
+                        <span class="detail-value">{{ client.Observaciones or 'Nessuna osservazione' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Informazioni di Contatto</h5>
+            </div>
+            <div class="card-body">
+                <div class="client-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Telefono Principale:</span>
+                        <span class="detail-value">{{ client.Telefono1 or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Telefono Secondario:</span>
+                        <span class="detail-value">{{ client.Telefono2 or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Telefono Alternativo:</span>
+                        <span class="detail-value">{{ client.Telefono3 or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Email:</span>
+                        <span class="detail-value">{{ client.Email or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Preferenze Email:</span>
+                        <span class="detail-value">
+                            {% if client.TipoEmailTicket == 1 or client.TipoEmailAlbaran == 1 or client.TipoEmailFactura == 1 %}
+                                <ul class="mb-0 ps-3">
+                                    {% if client.TipoEmailTicket == 1 %}<li>Ticket</li>{% endif %}
+                                    {% if client.TipoEmailAlbaran == 1 %}<li>DDT</li>{% endif %}
+                                    {% if client.TipoEmailFactura == 1 %}<li>Fattura</li>{% endif %}
+                                </ul>
+                            {% else %}
+                                Nessuna preferenza
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">Impostazioni Aggiuntive</h5>
+            </div>
+            <div class="card-body">
+                <div class="client-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Nome Banca:</span>
+                        <span class="detail-value">{{ client.NombreBanco or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Codice IBAN:</span>
+                        <span class="detail-value">{{ client.CodigoCuenta or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Formato Albaran:</span>
+                        <span class="detail-value">{{ client.FormatoAlbaran or 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Totale per Articolo:</span>
+                        <span class="detail-value">{{ 'Sì' if client.TotalPorArticulo == 1 else 'No' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Applica Tariffa Etichetta:</span>
+                        <span class="detail-value">{{ 'Sì' if client.AplicarTarifaEtiqueta == 1 else 'No' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Metadati</h5>
+            </div>
+            <div class="card-body">
+                <div class="client-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Data Creazione/Modifica:</span>
+                        <span class="detail-value">{{ client.TimeStamp.strftime('%d/%m/%Y %H:%M') if client.TimeStamp else 'N/A' }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Operazione:</span>
+                        <span class="detail-value">
+                            {% if client.Operacion == 'A' %}
+                                Aggiunto
+                            {% elif client.Operacion == 'M' %}
+                                Modificato
+                            {% else %}
+                                {{ client.Operacion }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Utente:</span>
+                        <span class="detail-value">{{ client.Usuario or 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Conferma Eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Sei sicuro di voler eliminare il cliente <strong>{{ client.Nombre }}</strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="POST" action="{{ url_for('clients.delete', id=client.IdCliente) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Elimina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .client-details {
+        display: grid;
+        grid-row-gap: 0.75rem;
+    }
+    
+    .detail-item {
+        display: grid;
+        grid-template-columns: 40% 60%;
+    }
+    
+    .detail-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .detail-value {
+        word-break: break-word;
+    }
+</style>
+{% endblock %} 

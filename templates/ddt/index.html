@@ -23,8 +23,7 @@
                             <th>ID</th>
                             <th>Cliente</th>
                             <th>Data Creazione</th>
-                            <th>Totale Imponibile</th>
-                            <th>Totale IVA</th>
+                            <th>Totale Articoli</th>
                             <th>Totale DDT</th>
                             <th>Azioni</th>
                         </tr>
@@ -33,21 +32,23 @@
                         {% for ddt in ddts.items %}
                         <tr>
                             <td>{{ ddt.id }}</td>
-                            <td>
-                                {% if ddt.cliente %}
-                                    {{ ddt.cliente.Nombre }}
-                                {% else %}
-                                    Cliente non trovato
-                                {% endif %}
-                            </td>
-                            <td>{{ ddt.data_creazione.strftime('%d/%m/%Y %H:%M') }}</td>
-                            <td>€ {{ "%.2f"|format(ddt.totale_senza_iva|float) }}</td>
-                            <td>€ {{ "%.2f"|format(ddt.totale_iva|float) }}</td>
-                            <td>€ {{ "%.2f"|format(ddt.totale_importo|float) }}</td>
+                            <td>{{ ddt.cliente_nome }}</td>
+                            <td>{{ ddt.formatted_date }}</td>
+                            <td>{{ ddt.num_linee }}</td>
+                            <td>€ {{ "%.2f"|format(ddt.totale) }}</td>
                             <td>
                                 <a href="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" class="btn btn-info btn-sm">
                                     <i class="fas fa-eye"></i> Dettagli
                                 </a>
+                                {% if ddt.created_by == 'DBLogiX' %}
+                                <span class="ms-1" title="Creato da DBLogiX">
+                                    <i class="fas fa-desktop text-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Creato da DBLogiX"></i>
+                                </span>
+                                {% else %}
+                                <span class="ms-1" title="Creato dalla bilancia">
+                                    <i class="fas fa-balance-scale text-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Creato dalla bilancia"></i>
+                                </span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -108,4 +109,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 {% endblock %} 

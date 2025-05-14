@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_, not_, exists
-from models import db, Client, TicketHeader, TicketLine, Product, DDTHead, DDTLine, Company
+from models import db, Client, TicketHeader, TicketLine, Product, Company, AlbaranCabecera, AlbaranLinea, Article
 from forms import DDTClientSelectForm, DDTTicketFilterForm, DDTCreateForm, DDTDeleteForm, DDTExportForm
 from flask_cors import cross_origin
 import json
@@ -29,10 +29,81 @@ def index():
     page = request.args.get('page', 1, type=int)
     per_page = 10
     
-    ddts = DDTHead.query.order_by(DDTHead.data_creazione.desc()).paginate(
-        page=page, per_page=per_page, error_out=False)
+    # Recuperare i DDT dalle tabelle AlbaranCabecera
+    ddts = AlbaranCabecera.query.order_by(AlbaranCabecera.Fecha.desc()).all()
     
-    return render_template('ddt/index.html', ddts=ddts)
+    # Preparare i dati per la visualizzazione
+    combined_ddts = []
+    
+    for ddt in ddts:
+        cliente = Client.query.get(ddt.IdCliente)
+        combined_ddts.append({
+            'id': ddt.IdAlbaran,
+            'date': ddt.Fecha,
+            'formatted_date': ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else 'N/A',
+            'cliente_id': ddt.IdCliente,
+            'cliente_nome': ddt.NombreCliente,
+            'totale': float(ddt.ImporteTotal) if ddt.ImporteTotal else 0,
+            'num_linee': ddt.NumLineas,
+            'model_type': 'albaran',
+            'created_by': ddt.Usuario  # Add the Usuario field to identify the creator
+        })
+    
+    # Ordina la lista per data (decrescente)
+    combined_ddts.sort(key=lambda x: x['date'], reverse=True)
+    
+    # Paginazione manuale
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_ddts = combined_ddts[start:end]
+    
+    # Crea un oggetto paginazione manuale per il template
+    class ManualPagination:
+        def __init__(self, items, total, page, per_page):
+            self.items = items
+            self.total = total
+            self.page = page
+            self.per_page = per_page
+        
+        @property
+        def pages(self):
+            return max(1, (self.total + self.per_page - 1) // self.per_page)
+        
+        @property
+        def has_prev(self):
+            return self.page > 1
+        
+        @property
+        def has_next(self):
+            return self.page < self.pages
+        
+        @property
+        def prev_num(self):
+            return self.page - 1 if self.has_prev else None
+        
+        @property
+        def next_num(self):
+            return self.page + 1 if self.has_next else None
+        
+        def iter_pages(self, left_edge=2, left_current=2, right_current=5, right_edge=2):
+            last = 0
+            for num in range(1, self.pages + 1):
+                if num <= left_edge or \
+                   (num > self.page - left_current - 1 and num < self.page + right_current) or \
+                   num > self.pages - right_edge:
+                    if last + 1 != num:
+                        yield None
+                    yield num
+                    last = num
+    
+    pagination = ManualPagination(
+        items=paginated_ddts,
+        total=len(combined_ddts),
+        page=page,
+        per_page=per_page
+    )
+    
+    return render_template('ddt/index.html', ddts=pagination)
 
 @ddt_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -75,16 +146,10 @@ def select_tickets(cliente_id):
         # Add a day to to_date to include the full day
         to_date = to_date + timedelta(days=1)
         
-        # Query for tickets not already included in any DDT
+        # Query for tickets not marked as processed
         tickets = TicketHeader.query.filter(
             TicketHeader.Fecha.between(from_date, to_date),
-            TicketHeader.Enviado == 0,  # Solo ticket pendenti
-            not_(exists().where(
-                and_(
-                    DDTLine.id_ticket == TicketHeader.IdTicket,
-                    DDTLine.id_empresa == TicketHeader.IdEmpresa
-                )
-            ))
+            TicketHeader.Enviado == 0  # Solo ticket pendenti
         ).order_by(TicketHeader.Fecha.desc()).all()
     else:
         # Se il form non è stato ancora inviato, non mostrare alcun ticket
@@ -163,25 +228,93 @@ def create():
     
     # Start a transaction
     try:
-        # Create DDT header
-        ddt = DDTHead(
-            id_cliente=cliente_id,
-            id_empresa=id_empresa,
-            data_creazione=datetime.now(),
-            totale_senza_iva=0,
-            totale_iva=0,
-            totale_importo=0
+        # Create new AlbaranCabecera (DDT header)
+        now = datetime.now()
+        # Correctly calculate the max ID by adding 1 after getting the max value
+        max_id = db.session.query(db.func.max(AlbaranCabecera.IdAlbaran)).scalar() or 0
+        # Get the last NumAlbaran and add 1 to make it sequential
+        max_num_albaran = db.session.query(db.func.max(AlbaranCabecera.NumAlbaran)).scalar() or 0
+        ddt = AlbaranCabecera(
+            # Chiavi primarie
+            IdAlbaran=max_id + 1,
+            NumAlbaran=max_num_albaran + 1,
+            IdEmpresa=id_empresa,
+            IdTienda=1,  # Valore predefinito
+            IdBalanzaMaestra=1,  # Valore predefinito
+            IdBalanzaEsclava=-1,  # Valore predefinito negativo
+
+            # Dati azienda
+            NombreEmpresa=empresa.NombreEmpresa,
+            CIF_VAT_Empresa=empresa.CIF_VAT or "",
+            DireccionEmpresa=empresa.Direccion or "",
+            PoblacionEmpresa=empresa.Poblacion or "",
+            CPEmpresa=empresa.CodPostal or "",
+            TelefonoEmpresa=empresa.Telefono1 or "",
+            ProvinciaEmpresa=empresa.Provincia or "",
+            NombreTienda="Dibal S.A.",  # Valore predefinito
+            NombreBalanzaMaestra="MASTER ETI",  # Valore predefinito
+            NombreBalanzaEsclava="",  # Valore predefinito
+
+            # Dati cliente
+            IdCliente=cliente_id,
+            NombreCliente=client.Nombre,
+            DNICliente=client.DNI or "",
+            EmailCliente=client.Email or "",
+            DireccionCliente=client.Direccion or "",
+            PoblacionCliente=client.Poblacion or "",
+            ProvinciaCliente=client.Provincia or "",
+            PaisCliente=client.Pais or "IT",
+            CPCliente=client.CodPostal or "",
+            TelefonoCliente=client.Telefono1 or "",
+            ObservacionesCliente=client.Observaciones or "None",
+            EANCliente=client.EANScanner or "",
+
+            # Informazioni DDT
+            Tipo="A",  # Albaran
+            IdVendedor=1,  # Valore predefinito
+            NombreVendedor="IL CAPO",  # Valore predefinito
+            ReferenciaDocumento="",
+            ObservacionesDocumento="",
+            TipoVenta=2,  # Valore predefinito
+            
+            # Date
+            Fecha=now,
+            FechaModificacion=now,
+            
+            # Totali (saranno calcolati successivamente)
+            ImporteLineas=0.0,
+            PorcDescuento=None,
+            ImporteDescuento=None,
+            ImporteRE=0.0,
+            ImporteTotalSinRE=0.0,
+            ImporteTotalSinIVAConDtoLConDtoTotalConRE=0.0,
+            ImporteTotal=0.0,
+            ImporteTotalSinIVAConDtoL=0.0,
+            ImporteTotalSinIVAConDtoLConDtoTotal=0.0,
+            ImporteTotalDelIVAConDtoLConDtoTotal=0.0,
+            
+            # Altri campi richiesti
+            PreseleccionCliente=1,
+            Enviado=0,
+            NumLineas=len(ticket_data),
+            CodigoBarras="",
+            CodBarrasTalonCaja="",
+            SerieLTicketErroneo=0,
+            Modificado=1,
+            Operacion="A",
+            Usuario="DBLogiX",
+            EstadoTicket="C",
+            REAplicado=0,
+            Version="4.7.0"  # Valore predefinito come nell'esempio
         )
         db.session.add(ddt)
-        db.session.flush()  # Get the DDT ID
+        db.session.flush()  # Otteniamo l'ID del DDT
         
-        print(f"Created DDT with ID: {ddt.id}")
+        print(f"Created AlbaranCabecera with ID: {ddt.IdAlbaran}")
         
-        # Create DDT lines
-        for ticket in ticket_data:
-            # Debug ticket data
-            print(f"Processing ticket: {ticket}")
-            
+        # Create AlbaranLinea (DDT lines) for each ticket
+        line_count = 0
+        for ticket_idx, ticket in enumerate(ticket_data, 1):
             # Verify the ticket exists and is not already in another DDT
             ticket_exists = TicketHeader.query.filter_by(
                 IdTicket=ticket['id_ticket'],
@@ -192,43 +325,133 @@ def create():
                 db.session.rollback()
                 return jsonify({"success": False, "error": f"Ticket {ticket['id_ticket']} non trovato"})
             
-            ticket_in_ddt = DDTLine.query.filter_by(
-                id_ticket=ticket['id_ticket'],
-                id_empresa=ticket['id_empresa']
+            # Check if this ticket is already used in another DDT
+            ticket_in_ddt = AlbaranLinea.query.filter(
+                AlbaranLinea.IdEmpresa == ticket['id_empresa'],
+                AlbaranLinea.IdArticulo == ticket['id_ticket']
             ).first()
             
             if ticket_in_ddt:
                 db.session.rollback()
                 return jsonify({"success": False, "error": f"Ticket {ticket['id_ticket']} già incluso in un DDT"})
             
+            # Get ticket lines
+            ticket_lines = TicketLine.query.filter_by(
+                IdTicket=ticket_exists.IdTicket
+            ).all()
+            
+            # Create an AlbaranLinea for each product in the ticket
+            for ticket_line in ticket_lines:
+                line_count += 1
+                product = Product.query.get(ticket_line.IdArticulo)
+                
+                if not product:
+                    continue
+                
+                # Determine VAT rate
+                vat_rate = 0
+                if product.IdIva == 1:
+                    vat_rate = 0.04  # 4%
+                elif product.IdIva == 2:
+                    vat_rate = 0.10  # 10%
+                elif product.IdIva == 3:
+                    vat_rate = 0.22  # 22%
+                
+                # Calculate prices
+                price_with_vat = float(product.PrecioConIVA)
+                price_without_vat = price_with_vat / (1 + vat_rate)
+                line_total = price_without_vat * float(ticket_line.Peso)
+                line_vat = line_total * vat_rate
+                
+                # Get product family, subfamily, class info
+                product_article = Article.query.get(product.IdArticulo)
+            
             # Create DDT line
-            ddt_line = DDTLine(
-                id_ddt=ddt.id,
-                id_empresa=ticket['id_empresa'],
-                id_tienda=ticket['id_tienda'],
-                id_balanza_maestra=ticket['id_balanza_maestra'],
-                id_balanza_esclava=ticket['id_balanza_esclava'],
-                tipo_venta=ticket['tipo_venta'],
-                id_ticket=ticket['id_ticket']
-            )
-            db.session.add(ddt_line)
+                albaran_line = AlbaranLinea(
+                    # Chiavi primarie e riferimenti
+                    IdLineaAlbaran=line_count,
+                    IdEmpresa=ddt.IdEmpresa,
+                    IdTienda=ddt.IdTienda,
+                    IdBalanzaMaestra=ddt.IdBalanzaMaestra,
+                    IdBalanzaEsclava=ddt.IdBalanzaEsclava,
+                    IdAlbaran=ddt.IdAlbaran,
+                    TipoVenta=ddt.TipoVenta,
+                    
+                    # Dati prodotto
+                    IdArticulo=product.IdArticulo,
+                    Descripcion=product.Descripcion,
+                    Descripcion1=getattr(product_article, 'Descripcion1', '') if product_article else '',
+                    Comportamiento=1,  # Default come nell'esempio
+                    ComportamientoDevolucion=0,
+                    
+                    # Pesi e quantità
+                    Peso=float(ticket_line.Peso),
+                    Medida2="un",  # Default come nell'esempio
+                    
+                    # Prezzi e IVA
+                    Precio=0.0,  # Sarà calcolato
+                    PrecioSinIVA=price_without_vat,
+                    IdIVA=product.IdIva,
+                    PorcentajeIVA=vat_rate * 100,
+                    RecargoEquivalencia=0.0,
+                    
+                    # Importi
+                    Importe=0.0,  # Sarà calcolato
+                    ImporteSinIVASinDtoL=line_total,
+                    ImporteDelIVAConDtoL=line_vat,
+                    
+                    # Informazioni aggiuntive dal prodotto
+                    IdClase=getattr(product_article, 'IdClase', None),
+                    NombreClase="ARTICOLI",  # Default come nell'esempio
+                    IdFamilia=product.IdFamilia,
+                    NombreFamilia="",  # Da popolare se disponibile
+                    IdSeccion=getattr(product_article, 'IdSeccion', None),
+                    NombreSeccion="",  # Da popolare se disponibile
+                    IdSubFamilia=product.IdSubFamilia,
+                    NombreSubFamilia="",  # Da popolare se disponibile
+                    IdDepartamento=getattr(product_article, 'IdDepartamento', None),
+                    NombreDepartamento="",  # Da popolare se disponibile
+                    
+                    # Informazioni ingredienti (da popolare se disponibili)
+                    Texto1=getattr(product_article, 'Texto1', None),
+                    
+                    # Stato e timestamp
+                    Modificado=1,
+                    Operacion="A",
+                    Usuario="DBLogiX",
+                    TimeStamp=now
+                )
+                
+                db.session.add(albaran_line)
             
             # Aggiorna lo stato del ticket a 'processato'
             ticket_exists.Enviado = 1
             
-            print(f"Added DDT line for ticket {ticket['id_ticket']} and set status to processed")
+            print(f"Added AlbaranLinea for ticket {ticket['id_ticket']} and set status to processed")
         
-        # Calculate totals
-        db.session.flush()
-        totals = ddt.calculate_totals()
-        print(f"DDT totals calculated: {totals}")
+        # Aggiorna il numero di linee nel DDT
+        ddt.NumLineas = line_count
+        
+        # Calcola i totali
+        total_senza_iva = 0
+        total_iva = 0
+        
+        for line in db.session.query(AlbaranLinea).filter_by(IdAlbaran=ddt.IdAlbaran).all():
+            total_senza_iva += float(line.ImporteSinIVASinDtoL or 0)
+            total_iva += float(line.ImporteDelIVAConDtoL or 0)
+        
+        # Update totals
+        ddt.ImporteTotalSinIVAConDtoL = total_senza_iva
+        ddt.ImporteTotalDelIVAConDtoLConDtoTotal = total_iva
+        ddt.ImporteTotalSinIVAConDtoLConDtoTotal = total_senza_iva
+        ddt.ImporteTotal = total_senza_iva + total_iva
         
         # Commit the transaction
         db.session.commit()
         print(f"Transaction committed successfully")
         
         # Return success with redirect to detail page
-        return redirect(url_for('ddt.detail', ddt_id=ddt.id))
+        return redirect(url_for('ddt.detail', ddt_id=ddt.IdAlbaran))
         
     except Exception as e:
         db.session.rollback()
@@ -242,124 +465,105 @@ def create():
 @login_required
 def detail(ddt_id):
     """Show DDT details with all associated tickets and products"""
-    ddt = DDTHead.query.get_or_404(ddt_id)
+    # Find the DDT in AlbaranCabecera
+    ddt = AlbaranCabecera.query.filter_by(IdAlbaran=ddt_id).first_or_404()
     
-    # Load cliente
-    cliente = Client.query.get(ddt.id_cliente)
+    # Load cliente e empresa (già presenti nel ddt)
+    cliente = Client.query.get(ddt.IdCliente)
+    empresa = Company.query.get(ddt.IdEmpresa)
     
-    # Load empresa
-    empresa = Company.query.get(ddt.id_empresa)
-    
-    # Get all ticket details for this DDT
-    tickets = []
+    # Get all products for this DDT
+    products = []
     total_items = 0
     
-    for ddt_line in ddt.lines:
-        # Get ticket usando todas las claves primarias compuestas
-        ticket = TicketHeader.query.filter_by(
-            IdTicket=ddt_line.id_ticket,
-            IdEmpresa=ddt_line.id_empresa,
-            IdTienda=ddt_line.id_tienda,
-            IdBalanzaMaestra=ddt_line.id_balanza_maestra,
-            IdBalanzaEsclava=ddt_line.id_balanza_esclava,
-            TipoVenta=ddt_line.tipo_venta
-        ).first()
-        
-        if not ticket:
-            continue
-        
-        # Get ticket lines
-        ticket_lines = TicketLine.query.filter_by(
-            IdTicket=ticket.IdTicket
-        ).all()
-        
-        # Get products for each ticket line
-        ticket_products = []
-        for line in ticket_lines:
-            product = Product.query.get(line.IdArticulo)
-            if not product:
-                continue
-            
-            # Determine VAT rate
-            vat_rate = 0
-            if product.IdIva == 1:
-                vat_rate = 0.04  # 4%
-            elif product.IdIva == 2:
-                vat_rate = 0.10  # 10%
-            elif product.IdIva == 3:
-                vat_rate = 0.22  # 22%
-            
-            # Calculate values
-            price_with_vat = float(product.PrecioConIVA)
-            price_without_vat = price_with_vat / (1 + vat_rate)
-            line_total = price_without_vat * float(line.Peso)
-            line_vat = line_total * vat_rate
-            
-            ticket_products.append({
-                'id': product.IdArticulo,
-                'description': product.Descripcion,
-                'peso': line.Peso,
-                'comportamiento': line.comportamiento,
-                'price_with_vat': price_with_vat,
-                'price_without_vat': price_without_vat,
-                'vat_rate': vat_rate,
-                'iva_id': product.IdIva,
-                'line_total': line_total,
-                'line_vat': line_vat,
-                'line_total_with_vat': line_total + line_vat
-            })
-            
-            total_items += 1
-        
-        tickets.append({
-            'ticket': ticket,
-            'products': ticket_products
-        })
+    # Raggruppiamo i prodotti per avere una lista organizzata
+    albaran_lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt_id).all()
     
-    # Prepare delete form
-    delete_form = DDTDeleteForm()
+    for line in albaran_lines:
+        total_items += 1
+        
+        vat_rate = float(line.PorcentajeIVA) / 100 if line.PorcentajeIVA else 0
+        
+        product_data = {
+            'id': line.IdArticulo,
+            'name': line.Descripcion,
+            'weight': line.Peso,
+            'price_with_vat': float(line.Precio) if line.Precio else 0,
+            'price_without_vat': float(line.PrecioSinIVA) if line.PrecioSinIVA else 0,
+            'total': float(line.ImporteSinIVASinDtoL) if line.ImporteSinIVASinDtoL else 0,
+            'total_with_vat': float(line.ImporteSinIVASinDtoL) + float(line.ImporteDelIVAConDtoL) if line.ImporteSinIVASinDtoL and line.ImporteDelIVAConDtoL else 0,
+            'vat_rate': f"{vat_rate * 100:.0f}%",
+            'vat_amount': float(line.ImporteDelIVAConDtoL) if line.ImporteDelIVAConDtoL else 0
+        }
+        products.append(product_data)
     
-    # Prepare export form
-    export_form = DDTExportForm()
+    # Organizziamo i prodotti come se fossero in ticket
+    tickets = [{
+        'id': ddt_id,
+        'date': ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else 'N/A',
+        'lines': len(products),
+        'products': products
+    }]
+    
+    # Preparare i totali per il template
+    totals = {
+        'total_without_vat': float(ddt.ImporteTotalSinIVAConDtoL) if ddt.ImporteTotalSinIVAConDtoL else 0,
+        'total_vat': float(ddt.ImporteTotalDelIVAConDtoLConDtoTotal) if ddt.ImporteTotalDelIVAConDtoLConDtoTotal else 0,
+        'total': float(ddt.ImporteTotal) if ddt.ImporteTotal else 0
+    }
     
     return render_template('ddt/detail.html',
                           ddt=ddt,
                           cliente=cliente,
                           empresa=empresa,
                           tickets=tickets,
-                          total_items=total_items,
-                          delete_form=delete_form,
-                          export_form=export_form)
+                          totals=totals,
+                          total_items=total_items)
 
 @ddt_bp.route('/<int:ddt_id>/delete', methods=['POST'])
 @login_required
 def delete(ddt_id):
     """Delete a DDT and all its lines"""
-    ddt = DDTHead.query.get_or_404(ddt_id)
+    ddt = AlbaranCabecera.query.filter_by(IdAlbaran=ddt_id).first_or_404()
     form = DDTDeleteForm()
     
     if form.validate_on_submit() and form.confirm.data:
         try:
             # Start transaction
             # Prima di eliminare il DDT, ottieni tutti i ticket associati
-            ddt_lines = DDTLine.query.filter_by(id_ddt=ddt.id).all()
+            albaran_lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
             
-            # Per ogni linea DDT, trova il ticket corrispondente e reimpostalo come pendente
-            for line in ddt_lines:
-                ticket = TicketHeader.query.filter_by(
-                    IdTicket=line.id_ticket,
-                    IdEmpresa=line.id_empresa,
-                    IdTienda=line.id_tienda,
-                    IdBalanzaMaestra=line.id_balanza_maestra,
-                    IdBalanzaEsclava=line.id_balanza_esclava,
-                    TipoVenta=line.tipo_venta
-                ).first()
+            # Raggruppiamo le linee per ticket per evitare duplicati
+            ticket_ids = {}
+            for line in albaran_lines:
+                # Chiave composta
+                key = (line.IdEmpresa, line.IdTienda, line.IdBalanzaMaestra, line.IdBalanzaEsclava, line.TipoVenta)
+                if key not in ticket_ids:
+                    ticket_ids[key] = []
+                
+                # Aggiungiamo l'id del ticket se non è già presente
+                if line.IdArticulo not in ticket_ids[key]:
+                    ticket_ids[key].append(line.IdArticulo)
+            
+            # Per ogni ticket, reimpostalo come pendente
+            for key in ticket_ids:
+                empresa_id, tienda_id, balanza_maestra_id, balanza_esclava_id, tipo_venta = key
+                
+                # Trova il ticket e reimpostalo come pendente
+                for articulo_id in ticket_ids[key]:
+                    ticket = TicketHeader.query.filter_by(
+                        IdEmpresa=empresa_id,
+                        IdTienda=tienda_id,
+                        IdBalanzaMaestra=balanza_maestra_id,
+                        IdBalanzaEsclava=balanza_esclava_id,
+                        TipoVenta=tipo_venta
+                    ).first()
                 
                 if ticket:
                     ticket.Enviado = 0  # Reimposta il ticket come pendente
                     print(f"Reset ticket {ticket.IdTicket} to pending state")
             
-            # The cascade delete will take care of the DDT lines
+            # Elimina tutte le linee (il cascade delete le eliminerà automaticamente)
             db.session.delete(ddt)
             db.session.commit()
             
@@ -403,15 +607,15 @@ def client_search():
 @login_required
 def export(ddt_id):
     """Export DDT as PDF"""
-    ddt = DDTHead.query.get_or_404(ddt_id)
     form = DDTExportForm()
+    ddt = AlbaranCabecera.query.filter_by(IdAlbaran=ddt_id).first_or_404()
     
     if form.validate_on_submit():
         # Generate PDF 
         try:
-            # Get all the necessary data
-            cliente = Client.query.get(ddt.id_cliente)
-            empresa = Company.query.get(ddt.id_empresa)
+            # Load client and company info
+            cliente = Client.query.get(ddt.IdCliente)
+            empresa = Company.query.get(ddt.IdEmpresa)
             
             # Generate PDF
             pdf_data = generate_ddt_pdf(ddt, cliente, empresa)
@@ -420,7 +624,7 @@ def export(ddt_id):
                 io.BytesIO(pdf_data),
                 mimetype='application/pdf',
                 as_attachment=True,
-                download_name=f'DDT_{ddt.id}.pdf'
+                download_name=f'DDT_{ddt_id}.pdf'
             )
         
         except Exception as e:
@@ -440,7 +644,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         leftMargin=25*mm,
         topMargin=20*mm,
         bottomMargin=20*mm,
-        title=f"DDT #{ddt.id}",
+        title=f"DDT #{ddt.IdAlbaran}",
         author=empresa.NombreEmpresa
     )
     
@@ -520,7 +724,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     
     # Create header with logo and title
     header_data = [
-        [logo, Paragraph(f"<font size='16'><b>DOCUMENTO DI TRASPORTO</b></font><br/><font color='#7f8c8d'>D.D.T. n° {ddt.id} del {ddt.data_creazione.strftime('%d/%m/%Y')}</font>", styles['DDTTitle'])]
+        [logo, Paragraph(f"<font size='16'><b>DOCUMENTO DI TRASPORTO</b></font><br/><font color='#7f8c8d'>D.D.T. n° {ddt.IdAlbaran} del {ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}</font>", styles['DDTTitle'])]
     ]
     
     header_table = Table(header_data, colWidths=[50*mm, doc.width-50*mm])
@@ -547,16 +751,18 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     elements.append(Paragraph("<b>INFORMAZIONI TRASPORTO</b>", styles['DDTSectionHeader']))
     elements.append(Spacer(1, 2*mm))
     
+    # Prepara i dati del mittente e destinatario
+    sender_address = f"{ddt.DireccionEmpresa or 'N/A'}<br/>{ddt.PoblacionEmpresa or 'N/A'}<br/>P.IVA: {ddt.CIF_VAT_Empresa or 'N/A'}<br/>Tel: {ddt.TelefonoEmpresa or 'N/A'}"
+    recipient_address = f"{ddt.DireccionCliente or 'N/A'}<br/>{ddt.PoblacionCliente or 'N/A'}<br/>P.IVA/CF: {ddt.DNICliente or 'N/A'}<br/>Tel: {ddt.TelefonoCliente or 'N/A'}"
+    sender_name = ddt.NombreEmpresa
+    recipient_name = ddt.NombreCliente
+    
     company_data = [
         [
             # Mittente (a sinistra)
             Table([
                 [Paragraph("<b>MITTENTE</b>", styles['DDTTableHeader'])],
-                [Paragraph(f"<b>{empresa.NombreEmpresa}</b><br/>"
-                          f"{empresa.Direccion or 'N/A'}<br/>"
-                          f"{empresa.Poblacion or 'N/A'}<br/>"
-                          f"P.IVA: {empresa.CIF_VAT or 'N/A'}<br/>"
-                          f"Tel: {getattr(empresa, 'Telefono', 'N/A')}", styles['DDTNormal'])],
+                [Paragraph(f"<b>{sender_name}</b><br/>" + sender_address, styles['DDTNormal'])],
             ], colWidths=[doc.width/2.0 - 10*mm], style=TableStyle([
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
                 ('TOPPADDING', (0, 0), (-1, -1), 5),
@@ -568,11 +774,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
             # Destinatario (a destra)
             Table([
                 [Paragraph("<b>DESTINATARIO</b>", styles['DDTTableHeader'])],
-                [Paragraph(f"<b>{cliente.Nombre}</b><br/>"
-                          f"{cliente.Direccion or 'N/A'}<br/>"
-                          f"{cliente.Poblacion or 'N/A'}<br/>"
-                          f"P.IVA/CF: {cliente.DNI or 'N/A'}<br/>"
-                          f"Tel: {getattr(cliente, 'Telefono', 'N/A')}", styles['DDTNormal'])],
+                [Paragraph(f"<b>{recipient_name}</b><br/>" + recipient_address, styles['DDTNormal'])],
             ], colWidths=[doc.width/2.0 - 10*mm], style=TableStyle([
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
                 ('TOPPADDING', (0, 0), (-1, -1), 5),
@@ -597,21 +799,32 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     elements.append(Paragraph("<b>DETTAGLI DOCUMENTO</b>", styles['DDTSectionHeader']))
     elements.append(Spacer(1, 2*mm))
     
+    # Imposta le informazioni del DDT
     ddt_info_data = [
         [
             Paragraph("<b>Data Emissione:</b>", styles['DDTNormal']), 
-            Paragraph(f"{ddt.data_creazione.strftime('%d/%m/%Y %H:%M')}", styles['DDTNormal']),
+            Paragraph(f"{ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}", styles['DDTNormal']),
             Paragraph("<b>Numero DDT:</b>", styles['DDTNormal']), 
-            Paragraph(f"{ddt.id}", styles['DDTNormal']),
+            Paragraph(f"{ddt.IdAlbaran}", styles['DDTNormal']),
+            Paragraph("<b>Tipo:</b>", styles['DDTNormal']),
+            Paragraph(f"{ddt.Tipo}", styles['DDTNormal'])
+        ],
+        [
             Paragraph("<b>Totale Articoli:</b>", styles['DDTNormal']), 
-            Paragraph(f"{len(DDTLine.query.filter_by(id_ddt=ddt.id).all())}", styles['DDTNormal'])
+            Paragraph(f"{ddt.NumLineas or 0}", styles['DDTNormal']),
+            Paragraph("<b>Totale Imponibile:</b>", styles['DDTNormal']),
+            Paragraph(f"€ {float(ddt.ImporteTotalSinIVAConDtoL or 0):.2f}", styles['DDTNormal']),
+            Paragraph("<b>Totale IVA:</b>", styles['DDTNormal']),
+            Paragraph(f"€ {float(ddt.ImporteTotalDelIVAConDtoLConDtoTotal or 0):.2f}", styles['DDTNormal'])
         ]
     ]
     
-    ddt_info_table = Table(ddt_info_data, colWidths=[40*mm, 30*mm, 30*mm, 20*mm, 30*mm, 20*mm])
+    ddt_info_table = Table(ddt_info_data, colWidths=[30*mm, 30*mm, 30*mm, 30*mm, 30*mm, 30*mm])
     ddt_info_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND', (0, 0), (-1, 0), light_gray),
+        ('BACKGROUND', (0, 0), (0, -1), light_gray),
+        ('BACKGROUND', (2, 0), (2, -1), light_gray),
+        ('BACKGROUND', (4, 0), (4, -1), light_gray),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
         ('TOPPADDING', (0, 0), (-1, -1), 7),
     ]))
@@ -619,238 +832,166 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     elements.append(ddt_info_table)
     elements.append(Spacer(1, 10*mm))
     
-    # Get all ticket details for this DDT
-    tickets = []
-    total_items = 0
-    all_products = []
+    # Get all product details for this DDT
+    products_data = []
     
-    ddt_lines = DDTLine.query.filter_by(id_ddt=ddt.id).all()
-    for line in ddt_lines:
-        # Get the ticket
-        ticket = TicketHeader.query.filter_by(
-            IdEmpresa=line.id_empresa,
-            IdTienda=line.id_tienda,
-            IdBalanzaMaestra=line.id_balanza_maestra,
-            IdBalanzaEsclava=line.id_balanza_esclava,
-            TipoVenta=line.tipo_venta,
-            IdTicket=line.id_ticket
-        ).first()
-        
-        if not ticket:
-            continue
-        
-        # Get the ticket lines with articles for this ticket
-        ticket_lines = TicketLine.query.filter_by(
-            IdTicket=ticket.IdTicket
-        ).all()
-        
-        ticket_products = []
-        for t_line in ticket_lines:
-            product = Product.query.get(t_line.IdArticulo)
-            if not product:
-                continue
-            
-            # Determine VAT rate
-            vat_rate = get_vat_rate(product.IdIva)
-            
-            # Calculate values
-            price_with_vat = float(product.PrecioConIVA)
-            price_without_vat = price_with_vat / (1 + vat_rate)
-            line_total = price_without_vat * float(t_line.Peso)
-            line_vat = line_total * vat_rate
-            
-            product_data = {
-                'id': product.IdArticulo,
-                'description': product.Descripcion,
-                'peso': t_line.Peso,
-                'comportamiento': t_line.comportamiento,
-                'price_with_vat': price_with_vat,
-                'price_without_vat': price_without_vat,
-                'vat_rate': vat_rate,
-                'iva_id': product.IdIva,
-                'line_total': line_total,
-                'line_vat': line_vat,
-                'line_total_with_vat': line_total + line_vat,
-                'ticket_id': ticket.IdTicket
-            }
-            
-            ticket_products.append(product_data)
-            all_products.append(product_data)
-            total_items += 1
-        
-        tickets.append({
-            'ticket': ticket,
-            'products': ticket_products
-        })
+    # Product table header
+    products_data.append([
+        Paragraph("<b>Codice</b>", styles['DDTTableHeader']),
+        Paragraph("<b>Descrizione</b>", styles['DDTTableHeader']),
+        Paragraph("<b>Quantità</b>", styles['DDTTableHeader']),
+        Paragraph("<b>Prezzo Unit.</b>", styles['DDTTableHeader']),
+        Paragraph("<b>IVA %</b>", styles['DDTTableHeader']),
+        Paragraph("<b>Subtotale</b>", styles['DDTTableHeader']),
+        Paragraph("<b>Totale</b>", styles['DDTTableHeader']),
+    ])
     
-    # Add products table with improved styling
-    elements.append(Paragraph("<b>PRODOTTI</b>", styles['DDTSectionHeader']))
-    elements.append(Spacer(1, 2*mm))
+    # Add product rows
+    # Get product data from AlbaranLinea
+    lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
     
-    # Style the table header
-    col_widths = [
-        20*mm,  # Ticket
-        20*mm,  # ID
-        60*mm,  # Descrizione
-        17*mm,  # Peso
-        17*mm,  # Prezzo
-        15*mm,  # IVA %
-        17*mm,  # Imponibile
-        15*mm,  # IVA
-        17*mm   # Totale
-    ]
-    
-    # Create product rows
-    product_rows = [
-        [
-            Paragraph("<b>Ticket</b>", styles['DDTTableHeader']),
-            Paragraph("<b>ID</b>", styles['DDTTableHeader']),
-            Paragraph("<b>Descrizione</b>", styles['DDTTableHeader']),
-            Paragraph("<b>Peso/Qta.</b>", styles['DDTTableHeader']),
-            Paragraph("<b>Prezzo Unit.</b>", styles['DDTTableHeader']),
-            Paragraph("<b>IVA %</b>", styles['DDTTableHeader']),
-            Paragraph("<b>Imponibile</b>", styles['DDTTableHeader']),
-            Paragraph("<b>IVA</b>", styles['DDTTableHeader']),
-            Paragraph("<b>Totale</b>", styles['DDTTableHeader'])
-        ]
-    ]
-    
-    for product in all_products:
-        iva_percentage = "4%" if product['iva_id'] == 1 else "10%" if product['iva_id'] == 2 else "22%" if product['iva_id'] == 3 else "N/A"
+    for line in lines:
+        # Calcola aliquota IVA
+        vat_rate = float(line.PorcentajeIVA or 0) / 100
+        vat_display = f"{float(line.PorcentajeIVA or 0):.0f}%"
         
-        row = [
-            Paragraph(f"{product['ticket_id']}", styles['DDTSmall']),
-            Paragraph(f"{product['id']}", styles['DDTSmall']),
-            Paragraph(f"{product['description']}", styles['DDTSmall']),
-            Paragraph(f"{product['peso']} {'unità' if product.get('comportamiento', 0) == 0 else 'kg'}", styles['DDTSmall']),
-            Paragraph(f"€ {product['price_without_vat']:.2f}", styles['DDTSmall']),
-            Paragraph(f"{iva_percentage}", styles['DDTSmall']),
-            Paragraph(f"€ {product['line_total']:.2f}", styles['DDTSmall']),
-            Paragraph(f"€ {product['line_vat']:.2f}", styles['DDTSmall']),
-            Paragraph(f"€ {product['line_total_with_vat']:.2f}", styles['DDTSmall'])
-        ]
-        product_rows.append(row)
+        # Calcola prezzi
+        price = float(line.PrecioSinIVA or 0)
+        subtotal = float(line.ImporteSinIVASinDtoL or 0)
+        vat_amount = float(line.ImporteDelIVAConDtoL or 0)
+        total = subtotal + vat_amount
+        
+        # Aggiungi riga prodotto
+        products_data.append([
+            Paragraph(f"{line.IdArticulo}", styles['DDTNormal']),
+            Paragraph(f"{line.Descripcion}", styles['DDTNormal']),
+            Paragraph(f"{float(line.Peso or 1):.3f} {line.Medida2 or 'kg'}", styles['DDTNormal']),
+            Paragraph(f"€ {price:.2f}", styles['DDTNormal']),
+            Paragraph(f"{vat_display}", styles['DDTNormal']),
+            Paragraph(f"€ {subtotal:.2f}", styles['DDTNormal']),
+            Paragraph(f"€ {total:.2f}", styles['DDTNormal']),
+        ])
     
     # Add totals row
-    total_row = [
-        Paragraph("", styles['DDTSmall']),
-        Paragraph("", styles['DDTSmall']),
-        Paragraph("", styles['DDTSmall']),
-        Paragraph("", styles['DDTSmall']),
-        Paragraph("", styles['DDTSmall']),
-        Paragraph("<b>TOTALI:</b>", styles['DDTSmall']),
-        Paragraph(f"<b>€ {ddt.totale_senza_iva:.2f}</b>", styles['DDTSmall']),
-        Paragraph(f"<b>€ {ddt.totale_iva:.2f}</b>", styles['DDTSmall']),
-        Paragraph(f"<b>€ {ddt.totale_importo:.2f}</b>", styles['DDTSmall'])
-    ]
-    product_rows.append(total_row)
+    total_without_vat = float(ddt.ImporteTotalSinIVAConDtoL or 0)
+    total_vat = float(ddt.ImporteTotalDelIVAConDtoLConDtoTotal or 0)
+    total = float(ddt.ImporteTotal or 0)
     
-    # Create product table
-    product_table = Table(product_rows, colWidths=col_widths, repeatRows=1)
+    products_data.append([
+        Paragraph("", styles['DDTNormal']),
+        Paragraph("", styles['DDTNormal']),
+        Paragraph("", styles['DDTNormal']),
+        Paragraph("", styles['DDTNormal']),
+        Paragraph("<b>TOTALI:</b>", styles['DDTTableHeader']),
+        Paragraph(f"<b>€ {total_without_vat:.2f}</b>", styles['DDTTableHeader']),
+        Paragraph(f"<b>€ {total:.2f}</b>", styles['DDTTableHeader']),
+    ])
     
-    # Style for the product table - minimalist approach
-    table_style = [
+    # Create products table with improved styling
+    col_widths = [20*mm, 70*mm, 25*mm, 25*mm, 15*mm, 25*mm, 25*mm]
+    products_table = Table(products_data, colWidths=col_widths, repeatRows=1)
+    
+    products_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), primary_color),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
+        ('TOPPADDING', (0, 0), (-1, 0), 7),
+        ('GRID', (0, 0), (-1, -1), 0.25, medium_gray),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),  # Right-align numeric columns
-        ('LINEBELOW', (0, 0), (-1, 0), 1, primary_color),  # Header underline only
-        ('LINEBELOW', (0, -2), (-1, -2), 0.5, medium_gray),  # Line before totals
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),  # Bold font for total row
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-        ('TOPPADDING', (0, 0), (-1, -1), 7),
-        ('LEFTPADDING', (0, 0), (-1, -1), 2),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-    ]
+        ('ALIGN', (2, 1), (6, -1), 'RIGHT'),
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+        ('BACKGROUND', (0, -1), (-1, -1), light_gray),
+        ('FONTNAME', (4, -1), (-1, -1), 'Helvetica-Bold'),
+    ]))
     
-    # Add alternating row colors - subtle
-    for i in range(len(product_rows)):
-        if i % 2 == 1 and i < len(product_rows) - 1:  # Odd rows get light background except header and total row
-            table_style.append(('BACKGROUND', (0, i), (-1, i), light_gray))
+    # Add product table to document
+    elements.append(Paragraph("<b>DETTAGLIO PRODOTTI</b>", styles['DDTSectionHeader']))
+    elements.append(Spacer(1, 3*mm))
+    elements.append(products_table)
+    elements.append(Spacer(1, 10*mm))
     
-    # Add a background color to the total row
-    table_style.append(('BACKGROUND', (0, -1), (-1, -1), light_gray))
-    
-    product_table.setStyle(TableStyle(table_style))
-    
-    elements.append(product_table)
-    elements.append(Spacer(1, 15*mm))
-    
-    # Notes and signature area with improved styling
-    elements.append(Paragraph("<b>ANNOTAZIONI E FIRME</b>", styles['DDTSectionHeader']))
-    elements.append(Spacer(1, 2*mm))
+    # Notes section
+    elements.append(Paragraph("<b>NOTE E CONDIZIONI DI TRASPORTO</b>", styles['DDTSectionHeader']))
+    elements.append(Spacer(1, 3*mm))
     
     notes_data = [
         [
-            # Notes (left column)
-            Table([
-                [Paragraph("<b>NOTE</b>", styles['DDTTableHeader'])],
-                [Paragraph("", styles['DDTNormal'])],
-            ], colWidths=[doc.width/2.0 - 10*mm], rowHeights=[None, 40*mm], style=TableStyle([
-                ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-                ('LINEBELOW', (0, 0), (0, 0), 0.5, primary_color),
-                ('BOTTOMPADDING', (0, 0), (0, 0), 5),
-                ('TOPPADDING', (0, 0), (0, 0), 5),
-            ])),
-            
-            # Signature (right column)
-            Table([
-                [Paragraph("<b>FIRMA PER RICEVUTA</b>", styles['DDTTableHeader'])],
-                [Paragraph("", styles['DDTNormal'])],
-            ], colWidths=[doc.width/2.0 - 10*mm], rowHeights=[None, 40*mm], style=TableStyle([
-                ('VALIGN', (0, 0), (0, 0), 'MIDDLE'),
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-                ('LINEBELOW', (0, 0), (0, 0), 0.5, primary_color),
-                ('BOTTOMPADDING', (0, 0), (0, 0), 5),
-                ('TOPPADDING', (0, 0), (0, 0), 5),
-            ])),
+            Paragraph("<b>Causale trasporto:</b>", styles['DDTNormal']),
+            Paragraph("Vendita", styles['DDTNormal']),
+            Paragraph("<b>Trasporto a cura di:</b>", styles['DDTNormal']),
+            Paragraph("Mittente", styles['DDTNormal'])
+        ],
+        [
+            Paragraph("<b>Aspetto dei beni:</b>", styles['DDTNormal']),
+            Paragraph("Scatole/Confezioni", styles['DDTNormal']),
+            Paragraph("<b>Porto:</b>", styles['DDTNormal']),
+            Paragraph("Franco", styles['DDTNormal'])
         ]
     ]
     
-    notes_table = Table(notes_data, colWidths=[doc.width/2.0, doc.width/2.0])
+    notes_table = Table(notes_data, colWidths=[35*mm, 50*mm, 35*mm, 50*mm])
     notes_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.25, medium_gray),
+        ('BACKGROUND', (0, 0), (0, -1), light_gray),
+        ('BACKGROUND', (2, 0), (2, -1), light_gray),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
     ]))
     
     elements.append(notes_table)
+    elements.append(Spacer(1, 15*mm))
     
-    # Add footer
+    # Signatures section
+    signature_data = [
+        [
+            Paragraph("<b>Firma del conducente:</b>", styles['DDTNormal']),
+            Paragraph("<b>Firma del destinatario:</b>", styles['DDTNormal'])
+        ],
+        [
+            Paragraph("_____________________________", styles['DDTNormal']),
+            Paragraph("_____________________________", styles['DDTNormal'])
+        ]
+    ]
+    
+    signature_table = Table(signature_data, colWidths=[doc.width/2.0 - 5*mm, doc.width/2.0 - 5*mm])
+    signature_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 25),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+    ]))
+    
+    elements.append(signature_table)
+    
+    # Define dynamic footer
     def footer(canvas, doc):
         canvas.saveState()
-        # Line above footer
-        canvas.setStrokeColor(accent_color)
-        canvas.setLineWidth(0.5)
-        canvas.line(doc.leftMargin, 15*mm, doc.width + doc.leftMargin, 15*mm)
+        footer_text = f"DDT #{ddt.IdAlbaran} - Generato il {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        canvas.setFont('Helvetica', 8)
+        canvas.drawString(doc.leftMargin, 15*mm, footer_text)
         
-        # Footer text
-        canvas.setFont("Helvetica", 8)
-        canvas.setFillColor(colors.grey)
-        
-        # Footer left (company)
-        canvas.drawString(doc.leftMargin, 10*mm, empresa.NombreEmpresa)
-        
-        # Footer center (date)
-        footer_text = f"Documento generato il {datetime.now().strftime('%d/%m/%Y')}"
-        text_width = canvas.stringWidth(footer_text, "Helvetica", 8)
-        canvas.drawString(doc.leftMargin + (doc.width / 2) - (text_width / 2), 10*mm, footer_text)
-        
-        # Footer right (page number)
+        # Add page number
         page_num = canvas.getPageNumber()
-        text = f"Pagina {page_num}"
-        text_width = canvas.stringWidth(text, "Helvetica", 8)
-        canvas.drawString(doc.leftMargin + doc.width - text_width, 10*mm, text)
+        canvas.drawRightString(doc.width + doc.leftMargin, 15*mm, f"Pagina {page_num}")
+        
+        # Add horizontal line
+        canvas.setStrokeColor(accent_color)
+        canvas.line(doc.leftMargin, 20*mm, doc.width + doc.leftMargin, 20*mm)
         
         canvas.restoreState()
     
-    # Build the PDF with custom template
+    # Build the document with footer
     doc.build(elements, onFirstPage=footer, onLaterPages=footer)
     
-    # Get the value of the BytesIO buffer
-    pdf_data = buffer.getvalue()
+    # Get the PDF content
+    pdf_content = buffer.getvalue()
     buffer.close()
     
-    return pdf_data
+    return pdf_content
 
 # Utility function for calculating VAT rate from IdIva
 def get_vat_rate(id_iva):
@@ -939,17 +1080,11 @@ def search_tickets():
     except ValueError:
         return jsonify({"success": False, "error": "Invalid date format"})
     
-    # Query for tickets for this client not already included in any DDT
+    # Query for tickets for this client not already processed
     tickets = TicketHeader.query.filter(
         TicketHeader.Fecha.between(from_date, to_date),
         TicketHeader.IdCliente == client_id,
-        TicketHeader.Enviado == 0,  # Solo ticket pendenti
-        not_(exists().where(
-            and_(
-                DDTLine.id_ticket == TicketHeader.IdTicket,
-                DDTLine.id_empresa == TicketHeader.IdEmpresa
-            )
-        ))
+        TicketHeader.Enviado == 0  # Solo ticket pendenti
     ).order_by(TicketHeader.Fecha.desc()).all()
     
     # Format response

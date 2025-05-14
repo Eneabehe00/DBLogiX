@@ -4,6 +4,7 @@ from flask_login import UserMixin
 from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.pool import NullPool
+from sqlalchemy.orm import foreign
 
 # Initialize SQLAlchemy with specific engine options to force utf8
 db = SQLAlchemy(engine_options={
@@ -211,128 +212,234 @@ class Company(db.Model):
         return f'<Company {self.IdEmpresa}: {self.NombreEmpresa}>'
 
 
-class DDTHead(db.Model):
-    __tablename__ = 'ddt_head'
+class AlbaranCabecera(db.Model):
+    __tablename__ = 'dat_albaran_cabecera'
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    id_cliente = db.Column(db.Integer, db.ForeignKey('dat_cliente.IdCliente'), nullable=False)
-    id_empresa = db.Column(db.Integer, db.ForeignKey('dat_empresa.IdEmpresa'), nullable=False)
-    data_creazione = db.Column(db.DateTime, default=datetime.utcnow)
-    totale_senza_iva = db.Column(db.Numeric(10, 2), default=0)
-    totale_iva = db.Column(db.Numeric(10, 2), default=0)
-    totale_importo = db.Column(db.Numeric(10, 2), default=0)
+    IdAlbaran = db.Column(db.BigInteger, primary_key=True, default=1)
+    NumAlbaran = db.Column(db.BigInteger)
+    IdEmpresa = db.Column(db.Integer, primary_key=True, default=1)
+    NombreEmpresa = db.Column(db.String(100))
+    CIF_VAT_Empresa = db.Column(db.String(14))
+    DireccionEmpresa = db.Column(db.String(50))
+    PoblacionEmpresa = db.Column(db.String(25))
+    CPEmpresa = db.Column(db.String(8))
+    TelefonoEmpresa = db.Column(db.String(20))
+    ProvinciaEmpresa = db.Column(db.String(25))
+    IdTienda = db.Column(db.Integer, primary_key=True, default=1)
+    NombreTienda = db.Column(db.String(50))
+    IdBalanzaMaestra = db.Column(db.Integer, primary_key=True, default=0)
+    NombreBalanzaMaestra = db.Column(db.String(50))
+    IdBalanzaEsclava = db.Column(db.Integer, primary_key=True, default=0)
+    NombreBalanzaEsclava = db.Column(db.String(50))
+    Tipo = db.Column(db.String(2), default="A")
+    IdVendedor = db.Column(db.Integer)
+    NombreVendedor = db.Column(db.String(50))
+    IdCliente = db.Column(db.Integer)
+    NombreCliente = db.Column(db.String(50))
+    DNICliente = db.Column(db.String(30))
+    EmailCliente = db.Column(db.String(100))
+    DireccionCliente = db.Column(db.String(50))
+    PoblacionCliente = db.Column(db.String(25))
+    ProvinciaCliente = db.Column(db.String(25))
+    PaisCliente = db.Column(db.String(10))
+    CPCliente = db.Column(db.String(8))
+    TelefonoCliente = db.Column(db.String(20))
+    ObservacionesCliente = db.Column(db.Text)
+    EANCliente = db.Column(db.String(50))
+    ReferenciaDocumento = db.Column(db.String(50))
+    ObservacionesDocumento = db.Column(db.Text)
+    TipoVenta = db.Column(db.Integer, default=2)
+    ImporteLineas = db.Column(db.Float(15, 3))
+    PorcDescuento = db.Column(db.Float(9, 3))
+    ImporteDescuento = db.Column(db.Float(15, 3))
+    ImporteRE = db.Column(db.Float(15, 3))
+    ImporteTotalSinRE = db.Column(db.Float(15, 3))
+    ImporteTotalSinIVAConDtoLConDtoTotalConRE = db.Column(db.Float(15, 3))
+    ImporteTotal = db.Column(db.Float(15, 3))
+    ImporteLineas2 = db.Column(db.Float(15, 3))
+    PorcDescuento2 = db.Column(db.Float(9, 3))
+    ImporteDescuento2 = db.Column(db.Float(15, 3))
+    ImporteTotal2 = db.Column(db.Float(15, 3))
+    ImporteLineas3 = db.Column(db.Float(15, 3))
+    PorcDescuento3 = db.Column(db.Float(9, 3))
+    ImporteDescuento3 = db.Column(db.Float(15, 3))
+    ImporteTotal3 = db.Column(db.Float(15, 3))
+    ImporteTotalSinIVAConDtoL = db.Column(db.Float(15, 3))
+    ImporteTotalSinIVAConDtoLConDtoTotal = db.Column(db.Float(15, 3))
+    ImporteDtoTotalSinIVA = db.Column(db.Float(15, 3))
+    ImporteTotalDelIVAConDtoLConDtoTotal = db.Column(db.Float(15, 3))
+    ImporteSinRedondeo = db.Column(db.Float(15, 3))
+    ImporteDelRedondeo = db.Column(db.Float(15, 3))
+    PreseleccionCliente = db.Column(db.Boolean, default=1)
+    Fecha = db.Column(db.DateTime)
+    FechaModificacion = db.Column(db.DateTime)
+    Enviado = db.Column(db.Boolean, default=0)
+    NumLineas = db.Column(db.SmallInteger)
+    CodigoBarras = db.Column(db.String(1000))
+    CodBarrasTalonCaja = db.Column(db.String(1000))
+    SerieLIdFinDeDia = db.Column(db.BigInteger)
+    SerieLTicketErroneo = db.Column(db.Boolean, default=0)
+    IdTarifa = db.Column(db.Integer)
+    NombreTarifa = db.Column(db.String(25))
+    DescuentoTarifa = db.Column(db.Numeric(9, 3))
+    TipoTarifa = db.Column(db.String(1))
+    FechaInicioTarifa = db.Column(db.DateTime)
+    FechaFinTarifa = db.Column(db.DateTime)
+    Modificado = db.Column(db.Boolean, default=1)
+    Operacion = db.Column(db.String(1), default="A")
+    Usuario = db.Column(db.String(20))
+    TimeStamp = db.Column(db.DateTime, default=datetime.utcnow)
+    EstadoTicket = db.Column(db.String(1), default="C")
+    ImporteEntregado = db.Column(db.Float(15, 3))
+    ImporteDevuelto = db.Column(db.Float(15, 3))
+    PuntosFidelidad = db.Column(db.Float(15, 3))
+    PuntosFidelidadTotales = db.Column(db.Float(15, 3))
+    REAplicado = db.Column(db.Boolean, default=0)
+    IdBotonVendedor = db.Column(db.Integer)
+    Version = db.Column(db.String(5), default="4.7.0")
     
     # Relationships
-    cliente = db.relationship('Client', 
-                              primaryjoin="DDTHead.id_cliente == Client.IdCliente",
-                              foreign_keys=[id_cliente])
-    empresa = db.relationship('Company',
-                               primaryjoin="DDTHead.id_empresa == Company.IdEmpresa",
-                               foreign_keys=[id_empresa])
-    lines = db.relationship('DDTLine', backref='ddt', lazy='dynamic',
-                            cascade="all, delete-orphan")
+    lineas = db.relationship('AlbaranLinea', 
+                           backref='cabecera', 
+                           lazy='dynamic',
+                           cascade="all, delete-orphan",
+                           primaryjoin="and_(AlbaranCabecera.IdAlbaran == foreign(AlbaranLinea.IdAlbaran), "
+                                      "AlbaranCabecera.IdEmpresa == foreign(AlbaranLinea.IdEmpresa), "
+                                      "AlbaranCabecera.IdTienda == foreign(AlbaranLinea.IdTienda), "
+                                      "AlbaranCabecera.IdBalanzaMaestra == foreign(AlbaranLinea.IdBalanzaMaestra), "
+                                      "AlbaranCabecera.IdBalanzaEsclava == foreign(AlbaranLinea.IdBalanzaEsclava), "
+                                      "AlbaranCabecera.TipoVenta == foreign(AlbaranLinea.TipoVenta))")
     
     def __repr__(self):
-        return f'<DDTHead {self.id}: Cliente {self.id_cliente}>'
-    
-    def calculate_totals(self):
-        """Calculate and update the totals for this DDT"""
-        total_senza_iva = 0
-        total_iva = 0
-        
-        for ddt_line in self.lines:
-            # Get the ticket
-            ticket = TicketHeader.query.filter_by(
-                IdTicket=ddt_line.id_ticket,
-                IdEmpresa=ddt_line.id_empresa,
-                IdTienda=ddt_line.id_tienda,
-                IdBalanzaMaestra=ddt_line.id_balanza_maestra,
-                IdBalanzaEsclava=ddt_line.id_balanza_esclava,
-                TipoVenta=ddt_line.tipo_venta
-            ).first()
-            
-            if not ticket:
-                continue
-            
-            # Get ticket lines
-            ticket_lines = TicketLine.query.filter_by(
-                IdTicket=ticket.IdTicket
-            ).all()
-            
-            # Calculate totals for each line
-            for t_line in ticket_lines:
-                product = Product.query.get(t_line.IdArticulo)
-                if not product:
-                    continue
-                
-                # Determine VAT rate
-                vat_rate = 0
-                if product.IdIva == 1:
-                    vat_rate = 0.04  # 4%
-                elif product.IdIva == 2:
-                    vat_rate = 0.10  # 10%
-                elif product.IdIva == 3:
-                    vat_rate = 0.22  # 22%
-                
-                # Calculate price without VAT
-                price_with_vat = float(product.PrecioConIVA)
-                price_without_vat = price_with_vat / (1 + vat_rate)
-                
-                # Multiply by weight/quantity
-                line_total = price_without_vat * float(t_line.Peso)
-                line_vat = line_total * vat_rate
-                
-                total_senza_iva += line_total
-                total_iva += line_vat
-        
-        # Update totals
-        self.totale_senza_iva = total_senza_iva
-        self.totale_iva = total_iva
-        self.totale_importo = total_senza_iva + total_iva
-        db.session.commit()
-        
-        return {
-            'totale_senza_iva': self.totale_senza_iva,
-            'totale_iva': self.totale_iva,
-            'totale_importo': self.totale_importo
-        }
+        return f'<AlbaranCabecera {self.IdAlbaran}: Cliente {self.IdCliente}>'
 
 
-class DDTLine(db.Model):
-    __tablename__ = 'ddt_line'
+class AlbaranLinea(db.Model):
+    __tablename__ = 'dat_albaran_linea'
     
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    id_ddt = db.Column(db.Integer, db.ForeignKey('ddt_head.id'), nullable=False)
-    id_empresa = db.Column(db.Integer, nullable=False)
-    id_tienda = db.Column(db.Integer, nullable=False)
-    id_balanza_maestra = db.Column(db.Integer, nullable=False)
-    id_balanza_esclava = db.Column(db.Integer, nullable=False)
-    tipo_venta = db.Column(db.Integer, nullable=False)
-    id_ticket = db.Column(db.BigInteger, nullable=False)
-    
-    # Add composite foreign key constraint in __table_args__
-    __table_args__ = (
-        db.ForeignKeyConstraint(
-            ['id_empresa', 'id_tienda', 'id_balanza_maestra', 
-             'id_balanza_esclava', 'tipo_venta', 'id_ticket'],
-            ['dat_ticket_cabecera.IdEmpresa', 'dat_ticket_cabecera.IdTienda',
-             'dat_ticket_cabecera.IdBalanzaMaestra', 'dat_ticket_cabecera.IdBalanzaEsclava',
-             'dat_ticket_cabecera.TipoVenta', 'dat_ticket_cabecera.IdTicket']
-        ),
-    )
-    
-    # Relationship to ticket header
-    ticket = db.relationship('TicketHeader',
-                             primaryjoin="and_(DDTLine.id_ticket == TicketHeader.IdTicket, "
-                                         "DDTLine.id_empresa == TicketHeader.IdEmpresa, "
-                                         "DDTLine.id_tienda == TicketHeader.IdTienda, "
-                                         "DDTLine.id_balanza_maestra == TicketHeader.IdBalanzaMaestra, "
-                                         "DDTLine.id_balanza_esclava == TicketHeader.IdBalanzaEsclava, "
-                                         "DDTLine.tipo_venta == TicketHeader.TipoVenta)",
-                             foreign_keys=[id_ticket, id_empresa, id_tienda, id_balanza_maestra, id_balanza_esclava, tipo_venta])
+    IdLineaAlbaran = db.Column(db.Integer, primary_key=True)
+    IdEmpresa = db.Column(db.Integer, primary_key=True, default=1)
+    IdTienda = db.Column(db.Integer, primary_key=True, default=1)
+    IdBalanzaMaestra = db.Column(db.Integer, primary_key=True, default=1)
+    IdBalanzaEsclava = db.Column(db.Integer, primary_key=True, default=-1)
+    IdAlbaran = db.Column(db.BigInteger, primary_key=True, default=0)
+    TipoVenta = db.Column(db.Integer, primary_key=True, default=2)
+    EstadoLinea = db.Column(db.SmallInteger, default=0)
+    IdArticulo = db.Column(db.Integer)
+    Descripcion = db.Column(db.String(100))
+    Descripcion1 = db.Column(db.String(100))
+    Comportamiento = db.Column(db.SmallInteger, default=1)
+    ComportamientoDevolucion = db.Column(db.SmallInteger, default=0)
+    EntradaManual = db.Column(db.Boolean, default=0)
+    Tara = db.Column(db.Numeric(11, 3), default=0)
+    TaraPreprogramada = db.Column(db.SmallInteger)
+    Peso = db.Column(db.Float(15, 3), default=1)
+    PesoBruto = db.Column(db.Float(15, 3))
+    PesoEmbalaje = db.Column(db.Float(15, 3))
+    PesoRegalado = db.Column(db.Float(15, 3))
+    PesoNetoNoEscurrido = db.Column(db.Float(15, 3))
+    ValorTaraPorcentual = db.Column(db.Float(15, 3))
+    TaraNoEscurrida = db.Column(db.Float(15, 3))
+    DetalleTara = db.Column(db.Text)
+    Cantidad2 = db.Column(db.Float(15, 3))
+    Cantidad2Regalada = db.Column(db.Float(15, 3))
+    Medida2 = db.Column(db.String(10), default="un")
+    PrecioPorCienGramos = db.Column(db.Boolean, default=0)
+    Precio = db.Column(db.Float(15, 3), default=0)
+    PrecioSinOferta = db.Column(db.Float(15, 3))
+    PrecioSinIVA = db.Column(db.Numeric(12, 6), default=0)
+    PrecioConIVASinDtoL = db.Column(db.Float(15, 3))
+    IdIVA = db.Column(db.Integer)
+    PorcentajeIVA = db.Column(db.Numeric(11, 3), default=0)
+    RecargoEquivalencia = db.Column(db.Float(9, 3), default=0)
+    Descuento = db.Column(db.Float(9, 5), default=0)
+    TipoDescuento = db.Column(db.Integer, default=1)
+    Importe = db.Column(db.Float(15, 3), default=0)
+    ImporteSinOferta = db.Column(db.Float(15, 3))
+    ImporteSinIVASinDtoL = db.Column(db.Numeric(12, 6), default=0)
+    ImporteConIVASinDtoL = db.Column(db.Float(15, 3))
+    ImporteSinIVAConDtoL = db.Column(db.Numeric(12, 6), default=0)
+    ImporteDelIVAConDtoL = db.Column(db.Float(15, 3), default=0)
+    ImporteSinIVAConDtoLConDtoTotal = db.Column(db.Float(15, 3), default=0)
+    ImporteDelIVAConDtoLConDtoTotal = db.Column(db.Float(15, 3), default=0)
+    ImporteDelRE = db.Column(db.Float(15, 3), default=0)
+    ImporteDelDescuento = db.Column(db.Float(15, 3), default=0)
+    ImporteConDtoTotal = db.Column(db.Float(15, 3), default=0)
+    TaraFija = db.Column(db.Numeric(11, 3))
+    TaraPorcentual = db.Column(db.Numeric(11, 3))
+    DiasCaducidad = db.Column(db.Integer)
+    HorasCaducidad = db.Column(db.Integer)
+    FechaCaducidad = db.Column(db.DateTime)
+    DiasExtra = db.Column(db.Integer)
+    HorasExtra = db.Column(db.Integer)
+    FechaExtra = db.Column(db.DateTime)
+    DiasEnvasado = db.Column(db.Integer)
+    HorasEnvasado = db.Column(db.Integer)
+    FechaEnvasado = db.Column(db.DateTime)
+    DiasCongelacion = db.Column(db.Integer)
+    HorasCongelacion = db.Column(db.Integer)
+    FechaCongelacion = db.Column(db.DateTime)
+    DiasConsumo = db.Column(db.Integer)
+    HorasConsumo = db.Column(db.Integer)
+    FechaConsumo = db.Column(db.DateTime)
+    DiasFabricacion = db.Column(db.Integer)
+    HorasFabricacion = db.Column(db.Integer)
+    FechaFabricacion = db.Column(db.DateTime)
+    LogoEtiqueta = db.Column(db.String(1000))
+    CodInterno = db.Column(db.Integer)
+    EANScannerArticulo = db.Column(db.String(20))
+    TextoLote = db.Column(db.Text)
+    IdClase = db.Column(db.Integer)
+    NombreClase = db.Column(db.String(25), default="ARTICOLI")
+    IdElemAsociado = db.Column(db.BigInteger)
+    NombreElemAsociado = db.Column(db.String(25))
+    IdFamilia = db.Column(db.Integer)
+    NombreFamilia = db.Column(db.String(25))
+    IdSeccion = db.Column(db.Integer)
+    NombreSeccion = db.Column(db.String(30))
+    IdSubFamilia = db.Column(db.Integer)
+    NombreSubFamilia = db.Column(db.String(25))
+    IdDepartamento = db.Column(db.Integer)
+    NombreDepartamento = db.Column(db.String(25))
+    Texto1 = db.Column(db.Text)
+    Texto2 = db.Column(db.Text)
+    Texto3 = db.Column(db.Text)
+    Texto4 = db.Column(db.Text)
+    Texto5 = db.Column(db.Text)
+    Texto6 = db.Column(db.Text)
+    Texto7 = db.Column(db.Text)
+    Texto8 = db.Column(db.Text)
+    Texto9 = db.Column(db.Text)
+    Texto10 = db.Column(db.Text)
+    Texto11 = db.Column(db.Text)
+    Texto12 = db.Column(db.Text)
+    Texto13 = db.Column(db.Text)
+    Texto14 = db.Column(db.Text)
+    Texto15 = db.Column(db.Text)
+    Texto16 = db.Column(db.Text)
+    Texto17 = db.Column(db.Text)
+    Texto18 = db.Column(db.Text)
+    Texto19 = db.Column(db.Text)
+    Texto20 = db.Column(db.Text)
+    TextoLibre = db.Column(db.Text)
+    PesoPieza = db.Column(db.Numeric(11, 3))
+    UnidadesCaja = db.Column(db.Integer)
+    Facturada = db.Column(db.Boolean, default=0)
+    IdCampania = db.Column(db.Integer)
+    NombreCampania = db.Column(db.String(50))
+    IdArticuloVisualizado = db.Column(db.Integer)
+    ProductoEnPromocion = db.Column(db.Boolean)
+    CantidadFacturada = db.Column(db.Float(15, 3), default=0)
+    CantidadFacturada2 = db.Column(db.Float(15, 3), default=0)
+    NombrePlataforma = db.Column(db.String(50))
+    HayTaraAplicada = db.Column(db.SmallInteger, default=0)
+    Modificado = db.Column(db.Boolean, default=1)
+    Operacion = db.Column(db.String(1), default="A")
+    Usuario = db.Column(db.String(20))
+    TimeStamp = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
-        return f'<DDTLine {self.id}: DDT {self.id_ddt} - Ticket {self.id_ticket}>'
+        return f'<AlbaranLinea {self.IdLineaAlbaran}: Articulo {self.IdArticulo}>'
 
 
 class Article(Product):

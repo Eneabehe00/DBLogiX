@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Import db from models directly - this avoids circular imports
 from models import db
+from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, Company, Article, AlbaranCabecera, AlbaranLinea
 
 def create_app():
     app = Flask(__name__)
@@ -183,7 +184,7 @@ app = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
-    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, DDTHead, DDTLine, Company, Article
+    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, Company, Article, AlbaranCabecera, AlbaranLinea
     return {
         'db': db, 
         'User': User, 
@@ -192,10 +193,10 @@ def make_shell_context():
         'TicketLine': TicketLine,
         'ScanLog': ScanLog,
         'Client': Client,
-        'DDTHead': DDTHead,
-        'DDTLine': DDTLine,
         'Company': Company,
-        'Article': Article
+        'Article': Article,
+        'AlbaranCabecera': AlbaranCabecera,
+        'AlbaranLinea': AlbaranLinea
     }
 
 @app.route('/debug')

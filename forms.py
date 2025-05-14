@@ -36,6 +36,16 @@ class DbConfigForm(FlaskForm):
     submit = SubmitField('Save Configuration')
     test_connection = SubmitField('Test Connection')
 
+class CompanyConfigForm(FlaskForm):
+    nombre_empresa = StringField('Nome Azienda', validators=[DataRequired(), Length(max=100)])
+    cif_vat = StringField('Partita IVA/Codice Fiscale', validators=[DataRequired(), Length(max=50)])
+    telefono = StringField('Telefono', validators=[DataRequired(), Length(max=20)])
+    direccion = StringField('Indirizzo', validators=[DataRequired(), Length(max=200)])
+    cod_postal = StringField('CAP', validators=[DataRequired(), Length(max=10)])
+    poblacion = StringField('Città', validators=[DataRequired(), Length(max=100)])
+    provincia = StringField('Provincia', validators=[DataRequired(), Length(max=100)])
+    submit = SubmitField('Salva Configurazione Azienda')
+
 class SearchForm(FlaskForm):
     query = StringField('Search', validators=[DataRequired()])
     submit = SubmitField('Search')

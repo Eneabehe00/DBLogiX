@@ -183,6 +183,20 @@ body {
     padding-left: 50px;
 }
 
+/* Regole per i sottomenu di secondo livello */
+.submenu .submenu {
+    background-color: rgba(0, 0, 0, 0.25); /* Più scuro del sottomenu padre */
+}
+
+.submenu .submenu li a {
+    padding-left: 70px; /* Maggior padding per indicare nidificazione */
+}
+
+/* Assicurarsi che i sottomenu si aprano correttamente */
+.sidebar-submenu.open > .submenu {
+    display: block;
+}
+
 .sidebar-login {
     padding: 15px;
     margin-top: auto;

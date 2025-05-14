@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Statistiche - Amministrazione{% endblock %}
+
+{% block header_title %}
+<h1 class="h3 mb-0">Dashboard - Statistiche</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mt-4">
+        <!-- User Statistics Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-users me-2"></i>Utenti</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 border-end">
+                            <div class="text-center">
+                                <h3>{{ total_users }}</h3>
+                                <small class="text-muted">Totale Utenti</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3>{{ admin_users }}</h3>
+                                <small class="text-muted">Amministratori</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Scan Statistics Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-qrcode me-2"></i>Scansioni</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4 border-end">
+                            <div class="text-center">
+                                <h3>{{ today_scans }}</h3>
+                                <small class="text-muted">Oggi</small>
+                            </div>
+                        </div>
+                        <div class="col-4 border-end">
+                            <div class="text-center">
+                                <h3>{{ checkout_scans }}</h3>
+                                <small class="text-muted">Checkout</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h3>{{ view_scans }}</h3>
+                                <small class="text-muted">Visualizzazioni</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product/Ticket Statistics Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-box me-2"></i>Prodotti & Ticket</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4 border-end">
+                            <div class="text-center">
+                                <h3>{{ products_count }}</h3>
+                                <small class="text-muted">Prodotti</small>
+                            </div>
+                        </div>
+                        <div class="col-4 border-end">
+                            <div class="text-center">
+                                <h3>{{ pending_tickets }}</h3>
+                                <small class="text-muted">Ticket Pendenti</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h3>{{ processed_tickets }}</h3>
+                                <small class="text-muted">Ticket Processati</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Activity Chart -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-line me-2"></i>Attività Ultimi 7 Giorni</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="activityChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Most Active Users -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0"><i class="fas fa-trophy me-2"></i>Utenti Più Attivi</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for user in active_users %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-user me-2"></i>
+                                {{ user.username }}
+                            </div>
+                            <span class="badge bg-primary rounded-pill">{{ user.scan_count }} scansioni</span>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-center text-muted">
+                            Nessun dato di attività disponibile
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the canvas element
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        
+        // Parse the JSON data passed from the backend
+        const activityData = JSON.parse('{{ activity_data|safe }}');
+        
+        // Create the chart
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: activityData.labels,
+                datasets: [{
+                    label: 'Numero di Scansioni',
+                    data: activityData.data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %} 

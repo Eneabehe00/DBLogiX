@@ -90,29 +90,47 @@
                         <i class="submenu-arrow fas fa-chevron-right"></i>
                     </a>
                     <ul class="submenu">
-                        <li class="{% if request.endpoint and request.endpoint == 'admin.dashboard' %}active{% endif %}">
-                            <a href="{{ url_for('admin.dashboard') }}">
+                        <li class="sidebar-submenu {% if request.endpoint and request.endpoint == 'admin.dashboard' or request.endpoint == 'admin.scan_logs' %}active open{% endif %}">
+                            <a href="#" class="submenu-toggle">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <span>Dashboard</span>
+                                <i class="submenu-arrow fas fa-chevron-right"></i>
                             </a>
+                            <ul class="submenu">
+                                <li class="{% if request.endpoint and request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                                    <a href="{{ url_for('admin.dashboard') }}">
+                                        <i class="fas fa-chart-line"></i>
+                                        <span>Statistiche</span>
+                                    </a>
+                                </li>
+                                <li class="{% if request.endpoint and request.endpoint == 'admin.scan_logs' %}active{% endif %}">
+                                    <a href="{{ url_for('admin.scan_logs') }}">
+                                        <i class="fas fa-history"></i>
+                                        <span>Log Attività</span>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li class="{% if request.endpoint and request.endpoint == 'admin.manage_users' %}active{% endif %}">
-                            <a href="{{ url_for('admin.manage_users') }}">
-                                <i class="fas fa-users"></i>
-                                <span>Gestione Utenti</span>
+                        <li class="sidebar-submenu {% if request.endpoint and (request.endpoint == 'admin.manage_users' or request.endpoint == 'admin.db_config') %}active open{% endif %}">
+                            <a href="#" class="submenu-toggle">
+                                <i class="fas fa-cogs"></i>
+                                <span>Configurazioni</span>
+                                <i class="submenu-arrow fas fa-chevron-right"></i>
                             </a>
-                        </li>
-                        <li class="{% if request.endpoint and request.endpoint == 'admin.scan_logs' %}active{% endif %}">
-                            <a href="{{ url_for('admin.scan_logs') }}">
-                                <i class="fas fa-history"></i>
-                                <span>Log Attività</span>
-                            </a>
-                        </li>
-                        <li class="{% if request.endpoint and request.endpoint == 'admin.db_config' %}active{% endif %}">
-                            <a href="{{ url_for('admin.db_config') }}">
-                                <i class="fas fa-database"></i>
-                                <span>Configurazione DB</span>
-                            </a>
+                            <ul class="submenu">
+                                <li class="{% if request.endpoint and request.endpoint == 'admin.manage_users' %}active{% endif %}">
+                                    <a href="{{ url_for('admin.manage_users') }}">
+                                        <i class="fas fa-users"></i>
+                                        <span>Gestione Utenti</span>
+                                    </a>
+                                </li>
+                                <li class="{% if request.endpoint and request.endpoint == 'admin.db_config' %}active{% endif %}">
+                                    <a href="{{ url_for('admin.db_config') }}">
+                                        <i class="fas fa-database"></i>
+                                        <span>Configurazioni DB</span>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
                 </li>

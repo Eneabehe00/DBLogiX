@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import db, User, ScanLog, Product, TicketHeader
-from forms import RegistrationForm, DbConfigForm
+from models import db, User, ScanLog, Product, TicketHeader, Company
+from forms import RegistrationForm, DbConfigForm, CompanyConfigForm
 from sqlalchemy import func, desc
 from config import REMOTE_DB_CONFIG
 import pymysql
@@ -22,6 +22,14 @@ def admin_required(view_func):
     wrapped_view.__name__ = view_func.__name__
     return wrapped_view
 
+# Admin index redirecting to dashboard
+@admin_bp.route('/')
+@admin_required
+def index():
+    """Admin index page - redirects to dashboard"""
+    return redirect(url_for('admin.dashboard'))
+
+# Dashboard Section
 @admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
@@ -76,7 +84,7 @@ def dashboard():
         'data': counts
     }
     
-    return render_template('admin/dashboard.html',
+    return render_template('admin/dashboard/statistics.html',
                          total_users=total_users,
                          admin_users=admin_users,
                          today_scans=today_scans,
@@ -89,14 +97,28 @@ def dashboard():
                          active_users=active_users,
                          activity_data=json.dumps(activity_data))
 
-@admin_bp.route('/users')
+@admin_bp.route('/dashboard/scan_logs')
+@admin_required
+def scan_logs():
+    """View all scan logs"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    logs = ScanLog.query.join(User).order_by(
+        ScanLog.timestamp.desc()
+    ).paginate(page=page, per_page=per_page)
+    
+    return render_template('admin/dashboard/scan_logs.html', logs=logs)
+
+# Configurazioni Section
+@admin_bp.route('/configurazioni/users')
 @admin_required
 def manage_users():
     """User management - list, create, edit users"""
     users = User.query.all()
-    return render_template('admin/users.html', users=users)
+    return render_template('admin/configurazioni/users.html', users=users)
 
-@admin_bp.route('/users/new', methods=['GET', 'POST'])
+@admin_bp.route('/configurazioni/users/new', methods=['GET', 'POST'])
 @admin_required
 def add_user():
     """Add a new user"""
@@ -113,9 +135,9 @@ def add_user():
         flash('User added successfully!', 'success')
         return redirect(url_for('admin.manage_users'))
     
-    return render_template('admin/user_form.html', form=form, title='Add User')
+    return render_template('admin/configurazioni/user_form.html', form=form, title='Add User')
 
-@admin_bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/configurazioni/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def edit_user(user_id):
     """Edit an existing user"""
@@ -134,9 +156,9 @@ def edit_user(user_id):
         flash('User updated successfully!', 'success')
         return redirect(url_for('admin.manage_users'))
     
-    return render_template('admin/user_form.html', form=form, title='Edit User', edit_mode=True)
+    return render_template('admin/configurazioni/user_form.html', form=form, title='Edit User', edit_mode=True)
 
-@admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_bp.route('/configurazioni/users/<int:user_id>/delete', methods=['POST'])
 @admin_required
 def delete_user(user_id):
     """Delete a user"""
@@ -152,7 +174,7 @@ def delete_user(user_id):
     flash('User deleted successfully!', 'success')
     return redirect(url_for('admin.manage_users'))
 
-@admin_bp.route('/users/<int:user_id>/reset-password', methods=['GET', 'POST'])
+@admin_bp.route('/configurazioni/users/<int:user_id>/reset-password', methods=['GET', 'POST'])
 @admin_required
 def reset_password(user_id):
     """Reset a user's password"""
@@ -169,45 +191,45 @@ def reset_password(user_id):
         flash('Password reset successfully!', 'success')
         return redirect(url_for('admin.manage_users'))
     
-    return render_template('admin/reset_password.html', user=user)
+    return render_template('admin/configurazioni/reset_password.html', user=user)
 
-@admin_bp.route('/scan-logs')
-@admin_required
-def scan_logs():
-    """View all scan logs"""
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    
-    logs = ScanLog.query.join(User).order_by(
-        ScanLog.timestamp.desc()
-    ).paginate(page=page, per_page=per_page)
-    
-    return render_template('admin/scan_logs.html', logs=logs)
-
-@admin_bp.route('/database-config', methods=['GET', 'POST'])
+@admin_bp.route('/configurazioni/db-config', methods=['GET', 'POST'])
 @admin_required
 def db_config():
-    """Configure remote database connection"""
-    form = DbConfigForm()
+    """Configure remote database connection and company settings"""
+    db_form = DbConfigForm(prefix="db")
+    company_form = CompanyConfigForm(prefix="company")
     
-    # Pre-fill form with current config
+    # Pre-fill db form with current config
     if request.method == 'GET':
-        form.host.data = REMOTE_DB_CONFIG['host']
-        form.user.data = REMOTE_DB_CONFIG['user']
-        form.password.data = REMOTE_DB_CONFIG['password']
-        form.database.data = REMOTE_DB_CONFIG['database']
-        form.port.data = str(REMOTE_DB_CONFIG['port'])
+        db_form.host.data = REMOTE_DB_CONFIG['host']
+        db_form.user.data = REMOTE_DB_CONFIG['user']
+        db_form.password.data = REMOTE_DB_CONFIG['password']
+        db_form.database.data = REMOTE_DB_CONFIG['database']
+        db_form.port.data = str(REMOTE_DB_CONFIG['port'])
+        
+        # Get company data if it exists
+        company = Company.query.first()
+        if company:
+            company_form.nombre_empresa.data = company.NombreEmpresa
+            company_form.cif_vat.data = company.CIF_VAT
+            company_form.telefono.data = company.Telefono1
+            company_form.direccion.data = company.Direccion
+            company_form.cod_postal.data = company.CodPostal
+            company_form.poblacion.data = company.Poblacion
+            company_form.provincia.data = company.Provincia
     
-    if form.validate_on_submit():
+    # Handle DB config form submit
+    if 'submit_db' in request.form and db_form.validate():
         if 'test_connection' in request.form:
             # Test the connection
             try:
                 conn = pymysql.connect(
-                    host=form.host.data,
-                    user=form.user.data,
-                    password=form.password.data,
-                    database=form.database.data,
-                    port=int(form.port.data),
+                    host=db_form.host.data,
+                    user=db_form.user.data,
+                    password=db_form.password.data,
+                    database=db_form.database.data,
+                    port=int(db_form.port.data),
                     connect_timeout=10
                 )
                 conn.close()
@@ -215,7 +237,7 @@ def db_config():
             except Exception as e:
                 flash(f'Connection failed: {str(e)}', 'danger')
             
-            return render_template('admin/db_config.html', form=form)
+            return render_template('admin/configurazioni/db_config.html', db_form=db_form, company_form=company_form)
         else:
             # Save the configuration
             try:
@@ -225,11 +247,11 @@ def db_config():
                 
                 # Update the REMOTE_DB_CONFIG dictionary
                 new_config = {
-                    'host': form.host.data,
-                    'user': form.user.data,
-                    'password': form.password.data,
-                    'database': form.database.data,
-                    'port': int(form.port.data),
+                    'host': db_form.host.data,
+                    'user': db_form.user.data,
+                    'password': db_form.password.data,
+                    'database': db_form.database.data,
+                    'port': int(db_form.port.data),
                     'connect_timeout': REMOTE_DB_CONFIG.get('connect_timeout', 10),
                     'read_timeout': REMOTE_DB_CONFIG.get('read_timeout', 30),
                     'write_timeout': REMOTE_DB_CONFIG.get('write_timeout', 30),
@@ -267,9 +289,32 @@ def db_config():
             except Exception as e:
                 flash(f'Failed to save configuration: {str(e)}', 'danger')
     
-    return render_template('admin/db_config.html', form=form)
+    # Handle Company config form submit
+    if 'submit_company' in request.form and company_form.validate():
+        try:
+            # Get existing company or create new one
+            company = Company.query.first()
+            if not company:
+                company = Company()
+                db.session.add(company)
+            
+            # Update company data
+            company.NombreEmpresa = company_form.nombre_empresa.data
+            company.CIF_VAT = company_form.cif_vat.data
+            company.Telefono1 = company_form.telefono.data
+            company.Direccion = company_form.direccion.data
+            company.CodPostal = company_form.cod_postal.data
+            company.Poblacion = company_form.poblacion.data
+            company.Provincia = company_form.provincia.data
+            
+            db.session.commit()
+            flash('Company configuration saved successfully!', 'success')
+        except Exception as e:
+            flash(f'Failed to save company configuration: {str(e)}', 'danger')
+    
+    return render_template('admin/configurazioni/db_config.html', db_form=db_form, company_form=company_form)
 
-@admin_bp.route('/create-tables', methods=['POST'])
+@admin_bp.route('/configurazioni/create-tables', methods=['POST'])
 @admin_required
 def create_tables():
     """Create missing tables in the remote database"""

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Import Articles from CSV{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}">Articles</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Import from CSV</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="card-title">Import Articles from CSV</h1>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <div class="mb-4">
+                <h5>Instructions</h5>
+                <ul>
+                    <li>Prepare a CSV file with article data.</li>
+                    <li>The CSV file must have the following header row: <code>IdArticulo,Descripcion,Descripcion1,IdTipo,Favorito,Texto1,TextoLibre</code></li>
+                    <li>Each row represents an article.</li>
+                    <li>If an article with the same ID already exists, it will be updated.</li>
+                    <li>If an article does not exist, it will be created with default values for missing fields.</li>
+                </ul>
+            </div>
+
+            <form method="post" action="{{ url_for('articles.import_from_csv') }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="csv_file" class="form-label">CSV File</label>
+                    <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                    <div class="form-text">Please upload a CSV file containing article data.</div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('articles.index') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+
+            <hr class="my-4">
+
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Import Sample Data</h5>
+                </div>
+                <div class="card-body">
+                    <p>You can import the provided sample data directly without uploading a file.</p>
+                    <p>This will import all articles from the pre-loaded <code>articoli.csv</code> file.</p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('articles.import_sample_data') }}" class="btn btn-success">
+                            <i class="fas fa-file-import"></i> Import Sample Data
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

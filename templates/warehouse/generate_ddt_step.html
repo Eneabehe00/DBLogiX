@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Genera DDT (Passo {{ step }}/2) - DBLogiX{% endblock %}
+
+{% block header_title %}Genera DDT - Fase {{ step }}: {{ 'Selezione Cliente' if step == 1 else 'Compilazione Dettagli' }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+<style>
+    .customer-suggestions {
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1050;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .card-ddt {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .selected-customer-display {
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        border-left: 4px solid #28a745;
+    }
+    
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    @media (max-width: 767.98px) {
+        .card-header h4 {
+            font-size: 1.25rem;
+        }
+        
+        .page-icon {
+            display: none;
+        }
+        
+        h1.h2 {
+            font-size: 1.5rem;
+        }
+        
+        .table th, .table td {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.5rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .action-buttons .btn {
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+<div class="d-flex align-items-center mb-4">
+    <div class="page-icon me-3">
+        <i class="fas fa-file-invoice"></i>
+    </div>
+    <div>
+        <h1 class="h2 mb-1">Genera DDT</h1>
+        <p class="text-muted mb-0">Fase {{ step }}: {{ 'Selezione Cliente' if step == 1 else 'Compilazione Dettagli' }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
+            <div class="card shadow card-ddt">
+                <div class="card-header bg-primary text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        <h4 class="mb-0">Riepilogo DDT {{ ddt_type_display_name }}</h4>
+                    </div>
+                </div>
+                <div class="card-body p-md-4 p-3">
+                    <div class="alert alert-info d-flex">
+                        <i class="fas fa-info-circle me-2 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <strong>Informazione:</strong> Stai per generare un DDT per gli articoli seguenti. Verifica i dettagli prima di procedere.
+                        </div>
+                    </div>
+                    
+                    <h5 class="mb-3"><i class="fas fa-list text-primary me-2"></i>Articoli selezionati</h5>
+                    <div class="ddt-items-summary border rounded mb-4 shadow-sm" style="max-height: 300px; overflow-y: auto;">
+                        {% if items and items|length > 0 %}
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Ticket #</th>
+                                            <th>Prodotto</th>
+                                            <th>Peso</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in items %}
+                                            <tr>
+                                                <td>{{ item.ticket_number }}</td>
+                                                <td class="text-truncate" style="max-width: 200px;">{{ item.product_name }}</td>
+                                                <td>{{ item.product_weight }} kg</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="p-4 text-center">
+                                <i class="fas fa-exclamation-circle text-muted mb-3" style="font-size: 2rem;"></i>
+                                <p class="text-muted">Nessun articolo trovato per questo DDT.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="alert alert-info">
+                        <div class="d-flex">
+                            <i class="fas fa-info-circle me-2 flex-shrink-0"></i>
+                            <div>
+                                <strong>Nota:</strong> Quando premi il pulsante "Genera DDT", verrà creato un documento di trasporto ufficiale con i ticket selezionati.
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3"><i class="fas fa-user text-primary me-2"></i>Seleziona Cliente</h5>
+                    <form id="generate-ddt-form" method="POST" action="{{ url_for('ddt.create') }}">
+                        {{ form.hidden_tag() }}
+                        <input type="hidden" name="cliente_id" id="selected_customer_id" value="">
+                        <input type="hidden" name="cliente_nome" id="selected_customer_name" value="">
+                        <input type="hidden" name="id_empresa" id="id_empresa" value="">
+                        <input type="hidden" name="tickets" id="tickets_json" value="">
+
+                        <div class="mb-4 position-relative">
+                            <label for="customer_search" class="form-label">Cliente</label>
+                            <div class="input-group mb-1">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="customer_search" placeholder="Digita per cercare un cliente (min. 3 caratteri)...">
+                            </div>
+                            <div id="customer_suggestions" class="list-group position-absolute w-100 customer-suggestions shadow-sm" style="display: none;"></div>
+                            <div class="form-text small">Inizia a digitare per vedere i risultati corrispondenti</div>
+                        </div>
+                        
+                        <div class="selected-customer-info mb-4 p-3 border rounded bg-light d-none shadow-sm">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-2 fs-5"></i>
+                                <h6 class="mb-0">Cliente selezionato</h6>
+                            </div>
+                            <div id="selected-customer-display" class="mt-2 ps-4">
+                                <span class="fw-bold">Nessun cliente selezionato</span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center mt-4">
+                            <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-secondary btn-action">
+                                <i class="fas fa-arrow-left"></i><span>Torna ai Ticket</span>
+                            </a>
+                            <button type="submit" class="btn btn-success btn-action" id="btn-finalize-ddt" {% if not items or items|length == 0 %}disabled{% endif %}>
+                                <i class="fas fa-file-alt"></i><span>Genera DDT</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JSON dati articoli per il JavaScript -->
+<script type="application/json" id="ticket-data-json">
+[{% if items and items|length > 0 %}{% for item in items %}{"id_ticket":{{ item.ticket_id }},"ticket_number":{{ item.ticket_number }},"product_name":"{{ item.product_name|replace('"', '\\"') }}","product_weight":{{ item.product_weight }}}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}]
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSearchInput = document.getElementById('customer_search');
+    const customerSuggestionsDiv = document.getElementById('customer_suggestions');
+    const selectedCustomerIdInput = document.getElementById('selected_customer_id');
+    const selectedCustomerNameInput = document.getElementById('selected_customer_name');
+    const idEmpresaInput = document.getElementById('id_empresa');
+    const ticketsJsonInput = document.getElementById('tickets_json');
+    const generateDDTForm = document.getElementById('generate-ddt-form');
+    const btnFinalizeDDT = document.getElementById('btn-finalize-ddt');
+    const selectedCustomerInfo = document.querySelector('.selected-customer-info');
+    const selectedCustomerDisplay = document.getElementById('selected-customer-display');
+
+    // Carico i dati dei ticket dal JSON incorporato nella pagina
+    const ticketDataFromServer = JSON.parse(document.getElementById('ticket-data-json').textContent);
+
+    // Fetch company ID from server
+    fetch('/warehouse/api/company/first')
+        .then(response => response.json())
+        .then(data => {
+            if(data.success && data.id_empresa) {
+                idEmpresaInput.value = data.id_empresa;
+                console.log('Company ID set:', data.id_empresa);
+            } else {
+                console.error('Failed to get company ID:', data.message || 'Unknown error');
+            }
+        })
+        .catch(error => console.error('Error fetching company ID:', error));
+
+    // Prepare ticket data in the format needed by ddt.create
+    const prepareTicketData = function() {
+        const ticketData = [];
+        const empresaId = parseInt(idEmpresaInput.value || "1");
+        
+        // Format tickets in the format needed by the ddt.create endpoint
+        ticketDataFromServer.forEach(function(ticket) {
+            ticketData.push({
+                id_ticket: ticket.id_ticket,
+                id_empresa: empresaId,
+                id_tienda: 1,
+                id_balanza_maestra: 1,
+                id_balanza_esclava: -1,
+                tipo_venta: 2
+            });
+        });
+        
+        console.log('Prepared ticket data:', ticketData);
+        return JSON.stringify(ticketData);
+    };
+
+    let searchTimeout = null;
+
+    if (customerSearchInput) {
+        customerSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.trim();
+            selectedCustomerIdInput.value = ''; // Reset selected customer ID if user types
+            customerSuggestionsDiv.innerHTML = ''; // Clear previous suggestions
+            customerSuggestionsDiv.style.display = 'none';
+            btnFinalizeDDT.disabled = true; // Disable submit until a client is properly selected
+            selectedCustomerInfo.classList.add('d-none');
+
+            if (searchTerm.length < 3) {
+                if (searchTimeout) clearTimeout(searchTimeout);
+                return;
+            }
+
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetch(`/ddt/api/clients/search?term=${encodeURIComponent(searchTerm)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        customerSuggestionsDiv.innerHTML = '';
+                        
+                        if (data.success && data.clients && data.clients.length > 0) {
+                            renderClientSuggestions(data.clients);
+                        } else if (Array.isArray(data) && data.length > 0) {
+                            renderClientSuggestions(data);
+                        } else {
+                            // No results
+                            const noResultsItem = document.createElement('div');
+                            noResultsItem.classList.add('list-group-item', 'text-muted', 'text-center');
+                            noResultsItem.innerHTML = '<i class="fas fa-search me-2"></i>Nessun cliente trovato.';
+                            customerSuggestionsDiv.appendChild(noResultsItem);
+                            customerSuggestionsDiv.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching clients:', error);
+                        const errorItem = document.createElement('div');
+                        errorItem.classList.add('list-group-item', 'text-danger', 'text-center');
+                        errorItem.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Errore durante la ricerca.';
+                        customerSuggestionsDiv.appendChild(errorItem);
+                        customerSuggestionsDiv.style.display = 'block';
+                    });
+            }, 300); // Debounce requests
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!customerSearchInput.contains(event.target) && !customerSuggestionsDiv.contains(event.target)) {
+                customerSuggestionsDiv.style.display = 'none';
+            }
+        });
+    }
+    
+    function renderClientSuggestions(clients) {
+        clients.forEach(client => {
+            const suggestionItem = document.createElement('a');
+            suggestionItem.href = '#';
+            suggestionItem.classList.add('list-group-item', 'list-group-item-action');
+            suggestionItem.textContent = client.text || client.name; // Support both API formats
+            suggestionItem.dataset.clientId = client.id;
+            
+            suggestionItem.addEventListener('click', function(e) {
+                e.preventDefault();
+                const clientId = this.dataset.clientId;
+                const clientName = this.textContent;
+                
+                // Set hidden inputs
+                selectedCustomerIdInput.value = clientId;
+                selectedCustomerNameInput.value = clientName;
+                
+                // Update UI
+                customerSearchInput.value = clientName;
+                customerSuggestionsDiv.style.display = 'none';
+                selectedCustomerInfo.classList.remove('d-none');
+                selectedCustomerDisplay.innerHTML = `<span class="fw-bold">${clientName}</span> (ID: ${clientId})`;
+                
+                // Enable submit button
+                btnFinalizeDDT.disabled = false;
+            });
+            
+            customerSuggestionsDiv.appendChild(suggestionItem);
+        });
+        customerSuggestionsDiv.style.display = 'block';
+    }
+    
+    // Set up form submission
+    if (generateDDTForm) {
+        generateDDTForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Check required fields
+            if (!selectedCustomerIdInput.value) {
+                alert('Seleziona un cliente prima di generare il DDT');
+                return;
+            }
+            
+            // Prepare ticket data
+            ticketsJsonInput.value = prepareTicketData();
+            
+            // Submit form
+            this.submit();
+        });
+    }
+});
+</script>
+{% endblock %} 

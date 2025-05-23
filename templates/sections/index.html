@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Elenco Sezioni - DBLogiX{% endblock %}
+
+{% block header_title %}Gestione Sezioni{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sections.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Sezioni</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-tag me-2"></i>Gestione Sezioni
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ sections|length if sections else 0 }} sezioni nel database</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('sections.new') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Nuova Sezione
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Sections List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Sezioni</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if sections %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Ultima Modifica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for section in sections %}
+                        <tr data-url="{{ url_for('sections.view', id=section.IdSeccion) }}" style="cursor: pointer;">
+                            <td data-label="ID">{{ section.IdSeccion }}</td>
+                            <td data-label="Nome">{{ section.NombreSeccion }}</td>
+                            <td data-label="Ultima Modifica">{{ section.TimeStamp|date if section.TimeStamp else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-layer-group text-muted mb-3" style="font-size: 3rem;"></i>
+                <h5>Nessuna sezione trovata</h5>
+                <p class="text-muted">Non ci sono sezioni nel sistema. Clicca su "Nuova Sezione" per aggiungerne una.</p>
+                <a href="{{ url_for('sections.new') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Aggiungi Sezione
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Make rows clickable to view detail
+        $('tbody tr').on('click', function() {
+            window.location.href = $(this).data('url');
+        });
+    });
+</script>
+{% endblock %} 

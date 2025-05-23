@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestione Prodotti{% endblock %}
+
+{% block header_title %}Gestione Prodotti{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Prodotti</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-boxes me-2"></i>Gestione Prodotti
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ articles.total if articles else 0 }} prodotti nel database</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('articles.create') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Nuovo
+                    </a>
+                    <a href="{{ url_for('articles.import_from_csv') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-file-import me-1"></i>Importa
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Search Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-10 col-sm-8">
+                    <div class="search-input-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="liveSearch" class="form-control" placeholder="Cerca per descrizione o codice..." value="{{ query }}">
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4">
+                    <button id="clearSearch" class="btn btn-secondary w-100">
+                        <i class="fas fa-times me-1"></i>Cancella
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Product List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Prodotti</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if error is defined and error %}
+            <div class="alert alert-danger m-3">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Si è verificato un errore</h5>
+                <p>{{ error }}</p>
+                <p>Si prega di riprovare o contattare l'amministratore del sistema.</p>
+            </div>
+            {% endif %}
+            
+            {% if articles is none %}
+            <div class="alert alert-warning m-3">
+                <h5><i class="fas fa-exclamation-circle me-2"></i>Ricerca non disponibile</h5>
+                <p>Si è verificato un problema durante la ricerca. Visualizzazione dei prodotti non disponibile.</p>
+                <p>Per riprovare, <a href="{{ url_for('articles.index') }}">clicca qui</a> per tornare alla lista completa.</p>
+            </div>
+            {% else %}
+            {% if articles.items|length == 0 and query %}
+            <div class="alert alert-info m-3">
+                <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
+                <p>La ricerca per "{{ query }}" non ha prodotto risultati. Prova con un termine diverso o consulta la lista completa.</p>
+                <a href="{{ url_for('articles.index') }}" class="btn btn-primary mt-2">Mostra tutti i prodotti</a>
+            </div>
+            {% endif %}
+            
+            {% if articles.items|length > 0 %}
+            <div class="d-none d-md-block">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="productsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Descrizione</th>
+                                <th>Prezzo</th>
+                                <th>IVA</th>
+                                <th>Sezione</th>
+                                <th>Status</th>
+                                <th>Quantità</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in articles.items %}
+                            <tr class="product-row" data-url="{{ url_for('articles.view', id=article.IdArticulo) }}" style="cursor: pointer;">
+                                <td data-label="ID">{{ article.IdArticulo }}</td>
+                                <td data-label="Descrizione">{{ article.Descripcion }}</td>
+                                <td data-label="Prezzo">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                                <td data-label="IVA">{{ iva_rates.get(article.IdIVA, 'N/A') }}</td>
+                                <td data-label="Sezione">{{ section_info.get(article.IdSeccion, 'N/A') }}</td>
+                                <td data-label="Status">
+                                    {% if article.EnVenta %}
+                                    <span class="badge-soft badge-soft-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-secondary">Inattivo</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Quantità">
+                                    {% set quantity = article_quantities.get(article.IdArticulo, 0) %}
+                                    {% if quantity > 0 %}
+                                    <span class="badge-soft badge-soft-primary">{{ quantity }} PZ</span>
+                                    {% elif quantity < 0 %}
+                                    <span class="badge-soft badge-soft-danger">{{ quantity }} PZ</span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-secondary">0 PZ</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Mobile Grid View -->
+            <div class="d-block d-md-none">
+                <div class="product-grid-container">
+                    {% for article in articles.items %}
+                    <div class="product-grid-item">
+                        <div class="product-card" onclick="window.location.href='{{ url_for('articles.view', id=article.IdArticulo) }}'">
+                            <div class="product-image">
+                                {% if article.LogoPantalla %}
+                                <img src="{{ article.LogoPantalla }}" alt="{{ article.Descripcion }}">
+                                {% else %}
+                                <i class="fas fa-box fa-2x text-muted"></i>
+                                {% endif %}
+                            </div>
+                            <div class="product-details">
+                                <div class="product-id">#{{ article.IdArticulo }}</div>
+                                <div class="product-title">{{ article.Descripcion }}</div>
+                                <div class="product-price">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</div>
+                                <div class="product-status">
+                                    {% if article.EnVenta %}
+                                    <span class="badge-soft badge-soft-success">Attivo</span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-secondary">Inattivo</span>
+                                    {% endif %}
+                                    
+                                    {% set quantity = article_quantities.get(article.IdArticulo, 0) %}
+                                    {% if quantity > 0 %}
+                                    <span class="badge-soft badge-soft-primary">{{ quantity }} PZ</span>
+                                    {% elif quantity < 0 %}
+                                    <span class="badge-soft badge-soft-danger">{{ quantity }} PZ</span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-secondary">0 PZ</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if articles.pages > 1 %}
+            <div class="p-3 border-top">
+                <nav aria-label="Page navigation" class="d-flex justify-content-center">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if articles.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('articles.index', page=articles.prev_num, query=query) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in articles.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != articles.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('articles.index', page=page_num, query=query) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if articles.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('articles.index', page=articles.next_num, query=query) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-box text-muted mb-3" style="font-size: 3rem;"></i>
+                <h5>Nessun prodotto trovato</h5>
+                <p class="text-muted">Non ci sono prodotti nel sistema. Clicca su "Nuovo" per aggiungerne uno.</p>
+                <a href="{{ url_for('articles.create') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Aggiungi Prodotto
+                </a>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/articles/index.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        // Make rows clickable to view detail
+        $('.product-row').on('click', function() {
+            window.location.href = $(this).data('url');
+        });
+    });
+</script>
+{% endblock %} 

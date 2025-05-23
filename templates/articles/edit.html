@@ -1,0 +1,651 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Article - {{ article.Descripcion }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="page-id">#{{ article.IdArticulo }}</div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}" class="text-white">Articles</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="text-white">{{ article.Descripcion }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Edit</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit Article
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ article.Descripcion }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="btn btn-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-card">
+        <div class="form-card-body">
+            <form method="post" action="{{ url_for('articles.edit', id=article.IdArticulo) }}">
+                {{ form.hidden_tag() }}
+                
+                <!-- Tabs navigation -->
+                <ul class="nav nav-tabs form-tabs" id="articleTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+                            <i class="fas fa-info-circle"></i> Generale
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="false">
+                            <i class="fas fa-tags"></i> Prezzi
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab" aria-controls="codes" aria-selected="false">
+                            <i class="fas fa-barcode"></i> Codici
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="date-tab" data-bs-toggle="tab" data-bs-target="#date" type="button" role="tab" aria-controls="date" aria-selected="false">
+                            <i class="fas fa-calendar-alt"></i> Date
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="text-tab" data-bs-toggle="tab" data-bs-target="#text" type="button" role="tab" aria-controls="text" aria-selected="false">
+                            <i class="fas fa-font"></i> Testi
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="false">
+                            <i class="fas fa-info"></i> Info
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Tab content -->
+                <div class="tab-content form-tab-content" id="articleTabsContent">
+                    <!-- General Tab -->
+                    <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_articulo" class="form-label">ID Articolo</label>
+                                    {{ form.id_articulo(class="form-control" + (" is-invalid" if form.id_articulo.errors else ""), readonly=True) }}
+                                    <small class="text-muted">Il codice dell'articolo non è modificabile</small>
+                                    {% for error in form.id_articulo.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="descripcion" class="form-label">Descrizione *</label>
+                                    {{ form.descripcion(class="form-control" + (" is-invalid" if form.descripcion.errors else "")) }}
+                                    {% for error in form.descripcion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="descripcion1" class="form-label">Descrizione Alternativa</label>
+                                    {{ form.descripcion1(class="form-control" + (" is-invalid" if form.descripcion1.errors else "")) }}
+                                    {% for error in form.descripcion1.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_tipo" class="form-label">Tipo *</label>
+                                    {{ form.id_tipo(class="form-control" + (" is-invalid" if form.id_tipo.errors else "")) }}
+                                    {% for error in form.id_tipo.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="tara_fija" class="form-label">Tara Fissa</label>
+                                    {{ form.tara_fija(class="form-control" + (" is-invalid" if form.tara_fija.errors else "")) }}
+                                    {% for error in form.tara_fija.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Foto Prodotto</label>
+                                    {{ form.logo_pantalla(class="form-control", style="display: none;") }}
+                                    
+                                    <div class="product-photo-container mb-3">
+                                        {% if image_b64 %}
+                                        <img id="product-photo" src="data:image/jpeg;base64,{{ image_b64 }}" style="display: block; max-width: 100%;">
+                                        <div id="photo-placeholder" style="display: none;">
+                                            <i class="fas fa-image fa-3x"></i>
+                                        </div>
+                                        {% else %}
+                                        <img id="product-photo" src="" style="display: none; max-width: 100%;">
+                                        <div id="photo-placeholder">
+                                            <i class="fas fa-image fa-3x"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" id="capture-photo" class="btn btn-primary">
+                                            <i class="fas fa-camera me-1"></i> Scatta Foto
+                                        </button>
+                                        <label for="upload-photo-input" class="btn btn-secondary mb-0">
+                                            <i class="fas fa-upload me-1"></i> Carica Foto
+                                        </label>
+                                        <input type="file" id="upload-photo-input" accept="image/*" style="display: none;">
+                                    </div>
+                                    
+                                    <input type="hidden" id="photo-url" name="photo_url" value="{{ photo_url }}">
+                                    
+                                    <div id="camera-container" style="display: none;" class="mt-3">
+                                        <video id="camera-preview" autoplay playsinline style="width: 100%;"></video>
+                                        <div class="d-flex justify-content-between mt-2">
+                                            <button type="button" id="take-photo" class="btn btn-success">
+                                                <i class="fas fa-check me-1"></i> Cattura
+                                            </button>
+                                            <button type="button" id="cancel-photo" class="btn btn-danger">
+                                                <i class="fas fa-times me-1"></i> Annulla
+                                            </button>
+                                        </div>
+                                        <canvas id="photo-canvas" style="display: none;"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_familia" class="form-label">Famiglia</label>
+                                    {{ form.id_familia(class="form-control" + (" is-invalid" if form.id_familia.errors else "")) }}
+                                    {% for error in form.id_familia.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_subfamilia" class="form-label">Sottofamiglia</label>
+                                    {{ form.id_subfamilia(class="form-control" + (" is-invalid" if form.id_subfamilia.errors else "")) }}
+                                    {% for error in form.id_subfamilia.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_departamento" class="form-label">Dipartimento</label>
+                                    {{ form.id_departamento(class="form-control" + (" is-invalid" if form.id_departamento.errors else "")) }}
+                                    {% for error in form.id_departamento.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_seccion" class="form-label">Sezione</label>
+                                    {{ form.id_seccion(class="form-control" + (" is-invalid" if form.id_seccion.errors else "")) }}
+                                    {% for error in form.id_seccion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            {{ form.favorito(class="form-check-input") }}
+                            <label class="form-check-label" for="favorito">
+                                Favorito
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Pricing Tab -->
+                    <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="precio_sin_iva" class="form-label">Prezzo (senza IVA)</label>
+                                    {{ form.precio_sin_iva(class="form-control" + (" is-invalid" if form.precio_sin_iva.errors else ""), id="precio_sin_iva") }}
+                                    {% for error in form.precio_sin_iva.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_iva" class="form-label">IVA</label>
+                                    {{ form.id_iva(class="form-control" + (" is-invalid" if form.id_iva.errors else ""), id="id_iva") }}
+                                    {% for error in form.id_iva.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="precio_con_iva" class="form-label">Prezzo (con IVA)</label>
+                            {{ form.precio_con_iva(class="form-control" + (" is-invalid" if form.precio_con_iva.errors else ""), id="precio_con_iva") }}
+                            {% for error in form.precio_con_iva.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Codes Tab -->
+                    <div class="tab-pane fade" id="codes" role="tabpanel" aria-labelledby="codes-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tasto_directo" class="form-label">Tasto Diretto</label>
+                                    {{ form.tasto_directo(class="form-control" + (" is-invalid" if form.tasto_directo.errors else "")) }}
+                                    <small class="text-muted">Numero per il tasto diretto sulla bilancia</small>
+                                    {% for error in form.tasto_directo.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="ean_scanner" class="form-label">Codice EAN</label>
+                                    {{ form.ean_scanner(class="form-control" + (" is-invalid" if form.ean_scanner.errors else "")) }}
+                                    {% for error in form.ean_scanner.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EAN Scanner Management -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Gestione EAN Scanner</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted">Un articolo può avere più codici EAN. Solo uno può essere attivo alla volta.</p>
+                                
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm table-bordered" id="eanscanner-table">
+                                        <thead>
+                                            <tr>
+                                                <th>EAN Scanner</th>
+                                                <th class="text-center">Attivo</th>
+                                                <th class="text-center">Azioni</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% if eanscanner_list %}
+                                                {% for ean in eanscanner_list %}
+                                                    <tr data-id="{{ ean.IdRegistro }}">
+                                                        <td>{{ ean.EANScanner }}</td>
+                                                        <td class="text-center">
+                                                            <div class="form-check form-check-inline justify-content-center">
+                                                                <input class="form-check-input toggle-ean" type="radio" name="activeEan" 
+                                                                    {% if ean.Activo == 1 %}checked{% endif %} 
+                                                                    data-id="{{ ean.IdRegistro }}">
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <button type="button" class="btn btn-sm btn-danger delete-ean" data-id="{{ ean.IdRegistro }}">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr id="no-ean-row">
+                                                    <td colspan="3" class="text-center">Nessun EAN Scanner trovato</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="new-ean" placeholder="Aggiungi nuovo EAN">
+                                    <button class="btn btn-primary" type="button" id="add-ean">
+                                        <i class="fas fa-plus"></i> Aggiungi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock Tab (replaced with Date Tab) -->
+                    <div class="tab-pane fade" id="date" role="tabpanel" aria-labelledby="date-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    {{ form.fecha_caducidad_activada(class="form-check-input") }}
+                                    <label class="form-check-label" for="fecha_caducidad_activada">
+                                        Abilita Data di Scadenza
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="dias_caducidad" class="form-label">Giorni alla Scadenza</label>
+                                    {{ form.dias_caducidad(class="form-control" + (" is-invalid" if form.dias_caducidad.errors else "")) }}
+                                    <small class="text-muted">Numero di giorni dopo i quali il prodotto va considerato in scadenza.</small>
+                                    {% for error in form.dias_caducidad.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-3">
+                            {{ form.en_venta(class="form-check-input") }}
+                            <label class="form-check-label" for="en_venta">
+                                In Vendita
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Text Tab -->
+                    <div class="tab-pane fade" id="text" role="tabpanel" aria-labelledby="text-tab">
+                        <ul class="nav nav-pills mb-3" id="textsSubTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="textos1-5-tab" data-bs-toggle="pill" data-bs-target="#textos1-5" type="button" role="tab" aria-controls="textos1-5" aria-selected="true">Testi 1-5</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="textos6-10-tab" data-bs-toggle="pill" data-bs-target="#textos6-10" type="button" role="tab" aria-controls="textos6-10" aria-selected="false">Testi 6-10</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="textos11-15-tab" data-bs-toggle="pill" data-bs-target="#textos11-15" type="button" role="tab" aria-controls="textos11-15" aria-selected="false">Testi 11-15</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="textos16-20-tab" data-bs-toggle="pill" data-bs-target="#textos16-20" type="button" role="tab" aria-controls="textos16-20" aria-selected="false">Testi 16-20</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="textolibre-tab" data-bs-toggle="pill" data-bs-target="#textolibre" type="button" role="tab" aria-controls="textolibre" aria-selected="false">Testo Libero</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="textsSubTabsContent">
+                            <!-- Textos 1-5 -->
+                            <div class="tab-pane fade show active" id="textos1-5" role="tabpanel" aria-labelledby="textos1-5-tab">
+                                <div class="mb-3">
+                                    <label for="texto1" class="form-label">Texto 1</label>
+                                    {{ form.texto1(class="form-control" + (" is-invalid" if form.texto1.errors else ""), rows=3) }}
+                                    {% for error in form.texto1.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto2" class="form-label">Texto 2</label>
+                                    {{ form.texto2(class="form-control" + (" is-invalid" if form.texto2.errors else ""), rows=3) }}
+                                    {% for error in form.texto2.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto3" class="form-label">Texto 3</label>
+                                    {{ form.texto3(class="form-control" + (" is-invalid" if form.texto3.errors else ""), rows=3) }}
+                                    {% for error in form.texto3.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto4" class="form-label">Texto 4</label>
+                                    {{ form.texto4(class="form-control" + (" is-invalid" if form.texto4.errors else ""), rows=3) }}
+                                    {% for error in form.texto4.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto5" class="form-label">Texto 5</label>
+                                    {{ form.texto5(class="form-control" + (" is-invalid" if form.texto5.errors else ""), rows=3) }}
+                                    {% for error in form.texto5.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Textos 6-10 -->
+                            <div class="tab-pane fade" id="textos6-10" role="tabpanel" aria-labelledby="textos6-10-tab">
+                                <div class="mb-3">
+                                    <label for="texto6" class="form-label">Texto 6</label>
+                                    {{ form.texto6(class="form-control" + (" is-invalid" if form.texto6.errors else ""), rows=3) }}
+                                    {% for error in form.texto6.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto7" class="form-label">Texto 7</label>
+                                    {{ form.texto7(class="form-control" + (" is-invalid" if form.texto7.errors else ""), rows=3) }}
+                                    {% for error in form.texto7.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto8" class="form-label">Texto 8</label>
+                                    {{ form.texto8(class="form-control" + (" is-invalid" if form.texto8.errors else ""), rows=3) }}
+                                    {% for error in form.texto8.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto9" class="form-label">Texto 9</label>
+                                    {{ form.texto9(class="form-control" + (" is-invalid" if form.texto9.errors else ""), rows=3) }}
+                                    {% for error in form.texto9.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto10" class="form-label">Texto 10</label>
+                                    {{ form.texto10(class="form-control" + (" is-invalid" if form.texto10.errors else ""), rows=3) }}
+                                    {% for error in form.texto10.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Textos 11-15 -->
+                            <div class="tab-pane fade" id="textos11-15" role="tabpanel" aria-labelledby="textos11-15-tab">
+                                <div class="mb-3">
+                                    <label for="texto11" class="form-label">Texto 11</label>
+                                    {{ form.texto11(class="form-control" + (" is-invalid" if form.texto11.errors else ""), rows=3) }}
+                                    {% for error in form.texto11.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto12" class="form-label">Texto 12</label>
+                                    {{ form.texto12(class="form-control" + (" is-invalid" if form.texto12.errors else ""), rows=3) }}
+                                    {% for error in form.texto12.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto13" class="form-label">Texto 13</label>
+                                    {{ form.texto13(class="form-control" + (" is-invalid" if form.texto13.errors else ""), rows=3) }}
+                                    {% for error in form.texto13.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto14" class="form-label">Texto 14</label>
+                                    {{ form.texto14(class="form-control" + (" is-invalid" if form.texto14.errors else ""), rows=3) }}
+                                    {% for error in form.texto14.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto15" class="form-label">Texto 15</label>
+                                    {{ form.texto15(class="form-control" + (" is-invalid" if form.texto15.errors else ""), rows=3) }}
+                                    {% for error in form.texto15.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Textos 16-20 -->
+                            <div class="tab-pane fade" id="textos16-20" role="tabpanel" aria-labelledby="textos16-20-tab">
+                                <div class="mb-3">
+                                    <label for="texto16" class="form-label">Texto 16</label>
+                                    {{ form.texto16(class="form-control" + (" is-invalid" if form.texto16.errors else ""), rows=3) }}
+                                    {% for error in form.texto16.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto17" class="form-label">Texto 17</label>
+                                    {{ form.texto17(class="form-control" + (" is-invalid" if form.texto17.errors else ""), rows=3) }}
+                                    {% for error in form.texto17.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto18" class="form-label">Texto 18</label>
+                                    {{ form.texto18(class="form-control" + (" is-invalid" if form.texto18.errors else ""), rows=3) }}
+                                    {% for error in form.texto18.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto19" class="form-label">Texto 19</label>
+                                    {{ form.texto19(class="form-control" + (" is-invalid" if form.texto19.errors else ""), rows=3) }}
+                                    {% for error in form.texto19.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="texto20" class="form-label">Texto 20</label>
+                                    {{ form.texto20(class="form-control" + (" is-invalid" if form.texto20.errors else ""), rows=3) }}
+                                    {% for error in form.texto20.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <!-- Texto Libre -->
+                            <div class="tab-pane fade" id="textolibre" role="tabpanel" aria-labelledby="textolibre-tab">
+                                <div class="mb-3">
+                                    <label for="texto_libre" class="form-label">Valori Nutrizionali</label>
+                                    {{ form.texto_libre(class="form-control" + (" is-invalid" if form.texto_libre.errors else ""), rows=8) }}
+                                    {% for error in form.texto_libre.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Info Tab -->
+                    <div class="tab-pane fade" id="info" role="tabpanel" aria-labelledby="info-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Informazioni di Base</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Codice Articolo</label>
+                                            <input type="text" class="form-control" value="{{ article.IdArticulo }}" readonly>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Descrizione</label>
+                                            <input type="text" class="form-control" value="{{ article.Descripcion }}" readonly>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Data Creazione</label>
+                                            <input type="text" class="form-control" value="{{ article.TimeStamp|default('', true)|date }}" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Dati Aggiuntivi</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Ultima Modifica</label>
+                                            <input type="text" class="form-control" value="{{ article.TimeStamp|default('', true)|date }}" readonly>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Utente</label>
+                                            <input type="text" class="form-control" value="{{ article.Usuario }}" readonly>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" disabled {% if article.Modificado %}checked{% endif %}>
+                                            <label class="form-check-label">
+                                                Modificato
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-card-footer">
+                    <a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="btn form-btn form-btn-cancel">
+                        <i class="fas fa-times"></i> Annulla
+                    </a>
+                    <button type="submit" class="btn form-btn form-btn-save">
+                        <i class="fas fa-save"></i> Salva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/articles/index.js') }}"></script>
+<script src="{{ url_for('static', filename='js/articles/photo-upload.js') }}"></script>
+<script src="{{ url_for('static', filename='js/articles/price-calculator.js') }}"></script>
+{% endblock %} 

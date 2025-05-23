@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Home - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="container-fluid">
+    <div class="home-header">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="welcome-title">
+                    <i class="fas fa-warehouse text-primary me-2"></i>
+                    DBLogiX Dashboard
+                </h1>
+                <p class="welcome-subtitle">
+                    Gestisci il tuo magazzino in modo semplice ed efficiente
+                </p>
+            </div>
+            <div class="col-lg-6">
+                <div class="stats-overview">
+                    <div class="row g-3">
+                        <div class="col-6 col-sm-4">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-primary bg-opacity-10">
+                                    <i class="fas fa-boxes"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>{{ products_count }}</h3>
+                                    <p>Prodotti</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-warning bg-opacity-10">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3>{{ pending_tickets }}</h3>
+                                    <p>Ticket Pendenti</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-success bg-opacity-10">
+                                    <i class="fas fa-qrcode"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h3><i class="fas fa-camera"></i></h3>
+                                    <p>Scanner QR</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions mb-4">
+        <h2 class="section-title">
+            <i class="fas fa-bolt text-warning me-2"></i>Azioni Rapide
+        </h2>
+        <div class="row g-3">
+            <div class="col-6 col-lg-3">
+                <a href="{{ url_for('warehouse.scanner') }}" class="quick-action-item">
+                    <div class="quick-action-icon bg-success-soft">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h3>Scanner QR</h3>
+                    <p>Scansiona i codici QR dei prodotti</p>
+                </a>
+            </div>
+            
+            <div class="col-6 col-lg-3">
+                <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="quick-action-item">
+                    <div class="quick-action-icon bg-warning-soft">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <h3>Ticket Pendenti</h3>
+                    <p>Visualizza e gestisci i ticket pendenti</p>
+                </a>
+            </div>
+            
+            <div class="col-6 col-lg-3">
+                <a href="{{ url_for('articles.index') }}" class="quick-action-item">
+                    <div class="quick-action-icon bg-primary-soft">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <h3>Prodotti</h3>
+                    <p>Gestisci il catalogo prodotti</p>
+                </a>
+            </div>
+            
+            <div class="col-6 col-lg-3">
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('admin.dashboard') }}" class="quick-action-item">
+                    <div class="quick-action-icon bg-dark-soft">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h3>Admin</h3>
+                    <p>Accedi alle funzioni di amministrazione</p>
+                </a>
+                {% else %}
+                <a href="{{ url_for('warehouse.tickets') }}" class="quick-action-item">
+                    <div class="quick-action-icon bg-info-soft">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <h3>Tutti i Ticket</h3>
+                    <p>Visualizza tutti i ticket nel sistema</p>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activity Sections -->
+    <div class="row g-4">
+        <!-- Recent tickets -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock text-primary me-2"></i>Ticket Recenti
+                    </h5>
+                    <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-list-ul me-1"></i>Vedi tutti
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_tickets %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Numero</th>
+                                    <th>Data</th>
+                                    <th>Stato</th>
+                                    <th class="text-end">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in recent_tickets %}
+                                <tr>
+                                    <td data-label="Numero">#{{ ticket.NumTicket }}</td>
+                                    <td data-label="Data">{{ ticket.formatted_date }}</td>
+                                    <td data-label="Stato">
+                                        {% if ticket.is_processed %}
+                                        <span class="badge bg-success">Processato</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end" data-label="Azioni">
+                                        <a href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" 
+                                           class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Visualizza dettagli">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-ticket-alt"></i>
+                        <h3>Nessun ticket recente</h3>
+                        <p>Non ci sono ticket recenti da visualizzare</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history text-primary me-2"></i>Attività Recenti
+                    </h5>
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin.scan_logs') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-list-alt me-1"></i>Vedi tutte
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_scans %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Ticket</th>
+                                    <th>Azione</th>
+                                    <th>Data/Ora</th>
+                                    <th class="text-end">Dettagli</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scan in recent_scans %}
+                                <tr>
+                                    <td data-label="Ticket">#{{ scan.ticket_id }}</td>
+                                    <td data-label="Azione">
+                                        {% if scan.action == 'checkout' %}
+                                        <span class="badge bg-success">Checkout</span>
+                                        {% else %}
+                                        <span class="badge bg-info">Visualizzazione</span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Data/Ora">{{ scan.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td class="text-end" data-label="Dettagli">
+                                        {% if scan.ticket_id %}
+                                        <a href="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) }}" 
+                                           class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Visualizza ticket">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-icon btn-outline-secondary" disabled title="Ticket non disponibile">
+                                            <i class="fas fa-eye-slash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3>Nessuna attività recente</h3>
+                        <p>Non ci sono attività recenti da visualizzare</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %} 

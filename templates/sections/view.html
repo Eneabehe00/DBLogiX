@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Sezione {{ section.NombreSeccion }} - DBLogiX{% endblock %}
+
+{% block header_title %}Dettaglio Sezione{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sections.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Section Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="page-id">#{{ section.IdSeccion }}</div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('sections.index') }}" class="text-white">Sezioni</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">{{ section.NombreSeccion }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">{{ section.NombreSeccion }}</h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">ID: {{ section.IdSeccion }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('sections.edit', id=section.IdSeccion) }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-edit me-1"></i>Modifica
+                    </a>
+                    <button class="btn btn-outline-light action-btn" 
+                            data-delete
+                            data-id="{{ section.IdSeccion }}"
+                            data-name="{{ section.NombreSeccion }}"
+                            data-type="sezione"
+                            data-url="{{ url_for('sections.delete', id=section.IdSeccion) }}">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Articles in this section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
+            <h5 class="card-title mb-0"><i class="fas fa-boxes me-2 text-primary"></i>Articoli in questa Sezione</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if articles %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Descrizione</th>
+                            <th>Prezzo</th>
+                            <th>Codice EAN</th>
+                            <th class="text-end">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in articles %}
+                        <tr>
+                            <td data-label="ID">{{ article.IdArticulo }}</td>
+                            <td data-label="Descrizione">{{ article.Descripcion }}</td>
+                            <td data-label="Prezzo">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                            <td data-label="Codice EAN">{{ article.EANScanner if article.EANScanner else 'N/A' }}</td>
+                            <td class="text-end" data-label="Azioni">
+                                <a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="btn btn-sm btn-info" title="Visualizza">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info m-3">
+                <i class="fas fa-info-circle me-2"></i> Nessun articolo trovato in questa sezione.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Inizializzazione per eventuali funzionalità extra
+    });
+</script>
+{% endblock %} 

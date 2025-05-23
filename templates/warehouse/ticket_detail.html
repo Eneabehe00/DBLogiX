@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.NumTicket }} - DBLogiX{% endblock %}
+
+{% block header_title %}Dettaglio Ticket{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+<style>
+    .product-card {
+        border-left: 5px solid #0d6efd;
+        transition: all 0.3s;
+    }
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .ticket-info-card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .ticket-info-card.processed {
+        border-left: 5px solid #28a745;
+    }
+    .ticket-info-card.pending {
+        border-left: 5px solid #ffc107;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    .ticket-header {
+        position: relative;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, #3a8ffe 0%, #004cff 100%);
+        color: white;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    .ticket-header .ticket-id {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+    .ticket-status {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    .ticket-status.processed {
+        background-color: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+    }
+    .ticket-status.pending {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+    }
+    .info-section {
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .section-title {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.25rem;
+        font-weight: 600;
+        color: #495057;
+    }
+    .action-btn {
+        border-radius: 30px;
+        padding: 8px 20px;
+        font-weight: 500;
+    }
+    .expiry-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    @media (max-width: 767.98px) {
+        .ticket-header {
+            padding: 1.5rem 0;
+            margin-bottom: 1rem;
+        }
+        .ticket-header .ticket-id {
+            top: 10px;
+            right: 10px;
+            font-size: 0.85rem;
+        }
+        .ticket-header h1 {
+            font-size: 1.5rem;
+        }
+        .ticket-header .lead {
+            font-size: 0.95rem;
+        }
+        .action-btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .product-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .product-meta {
+            margin-top: 1rem;
+        }
+        
+        .ticket-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .info-group {
+            margin-bottom: 0.75rem;
+        }
+        
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Ticket Header -->
+<div class="ticket-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="ticket-id">#{{ ticket.NumTicket }}</div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.tickets') }}" class="text-white">Tickets</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Ticket #{{ ticket.NumTicket }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="display-5 mb-0">
+                    <i class="fas fa-receipt me-2"></i>Dettaglio Ticket
+                </h1>
+                <p class="lead mt-2 mb-0">
+                    <span class="ticket-status {% if ticket.is_processed %}processed{% else %}pending{% endif %}">
+                        <i class="fas {% if ticket.is_processed %}fa-check-circle{% else %}fa-clock{% endif %} me-1"></i>
+                        {% if ticket.is_processed %}Processato{% else %}In attesa{% endif %}
+                    </span>
+                    <span class="text-white-50">·</span>
+                    <span class="text-white-50">{{ ticket.formatted_date }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    {% if not ticket.is_processed %}
+                    <form action="{{ url_for('warehouse.ticket_checkout', ticket_id=ticket.IdTicket) }}" method="post" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-light action-btn mb-2 mb-md-0">
+                            <i class="fas fa-check me-1"></i>Segna come Processato
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Indietro
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Alert per prodotti in scadenza o scaduti -->
+    {% if expiring_soon or expired %}
+    <div class="alert {% if expired %}alert-danger{% else %}alert-warning{% endif %} alert-dismissible fade show mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas {% if expired %}fa-exclamation-circle{% else %}fa-exclamation-triangle{% endif %} fa-2x me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">{% if expired %}Prodotti scaduti!{% else %}Attenzione!{% endif %}</h5>
+                <p class="mb-0">
+                    {% if expired %}
+                    Questo ticket contiene prodotti già <strong>scaduti</strong>.
+                    {% else %}
+                    Questo ticket contiene prodotti con scadenza entro <strong>2 giorni</strong>.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Colonna principale -->
+        <div class="col-lg-8">
+            <!-- Card prodotto principale -->
+            <div class="card shadow-sm mb-4 product-card">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <h5 class="mb-0 me-3">
+                            <i class="fas fa-box text-primary me-2"></i>Dettagli Prodotto
+                        </h5>
+                        
+                        {% if product %}
+                            {% if product.expiration_date %}
+                                {% set days_left = (product.expiration_date - now()).days %}
+                                
+                                {% if days_left <= 0 %}
+                                    <span class="badge bg-danger expiry-badge">
+                                        <i class="fas fa-exclamation-circle me-1"></i>Scaduto
+                                    </span>
+                                {% elif days_left <= 2 %}
+                                    <span class="badge bg-warning expiry-badge">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ days_left }} giorni alla scadenza
+                                    </span>
+                                {% elif days_left <= 7 %}
+                                    <span class="badge bg-info expiry-badge">
+                                        <i class="fas fa-info-circle me-1"></i>{{ days_left }} giorni alla scadenza
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success expiry-badge">
+                                        <i class="fas fa-calendar-check me-1"></i>Scadenza: {{ product.expiration_date.strftime('%d/%m/%Y') }}
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if product %}
+                    <div class="row">
+                        <div class="col-md-8 product-info">
+                            <h4 class="mb-3">{{ product.product_name }}</h4>
+                            
+                            <div class="row g-3 mb-4">
+                                <div class="col-6">
+                                    <div class="info-group">
+                                        <div class="info-label"><i class="fas fa-fingerprint text-primary me-2"></i>ID Prodotto</div>
+                                        <div class="info-value">{{ product.product_id }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="info-group">
+                                        <div class="info-label"><i class="fas fa-weight text-primary me-2"></i>Peso</div>
+                                        <div class="info-value">{{ product.weight }} kg</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="info-group">
+                                        <div class="info-label"><i class="fas fa-barcode text-primary me-2"></i>Codice a Barre</div>
+                                        <div class="info-value">{{ ticket.CodigoBarras or 'Non disponibile' }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="info-group">
+                                        <div class="info-label"><i class="fas fa-tag text-primary me-2"></i>Prezzo</div>
+                                        <div class="info-value">{{ product.price_per_kg|default('Non disponibile') }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if product.description %}
+                            <div class="mb-3">
+                                <div class="info-label mb-1"><i class="fas fa-info-circle text-primary me-2"></i>Descrizione</div>
+                                <p class="mb-0">{{ product.description }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.notes %}
+                            <div>
+                                <div class="info-label mb-1"><i class="fas fa-sticky-note text-primary me-2"></i>Note</div>
+                                <p class="mb-0">{{ product.notes }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 mt-4 mt-md-0 product-meta">
+                            <div class="card bg-light h-100">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title"><i class="fas fa-info-circle me-2"></i>Informazioni Aggiuntive</h6>
+                                    <div class="mt-3">
+                                        <div class="mb-2">
+                                            <small class="text-muted d-block">Tipo Prodotto</small>
+                                            <strong>{{ product.type or 'Standard' }}</strong>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted d-block">Categoria</small>
+                                            <strong>{{ product.category or 'Non specificata' }}</strong>
+                                        </div>
+                                        <div class="mb-2">
+                                            <small class="text-muted d-block">Data Creazione</small>
+                                            <strong>{{ product.created_at.strftime('%d/%m/%Y %H:%M') if product.created_at else 'Non disponibile' }}</strong>
+                                        </div>
+                                        <div class="mb-0">
+                                            <small class="text-muted d-block">Stato Inventario</small>
+                                            {% if product.stock_status == 'in_stock' %}
+                                            <span class="badge bg-success">Disponibile</span>
+                                            {% elif product.stock_status == 'low_stock' %}
+                                            <span class="badge bg-warning">Scorta Bassa</span>
+                                            {% elif product.stock_status == 'out_of_stock' %}
+                                            <span class="badge bg-danger">Esaurito</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Non monitorato</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box-open text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5>Informazioni Prodotto Non Disponibili</h5>
+                        <p class="text-muted mb-0">Non sono state trovate informazioni sul prodotto associato a questo ticket.</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if not ticket.is_processed %}
+                <div class="card-footer bg-light">
+                    <div class="d-grid gap-2">
+                        <form action="{{ url_for('warehouse.ticket_checkout', ticket_id=ticket.IdTicket) }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check-circle me-2"></i>Segna come Processato
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Linee prodotto (se presenti) -->
+            {% if product_lines and product_lines|length > 0 %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list text-primary me-2"></i>Linee Prodotto
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="d-none d-md-table-cell">ID</th>
+                                    <th>Nome</th>
+                                    <th>Quantità</th>
+                                    <th class="d-none d-md-table-cell">Peso</th>
+                                    <th>Prezzo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in product_lines %}
+                                <tr>
+                                    <td class="d-none d-md-table-cell">{{ line.id }}</td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 150px;">{{ line.name }}</div>
+                                    </td>
+                                    <td>{{ line.quantity }}</td>
+                                    <td class="d-none d-md-table-cell">{{ line.weight }} kg</td>
+                                    <td>{{ line.price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Colonna laterale -->
+        <div class="col-lg-4">
+            <!-- Dettagli ticket -->
+            <div class="card ticket-info-card shadow-sm mb-4 {% if ticket.is_processed %}processed{% else %}pending{% endif %}">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-ticket-alt text-primary me-2"></i>Informazioni Ticket
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="ticket-info-grid">
+                        <div class="info-group">
+                            <div class="info-label"><i class="fas fa-hashtag text-primary me-2"></i>Numero Ticket</div>
+                            <div class="info-value">#{{ ticket.NumTicket }}</div>
+                        </div>
+                        
+                        <div class="info-group">
+                            <div class="info-label"><i class="fas fa-calendar-alt text-primary me-2"></i>Data Creazione</div>
+                            <div class="info-value">{{ ticket.formatted_date }}</div>
+                        </div>
+                        
+                        <div class="info-group">
+                            <div class="info-label"><i class="fas fa-list-ol text-primary me-2"></i>Numero Linee</div>
+                            <div class="info-value">{{ ticket.NumLineas or 0 }}</div>
+                        </div>
+                        
+                        <div class="info-group">
+                            <div class="info-label"><i class="fas fa-barcode text-primary me-2"></i>Codice a Barre</div>
+                            <div class="info-value">{{ ticket.CodigoBarras or 'Non disponibile' }}</div>
+                        </div>
+                        
+                        <div class="info-group">
+                            <div class="info-label"><i class="fas fa-store text-primary me-2"></i>Negozio ID</div>
+                            <div class="info-value">{{ ticket.IdTienda }}</div>
+                        </div>
+                        
+                        <div class="info-group">
+                            <div class="info-label"><i class="fas fa-building text-primary me-2"></i>Azienda ID</div>
+                            <div class="info-value">{{ ticket.IdEmpresa }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer p-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap">
+                        <div class="mb-2 mb-md-0">
+                            <span class="info-label">Stato:</span>
+                            {% if ticket.is_processed %}
+                            <span class="badge bg-success">Processato</span>
+                            {% else %}
+                            <span class="badge bg-warning">In attesa</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if ticket.processed_at %}
+                        <div>
+                            <span class="info-label">Processato il:</span>
+                            <span class="small">{{ ticket.processed_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Storia ticket -->
+            {% if ticket_history and ticket_history|length > 0 %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history text-primary me-2"></i>Cronologia
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for history in ticket_history %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between mb-1">
+                                <h6 class="mb-0">{{ history.action_name }}</h6>
+                                <small class="text-muted">{{ history.timestamp.strftime('%d/%m/%Y %H:%M') }}</small>
+                            </div>
+                            <p class="mb-0 small">{{ history.description }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- QR Code -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-qrcode text-primary me-2"></i>QR Code
+                    </h5>
+                </div>
+                <div class="card-body text-center qr-container" 
+                     id="qr-section"
+                     data-has-barcode="{{ 'true' if ticket.CodigoBarras else 'false' }}"
+                     data-barcode="{{ ticket.CodigoBarras or '' }}"
+                     data-ticket-number="{{ ticket.NumTicket }}"
+                     data-ticket-date="{{ ticket.formatted_date }}">
+                    {% if ticket.CodigoBarras %}
+                    <div id="qrcode-container" class="my-3"></div>
+                    <p class="small text-muted mb-0">Codice: {{ ticket.CodigoBarras }}</p>
+                    {% else %}
+                    <p class="text-muted my-3">Nessun codice QR disponibile per questo ticket.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Azioni aggiuntive -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs text-primary me-2"></i>Azioni
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Torna alla Lista Ticket
+                        </a>
+                        
+                        {% if ticket.CodigoBarras %}
+                        <button class="btn btn-outline-primary" id="print-qr-btn">
+                            <i class="fas fa-print me-2"></i>Stampa QR Code
+                        </button>
+                        {% endif %}
+                        
+                        {% if not ticket.is_processed %}
+                        <a href="{{ url_for('warehouse.generate_ddt_step', ddt_type=1) }}" class="btn btn-outline-info">
+                            <i class="fas fa-file-alt me-2"></i>Genera DDT Tipo 1
+                        </a>
+                        
+                        <a href="{{ url_for('warehouse.generate_ddt_step', ddt_type=2) }}" class="btn btn-outline-info">
+                            <i class="fas fa-file-alt me-2"></i>Genera DDT Tipo 2
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode.js@0.0.1/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ottieni il contenitore QR con i dati
+    const qrSection = document.getElementById('qr-section');
+    const hasBarcode = qrSection.getAttribute('data-has-barcode') === 'true';
+    const barcode = qrSection.getAttribute('data-barcode');
+    const ticketNumber = qrSection.getAttribute('data-ticket-number');
+    const ticketDate = qrSection.getAttribute('data-ticket-date');
+    
+    // Genera QR Code se esiste il codice a barre
+    if (hasBarcode) {
+        const qrcodeContainer = document.getElementById('qrcode-container');
+        if (qrcodeContainer) {
+            // Svuota il contenitore (in caso di refresh)
+            qrcodeContainer.innerHTML = '';
+            
+            // Genera il QR code
+            const qrcode = new QRCode(qrcodeContainer, {
+                text: barcode,
+                width: 150,
+                height: 150,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        
+        // Gestisci stampa QR Code
+        const printQrBtn = document.getElementById('print-qr-btn');
+        if (printQrBtn) {
+            printQrBtn.addEventListener('click', function() {
+                // Ottieni l'immagine del QR code
+                if (qrcodeContainer && qrcodeContainer.querySelector('img')) {
+                    const qrImage = qrcodeContainer.querySelector('img').src;
+                    
+                    // Crea una nuova finestra per la stampa
+                    const printWindow = window.open('', '_blank');
+                    
+                    // Scrivi l'HTML nella nuova finestra
+                    printWindow.document.write('<!DOCTYPE html>');
+                    printWindow.document.write('<html>');
+                    printWindow.document.write('<head>');
+                    printWindow.document.write('<title>QR Code - Ticket #' + ticketNumber + '</title>');
+                    printWindow.document.write('<style>');
+                    printWindow.document.write('body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }');
+                    printWindow.document.write('.qr-container { margin: 0 auto; max-width: 300px; }');
+                    printWindow.document.write('.ticket-info { margin-top: 10px; font-size: 14px; }');
+                    printWindow.document.write('</style>');
+                    printWindow.document.write('</head>');
+                    printWindow.document.write('<body>');
+                    printWindow.document.write('<div class="qr-container">');
+                    printWindow.document.write('<img src="' + qrImage + '" style="width: 100%;">');
+                    printWindow.document.write('<div class="ticket-info">');
+                    printWindow.document.write('<p><strong>Ticket #' + ticketNumber + '</strong></p>');
+                    printWindow.document.write('<p>' + ticketDate + '</p>');
+                    printWindow.document.write('<p>Codice: ' + barcode + '</p>');
+                    printWindow.document.write('</div>');
+                    printWindow.document.write('</div>');
+                    printWindow.document.write('<script>');
+                    printWindow.document.write('window.onload = function() {');
+                    printWindow.document.write('window.print();');
+                    printWindow.document.write('setTimeout(function() { window.close(); }, 500);');
+                    printWindow.document.write('};');
+                    printWindow.document.write('<\/script>');
+                    printWindow.document.write('</body>');
+                    printWindow.document.write('</html>');
+                    printWindow.document.close();
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %} 

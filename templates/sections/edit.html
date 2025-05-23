@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifica Sezione - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sections.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="page-id">#{{ section.IdSeccion }}</div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('sections.index') }}" class="text-white">Sezioni</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('sections.view', id=section.IdSeccion) }}" class="text-white">{{ section.NombreSeccion }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Modifica</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Modifica Sezione
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ section.NombreSeccion }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('sections.view', id=section.IdSeccion) }}" class="btn btn-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna ai Dettagli
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-card">
+        <div class="form-card-body">
+            <form action="{{ url_for('sections.edit', id=section.IdSeccion) }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group mb-4">
+                    <label for="NombreSeccion" class="form-label">Nome Sezione *</label>
+                    <input type="text" class="form-control" id="NombreSeccion" name="NombreSeccion" required maxlength="50" value="{{ section.NombreSeccion }}">
+                    <small class="form-text text-muted">Nome della sezione (obbligatorio)</small>
+                </div>
+
+                <div class="form-card-footer">
+                    <a href="{{ url_for('sections.view', id=section.IdSeccion) }}" class="btn form-btn form-btn-cancel">
+                        <i class="fas fa-times me-1"></i> Annulla
+                    </a>
+                    <button type="submit" class="btn form-btn form-btn-save">
+                        <i class="fas fa-save me-1"></i> Salva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize any necessary functionality
+    });
+</script>
+{% endblock %} 

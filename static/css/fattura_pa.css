@@ -1,0 +1,129 @@
+/* Fattura PA Styles */
+
+.fattura-container {
+    padding: 15px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.fattura-header {
+    margin-bottom: 25px;
+}
+
+.fattura-header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 10px;
+}
+
+.fattura-card {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 25px;
+    transition: transform 0.3s ease;
+}
+
+.fattura-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.fattura-card .card-header {
+    font-weight: 600;
+    padding: 12px 20px;
+}
+
+.fattura-card .card-body {
+    padding: 20px;
+}
+
+.fattura-table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.fattura-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.fattura-table td, 
+.fattura-table th {
+    vertical-align: middle;
+    padding: 12px 15px;
+}
+
+.fattura-table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.fattura-info {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 4px solid #0d6efd;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.btn-action {
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-alert {
+    border-left: 4px solid #0dcaf0;
+    padding: 15px;
+    background-color: rgba(13, 202, 240, 0.1);
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .fattura-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .fattura-card .card-header {
+        padding: 10px 15px;
+    }
+    
+    .fattura-card .card-body {
+        padding: 15px;
+    }
+    
+    .fattura-table td, 
+    .fattura-table th {
+        padding: 10px 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .fattura-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .fattura-table {
+        font-size: 0.9rem;
+    }
+    
+    .btn-action {
+        padding: 5px 10px;
+        font-size: 0.875rem;
+    }
+    
+    .fattura-info,
+    .info-alert {
+        padding: 12px;
+    }
+} 

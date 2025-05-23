@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Utenti - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Gestione Utenti</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-users me-2"></i>Gestione Utenti
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ users|length if users else 0 }} utenti registrati nel sistema</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('admin.add_user') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-user-plus me-1"></i>Nuovo Utente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Utenti del Sistema</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Tipo</th>
+                            <th>Creato</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td data-label="ID">{{ user.id }}</td>
+                            <td data-label="Username">{{ user.username }}</td>
+                            <td data-label="Email">{{ user.email }}</td>
+                            <td data-label="Tipo">
+                                {% if user.is_admin %}
+                                <span class="badge bg-danger">Amministratore</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Utente</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Creato">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                            <td data-label="Azioni">
+                                <div class="btn-group" role="group" aria-label="User actions">
+                                    <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin.reset_password', user_id=user.id) }}" class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-key"></i>
+                                    </a>
+                                    
+                                    {% if current_user.id != user.id %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            data-bs-toggle="modal" data-bs-target="#deleteUserModal-{{ user.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger" disabled>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteUserModal-{{ user.id }}" tabindex="-1" aria-labelledby="deleteUserModalLabel-{{ user.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteUserModalLabel-{{ user.id }}">Conferma Eliminazione</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Sei sicuro di voler eliminare l'utente <strong>{{ user.username }}</strong>?
+                                                <div class="alert alert-warning mt-3">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Questa azione non può essere annullata.
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post">
+                                                    <button type="submit" class="btn btn-danger">Elimina</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="p-5 text-center">
+                                    <i class="fas fa-users text-muted mb-3" style="font-size: 3rem;"></i>
+                                    <h5>Nessun utente trovato</h5>
+                                    <p class="text-muted">Non ci sono utenti registrati nel sistema.</p>
+                                    <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary mt-2">
+                                        <i class="fas fa-user-plus me-2"></i>Aggiungi Utente
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Funzione per rendere la tabella completamente responsive
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.innerWidth <= 575.98) {
+            // Aggiungi le etichette alle celle della tabella per dispositivi molto piccoli
+            const table = document.querySelector('.table');
+            const headerTexts = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+            
+            table.querySelectorAll('tbody tr').forEach(function(row) {
+                row.querySelectorAll('td').forEach(function(cell, index) {
+                    if (headerTexts[index]) {
+                        cell.setAttribute('data-label', headerTexts[index]);
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %} 

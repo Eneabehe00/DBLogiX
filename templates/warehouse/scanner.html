@@ -1,0 +1,970 @@
+{% extends "base.html" %}
+
+{% block title %}Scanner QR - DBLogiX{% endblock %}
+
+{% block header_title %}Scanner QR{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.tickets') }}" class="text-white">Tickets</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Scanner</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-qrcode me-2"></i>Scanner QR
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Scansiona codici QR per gestire i ticket di magazzino</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-receipt me-1"></i>Torna ai Tickets
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Modal -->
+<div class="modal fade" id="scanActionModal" tabindex="-1" aria-labelledby="scanActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="scanActionModalLabel">
+                    <i class="fas fa-ticket-alt me-2"></i>Ticket Scansionato
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-modal-close-x"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="modal-icon-bg bg-success rounded-circle p-3 me-3">
+                        <i class="fas fa-check-circle text-white fa-2x"></i>
+                </div>
+                    <div>
+                        <h5 id="modal-ticket-info" class="mb-1">Caricamento...</h5>
+                        <p class="text-muted mb-0">Seleziona un'azione</p>
+    </div>
+</div>
+
+                <div id="modal-product-details" class="bg-light p-3 rounded mb-3" style="display: none;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-box text-primary me-2"></i>
+                        <h6 class="mb-0">Dettagli Prodotto</h6>
+            </div>
+                    <div class="ps-4">
+                        <p class="mb-2"><i class="fas fa-tag text-muted me-2"></i><span id="modal-product-name">-</span></p>
+                        <p class="mb-2"><i class="fas fa-barcode text-muted me-2"></i>Codice: <span id="modal-product-code">-</span></p>
+                        <p class="mb-2"><i class="fas fa-weight text-muted me-2"></i>Peso: <span id="modal-product-weight">-</span></p>
+                        <p class="mb-0"><i class="fas fa-calendar text-muted me-2"></i>Scansione: <span id="modal-scan-date">-</span></p>
+                    </div>
+                            </div>
+                        </div>
+            <div class="modal-footer flex-column border-0 p-0">
+                <div class="bg-light w-100 p-3">
+                    <p class="text-center mb-3 fw-bold"><i class="fas fa-tasks me-2"></i>Azioni Disponibili</p>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success btn-lg py-3" id="btn-modal-checkout">
+                            <i class="fas fa-check-circle me-2"></i>Checkout
+                        </button>
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-primary w-100 py-3" id="btn-modal-ddt1">
+                                    <i class="fas fa-file-alt me-2"></i>DDT1
+                                </button>
+                    </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-info text-white w-100 py-3" id="btn-modal-ddt2">
+                                    <i class="fas fa-file-alt me-2"></i>DDT2
+                                </button>
+                </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary mt-3" id="btn-modal-annulla">
+                            <i class="fas fa-times me-2"></i>Annulla
+                    </button>
+                </div>
+                        </div>
+            </div>
+                        </div>
+                    </div>
+                </div>
+                
+<!-- Main content -->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 col-md-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-camera me-2 text-primary"></i>Scanner QR</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="scanner-wrapper">
+                        <!-- Camera will start automatically -->
+                        <div id="scanner-container" class="scanner-container">
+                            <video id="qr-video" autoplay></video>
+                            <div class="scanner-guide">
+                                <div class="scan-area">
+                                    <div class="scan-corners corner-top-left"></div>
+                                    <div class="scan-corners corner-top-right"></div>
+                                    <div class="scan-corners corner-bottom-left"></div>
+                                    <div class="scan-corners corner-bottom-right"></div>
+                                    <div class="scan-line"></div>
+                                </div>
+                            </div>
+                            <div id="error-overlay" class="scanner-overlay" style="display: none;">
+                                <div class="text-center">
+                                    <i class="fas fa-exclamation-triangle text-warning d-block mb-2 fa-3x"></i>
+                                    <h5>Errore fotocamera</h5>
+                                    <p class="mb-0">Verifica le autorizzazioni del browser</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Camera inactive state (shown only if camera fails) -->
+                        <div id="scanner-inactive" class="scanner-camera-inactive" style="display: none;">
+                            <i class="fas fa-camera-slash"></i>
+                            <h5>Fotocamera non disponibile</h5>
+                            <p class="mb-0">Verifica le autorizzazioni del browser o utilizza l'inserimento manuale.</p>
+                            <button id="btn-retry-camera" class="btn btn-primary mt-3">
+                                <i class="fas fa-redo me-2"></i>Riprova
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border-top">
+                        <form method="POST" action="{{ url_for('warehouse.scanner') }}" class="manual-input-card">
+                            {{ form.hidden_tag() }}
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light"><i class="fas fa-keyboard text-primary"></i></span>
+                                {{ form.ticket_id(class="form-control border-0 shadow-none", id="ticket_id", placeholder="Inserisci codice manualmente...") }}
+                                <button type="submit" class="btn btn-primary px-3">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            {% for error in form.ticket_id.errors %}
+                            <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Result Card -->
+            <div id="result-card" class="card shadow-sm mb-4 mt-4" style="display: none;">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-ticket-alt me-2 text-primary"></i><span id="result-ticket-number">Ticket #0000</span></h5>
+                    <span id="result-ticket-status" class="badge-soft badge-soft-warning">Pendente</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center text-muted mb-3">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <p id="result-ticket-date" class="mb-0">Data: 00/00/0000</p>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <button id="btn-product-details" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-info-circle me-2"></i>Dettagli
+                        </button>
+                        <a id="result-ticket-link" href="#" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-file-alt me-2"></i>Vedi Ticket
+                        </a>
+                    </div>
+                    
+                    <!-- Product Details Section -->
+                    <div id="product-details" class="bg-light p-3 rounded mb-3 d-none">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-box text-primary me-2"></i>
+                            <h6 class="mb-0">Dettagli Prodotto</h6>
+                        </div>
+                        <div class="ps-4 mt-2">
+                            <p id="result-product-name" class="mb-2 fw-bold">Nome Prodotto</p>
+                            <p id="result-product-code" class="mb-1 small text-muted">
+                                <i class="fas fa-barcode me-2"></i>Codice: 0000
+                            </p>
+                            <p id="result-product-weight" class="mb-1 small text-muted">
+                                <i class="fas fa-weight me-2"></i>Peso: 0.000 kg
+                            </p>
+                            <p id="result-scan-date" class="mb-0 small text-muted">
+                                <i class="fas fa-clock me-2"></i>Scansione: 00/00/0000 00:00:00
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div id="success-message" class="alert alert-success d-flex align-items-center d-none" role="alert">
+                        <i class="fas fa-check-circle me-2 fa-lg"></i>
+                        <div>Operazione completata con successo</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button id="btn-checkout" class="btn btn-success btn-lg py-3">
+                            <i class="fas fa-check me-2"></i>Scarica da Magazzino
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-12">
+            <!-- DDT Sections (visible only when they contain items) -->
+            <div id="ddt-sections">
+                <!-- DDT1 Section -->
+                <div id="ddt1-section" class="card shadow-sm mb-4" style="display: none;">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-invoice me-2"></i>
+                            <h5 class="mb-0">DDT1</h5>
+                        </div>
+                        <span class="badge bg-light text-dark rounded-pill" id="ddt1-count">0</span>
+                    </div>
+                    <div class="card-body p-0" id="ddt1-items-container" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Items for DDT1 will be loaded here dynamically -->
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Documento di Trasporto</span>
+                        <button class="btn btn-primary" id="btn-proceed-ddt1">
+                            Procedi <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DDT2 Section -->
+                <div id="ddt2-section" class="card shadow-sm mb-4" style="display: none;">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-file-invoice me-2"></i>
+                            <h5 class="mb-0">DDT2</h5>
+                        </div>
+                        <span class="badge bg-light text-dark rounded-pill" id="ddt2-count">0</span>
+                    </div>
+                    <div class="card-body p-0" id="ddt2-items-container" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Items for DDT2 will be loaded here dynamically -->
+                    </div>
+                    <div class="card-footer d-flex justify-content-between align-items-center">
+                        <span class="text-muted small">Documento di Trasporto</span>
+                        <button class="btn btn-primary" id="btn-proceed-ddt2">
+                            Procedi <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- No DDT message (shown when there are no items in any DDT) -->
+                <div id="no-ddt-message" class="card shadow-sm mb-4">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-clipboard-list text-muted mb-3" style="font-size: 2.5rem;"></i>
+                        <h5 class="mb-2">Nessun DDT Pendente</h5>
+                        <p class="text-muted mb-0">Non ci sono articoli assegnati a DDT in questo momento</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode@2.2.1/html5-qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Page elements
+        const scannerWrapper = document.getElementById('scanner-wrapper');
+        const scannerInactive = document.getElementById('scanner-inactive');
+        const scannerContainer = document.getElementById('scanner-container');
+        const videoElement = document.getElementById('qr-video');
+        const errorOverlay = document.getElementById('error-overlay');
+        const resultCard = document.getElementById('result-card');
+        const resultTicketNumber = document.getElementById('result-ticket-number');
+        const resultTicketDate = document.getElementById('result-ticket-date');
+        const resultTicketStatus = document.getElementById('result-ticket-status');
+        const resultTicketLink = document.getElementById('result-ticket-link');
+        const productDetails = document.getElementById('product-details');
+        const resultProductName = document.getElementById('result-product-name');
+        const resultProductCode = document.getElementById('result-product-code');
+        const resultProductWeight = document.getElementById('result-product-weight');
+        const resultScanDate = document.getElementById('result-scan-date');
+        const btnProductDetails = document.getElementById('btn-product-details');
+        const btnCheckout = document.getElementById('btn-checkout');
+        const successMessage = document.getElementById('success-message');
+        const btnRetryCamera = document.getElementById('btn-retry-camera');
+        
+        // DDT elements
+        const ddt1Section = document.getElementById('ddt1-section');
+        const ddt2Section = document.getElementById('ddt2-section');
+        const noDdtMessage = document.getElementById('no-ddt-message');
+        const ddt1ItemsContainer = document.getElementById('ddt1-items-container');
+        const ddt2ItemsContainer = document.getElementById('ddt2-items-container');
+        const ddt1CountBadge = document.getElementById('ddt1-count');
+        const ddt2CountBadge = document.getElementById('ddt2-count');
+        const btnProceedDDT1 = document.getElementById('btn-proceed-ddt1');
+        const btnProceedDDT2 = document.getElementById('btn-proceed-ddt2');
+        
+        // Modal elements
+        const scanActionModalElement = document.getElementById('scanActionModal');
+        const scanActionModal = new bootstrap.Modal(scanActionModalElement);
+        const modalTicketInfo = document.getElementById('modal-ticket-info');
+        const modalProductName = document.getElementById('modal-product-name');
+        const modalProductCode = document.getElementById('modal-product-code');
+        const modalProductWeight = document.getElementById('modal-product-weight');
+        const modalScanDate = document.getElementById('modal-scan-date');
+        const modalProductDetailsDiv = document.getElementById('modal-product-details');
+
+        const btnModalAnnulla = document.getElementById('btn-modal-annulla');
+        const btnModalCheckout = document.getElementById('btn-modal-checkout');
+        const btnModalDDT1 = document.getElementById('btn-modal-ddt1');
+        const btnModalDDT2 = document.getElementById('btn-modal-ddt2');
+        const btnModalCloseX = document.getElementById('btn-modal-close-x');
+        
+        // Variables
+        let scanner = null;
+        let scanData = null;
+        let isInitialized = false;
+        
+        // Function to update the main result card display based on scanData
+        function updateResultCardDisplay(currentScanData) {
+            if (!currentScanData) {
+                resultCard.style.display = 'none';
+                return;
+            }
+
+            resultTicketNumber.textContent = `Ticket #${currentScanData.ticket_number}`;
+            resultTicketDate.textContent = `Data: ${currentScanData.ticket_date}`;
+
+            if (currentScanData.is_processed || currentScanData.enviado === "1") { // Checked out
+                resultTicketStatus.className = 'badge bg-success';
+                resultTicketStatus.textContent = 'Processato';
+                btnCheckout.disabled = true;
+                btnCheckout.innerHTML = '<i class="fas fa-check-circle me-2"></i>Già Scaricato';
+                btnCheckout.classList.remove('btn-success');
+                btnCheckout.classList.add('btn-outline-success');
+            } else if (currentScanData.enviado === "2") { // In DDT1
+                resultTicketStatus.className = 'badge bg-info';
+                resultTicketStatus.textContent = 'In DDT1';
+                btnCheckout.disabled = true; // Cannot checkout if in DDT staging
+                btnCheckout.innerHTML = '<i class="fas fa-list-alt me-2"></i>In DDT1';
+                btnCheckout.classList.remove('btn-success');
+                btnCheckout.classList.add('btn-outline-info');
+            } else if (currentScanData.enviado === "3") { // In DDT2
+                resultTicketStatus.className = 'badge bg-secondary';
+                resultTicketStatus.textContent = 'In DDT2';
+                btnCheckout.disabled = true; // Cannot checkout if in DDT staging
+                btnCheckout.innerHTML = '<i class="fas fa-list-alt me-2"></i>In DDT2';
+                btnCheckout.classList.remove('btn-success');
+                btnCheckout.classList.add('btn-outline-secondary');
+            } else { // Pending / Available
+                resultTicketStatus.className = 'badge bg-warning';
+                resultTicketStatus.textContent = 'Pendente';
+                btnCheckout.disabled = false;
+                btnCheckout.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
+                btnCheckout.classList.remove('btn-outline-success', 'btn-outline-info', 'btn-outline-secondary');
+                btnCheckout.classList.add('btn-success');
+            }
+
+            if (currentScanData.product) {
+                productDetails.classList.remove('d-none');
+                btnProductDetails.style.display = 'block';
+                resultProductName.textContent = currentScanData.product.name;
+                resultProductCode.textContent = `Codice: ${currentScanData.product.code}`;
+                resultProductWeight.textContent = currentScanData.product.weight ? `Peso: ${currentScanData.product.weight} kg` : 'Peso: N/D';
+                resultScanDate.textContent = `Scansione: ${currentScanData.scan_date}`;
+            } else {
+                productDetails.classList.add('d-none');
+                btnProductDetails.style.display = 'none';
+            }
+
+            if (currentScanData.ticket_id) {
+                resultTicketLink.href = `/warehouse/ticket/${currentScanData.ticket_id}`;
+                resultTicketLink.style.display = 'block';
+            } else {
+                resultTicketLink.style.display = 'none';
+            }
+            successMessage.classList.add('d-none');
+            resultCard.style.display = 'block';
+            
+            // Scroll to the result card
+            setTimeout(() => {
+                resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+        
+        // Initialize scanner automatically
+        function initScanner() {
+            if (isInitialized) return;
+            
+            // Auto-start the scanner
+            try {
+            scanner = new Html5Qrcode("scanner-container");
+            isInitialized = true;
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            
+                // Start scanner automatically
+                scanner.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                ).catch((err) => {
+                    // Error starting scanner - show inactive state
+                    console.error('Error starting scanner:', err);
+                    errorOverlay.style.display = 'flex';
+                    scannerInactive.style.display = 'flex';
+                    scannerContainer.style.display = 'none';
+                });
+                
+                // Retry camera button
+                btnRetryCamera.addEventListener('click', function() {
+                    scannerInactive.style.display = 'none';
+                    scannerContainer.style.display = 'block';
+                    errorOverlay.style.display = 'none';
+                    
+                    scanner.start(
+                        { facingMode: "environment" },
+                        config,
+                        onScanSuccess,
+                        onScanFailure
+                    ).catch((err) => {
+                        console.error('Error restarting scanner:', err);
+                        errorOverlay.style.display = 'flex';
+                    scannerInactive.style.display = 'flex';
+                    scannerContainer.style.display = 'none';
+                });
+            });
+            } catch (err) {
+                console.error('Error initializing scanner:', err);
+                scannerInactive.style.display = 'flex';
+                scannerContainer.style.display = 'none';
+            }
+            
+            // Product details button
+            btnProductDetails.addEventListener('click', function() {
+                productDetails.classList.toggle('d-none');
+                if (productDetails.classList.contains('d-none')) {
+                    this.innerHTML = '<i class="fas fa-info-circle me-2"></i>Dettagli';
+                } else {
+                    this.innerHTML = '<i class="fas fa-times-circle me-2"></i>Nascondi';
+                }
+            });
+            
+            // Checkout button
+            btnCheckout.addEventListener('click', function() {
+                if (!scanData) return;
+                
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Elaborazione...';
+                
+                // Send checkout request
+                fetch('/warehouse/checkout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        ticket_id: scanData.ticket_id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.disabled = false;
+                    
+                    if (data.success) {
+                        // Show success message
+                        successMessage.classList.remove('d-none');
+                        this.innerHTML = '<i class="fas fa-check me-2"></i>Scaricato con Successo';
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-outline-success');
+                        this.disabled = true;
+                        
+                        // Update ticket status
+                        resultTicketStatus.className = 'badge bg-success';
+                        resultTicketStatus.textContent = 'Processato';
+                        
+                        // Update scan data
+                        scanData.is_processed = true;
+                        
+                        // Vibrate if available (mobile feedback)
+                        if (navigator.vibrate) {
+                            navigator.vibrate(200);
+                        }
+                    } else {
+                        // Show error
+                        this.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
+                        alert('Errore: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error during checkout:', error);
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
+                    alert('Si è verificato un errore durante l\'operazione.');
+                });
+            });
+        }
+        
+        // Handle successful scan
+        function onScanSuccess(qrCodeMessage) {
+            // Pause scanner
+            scanner.pause();
+            
+            // Provide haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
+            
+            // Play success sound
+            const successSound = new Audio('data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gQ29ueWFjIFN5c3RlbXMAVFBFMQAAADUAAANMYW1lIDMuMTAAXwAAADUAAABlbmNvZGVkAG51bGwAAAAAAAAAAAAAAAAAAAAAAAAAAAAATEFNRTMuMTAwBLkAAAAAAAAAABRAJAXkQQABzAAAQRAiaRbKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//tCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFRhZ0JpZ1NvdW5kQmFuay5jb20gLyBDb255YWMgU3lzdGVtcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
+            successSound.play().catch(e => console.log('Audio playback error:', e));
+            
+            // Show loading state
+            resultCard.style.display = 'none';
+            
+            // Send data to server for processing
+            fetch('/warehouse/process_qr', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                },
+                body: JSON.stringify({
+                    qr_data: qrCodeMessage
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Store scan data
+                    scanData = data;
+                    
+                    // Update result card using the new function
+                    updateResultCardDisplay(scanData);
+                    
+                    // Populate Modal
+                    modalTicketInfo.innerHTML = `Ticket #${data.ticket_number} (${data.ticket_date})`;
+                    if (data.product) {
+                        modalProductName.textContent = data.product.name;
+                        modalProductCode.textContent = data.product.code;
+                        modalProductWeight.textContent = data.product.weight ? `${data.product.weight} kg` : 'N/D';
+                        modalScanDate.textContent = data.scan_date;
+                        modalProductDetailsDiv.style.display = 'block';
+                    } else {
+                        modalProductDetailsDiv.style.display = 'none';
+                    }
+
+                    // Configure modal buttons based on ticket status
+                    configureModalButtons(data);
+                    
+                    scanActionModal.show();
+                    
+                } else {
+                    // Show error
+                    showToast('Errore: ' + data.message, 'danger');
+                    scanner.resume();
+                }
+            })
+            .catch(error => {
+                console.error('Error processing QR code:', error);
+                showToast('Si è verificato un errore durante l\'elaborazione del codice QR.', 'danger');
+                scanner.resume();
+            });
+        }
+        
+        // Configure modal buttons based on ticket status
+        function configureModalButtons(data) {
+            // Reset all buttons first
+            btnModalCheckout.disabled = false;
+            btnModalCheckout.innerHTML = '<i class="fas fa-check me-2"></i>Checkout';
+            btnModalDDT1.disabled = false;
+            btnModalDDT2.disabled = false;
+            
+                    if (data.is_processed) {
+                        btnModalCheckout.disabled = true;
+                        btnModalCheckout.innerHTML = '<i class="fas fa-check-circle me-2"></i>Già Scaricato';
+                btnModalDDT1.disabled = true;
+                        btnModalDDT2.disabled = true;
+            } else if (data.enviado === "2") {
+                        btnModalCheckout.disabled = true;
+                        btnModalCheckout.innerHTML = '<i class="fas fa-check-circle me-2"></i>In DDT1';
+                        btnModalDDT1.disabled = true;
+                btnModalDDT2.disabled = false; // Allow moving from DDT1 to DDT2
+            } else if (data.enviado === "3") {
+                        btnModalCheckout.disabled = true;
+                        btnModalCheckout.innerHTML = '<i class="fas fa-check-circle me-2"></i>In DDT2';
+                btnModalDDT1.disabled = false; // Allow moving from DDT2 to DDT1
+                        btnModalDDT2.disabled = true;
+                    }
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Create toast element
+            const toastEl = document.createElement('div');
+            toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
+            toastEl.setAttribute('role', 'alert');
+            toastEl.setAttribute('aria-live', 'assertive');
+            toastEl.setAttribute('aria-atomic', 'true');
+            
+            // Create toast content
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+            
+            // Add toast to container
+            toastContainer.appendChild(toastEl);
+            
+            // Initialize Bootstrap toast
+            const toast = new bootstrap.Toast(toastEl, {
+                animation: true,
+                autohide: true,
+                delay: 3000
+            });
+            
+            // Show toast
+            toast.show();
+            
+            // Remove toast from DOM after hiding
+            toastEl.addEventListener('hidden.bs.toast', function() {
+                toastEl.remove();
+            });
+        }
+        
+        // Handle scan failure
+        function onScanFailure(error) {
+            // Just log error, don't show to user unless it's persistent
+            console.debug('QR scan error:', error);
+        }
+        
+        // Initialize scanner on page load
+        initScanner();
+        fetchDDTPreviewItems(); // Initial fetch of DDT items
+
+        // Modal Button Listeners
+        btnModalAnnulla.addEventListener('click', function() {
+            scanActionModal.hide();
+            if (scanner) {
+                 try { scanner.resume(); } catch(e) { console.debug("Error resuming scanner", e); }
+            }
+        });
+
+        btnModalCloseX.addEventListener('click', function() {
+            if (scanner) {
+                 try { scanner.resume(); } catch(e) { console.debug("Error resuming scanner", e); }
+            }
+        });
+
+        // Modal event listener for when it's fully hidden
+        scanActionModalElement.addEventListener('hidden.bs.modal', function() {
+            if (scanner) {
+                 try { scanner.resume(); } catch(e) { console.debug("Error resuming scanner", e); }
+            }
+        });
+
+        btnModalCheckout.addEventListener('click', function() {
+            if (!scanData) return;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Elaborazione...';
+            
+            fetch('/warehouse/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({ ticket_id: scanData.ticket_id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.disabled = false;
+                if (data.success) {
+                    scanActionModal.hide();
+                    showToast('Checkout effettuato con successo', 'success');
+                    
+                    // Update local scanData state and refresh UI
+                    if(scanData && scanData.ticket_id == data.ticket_id_processed) {
+                        scanData.is_processed = true;
+                        scanData.enviado = "1"; // Checked out
+                        updateResultCardDisplay(scanData);
+                    }
+                    fetchDDTPreviewItems(); // Refresh DDT previews
+                } else {
+                    this.innerHTML = '<i class="fas fa-check me-2"></i>Checkout';
+                    showToast('Errore: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error during modal checkout:', error);
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Checkout';
+                showToast('Errore durante il checkout', 'danger');
+            });
+        });
+
+        function assignToDDT(ddtNumber) {
+            if (!scanData) return;
+
+            const button = ddtNumber === 1 ? btnModalDDT1 : btnModalDDT2;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Assegnazione...';
+
+            fetch('/warehouse/assign_ddt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({ 
+                    ticket_id: scanData.ticket_id,
+                    ddt_type: ddtNumber === 1 ? "2" : "3" // "2" for DDT1, "3" for DDT2
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                button.disabled = false;
+                if (data.success) {
+                    scanActionModal.hide();
+                    showToast(`Ticket assegnato a DDT${ddtNumber}`, 'success');
+                    
+                    // Update local scanData state and refresh UI
+                    if(scanData && scanData.ticket_id == data.ticket_id_assigned) {
+                        scanData.enviado = ddtNumber === 1 ? "2" : "3";
+                        scanData.is_processed = false;
+                        updateResultCardDisplay(scanData);
+                    }
+                    fetchDDTPreviewItems();
+                } else {
+                    button.innerHTML = ddtNumber === 1 ? 'DDT1' : 'DDT2';
+                    showToast('Errore: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error during DDT assignment:', error);
+                button.disabled = false;
+                button.innerHTML = ddtNumber === 1 ? 'DDT1' : 'DDT2';
+                showToast('Errore durante l\'assegnazione', 'danger');
+            });
+        }
+
+        btnModalDDT1.addEventListener('click', function() {
+            assignToDDT(1);
+        });
+
+        btnModalDDT2.addEventListener('click', function() {
+            assignToDDT(2);
+        });
+
+        // Function to fetch and display DDT preview items
+        function fetchDDTPreviewItems() {
+            fetch('/warehouse/get_ddt_items')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateDDTPanel(ddt1ItemsContainer, data.ddt1_items, ddt1CountBadge, btnProceedDDT1, 1);
+                        updateDDTPanel(ddt2ItemsContainer, data.ddt2_items, ddt2CountBadge, btnProceedDDT2, 2);
+                    } else {
+                        console.error("Error fetching DDT items:", data.message);
+                        ddt1ItemsContainer.innerHTML = '<p class="text-danger text-center">Errore caricamento DDT1.</p>';
+                        ddt2ItemsContainer.innerHTML = '<p class="text-danger text-center">Errore caricamento DDT2.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Network error fetching DDT items:", error);
+                    ddt1ItemsContainer.innerHTML = '<p class="text-danger text-center">Errore di rete caricamento DDT1.</p>';
+                    ddt2ItemsContainer.innerHTML = '<p class="text-danger text-center">Errore di rete caricamento DDT2.</p>';
+                });
+        }
+
+        function updateDDTPanel(container, items, badge, proceedButton, ddtNumber) {
+            container.innerHTML = ''; // Clear existing items
+            
+            // Get the corresponding section element
+            const sectionElement = ddtNumber === 1 ? ddt1Section : ddt2Section;
+            
+            if (items && items.length > 0) {
+                // Show the section if there are items
+                sectionElement.style.display = 'block';
+                
+                const list = document.createElement('ul');
+                list.className = 'list-group list-group-flush';
+                items.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+                    
+                    // Create item content with more structured layout
+                    const itemContent = document.createElement('div');
+                    itemContent.className = 'd-flex flex-column';
+                    
+                    const ticketInfo = document.createElement('div');
+                    ticketInfo.className = 'fw-bold';
+                    ticketInfo.textContent = `Ticket #${item.ticket_number}`;
+                    
+                    const productInfo = document.createElement('div');
+                    productInfo.className = 'text-muted small';
+                    if(item.product_name) {
+                        productInfo.textContent = item.product_name;
+                        if(item.product_weight) {
+                            productInfo.textContent += ` (${item.product_weight} kg)`;
+                        }
+                    } else {
+                        productInfo.textContent = 'Prodotto non specificato';
+                    }
+                    
+                    itemContent.appendChild(ticketInfo);
+                    itemContent.appendChild(productInfo);
+                    listItem.appendChild(itemContent);
+                    
+                    // Remove button with better styling
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn btn-sm btn-outline-danger rounded-circle';
+                    removeBtn.style.width = '30px';
+                    removeBtn.style.height = '30px';
+                    removeBtn.style.padding = '0';
+                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    removeBtn.onclick = () => removeItemFromDDT(item.ticket_id, ddtNumber);
+                    listItem.appendChild(removeBtn);
+
+                    list.appendChild(listItem);
+                });
+                container.appendChild(list);
+                badge.textContent = items.length;
+                proceedButton.disabled = false;
+            } else {
+                // Hide the section if there are no items
+                sectionElement.style.display = 'none';
+                badge.textContent = '0';
+                proceedButton.disabled = true;
+            }
+            
+            // Update visibility of "No DDT message"
+            updateNoDdtMessage();
+        }
+        
+        // Function to update the visibility of the "No DDT message"
+        function updateNoDdtMessage() {
+            // Count DDTs with items
+            const ddt1HasItems = ddt1Section.style.display !== 'none';
+            const ddt2HasItems = ddt2Section.style.display !== 'none';
+            
+            // Show "No DDT message" only if both DDTs are empty
+            if (!ddt1HasItems && !ddt2HasItems) {
+                noDdtMessage.style.display = 'block';
+            } else {
+                noDdtMessage.style.display = 'none';
+            }
+        }
+
+        // Function to remove an item from a DDT
+        function removeItemFromDDT(ticketId, ddtNumber) {
+            fetch('/warehouse/remove_from_ddt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                body: JSON.stringify({ 
+                    ticket_id: ticketId,
+                    ddt_type: ddtNumber
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Ticket rimosso da DDT${ddtNumber}`, 'success');
+                    
+                    // Update scanData if this was the current item
+                    if(scanData && scanData.ticket_id == ticketId) {
+                        scanData.enviado = "0"; // Available
+                        scanData.is_processed = false;
+                        updateResultCardDisplay(scanData);
+                    }
+                    fetchDDTPreviewItems();
+                } else {
+                    showToast('Errore: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error removing item from DDT:', error);
+                showToast('Errore durante la rimozione', 'danger');
+            });
+        }
+        
+        // Event listeners for Proceed buttons
+        btnProceedDDT1.addEventListener('click', function() {
+            window.location.href = "{{ url_for('warehouse.generate_ddt_step', ddt_type=1) }}"; 
+        });
+
+        btnProceedDDT2.addEventListener('click', function() {
+            window.location.href = "{{ url_for('warehouse.generate_ddt_step', ddt_type=2) }}"; 
+        });
+
+        // Add fullscreen capability for mobile
+        document.addEventListener('click', function() {
+            // Request fullscreen when the user interacts with the page on mobile
+            if (window.innerWidth <= 768 && !document.fullscreenElement) {
+                try {
+                    const docEl = document.documentElement;
+                    if (docEl.requestFullscreen) {
+                        docEl.requestFullscreen();
+                    } else if (docEl.webkitRequestFullscreen) {
+                        docEl.webkitRequestFullscreen();
+                    } else if (docEl.mozRequestFullScreen) {
+                        docEl.mozRequestFullScreen();
+                    } else if (docEl.msRequestFullscreen) {
+                        docEl.msRequestFullscreen();
+                    }
+                } catch (e) {
+                    console.log('Fullscreen request failed:', e);
+                }
+            }
+        }, { once: true });
+
+        // Handle screen orientation changes
+        window.addEventListener('orientationchange', function() {
+            // Adjust UI based on orientation
+            setTimeout(function() {
+                // Re-layout camera view if needed
+                if (scanner && scanner.isScanning) {
+                    try { 
+                        scanner.pause();
+                        scanner.resume(); 
+                    } catch(e) { 
+                        console.debug("Error handling orientation change", e); 
+                    }
+                }
+            }, 200);
+        });
+
+        // Preload beep sound for better performance on first scan
+        const audio = new Audio('data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gQ29ueWFjIFN5c3RlbXMAVFBFMQAAADUAAANMYW1lIDMuMTAAXwAAADUAAABlbmNvZGVkAG51bGwAAAAAAAAAAAAAAAAAAAAAAAAAAAAATEFNRTMuMTAwBLkAAAAAAAAAABRAJAXkQQABzAAAQRAiaRbKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//tCQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFRhZ0JpZ1NvdW5kQmFuay5jb20gLyBDb255YWMgU3lzdGVtcwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
+        audio.load();
+    });
+</script>
+{% endblock %} 

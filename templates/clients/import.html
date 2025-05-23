@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Importa Clienti{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}">Clienti</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Importa CSV</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header">
+            <h1 class="card-title">Importa Clienti da CSV</h1>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="card mb-4 instructions-card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-info-circle"></i> Istruzioni</h5>
+                            <ol class="mb-0">
+                                <li>Il file CSV deve includere le intestazioni come nella prima riga.</li>
+                                <li>I dati devono seguire la struttura del DB (consulta il formato del file di esempio).</li>
+                                <li>I clienti esistenti saranno aggiornati, i nuovi saranno aggiunti.</li>
+                                <li>Tutti i record importati avranno l'utente corrente e il timestamp attuale.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" action="{{ url_for('clients.import_csv') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="file-upload-container">
+                            <div class="file-upload-icon">
+                                <i class="fas fa-file-csv"></i>
+                            </div>
+                            <h5 class="mb-3">Seleziona il file CSV da importare</h5>
+                            <input type="file" class="form-control" id="file" name="file" accept=".csv" required>
+                            <small class="text-muted mt-2 d-block">Formati supportati: .csv</small>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="confirmImport" required>
+                            <label class="form-check-label" for="confirmImport">Confermo di voler importare questi dati</label>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ url_for('clients.index') }}" class="btn btn-secondary me-2">Annulla</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-file-import"></i> Importa File
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Esempio struttura file CSV</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered example-table">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>IdCliente</th>
+                                            <th>IdEmpresa</th>
+                                            <th>Nombre</th>
+                                            <th>Direccion</th>
+                                            <th>...</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>1</td>
+                                            <td>1</td>
+                                            <td>VIA EUSTACHI</td>
+                                            <td>Via Bartolomeo Eustachi, 19...</td>
+                                            <td>...</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>1</td>
+                                            <td>PIAZZA BACONE</td>
+                                            <td>Piazzale Francesco Bacone, 6...</td>
+                                            <td>...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="mt-3 text-center">
+                                <a href="{{ url_for('clients.export_csv') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-download"></i> Scarica file di esempio
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

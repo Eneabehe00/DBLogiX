@@ -1,0 +1,545 @@
+/* Clients CSS - DB-LogiX
+-------------------------------------------------- */
+
+/* Index page styles */
+.container {
+    max-width: 100%;
+}
+
+/* Client card styles */
+.client-view {
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.client-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background-color: rgba(13, 110, 253, 0.05);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.client-title {
+    margin-bottom: 0.25rem;
+    color: #1a1a1a;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.client-subtitle {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+.client-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 50rem;
+    margin: 0 0.25rem;
+}
+
+.client-status.active {
+    background-color: rgba(25, 135, 84, 0.15);
+    color: #198754;
+}
+
+.client-status.inactive {
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #6c757d;
+}
+
+.client-status.favorite {
+    background-color: rgba(13, 110, 253, 0.15);
+    color: #0d6efd;
+}
+
+.client-status i {
+    margin-right: 0.25rem;
+}
+
+/* Tabs navigation */
+.card-header-tabs {
+    margin-right: 0;
+    margin-left: 0;
+    margin-bottom: -0.75rem;
+    border-bottom: none;
+    flex-wrap: wrap;
+}
+
+.nav-tabs .nav-link {
+    padding: 0.75rem 1.25rem;
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+    font-weight: 500;
+    color: #495057;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #6c757d;
+    border-color: transparent;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 600;
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    border-top: 2px solid #6c757d;
+}
+
+.nav-tabs .nav-link i {
+    margin-right: 0.5rem;
+}
+
+.tab-content {
+    padding: 1.5rem;
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Edit/New form pages */
+.tab-content {
+    padding: 20px;
+    border: 1px solid #dee2e6;
+    border-top: 0;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #f8f9fa;
+    border-bottom-color: #f8f9fa;
+}
+
+/* Table styles */
+.table-info {
+    --bs-table-striped-bg: rgba(13, 110, 253, 0.03);
+}
+
+.table-info th {
+    min-width: 140px;
+    background-color: rgba(13, 110, 253, 0.05);
+    font-weight: 600;
+    color: #495057;
+}
+
+.detail-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #495057;
+    width: 40%;
+}
+
+.detail-value {
+    width: 60%;
+    color: #212529;
+}
+
+/* DDT Section styles */
+.ddt-table th {
+    background-color: rgba(13, 110, 253, 0.05);
+    font-weight: 600;
+}
+
+.ddt-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.ddt-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 50rem;
+}
+
+.status-badge.delivered {
+    background-color: rgba(25, 135, 84, 0.15);
+    color: #198754;
+}
+
+.status-badge.pending {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #fd7e14;
+}
+
+.status-badge.canceled {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+}
+
+.status-badge i {
+    margin-right: 0.25rem;
+}
+
+.ddt-section {
+    margin-top: 2rem;
+    border-radius: 0.5rem;
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.ddt-section-header {
+    padding: 1.25rem 1.5rem;
+    background-color: rgba(13, 110, 253, 0.05);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* Import page styles */
+.file-upload-container {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+    margin-bottom: 1.5rem;
+}
+
+.file-upload-container:hover {
+    border-color: #6c757d;
+    background-color: #f1f3f5;
+}
+
+.file-upload-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.instructions-card {
+    border-left: 4px solid #0dcaf0;
+}
+
+.example-table {
+    font-size: 0.9rem;
+}
+
+/* Client specific badges */
+.client-badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.client-badge.premium {
+    color: #fff;
+    background-color: #ffc107;
+}
+
+.client-badge.regular {
+    color: #fff;
+    background-color: #0d6efd;
+}
+
+/* Recent Orders styling */
+.recent-order {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.recent-order:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.recent-order-date {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.recent-order-id {
+    font-weight: 600;
+}
+
+.recent-order-total {
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .container {
+        max-width: 100%;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .client-header {
+        padding: 1rem;
+    }
+    
+    .tab-content {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .d-flex.justify-content-between.align-items-center {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+    
+    .d-flex.justify-content-between.align-items-center div {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+    
+    .btn {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .client-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .client-actions {
+        width: 100%;
+        justify-content: flex-start !important;
+        margin-top: 1rem;
+    }
+    
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+    
+    .nav-tabs .nav-link i {
+        margin-right: 0.25rem;
+    }
+    
+    .card-header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .nav-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .form-label {
+        margin-bottom: 0.25rem;
+    }
+    
+    .mb-3 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .file-upload-container {
+        padding: 1.5rem;
+    }
+    
+    .file-upload-icon {
+        font-size: 2.5rem;
+    }
+    
+    .table th, .table td {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.5rem;
+    }
+    
+    .btn-group .btn-sm {
+        padding: 0.25rem 0.4rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons .btn {
+        flex: 1;
+    }
+}
+
+@media (max-width: 576px) {
+    .d-flex.justify-content-between.align-items-center div {
+        flex-direction: column;
+    }
+    
+    .d-flex.justify-content-between.align-items-center div .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .col-md-10, .col-md-2 {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .table td, .table th {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .pagination .page-item {
+        margin-bottom: 0.25rem;
+    }
+    
+    .nav-tabs {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .nav-tabs .nav-item {
+        flex: 0 0 50%;
+    }
+    
+    .nav-tabs .nav-link {
+        width: 100%;
+        text-align: center;
+        margin: 0;
+        border-radius: 0;
+        font-size: 0.85rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.5rem;
+        border-radius: 0.25rem !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .detail-label, 
+    .detail-value {
+        width: 100%;
+    }
+    
+    .detail-value {
+        margin-top: 0.25rem;
+    }
+    
+    .recent-order {
+        padding: 0.75rem;
+    }
+}
+
+/* Clients CSS - Add responsive table styles to match standardized pattern */
+
+/* Table hover effect for clickable rows */
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    transition: background-color 0.2s ease;
+}
+
+/* Responsive styles */
+@media (max-width: 767.98px) {
+    /* Responsive table styles */
+    .table-responsive table {
+        width: 100%;
+    }
+    
+    .table-responsive thead {
+        display: none;
+    }
+    
+    .table-responsive tbody tr {
+        display: block;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        background-color: #fff;
+    }
+    
+    .table-responsive tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .table-responsive tbody td:last-child {
+        border-bottom: none;
+    }
+    
+    .table-responsive tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: 1rem;
+        text-align: left;
+        flex: 1;
+    }
+    
+    .table-responsive tbody td span,
+    .table-responsive tbody td div {
+        flex: 2;
+        text-align: right;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    /* Middle sized screens adjustments */
+    .table th, .table td {
+        padding: 0.5rem;
+    }
+} 

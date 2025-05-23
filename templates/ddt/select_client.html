@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Seleziona Cliente per DDT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}" class="text-white">DDT</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo DDT</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Crea Nuovo DDT
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Fase 1: Selezione Cliente</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('ddt.index') }}" class="btn btn-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna all'Elenco
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-card">
+        <div class="form-card-header">
+            <h5 class="form-card-title">
+                <i class="fas fa-user me-2"></i>Seleziona il Cliente
+            </h5>
+        </div>
+        <div class="form-card-body">
+            <form id="clientSelectForm" method="POST" action="{{ url_for('ddt.new') }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="mb-3">
+                    <label for="clientSearch" class="form-label">Cerca Cliente</label>
+                    <select class="form-control" id="clientSearch" required>
+                        <option value="">Cerca cliente...</option>
+                    </select>
+                    {{ form.cliente_id(id="cliente_id", class="d-none") }}
+                    {{ form.cliente_nome(id="cliente_nome", class="d-none") }}
+                </div>
+                
+                <div id="clientDetails" class="card d-none mb-3">
+                    <div class="card-body">
+                        <h5 id="clientName" class="card-title"></h5>
+                        <p id="clientAddress" class="card-text"></p>
+                        <p id="clientVAT" class="card-text"></p>
+                    </div>
+                </div>
+                
+                <div class="form-card-footer">
+                    <a href="{{ url_for('ddt.index') }}" class="btn form-btn form-btn-cancel">
+                        <i class="fas fa-times"></i> Annulla
+                    </a>
+                    <button type="submit" class="btn form-btn form-btn-save" id="submitBtn" disabled>
+                        <i class="fas fa-arrow-right"></i> Continua
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        // Initialize select2
+        $('#clientSearch').select2({
+            placeholder: 'Cerca cliente per nome...',
+            allowClear: true,
+            minimumInputLength: 3,
+            width: '100%',
+            ajax: {
+                url: '{{ url_for("ddt.client_search") }}',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        term: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data
+                    };
+                },
+                cache: true
+            }
+        });
+        
+        // Update form fields when a client is selected
+        $('#clientSearch').on('select2:select', function(e) {
+            var data = e.params.data;
+            
+            // Update form fields
+            $('#cliente_id').val(data.id);
+            $('#cliente_nome').val(data.nombre);
+            
+            // Update client details card
+            $('#clientName').text(data.nombre);
+            $('#clientAddress').text(data.direccion || 'Indirizzo non disponibile');
+            $('#clientVAT').text('P.IVA/CF: ' + (data.dni || 'Non disponibile'));
+            
+            // Show client details and enable submit button
+            $('#clientDetails').removeClass('d-none');
+            $('#submitBtn').prop('disabled', false);
+        });
+        
+        // Clear form fields when select is cleared
+        $('#clientSearch').on('select2:clear', function() {
+            $('#cliente_id').val('');
+            $('#cliente_nome').val('');
+            $('#clientDetails').addClass('d-none');
+            $('#submitBtn').prop('disabled', true);
+        });
+    }, 500); // Short delay to ensure jQuery and Select2 are fully loaded
+});
+</script>
+{% endblock %} 

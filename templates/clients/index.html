@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestione Clienti{% endblock %}
+
+{% block header_title %}Gestione Clienti{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Clienti</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-address-book me-2"></i>Gestione Clienti
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ clients|length if clients else 0 }} clienti nel database</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('clients.new') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Nuovo Cliente
+                    </a>
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-outline-light action-btn dropdown-toggle" type="button" id="importExportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-exchange-alt me-1"></i>Import/Export
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="importExportDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('clients.import_csv') }}"><i class="fas fa-file-import me-2"></i>Importa CSV</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('clients.export_csv') }}"><i class="fas fa-file-export me-2"></i>Esporta CSV</a></li>
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Search Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Cerca cliente per ID, nome o indirizzo...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button id="searchButton" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i> Cerca
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Client List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Clienti</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Indirizzo</th>
+                            <th>Città</th>
+                            <th>Telefono</th>
+                            <th>Email</th>
+                            <th>Ultimo Agg.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTable">
+                        {% for client in clients %}
+                        <tr data-url="{{ url_for('clients.view', id=client.IdCliente) }}" style="cursor: pointer;">
+                            <td data-label="ID">{{ client.IdCliente }}</td>
+                            <td data-label="Nome">
+                                <div class="text-truncate" style="max-width: 150px;">{{ client.Nombre }}</div>
+                            </td>
+                            <td data-label="Indirizzo">
+                                <div class="text-truncate" style="max-width: 150px;">{{ client.Direccion }}</div>
+                            </td>
+                            <td data-label="Città">{{ client.Poblacion }}</td>
+                            <td data-label="Telefono">{{ client.Telefono1 }}</td>
+                            <td data-label="Email">
+                                <div class="text-truncate" style="max-width: 150px;">{{ client.Email }}</div>
+                            </td>
+                            <td data-label="Ultimo Agg.">{{ client.TimeStamp.strftime('%d/%m/%Y') if client.TimeStamp else 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <i class="fas fa-users text-muted mb-3" style="font-size: 3rem;"></i>
+                                <h5>Nessun cliente trovato</h5>
+                                <p class="text-muted">Non ci sono clienti nel sistema. Clicca su "Nuovo Cliente" per aggiungerne uno.</p>
+                                <a href="{{ url_for('clients.new') }}" class="btn btn-primary mt-2">
+                                    <i class="fas fa-plus me-2"></i>Aggiungi Cliente
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if pagination and pagination.pages > 1 %}
+            <div class="p-3 border-top">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('clients.index', page=pagination.prev_num) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('clients.index', page=page_num) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">...</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('clients.index', page=pagination.next_num) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search functionality
+        const searchButton = document.getElementById('searchButton');
+        const searchInput = document.getElementById('searchInput');
+        
+        if (searchButton && searchInput) {
+            searchButton.addEventListener('click', function() {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    window.location.href = "{{ url_for('clients.index') }}?search=" + encodeURIComponent(searchTerm);
+                }
+            });
+            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchButton.click();
+                }
+            });
+        }
+        
+        // Make rows clickable to view detail
+        const clientRows = document.querySelectorAll('tbody tr[data-url]');
+        clientRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                window.location.href = this.getAttribute('data-url');
+            });
+        });
+    });
+</script>
+{% endblock %} 

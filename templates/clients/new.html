@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Create New Client{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo Cliente</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Nuovo Cliente
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Inserisci i dettagli del cliente</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('clients.index') }}" class="btn btn-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna all'Elenco
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="form-card">
+        <div class="form-card-body">
+            <form method="POST" action="{{ url_for('clients.new') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Tabs navigation -->
+                <ul class="nav nav-tabs form-tabs" id="clientTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+                            <i class="fas fa-info-circle"></i> Informazioni Principali
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">
+                            <i class="fas fa-address-book"></i> Contatti
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="commercial-tab" data-bs-toggle="tab" data-bs-target="#commercial" type="button" role="tab" aria-controls="commercial" aria-selected="false">
+                            <i class="fas fa-tags"></i> Informazioni Commerciali
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">
+                            <i class="fas fa-cog"></i> Impostazioni
+                        </button>
+                    </li>
+                </ul>
+                
+                <!-- Tab content -->
+                <div class="tab-content form-tab-content" id="clientTabsContent">
+                    <!-- Informazioni Principali Tab -->
+                    <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="Nombre" class="form-label">Nome / Ragione Sociale *</label>
+                                    <input type="text" class="form-control" id="Nombre" name="Nombre" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="DNI" class="form-label">P.IVA / Codice Fiscale</label>
+                                    <input type="text" class="form-control" id="DNI" name="DNI">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="CodInterno" class="form-label">Codice Interno</label>
+                                    <input type="text" class="form-control" id="CodInterno" name="CodInterno">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="Direccion" class="form-label">Indirizzo</label>
+                                    <input type="text" class="form-control" id="Direccion" name="Direccion">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="CodPostal" class="form-label">CAP</label>
+                                            <input type="text" class="form-control" id="CodPostal" name="CodPostal">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="Poblacion" class="form-label">Città</label>
+                                            <input type="text" class="form-control" id="Poblacion" name="Poblacion">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="Provincia" class="form-label">Provincia</label>
+                                            <input type="text" class="form-control" id="Provincia" name="Provincia">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="Pais" class="form-label">Paese</label>
+                                            <input type="text" class="form-control" id="Pais" name="Pais" value="IT">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contatti Tab -->
+                    <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="Telefono1" class="form-label">Telefono Principale</label>
+                                    <input type="text" class="form-control" id="Telefono1" name="Telefono1">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="Telefono2" class="form-label">Telefono Secondario</label>
+                                    <input type="text" class="form-control" id="Telefono2" name="Telefono2">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="Telefono3" class="form-label">Telefono Alternativo</label>
+                                    <input type="text" class="form-control" id="Telefono3" name="Telefono3">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="Email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="Email" name="Email">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Preferenze Email</label>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="TipoEmailTicket" name="TipoEmailTicket" value="1">
+                                                <label class="form-check-label" for="TipoEmailTicket">Email Ticket</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="TipoEmailAlbaran" name="TipoEmailAlbaran" value="1">
+                                                <label class="form-check-label" for="TipoEmailAlbaran">Email DDT</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="mb-3 form-check">
+                                                <input type="checkbox" class="form-check-input" id="TipoEmailFactura" name="TipoEmailFactura" value="1">
+                                                <label class="form-check-label" for="TipoEmailFactura">Email Fattura</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informazioni Commerciali Tab -->
+                    <div class="tab-pane fade" id="commercial" role="tabpanel" aria-labelledby="commercial-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="Descuento" class="form-label">Sconto (%)</label>
+                                    <input type="number" step="0.01" class="form-control" id="Descuento" name="Descuento" value="0">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="PuntosFidelidad" class="form-label">Punti Fedeltà</label>
+                                    <input type="number" class="form-control" id="PuntosFidelidad" name="PuntosFidelidad" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="NombreBanco" class="form-label">Nome Banca</label>
+                                    <input type="text" class="form-control" id="NombreBanco" name="NombreBanco">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="CodigoCuenta" class="form-label">Codice IBAN</label>
+                                    <input type="text" class="form-control" id="CodigoCuenta" name="CodigoCuenta">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="Observaciones" class="form-label">Note / Osservazioni</label>
+                                    <textarea class="form-control" id="Observaciones" name="Observaciones" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Impostazioni Tab -->
+                    <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="TotalPorArticulo" name="TotalPorArticulo" value="1">
+                                    <label class="form-check-label" for="TotalPorArticulo">Totale per Articolo</label>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="AplicarTarifaEtiqueta" name="AplicarTarifaEtiqueta" value="1" checked>
+                                    <label class="form-check-label" for="AplicarTarifaEtiqueta">Applica Tariffa Etichetta</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-card-footer">
+                    <a href="{{ url_for('clients.index') }}" class="btn form-btn form-btn-cancel">
+                        <i class="fas fa-times"></i> Annulla
+                    </a>
+                    <button type="submit" class="btn form-btn form-btn-save">
+                        <i class="fas fa-save"></i> Salva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Activate tabs
+        $('#clientTabs button').on('click', function (e) {
+            e.preventDefault();
+            $(this).tab('show');
+        });
+    });
+</script>
+{% endblock %} 

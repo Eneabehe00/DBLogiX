@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}DDT #{{ ddt.IdAlbaran }} - {{ cliente.Nombre }}{% endblock %}
+
+{% block header_title %}Dettaglio DDT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- DDT Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="page-id">#{{ ddt.IdAlbaran }}</div>
+        <nav aria-label="breadcrumb" class="no-print">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}" class="text-white">DDT</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">DDT #{{ ddt.IdAlbaran }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>DDT #{{ ddt.IdAlbaran }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="status-badge info">
+                        <i class="fas fa-calendar me-1"></i>{{ ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A' }}
+                    </span>
+                    <span class="status-badge success">
+                        <i class="fas fa-user me-1"></i>{{ cliente.Nombre }}
+                    </span>
+                    <span class="text-white-50">·</span>
+                    <span class="text-white-50">{{ total_items }} articoli</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0 no-print">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="javascript:void(0)" onclick="printDDT('{{ ddt.IdAlbaran }}')" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-print me-1"></i>Stampa
+                    </a>
+                    <form action="{{ url_for('fattura_pa.create_invoice', ddt_id=ddt.IdAlbaran) }}" method="post" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-light action-btn mb-2 mb-md-0">
+                            <i class="fas fa-file-invoice me-1"></i>Genera Fattura
+                        </button>
+                    </form>
+                    <a href="{{ url_for('ddt.delete', ddt_id=ddt.IdAlbaran) }}"
+                       class="btn btn-outline-danger action-btn"
+                       data-delete
+                       data-id="{{ ddt.IdAlbaran }}"
+                       data-name="DDT #{{ ddt.IdAlbaran }}"
+                       data-type="DDT"
+                       data-url="{{ url_for('ddt.delete', ddt_id=ddt.IdAlbaran) }}">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print header - only shown when printing -->
+<div class="print-only mb-4">
+    <div class="row">
+        <div class="col-6">
+            <h2>DDT #{{ ddt.IdAlbaran }}</h2>
+            <p>Data: {{ ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A' }}</p>
+        </div>
+        <div class="col-6 text-end">
+            <h3>{{ empresa.NombreEmpresa }}</h3>
+            <p>{{ empresa.Direccion }}, {{ empresa.Poblacion }}</p>
+            <p>P.IVA: {{ empresa.CIF_VAT }}</p>
+        </div>
+    </div>
+    <hr>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Tabs navigation -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <ul class="nav nav-tabs card-header-tabs" id="ddt-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+                        <i class="fas fa-info-circle me-1"></i><span class="d-none d-sm-inline">Dettagli</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab" aria-controls="products" aria-selected="false">
+                        <i class="fas fa-box me-1"></i><span class="d-none d-sm-inline">Prodotti</span>
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content p-3" id="ddt-tabs-content">
+                <!-- Details Tab -->
+                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-receipt text-primary me-2"></i>Informazioni DDT</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Data Creazione</span>
+                                    <span class="detail-value">{{ ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Numero DDT</span>
+                                    <span class="detail-value">{{ ddt.IdAlbaran }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Totale Articoli</span>
+                                    <span class="detail-value">{{ total_items }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Origine</span>
+                                    <span class="detail-value">
+                                        {% if ddt.created_by == 'DBLogiX' %}
+                                        <span class="badge bg-primary">DBLogiX</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Bilancia</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-calculator text-primary me-2"></i>Totali</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Imponibile</span>
+                                    <span class="detail-value">€ {{ "%.2f"|format(totals.total_without_vat) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">IVA</span>
+                                    <span class="detail-value">€ {{ "%.2f"|format(totals.total_vat) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Totale</span>
+                                    <span class="detail-value fs-5 fw-bold text-primary">€ {{ "%.2f"|format(totals.total) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-user text-primary me-2"></i>Cliente</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Nome</span>
+                                    <span class="detail-value">{{ cliente.Nombre }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Indirizzo</span>
+                                    <span class="detail-value">{{ cliente.Direccion or 'N/A' }}, {{ cliente.Poblacion or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">P.IVA/CF</span>
+                                    <span class="detail-value">{{ cliente.DNI or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Telefono</span>
+                                    <span class="detail-value">{{ cliente.Telefono1 or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Email</span>
+                                    <span class="detail-value">{{ cliente.Email or 'N/A' }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-building text-primary me-2"></i>Azienda</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Nome</span>
+                                    <span class="detail-value">{{ empresa.NombreEmpresa }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Indirizzo</span>
+                                    <span class="detail-value">{{ empresa.Direccion or 'N/A' }}, {{ empresa.Poblacion or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">P.IVA</span>
+                                    <span class="detail-value">{{ empresa.CIF_VAT or 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Products Tab -->
+                <div class="tab-pane fade" id="products" role="tabpanel" aria-labelledby="products-tab">
+                    {% if lines_by_ticket %}
+                        {% for ticket_id, ticket_lines in lines_by_ticket.items() %}
+                            <div class="info-section">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="section-title mb-0"><i class="fas fa-receipt text-primary me-2"></i>Ticket #{{ ticket_id }}</h5>
+                                    <span class="badge bg-primary">{{ ticket_lines|length }} Articoli</span>
+                                </div>
+                                
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover ticket-table mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="d-none d-lg-table-cell">ID</th>
+                                                    <th>Descrizione</th>
+                                                    <th>Peso/Qta.</th>
+                                                    <th class="d-none d-md-table-cell">Prezzo</th>
+                                                    <th class="d-none d-lg-table-cell">IVA %</th>
+                                                    <th class="d-none d-md-table-cell">Imponibile</th>
+                                                    <th class="d-none d-lg-table-cell">IVA</th>
+                                                    <th>Totale</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for line in ticket_lines %}
+                                                <tr>
+                                                    <td class="d-none d-lg-table-cell">{{ line.IdArticulo }}</td>
+                                                    <td>
+                                                        <div class="text-truncate" style="max-width: 160px;">{{ line.Descripcion }}</div>
+                                                    </td>
+                                                    <td>{{ line.Peso }} {% if line.Comportamiento == 0 %}unità{% else %}kg{% endif %}</td>
+                                                    <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(line.PrecioSinIVA) }}</td>
+                                                    <td class="d-none d-lg-table-cell">{{ (line.PorcentajeIVA)|float }}%</td>
+                                                    <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(line.ImporteSinIVASinDtoL) }}</td>
+                                                    <td class="d-none d-lg-table-cell">€ {{ "%.2f"|format(line.ImporteDelIVAConDtoL) }}</td>
+                                                    <td>€ {{ "%.2f"|format(line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL) }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr class="table-light">
+                                                    <td colspan="2" class="text-end fw-bold">Totali Ticket:</td>
+                                                    <td class="fw-bold" colspan="6">
+                                                        {% set subtotal = 0 %}
+                                                        {% for line in ticket_lines %}
+                                                            {% set subtotal = subtotal + (line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL) %}
+                                                        {% endfor %}
+                                                        € {{ "%.2f"|format(subtotal) }}
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        <!-- Totals Summary -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-primary text-white py-3">
+                                <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Riepilogo Totali</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3 mb-md-0">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <h6 class="text-muted mb-2">Imponibile</h6>
+                                            <h4 class="mb-0">€ {{ "%.2f"|format(totals.total_without_vat) }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3 mb-md-0">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <h6 class="text-muted mb-2">IVA</h6>
+                                            <h4 class="mb-0">€ {{ "%.2f"|format(totals.total_vat) }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                                            <h6 class="text-primary mb-2">Totale</h6>
+                                            <h4 class="mb-0 text-primary">€ {{ "%.2f"|format(totals.total) }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Nessun prodotto trovato in questo DDT.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="action-buttons text-center no-print mb-4">
+        <a href="{{ url_for('ddt.index') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-list me-1"></i>Lista DDT
+        </a>
+        <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-outline-info">
+            <i class="fas fa-file-alt me-1"></i>Lista Fatture
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function printDDT(id) {
+        // Reindirizza direttamente all'URL di esportazione in una nuova finestra
+        window.open(`{{ url_for('ddt.export', ddt_id=ddt.IdAlbaran) }}`, '_blank');
+    }
+</script>
+{% endblock %} 

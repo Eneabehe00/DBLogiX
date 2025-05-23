@@ -1,0 +1,291 @@
+/* Home CSS - Styles specific to the homepage */
+
+/* Variables */
+:root {
+    --primary-rgb: 13, 110, 253;
+    --success-rgb: 25, 135, 84;
+    --warning-rgb: 255, 193, 7;
+    --info-rgb: 13, 202, 240;
+    --dark-rgb: 33, 37, 41;
+}
+
+/* Welcome Section */
+.home-header {
+    background: linear-gradient(135deg, var(--sidebar-bg), #2c3e50);
+    border-radius: 1rem;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.welcome-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.welcome-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
+}
+
+/* Stats Overview */
+.stats-overview {
+    margin-top: 1rem;
+}
+
+.stat-card {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-info h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    color: white;
+}
+
+.stat-info p {
+    margin-bottom: 0;
+    opacity: 0.8;
+    font-size: 0.875rem;
+}
+
+/* Quick Actions */
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: #212529;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.75rem;
+}
+
+.quick-action-item {
+    display: block;
+    background-color: #fff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: #212529;
+    height: 100%;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.quick-action-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    color: var(--sidebar-active);
+    border-color: var(--sidebar-active);
+}
+
+.quick-action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.bg-primary-soft {
+    background-color: rgba(var(--primary-rgb), 0.1);
+    color: #0d6efd;
+}
+
+.bg-success-soft {
+    background-color: rgba(var(--success-rgb), 0.1);
+    color: #198754;
+}
+
+.bg-warning-soft {
+    background-color: rgba(var(--warning-rgb), 0.1);
+    color: #ffc107;
+}
+
+.bg-info-soft {
+    background-color: rgba(var(--info-rgb), 0.1);
+    color: #0dcaf0;
+}
+
+.bg-dark-soft {
+    background-color: rgba(var(--dark-rgb), 0.1);
+    color: #212529;
+}
+
+.quick-action-item h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.quick-action-item p {
+    margin-bottom: 0;
+    opacity: 0.7;
+    font-size: 0.875rem;
+}
+
+/* Activity Cards */
+.card {
+    border-radius: 1rem;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.25rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+/* Empty State */
+.empty-state {
+    padding: 3rem 1.5rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin-bottom: 0;
+    opacity: 0.7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .home-header {
+        padding: 2rem 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.75rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1rem;
+    }
+    
+    .quick-action-item {
+        padding: 1.25rem;
+    }
+    
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+    
+    .stat-info h3 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .home-header {
+        padding: 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.5rem;
+        text-align: center;
+    }
+    
+    .welcome-subtitle {
+        font-size: 0.95rem;
+        text-align: center;
+    }
+    
+    .stats-overview {
+        margin-top: 1.5rem;
+    }
+    
+    .quick-action-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .quick-action-item h3 {
+        font-size: 1rem;
+    }
+    
+    .quick-action-item p {
+        display: none;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+} 

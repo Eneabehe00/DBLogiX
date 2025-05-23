@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Tickets - DBLogiX{% endblock %}
+
+{% block header_title %}Gestione Tickets{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+<style>
+    @media (max-width: 768px) {
+        .data-table th, .data-table td {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.5rem;
+        }
+        
+        .mobile-truncate {
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Tickets</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-receipt me-2"></i>Gestione Tickets
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ tickets.total if tickets.total else 0 }} tickets nel database</span>
+                    {% if current_status == 'pending' %}
+                    <span class="status-badge warning ms-2">
+                        <i class="fas fa-clock me-1"></i>Pendenti
+                    </span>
+                    {% elif current_status == 'processed' %}
+                    <span class="status-badge success ms-2">
+                        <i class="fas fa-check-circle me-1"></i>Processati
+                    </span>
+                    {% elif current_status == 'expiring' %}
+                    <span class="status-badge danger ms-2">
+                        <i class="fas fa-exclamation-circle me-1"></i>In Scadenza
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-qrcode me-1"></i>Scanner
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Status Filter -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Stato Tickets</h5>
+        </div>
+        <div class="card-body">
+            <div class="btn-group w-100 overflow-auto">
+                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
+                    <i class="fas fa-list-ul me-1"></i> Tutti
+                </a>
+                <a href="{{ url_for('warehouse.tickets', status='pending', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-warning {% if current_status == 'pending' %}active{% endif %}">
+                    <i class="fas fa-clock me-1"></i> Pendenti
+                </a>
+                <a href="{{ url_for('warehouse.tickets', status='processed', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
+                    <i class="fas fa-check-circle me-1"></i> Processati
+                </a>
+                <a href="{{ url_for('warehouse.tickets', status='expiring', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expiring' %}active{% endif %}">
+                    <i class="fas fa-exclamation-circle me-1"></i> Scadenza
+                    {% if expiring_count > 0 %}
+                    <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-search me-2 text-primary"></i>Cerca Tickets</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <!-- Search form -->
+                    <div class="search-wrapper">
+                        <div class="position-relative">
+                            <input type="text" id="ticketSearch" class="form-control" placeholder="Cerca per #numero ticket o codice a barre..." value="{{ request.args.get('query', '') }}">
+                            <div id="searchResults" class="search-results-dropdown"></div>
+                        </div>
+                        <div class="form-text text-muted mt-1">
+                            <i class="fas fa-info-circle"></i> Usa <code>#123</code> per cercare il ticket numero 123, o inserisci il codice a barre
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <!-- Date filter -->
+                    <div class="row g-2">
+                        <div class="col-md-5 col-6">
+                            <label for="startDate" class="form-label">Data inizio</label>
+                            <input type="date" id="startDate" class="form-control" value="{{ request.args.get('start_date', '') }}">
+                        </div>
+                        <div class="col-md-5 col-6">
+                            <label for="endDate" class="form-label">Data fine</label>
+                            <input type="date" id="endDate" class="form-control" value="{{ request.args.get('end_date', '') }}">
+                        </div>
+                        <div class="col-md-2 col-12 d-flex align-items-end mt-md-0 mt-2">
+                            <button id="applyDateFilter" class="btn btn-primary w-100">Filtra</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if request.args.get('query') or request.args.get('start_date') or request.args.get('end_date') %}
+    <div class="alert alert-info mb-4">
+        <div class="d-flex flex-wrap align-items-center">
+            <span class="me-2 mb-2">Filtri attivi:</span>
+            
+            {% if request.args.get('query') %}
+            <span class="badge-soft badge-soft-primary me-2 mb-2 py-2 px-3">
+                <i class="fas fa-search me-1"></i> {{ request.args.get('query') }}
+                <a href="{{ url_for('warehouse.tickets', status=current_status, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="ms-2 text-primary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </span>
+            {% endif %}
+            
+            {% if request.args.get('start_date') or request.args.get('end_date') %}
+            <span class="badge-soft badge-soft-primary me-2 mb-2 py-2 px-3">
+                <i class="fas fa-calendar me-1"></i> 
+                {% if request.args.get('start_date') and request.args.get('end_date') %}
+                    Dal {{ request.args.get('start_date') }} al {{ request.args.get('end_date') }}
+                {% elif request.args.get('start_date') %}
+                    Da {{ request.args.get('start_date') }}
+                {% else %}
+                    Fino al {{ request.args.get('end_date') }}
+                {% endif %}
+                <a href="{{ url_for('warehouse.tickets', status=current_status, query=request.args.get('query', '')) }}" class="ms-2 text-primary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </span>
+            {% endif %}
+            
+            <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-secondary ms-auto mb-2">
+                <i class="fas fa-times me-1"></i> Rimuovi tutti i filtri
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tickets List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Tickets</h5>
+            {% if tickets.total > 0 %}
+            <span class="badge-soft badge-soft-primary">{{ tickets.total }} risultati</span>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if tickets.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Numero</th>
+                            <th>Data</th>
+                            <th>Prodotto</th>
+                            <th>Scadenza</th>
+                            <th>Codice</th>
+                            <th>Linee</th>
+                            <th>Stato</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets.items %}
+                        <tr data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;">
+                            <td data-label="ID">{{ ticket.IdTicket }}</td>
+                            <td data-label="Numero">#{{ ticket.NumTicket }}</td>
+                            <td data-label="Data">{{ ticket.formatted_date }}</td>
+                            <td data-label="Prodotto">
+                                {% if ticket.IdTicket in ticket_products %}
+                                <div>
+                                    <strong>{{ ticket_products[ticket.IdTicket]['product_name'] }}</strong> 
+                                    {% if ticket_products[ticket.IdTicket]['product_id'] %}
+                                    <div class="text-muted small">
+                                        ID: {{ ticket_products[ticket.IdTicket]['product_id'] }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Non disponibile</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Scadenza">
+                                {% if ticket.IdTicket in ticket_expiry %}
+                                {% set expiry_data = ticket_expiry[ticket.IdTicket] %}
+                                {% if expiry_data.days_remaining is not none %}
+                                {% if expiry_data.days_remaining <= 5 %}
+                                <span class="badge-soft badge-soft-danger">
+                                    {{ expiry_data.expiry_date }}
+                                    <span class="ms-1">
+                                        {% if expiry_data.days_remaining <= 0 %}
+                                            (Scaduto)
+                                        {% else %}
+                                            ({{ expiry_data.days_remaining }} giorni)
+                                        {% endif %}
+                                    </span>
+                                </span>
+                                {% elif expiry_data.days_remaining <= 10 %}
+                                <span class="badge-soft badge-soft-warning">
+                                    {{ expiry_data.expiry_date }}
+                                    <span class="ms-1">({{ expiry_data.days_remaining }} giorni)</span>
+                                </span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-success">
+                                    {{ expiry_data.expiry_date }}
+                                </span>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Codice">
+                                {% if ticket.CodBarras %}
+                                <code>{{ ticket.CodBarras }}</code>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Linee">
+                                {% if ticket.IdTicket in ticket_line_counts %}
+                                <span class="badge-soft badge-soft-primary">{{ ticket_line_counts[ticket.IdTicket] }}</span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-secondary">0</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Stato">
+                                {% if ticket.Procesado %}
+                                <span class="badge-soft badge-soft-success">Processato</span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-warning">Pendente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if tickets.pages > 1 %}
+            <div class="p-3 border-top">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if tickets.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, status=current_status, query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in tickets.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num != tickets.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('warehouse.tickets', page=page_num, status=current_status, query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if tickets.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.next_num, status=current_status, query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-receipt text-muted mb-3" style="font-size: 3rem;"></i>
+                <h5>Nessun ticket trovato</h5>
+                <p class="text-muted">Non ci sono ticket che corrispondono ai criteri di ricerca.</p>
+                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-list me-2"></i>Visualizza tutti i ticket
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter functionality
+        const ticketSearch = document.getElementById('ticketSearch');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const applyDateFilterBtn = document.getElementById('applyDateFilter');
+        
+        // Search handling
+        if (ticketSearch) {
+            ticketSearch.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const searchTerm = this.value.trim();
+                    if (searchTerm) {
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.set('query', searchTerm);
+                        window.location.href = currentUrl.toString();
+                    }
+                }
+            });
+        }
+        
+        // Date filter
+        if (applyDateFilterBtn) {
+            applyDateFilterBtn.addEventListener('click', function() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                
+                if (!startDate && !endDate) return;
+                
+                const currentUrl = new URL(window.location.href);
+                if (startDate) currentUrl.searchParams.set('start_date', startDate);
+                else currentUrl.searchParams.delete('start_date');
+                
+                if (endDate) currentUrl.searchParams.set('end_date', endDate);
+                else currentUrl.searchParams.delete('end_date');
+                
+                window.location.href = currentUrl.toString();
+            });
+        }
+        
+        // Make rows clickable
+        const ticketRows = document.querySelectorAll('tbody tr[data-url]');
+        ticketRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                window.location.href = this.getAttribute('data-url');
+            });
+        });
+    });
+</script>
+{% endblock %} 

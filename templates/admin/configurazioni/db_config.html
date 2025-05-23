@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazione Database e Azienda - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Configurazioni Sistema</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Configurazioni Sistema
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Gestisci le impostazioni di database e azienda</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <!-- Eventuali azioni qui -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <!-- Database Configuration -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-transparent d-flex align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-database me-2 text-primary"></i>Parametri Connessione Database Remoto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Configura i parametri di connessione al database remoto contenente i dati di prodotti e ticket.
+                    </div>
+                    
+                    <form method="post" novalidate>
+                        {{ db_form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ db_form.host.label(class="form-label") }}
+                                {{ db_form.host(class="form-control" + (" is-invalid" if db_form.host.errors else "")) }}
+                                {% for error in db_form.host.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ db_form.port.label(class="form-label") }}
+                                {{ db_form.port(class="form-control" + (" is-invalid" if db_form.port.errors else "")) }}
+                                {% for error in db_form.port.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ db_form.user.label(class="form-label") }}
+                                {{ db_form.user(class="form-control" + (" is-invalid" if db_form.user.errors else "")) }}
+                                {% for error in db_form.user.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ db_form.password.label(class="form-label") }}
+                                {{ db_form.password(class="form-control" + (" is-invalid" if db_form.password.errors else "")) }}
+                                {% for error in db_form.password.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ db_form.database.label(class="form-label") }}
+                            {{ db_form.database(class="form-control" + (" is-invalid" if db_form.database.errors else "")) }}
+                            {% for error in db_form.database.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="submit" name="test_connection" value="1" class="btn btn-info me-2">
+                                <i class="fas fa-plug me-1"></i>Test Connessione
+                            </button>
+                            <button type="submit" name="submit_db" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Salva Configurazione DB
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Company Configuration -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent d-flex align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-building me-2 text-primary"></i>Configurazione Azienda</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Configura i dati dell'azienda che verranno utilizzati nei documenti e nelle stampe.
+                    </div>
+                    
+                    <form method="post" novalidate>
+                        {{ company_form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ company_form.nombre_empresa.label(class="form-label") }}
+                                {{ company_form.nombre_empresa(class="form-control" + (" is-invalid" if company_form.nombre_empresa.errors else "")) }}
+                                {% for error in company_form.nombre_empresa.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ company_form.cif_vat.label(class="form-label") }}
+                                {{ company_form.cif_vat(class="form-control" + (" is-invalid" if company_form.cif_vat.errors else "")) }}
+                                {% for error in company_form.cif_vat.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ company_form.telefono.label(class="form-label") }}
+                                {{ company_form.telefono(class="form-control" + (" is-invalid" if company_form.telefono.errors else "")) }}
+                                {% for error in company_form.telefono.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ company_form.direccion.label(class="form-label") }}
+                                {{ company_form.direccion(class="form-control" + (" is-invalid" if company_form.direccion.errors else "")) }}
+                                {% for error in company_form.direccion.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ company_form.cod_postal.label(class="form-label") }}
+                                {{ company_form.cod_postal(class="form-control" + (" is-invalid" if company_form.cod_postal.errors else "")) }}
+                                {% for error in company_form.cod_postal.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ company_form.poblacion.label(class="form-label") }}
+                                {{ company_form.poblacion(class="form-control" + (" is-invalid" if company_form.poblacion.errors else "")) }}
+                                {% for error in company_form.poblacion.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ company_form.provincia.label(class="form-label") }}
+                                {{ company_form.provincia(class="form-control" + (" is-invalid" if company_form.provincia.errors else "")) }}
+                                {% for error in company_form.provincia.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="submit" name="submit_company" value="1" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i>Salva Configurazione Azienda
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

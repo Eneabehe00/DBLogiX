@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ client.Nombre }} - DBLogiX{% endblock %}
+
+{% block header_title %}Dettaglio Cliente{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Client Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="page-id">#{{ client.IdCliente }}</div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">{{ client.Nombre }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-user me-2"></i>{{ client.Nombre }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    {% if client.DNI %}
+                    <span class="status-badge info">
+                        <i class="fas fa-id-card me-1"></i>P.IVA/CF: {{ client.DNI }}
+                    </span>
+                    {% endif %}
+                    {% if client.PuntosFidelidad and client.PuntosFidelidad > 0 %}
+                    <span class="status-badge warning">
+                        <i class="fas fa-star me-1"></i>{{ client.PuntosFidelidad }} Punti Fedeltà
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('clients.edit', id=client.IdCliente) }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-edit me-1"></i>Modifica
+                    </a>
+                    <button class="btn btn-outline-light action-btn" 
+                            data-delete
+                            data-id="{{ client.IdCliente }}"
+                            data-name="{{ client.Nombre }}"
+                            data-type="cliente"
+                            data-url="{{ url_for('clients.delete', id=client.IdCliente) }}">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <ul class="nav nav-tabs card-header-tabs" id="clientInfoTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">
+                        <i class="fas fa-info-circle"></i> <span class="d-none d-sm-inline">Informazioni Principali</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">
+                        <i class="fas fa-address-book"></i> <span class="d-none d-sm-inline">Contatti</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="commercial-tab" data-bs-toggle="tab" data-bs-target="#commercial" type="button" role="tab" aria-controls="commercial" aria-selected="false">
+                        <i class="fas fa-tags"></i> <span class="d-none d-sm-inline">Informazioni Commerciali</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">
+                        <i class="fas fa-cog"></i> <span class="d-none d-sm-inline">Impostazioni</span>
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content p-3" id="clientInfoTabsContent">
+                <!-- Tab: Informazioni Principali -->
+                <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-id-card text-primary me-2"></i>Anagrafica</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Nome / Ragione Sociale</span>
+                                    <span class="detail-value">{{ client.Nombre }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">P.IVA / Codice Fiscale</span>
+                                    <span class="detail-value">{{ client.DNI or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Codice Interno</span>
+                                    <span class="detail-value">{{ client.CodInterno or 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-map-marker-alt text-primary me-2"></i>Indirizzo</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Indirizzo</span>
+                                    <span class="detail-value">{{ client.Direccion or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">CAP</span>
+                                    <span class="detail-value">{{ client.CodPostal or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Città</span>
+                                    <span class="detail-value">{{ client.Poblacion or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Provincia</span>
+                                    <span class="detail-value">{{ client.Provincia or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Paese</span>
+                                    <span class="detail-value">{{ client.Pais or 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab: Contatti -->
+                <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-phone text-primary me-2"></i>Numeri di Telefono</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Telefono Principale</span>
+                                    <span class="detail-value">{{ client.Telefono1 or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Telefono Secondario</span>
+                                    <span class="detail-value">{{ client.Telefono2 or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Telefono Alternativo</span>
+                                    <span class="detail-value">{{ client.Telefono3 or 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-envelope text-primary me-2"></i>Email e Preferenze</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Email</span>
+                                    <span class="detail-value">{{ client.Email or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Preferenze Email</span>
+                                    <span class="detail-value">
+                                        {% if client.TipoEmailTicket == 1 or client.TipoEmailAlbaran == 1 or client.TipoEmailFactura == 1 %}
+                                            <ul class="mb-0 ps-3">
+                                                {% if client.TipoEmailTicket == 1 %}<li>Ticket</li>{% endif %}
+                                                {% if client.TipoEmailAlbaran == 1 %}<li>DDT</li>{% endif %}
+                                                {% if client.TipoEmailFactura == 1 %}<li>Fattura</li>{% endif %}
+                                            </ul>
+                                        {% else %}
+                                            Nessuna preferenza
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab: Informazioni Commerciali -->
+                <div class="tab-pane fade" id="commercial" role="tabpanel" aria-labelledby="commercial-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-chart-line text-primary me-2"></i>Dati Commerciali</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Sconto</span>
+                                    <span class="detail-value">{{ client.Descuento or '0' }}%</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Punti Fedeltà</span>
+                                    <span class="detail-value">{{ client.PuntosFidelidad or '0' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Note / Osservazioni</span>
+                                    <span class="detail-value">{{ client.Observaciones or 'Nessuna osservazione' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-university text-primary me-2"></i>Dati Bancari</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Nome Banca</span>
+                                    <span class="detail-value">{{ client.NombreBanco or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Codice IBAN</span>
+                                    <span class="detail-value">{{ client.CodigoCuenta or 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab: Impostazioni -->
+                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Impostazioni Documento</h5>
+                            <div class="client-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Formato Albaran</span>
+                                    <span class="detail-value">{{ client.FormatoAlbaran or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Totale per Articolo</span>
+                                    <span class="detail-value">{{ 'Sì' if client.TotalPorArticulo == 1 else 'No' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Applica Tariffa Etichetta</span>
+                                    <span class="detail-value">{{ 'Sì' if client.AplicarTarifaEtiqueta == 1 else 'No' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Metadati</h5>
+                            <div class="client-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Data Creazione/Modifica</span>
+                                    <span class="detail-value">{{ client.TimeStamp.strftime('%d/%m/%Y %H:%M') if client.TimeStamp else 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Operazione</span>
+                                    <span class="detail-value">
+                                        {% if client.Operacion == 'A' %}
+                                            Aggiunto
+                                        {% elif client.Operacion == 'M' %}
+                                            Modificato
+                                        {% else %}
+                                            {{ client.Operacion }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Utente</span>
+                                    <span class="detail-value">{{ client.Usuario or 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Orders Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
+            <h5 class="card-title mb-0"><i class="fas fa-receipt text-primary me-2"></i>Ultimi Ordini</h5>
+        </div>
+        <div class="card-body p-0">
+            <!-- Mantieni la struttura originale ma usa le classi standardizzate -->
+            <!-- ... existing code ... -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Activate tabs
+        $('#clientInfoTabs button').on('click', function (e) {
+            e.preventDefault();
+            $(this).tab('show');
+        });
+    });
+    
+    // Function to generate PDF and open it for printing
+    function printDDT(ddtId) {
+        // Create a form to submit a POST request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{{ url_for('ddt.export', ddt_id=0) }}".replace('0', ddtId);
+        form.target = '_blank';
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = "{{ csrf_token() }}";
+        form.appendChild(csrfToken);
+        
+        // Add format as PDF
+        const formatInput = document.createElement('input');
+        formatInput.type = 'hidden';
+        formatInput.name = 'format';
+        formatInput.value = 'pdf';
+        form.appendChild(formatInput);
+        
+        // Add the form to the document body and submit it
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+</script>
+{% endblock %} 

@@ -471,6 +471,7 @@ class Article(Product):
     TimeStamp = db.Column(db.DateTime, default=datetime.utcnow)
     Marca = db.Column(db.Integer, default=1)
     Modificado = db.Column(db.Boolean)
+    Operacion = db.Column(db.String(1))
     LogoPantalla = db.Column(db.String(1000))
     
     # Add non-database attributes for the form

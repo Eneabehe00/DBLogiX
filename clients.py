@@ -161,8 +161,50 @@ def new():
             }
             
             db.session.execute(sql, params)
+            
+            # Inserimento automatico in dat_cliente_t
+            sql_cliente_t = text("""
+            INSERT INTO dat_cliente_t (
+                IdCliente, IdEmpresa, IdTienda, Modificado, Operacion, Usuario, TimeStamp
+            ) VALUES (
+                :IdCliente, :IdEmpresa, :IdTienda, :Modificado, :Operacion, :Usuario, NOW()
+            )
+            """)
+            
+            params_t = {
+                'IdCliente': new_id,
+                'IdEmpresa': 1,
+                'IdTienda': 1,
+                'Modificado': 1,
+                'Operacion': 'A',
+                'Usuario': current_user.username
+            }
+            
+            db.session.execute(sql_cliente_t, params_t)
+            
+            # Inserimento automatico in dat_cliente_t_b
+            sql_cliente_t_b = text("""
+            INSERT INTO dat_cliente_t_b (
+                IdCliente, IdEmpresa, IdTienda, IdBalanza, Modificado, Operacion, Usuario, TimeStamp
+            ) VALUES (
+                :IdCliente, :IdEmpresa, :IdTienda, :IdBalanza, :Modificado, :Operacion, :Usuario, NOW()
+            )
+            """)
+            
+            params_t_b = {
+                'IdCliente': new_id,
+                'IdEmpresa': 1,
+                'IdTienda': 1,
+                'IdBalanza': 1,
+                'Modificado': 1,
+                'Operacion': 'A',
+                'Usuario': current_user.username
+            }
+            
+            db.session.execute(sql_cliente_t_b, params_t_b)
+            
             db.session.commit()
-            flash('Cliente creato con successo!', 'success')
+            flash('Cliente creato con successo e sincronizzato nelle tabelle di configurazione!', 'success')
             return redirect(url_for('clients.index'))
         
         except SQLAlchemyError as e:
@@ -407,6 +449,48 @@ def import_csv():
                             new_client.Usuario = current_user.username
                             # Let database handle timestamp
                             db.session.add(new_client)
+                            db.session.flush()  # Flush to get the ID
+                            
+                            # Inserimento automatico in dat_cliente_t per nuovo cliente
+                            sql_cliente_t = text("""
+                            INSERT INTO dat_cliente_t (
+                                IdCliente, IdEmpresa, IdTienda, Modificado, Operacion, Usuario, TimeStamp
+                            ) VALUES (
+                                :IdCliente, :IdEmpresa, :IdTienda, :Modificado, :Operacion, :Usuario, NOW()
+                            )
+                            """)
+                            
+                            params_t = {
+                                'IdCliente': new_client.IdCliente,
+                                'IdEmpresa': 1,
+                                'IdTienda': 1,
+                                'Modificado': 1,
+                                'Operacion': 'A',
+                                'Usuario': current_user.username
+                            }
+                            
+                            db.session.execute(sql_cliente_t, params_t)
+                            
+                            # Inserimento automatico in dat_cliente_t_b per nuovo cliente
+                            sql_cliente_t_b = text("""
+                            INSERT INTO dat_cliente_t_b (
+                                IdCliente, IdEmpresa, IdTienda, IdBalanza, Modificado, Operacion, Usuario, TimeStamp
+                            ) VALUES (
+                                :IdCliente, :IdEmpresa, :IdTienda, :IdBalanza, :Modificado, :Operacion, :Usuario, NOW()
+                            )
+                            """)
+                            
+                            params_t_b = {
+                                'IdCliente': new_client.IdCliente,
+                                'IdEmpresa': 1,
+                                'IdTienda': 1,
+                                'IdBalanza': 1,
+                                'Modificado': 1,
+                                'Operacion': 'A',
+                                'Usuario': current_user.username
+                            }
+                            
+                            db.session.execute(sql_cliente_t_b, params_t_b)
                         
                         clients_imported += 1
                 

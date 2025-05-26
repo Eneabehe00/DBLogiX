@@ -278,6 +278,70 @@ def delete_eanscanner(id_registro):
         print(f"Error deleting EAN scanner: {str(e)}")
         return False
 
+def save_articulo_balanza(id_articulo, usuario="DBLogiX"):
+    """Save article to dat_articulo_t_b table for balanza association"""
+    try:
+        # Check if record already exists
+        existing_record = db.session.execute(text("""
+            SELECT COUNT(*) FROM dat_articulo_t_b 
+            WHERE IdArticulo = :id_articulo AND IdEmpresa = 1 AND IdTienda = 1 AND IdBalanza = 1
+        """), {"id_articulo": id_articulo}).scalar()
+        
+        if existing_record > 0:
+            print(f"dat_articulo_t_b record already exists for article ID {id_articulo}")
+            return True
+        
+        # Insert new record
+        sql_insert_balanza = """
+            INSERT INTO dat_articulo_t_b 
+            (IdArticulo, IdEmpresa, IdTienda, IdBalanza, Modificado, Operacion, Usuario, TimeStamp)
+            VALUES
+            (:id_articulo, 1, 1, 1, 1, 'A', :usuario, NOW())
+        """
+        
+        db.session.execute(text(sql_insert_balanza), {
+            'id_articulo': id_articulo,
+            'usuario': usuario
+        })
+        
+        print(f"Successfully created dat_articulo_t_b record for article ID {id_articulo}")
+        return True
+    except Exception as e:
+        print(f"Error creating dat_articulo_t_b record: {str(e)}")
+        return False
+
+def save_articulo_t(id_articulo, usuario="DBLogiX"):
+    """Save article to dat_articulo_t table for tienda association"""
+    try:
+        # Check if record already exists
+        existing_record = db.session.execute(text("""
+            SELECT COUNT(*) FROM dat_articulo_t 
+            WHERE IdArticulo = :id_articulo AND IdEmpresa = 1 AND IdTienda = 1
+        """), {"id_articulo": id_articulo}).scalar()
+        
+        if existing_record > 0:
+            print(f"dat_articulo_t record already exists for article ID {id_articulo}")
+            return True
+        
+        # Insert new record
+        sql_insert_t = """
+            INSERT INTO dat_articulo_t 
+            (IdArticulo, IdEmpresa, IdTienda, Modificado, Operacion, Usuario, TimeStamp)
+            VALUES
+            (:id_articulo, 1, 1, 1, 'A', :usuario, NOW())
+        """
+        
+        db.session.execute(text(sql_insert_t), {
+            'id_articulo': id_articulo,
+            'usuario': usuario
+        })
+        
+        print(f"Successfully created dat_articulo_t record for article ID {id_articulo}")
+        return True
+    except Exception as e:
+        print(f"Error creating dat_articulo_t record: {str(e)}")
+        return False
+
 def calculate_article_quantity(id_articulo):
     """
     Calculate the total number of pending tickets for an article.
@@ -462,34 +526,6 @@ def search():
 def view(id):
     article = Article.query.get_or_404(id)
     
-    # Load Texto2-Texto20 from database directly with raw SQL
-    try:
-        sql = "SELECT Texto2, Texto3, Texto4, Texto5, Texto6, Texto7, Texto8, Texto9, Texto10, Texto11, Texto12, Texto13, Texto14, Texto15, Texto16, Texto17, Texto18, Texto19, Texto20 FROM dat_articulo WHERE IdArticulo = :id"
-        result = db.session.execute(text(sql), {'id': id}).fetchone()
-        
-        if result:
-            article.Texto2 = result[0]
-            article.Texto3 = result[1]
-            article.Texto4 = result[2]
-            article.Texto5 = result[3]
-            article.Texto6 = result[4]
-            article.Texto7 = result[5]
-            article.Texto8 = result[6]
-            article.Texto9 = result[7]
-            article.Texto10 = result[8]
-            article.Texto11 = result[9]
-            article.Texto12 = result[10]
-            article.Texto13 = result[11]
-            article.Texto14 = result[12]
-            article.Texto15 = result[13]
-            article.Texto16 = result[14]
-            article.Texto17 = result[15]
-            article.Texto18 = result[16]
-            article.Texto19 = result[17]
-            article.Texto20 = result[18]
-    except Exception as e:
-        flash(f'Error loading text fields: {str(e)}', 'warning')
-    
     # Load traceability data
     lotes_asociados = []
     clase_nombre = 'N/A'
@@ -622,7 +658,9 @@ def create():
             IdEmpresa=1,  # Default company ID
             Usuario=current_user.username,
             TimeStamp=datetime.utcnow(),
-            Marca=1  # Default value
+            Marca=1,  # Default value
+            Modificado=True,  # Impostato a 1 come nell'articolo 63 funzionante
+            Operacion="A",  # A = Aggiunto, come nell'articolo 63 funzionante
         )
         
         # Remove EANScanner from Article creation - we'll use dat_articulo_eanscanner table instead
@@ -634,7 +672,7 @@ def create():
         # Now insert Texto2-Texto20 using direct SQL
         id_articulo = article.IdArticulo
         
-        # Use parameterized queries to prevent SQL injection
+        # Use parameterized queries to prevent SQL injection and set required fields
         sql_update = """
             UPDATE dat_articulo 
             SET 
@@ -656,30 +694,39 @@ def create():
                 Texto17 = :texto17,
                 Texto18 = :texto18,
                 Texto19 = :texto19,
-                Texto20 = :texto20
+                Texto20 = :texto20,
+                Modificado = 1,
+                Operacion = 'A',
+                TipoCalculo = 1,
+                AplicarRE = 1,
+                TipoDescuento = 1,
+                NumUnidadesDto = 2,
+                IdCodBarras = 0,
+                ModificadoTextos = 0,
+                ModificadoTextoG = 0
             WHERE IdArticulo = :id_articulo
         """
         
         db.session.execute(text(sql_update), {
-            'texto2': form.texto2.data,
-            'texto3': form.texto3.data,
-            'texto4': form.texto4.data,
-            'texto5': form.texto5.data,
-            'texto6': form.texto6.data,
-            'texto7': form.texto7.data,
-            'texto8': form.texto8.data,
-            'texto9': form.texto9.data,
-            'texto10': form.texto10.data,
-            'texto11': form.texto11.data,
-            'texto12': form.texto12.data,
-            'texto13': form.texto13.data,
-            'texto14': form.texto14.data,
-            'texto15': form.texto15.data,
-            'texto16': form.texto16.data,
-            'texto17': form.texto17.data,
-            'texto18': form.texto18.data,
-            'texto19': form.texto19.data,
-            'texto20': form.texto20.data,
+            'texto2': form.texto2.data or "",
+            'texto3': form.texto3.data or "",
+            'texto4': form.texto4.data or "",
+            'texto5': form.texto5.data or "",
+            'texto6': form.texto6.data or "",
+            'texto7': form.texto7.data or "",
+            'texto8': form.texto8.data or "",
+            'texto9': form.texto9.data or "",
+            'texto10': form.texto10.data or "",
+            'texto11': form.texto11.data or "",
+            'texto12': form.texto12.data or "",
+            'texto13': form.texto13.data or "",
+            'texto14': form.texto14.data or "",
+            'texto15': form.texto15.data or "",
+            'texto16': form.texto16.data or "",
+            'texto17': form.texto17.data or "",
+            'texto18': form.texto18.data or "",
+            'texto19': form.texto19.data or "",
+            'texto20': form.texto20.data or "",
             'id_articulo': id_articulo
         })
         
@@ -689,6 +736,16 @@ def create():
             ean_result = save_eanscanner(id_articulo, form.ean_scanner.data, activo=1)
             if not ean_result:
                 flash('Article created but EAN scanner could not be saved. Please add it manually.', 'warning')
+        
+        # Insert record into dat_articulo_t_b table for balanza association
+        balanza_result = save_articulo_balanza(id_articulo, current_user.username)
+        if not balanza_result:
+            flash('Article created but balanza association could not be saved.', 'warning')
+        
+        # Insert record into dat_articulo_t table for tienda association
+        tienda_result = save_articulo_t(id_articulo, current_user.username)
+        if not tienda_result:
+            flash('Article created but tienda association could not be saved.', 'warning')
         
         db.session.commit()
         
@@ -1070,9 +1127,22 @@ def import_from_csv():
                             IdEmpresa=1,
                             Usuario=current_user.username,
                             TimeStamp=datetime.utcnow(),
-                            Marca=1
+                            Marca=1,
+                            Modificado=True,
+                            Operacion="A"
                         )
                         db.session.add(article)
+                        db.session.flush()  # Flush to get the article ID
+                        
+                        # Insert record into dat_articulo_t_b table for balanza association for new articles
+                        balanza_result = save_articulo_balanza(article.IdArticulo, current_user.username)
+                        if not balanza_result:
+                            print(f"Warning: Could not create dat_articulo_t_b record for imported article ID {article.IdArticulo}")
+                        
+                        # Insert record into dat_articulo_t table for tienda association for new articles
+                        tienda_result = save_articulo_t(article.IdArticulo, current_user.username)
+                        if not tienda_result:
+                            print(f"Warning: Could not create dat_articulo_t record for imported article ID {article.IdArticulo}")
                     
                     # Save EAN Scanner to dat_articulo_eanscanner if provided
                     if 'EANScanner' in row and row['EANScanner']:
@@ -1147,10 +1217,23 @@ def import_sample_data():
                         IdEmpresa=1,
                         Usuario=current_user.username,
                         TimeStamp=datetime.utcnow(),
-                        Marca=1
+                        Marca=1,
+                        Modificado=True,
+                        Operacion="A"
                     )
                     db.session.add(article)
                     count_created += 1
+                    db.session.flush()  # Flush to get the article ID
+                    
+                    # Insert record into dat_articulo_t_b table for balanza association for new articles
+                    balanza_result = save_articulo_balanza(article.IdArticulo, current_user.username)
+                    if not balanza_result:
+                        print(f"Warning: Could not create dat_articulo_t_b record for sample article ID {article.IdArticulo}")
+                    
+                    # Insert record into dat_articulo_t table for tienda association for new articles
+                    tienda_result = save_articulo_t(article.IdArticulo, current_user.username)
+                    if not tienda_result:
+                        print(f"Warning: Could not create dat_articulo_t record for sample article ID {article.IdArticulo}")
                 
                 # Save EAN Scanner to dat_articulo_eanscanner if provided
                 if 'EANScanner' in row and row['EANScanner']:

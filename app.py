@@ -711,6 +711,5 @@ if __name__ == '__main__':
     from config import REMOTE_DB_CONFIG
     logger.info(f"Starting application with database configuration: host={REMOTE_DB_CONFIG['host']}, database={REMOTE_DB_CONFIG['database']}")
     
-    # Make sure cert.pem and key.pem are in the same directory as app.py
-    # Or provide the full path to them.
-    app.run(debug=True, host='0.0.0.0', ssl_context=('cert.pem', 'key.pem')) 
+    # Using HTTPS with self-signed certificates for camera access
+    app.run(debug=True, host='0.0.0.0', port=5000, ssl_context=('cert.pem', 'key.pem')) 

@@ -231,8 +231,29 @@ def tickets():
         for ticket_id, line_count in line_counts:
             ticket_lines_count[ticket_id] = line_count
     
-    # Count the total expiring tickets for the badge in filter
+    # Get expiry information for each ticket
+    ticket_expiry = {}
     today = datetime.now()
+    
+    if ticket_ids:
+        # Query per trovare la data di scadenza più vicina per ogni ticket
+        expiry_data = db.session.query(
+            TicketLine.IdTicket,
+            func.min(TicketLine.FechaCaducidad).label('earliest_expiry')
+        ).filter(
+            TicketLine.IdTicket.in_(ticket_ids),
+            TicketLine.FechaCaducidad.isnot(None)
+        ).group_by(TicketLine.IdTicket).all()
+        
+        for ticket_id, earliest_expiry in expiry_data:
+            if earliest_expiry:
+                days_remaining = (earliest_expiry - today).days
+                ticket_expiry[ticket_id] = {
+                    'expiry_date': earliest_expiry.strftime('%d/%m/%Y'),
+                    'days_remaining': days_remaining
+                }
+    
+    # Count the total expiring tickets for the badge in filter
     seven_days_from_now = today + timedelta(days=7)
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
@@ -246,6 +267,8 @@ def tickets():
                           tickets=tickets,
                           ticket_products=ticket_products,
                           ticket_lines_count=ticket_lines_count,
+                          ticket_line_counts=ticket_lines_count,  # Alias per compatibilità template
+                          ticket_expiry=ticket_expiry,
                           search_form=search_form,
                           current_status=status,
                           expiring_count=expiring_count)
@@ -282,6 +305,7 @@ def ticket_detail(ticket_id):
         TicketLine.Descripcion.label('linea_descripcion'),
         TicketLine.FechaCaducidad,
         TicketLine.Peso,
+        TicketLine.comportamiento,
         Product.Descripcion.label('producto_descripcion'),
         Product.PrecioConIVA,
         Product.EANScanner,
@@ -308,6 +332,7 @@ def ticket_detail(ticket_id):
                     TicketLine.Descripcion.label('linea_descripcion'),
                     TicketLine.FechaCaducidad,
                     TicketLine.Peso,
+                    TicketLine.comportamiento,
                     Product.Descripcion.label('producto_descripcion'),
                     Product.PrecioConIVA,
                     Product.EANScanner,
@@ -349,6 +374,26 @@ def ticket_detail(ticket_id):
                 self.created_at = None
                 self.stock_status = "in_stock"
                 
+                # Recupera il comportamiento dal ticket line per determinare l'unità di misura
+                self.comportamiento = getattr(product_info, 'comportamiento', 1)  # Default a 1 (kg)
+                
+                # Determina unità di misura e display basato su comportamiento
+                # 0 = unità, 1 = kg
+                if self.comportamiento == 0:
+                    self.weight_unit = "unità"
+                    # Per le unità, mostra il peso come intero se possibile
+                    if self.weight is not None:
+                        self.weight_display = str(int(self.weight)) if self.weight == int(self.weight) else str(self.weight)
+                    else:
+                        self.weight_display = "N/A"
+                else:
+                    self.weight_unit = "kg"
+                    # Per i kg, formatta con 3 decimali e rimuovi zeri finali
+                    if self.weight is not None:
+                        self.weight_display = f"{float(self.weight):.3f}".rstrip('0').rstrip('.')
+                    else:
+                        self.weight_display = "N/A"
+                
                 # Informazioni aggiuntive dall'article se disponibili
                 if article_info:
                     self.description = article_info.Descripcion1 or self.description
@@ -374,11 +419,23 @@ def ticket_detail(ticket_id):
         for line in lines:
             line_product = line.product  # Usa la relationship definita nel modello
             if line_product:
+                # Determina il display della quantità basato su comportamiento
+                comportamiento = getattr(line, 'comportamiento', 1)
+                peso = line.Peso if line.Peso else 0
+                
+                if comportamiento == 0:  # unità
+                    quantity_display = f"{int(peso) if peso == int(peso) else peso} unità"
+                    weight_display = f"{int(peso) if peso == int(peso) else peso} unità"
+                else:  # kg
+                    formatted_peso = f"{float(peso):.3f}".rstrip('0').rstrip('.')
+                    quantity_display = f"{formatted_peso} kg"
+                    weight_display = f"{formatted_peso} kg"
+                
                 product_lines.append({
                     'id': line_product.IdArticulo,
                     'name': line_product.Descripcion or line.Descripcion,
-                    'quantity': line.Peso if line.Peso else 0,
-                    'weight': line.Peso if line.Peso else 0,
+                    'quantity': quantity_display,
+                    'weight': weight_display,
                     'price': f"€ {line_product.PrecioConIVA:.2f}" if line_product.PrecioConIVA else "N/A"
                 })
     

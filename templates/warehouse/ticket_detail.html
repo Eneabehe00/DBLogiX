@@ -251,8 +251,8 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="info-group">
-                                        <div class="info-label"><i class="fas fa-weight text-primary me-2"></i>Peso</div>
-                                        <div class="info-value">{{ product.weight }} kg</div>
+                                        <div class="info-label"><i class="fas fa-weight text-primary me-2"></i>{% if product.comportamiento == 0 %}Quantità{% else %}Peso{% endif %}</div>
+                                        <div class="info-value">{{ product.weight_display }} {{ product.weight_unit }}</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
@@ -355,8 +355,7 @@
                                 <tr>
                                     <th class="d-none d-md-table-cell">ID</th>
                                     <th>Nome</th>
-                                    <th>Quantità</th>
-                                    <th class="d-none d-md-table-cell">Peso</th>
+                                    <th>Quantità/Peso</th>
                                     <th>Prezzo</th>
                                 </tr>
                             </thead>
@@ -365,10 +364,9 @@
                                 <tr>
                                     <td class="d-none d-md-table-cell">{{ line.id }}</td>
                                     <td>
-                                        <div class="text-truncate" style="max-width: 150px;">{{ line.name }}</div>
+                                        <div class="text-truncate" style="max-width: 200px;">{{ line.name }}</div>
                                     </td>
                                     <td>{{ line.quantity }}</td>
-                                    <td class="d-none d-md-table-cell">{{ line.weight }} kg</td>
                                     <td>{{ line.price }}</td>
                                 </tr>
                                 {% endfor %}
@@ -509,12 +507,16 @@
                         {% endif %}
                         
                         {% if not ticket.is_processed %}
-                        <a href="{{ url_for('warehouse.generate_ddt_step', ddt_type=1) }}" class="btn btn-outline-info">
-                            <i class="fas fa-file-alt me-2"></i>Genera DDT Tipo 1
-                        </a>
+                        <button class="btn btn-outline-info" onclick="addToDDT('{{ ticket.IdTicket }}', '1')">
+                            <i class="fas fa-plus me-2"></i>Aggiungi a DDT Tipo 1
+                        </button>
                         
-                        <a href="{{ url_for('warehouse.generate_ddt_step', ddt_type=2) }}" class="btn btn-outline-info">
-                            <i class="fas fa-file-alt me-2"></i>Genera DDT Tipo 2
+                        <button class="btn btn-outline-info" onclick="addToDDT('{{ ticket.IdTicket }}', '2')">
+                            <i class="fas fa-plus me-2"></i>Aggiungi a DDT Tipo 2
+                        </button>
+                        
+                        <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-outline-success">
+                            <i class="fas fa-eye me-2"></i>Visualizza Carrelli DDT
                         </a>
                         {% endif %}
                     </div>
@@ -599,5 +601,82 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Funzione per aggiungere ticket al carrello DDT
+function addToDDT(ticketId, ddtType) {
+    // Determina il tipo DDT per l'endpoint (2 per DDT1, 3 per DDT2)
+    const enviado = ddtType === '1' ? '2' : '3';
+    
+    // Mostra un indicatore di caricamento
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Aggiungendo...';
+    button.disabled = true;
+    
+    fetch('{{ url_for("warehouse.assign_ddt") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ticket_id: parseInt(ticketId),
+            ddt_type: enviado
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostra messaggio di successo
+            showAlert('success', `Ticket #{{ ticket.NumTicket }} aggiunto al carrello DDT Tipo ${ddtType} con successo!`);
+            
+            // Aggiorna il pulsante per mostrare che è stato aggiunto
+            button.innerHTML = `<i class="fas fa-check me-2"></i>Aggiunto a DDT ${ddtType}`;
+            button.classList.remove('btn-outline-info');
+            button.classList.add('btn-success');
+            
+            // Riabilita il pulsante dopo un breve ritardo
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-outline-info');
+                button.disabled = false;
+            }, 2000);
+        } else {
+            showAlert('danger', `Errore: ${data.message}`);
+            // Ripristina il pulsante in caso di errore
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        showAlert('danger', 'Errore di connessione durante l\'aggiunta al DDT.');
+        // Ripristina il pulsante in caso di errore
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+    });
+}
+
+// Funzione helper per mostrare messaggi di alert
+function showAlert(type, message) {
+    // Crea un elemento alert Bootstrap
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    // Inserisce l'alert all'inizio del container
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Rimuove automaticamente l'alert dopo 5 secondi
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %} 

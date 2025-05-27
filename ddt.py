@@ -374,7 +374,9 @@ def create():
                 # Calculate prices
                 price_with_vat = float(product.PrecioConIVA)
                 price_without_vat = price_with_vat / (1 + vat_rate)
-                line_total = price_without_vat * float(ticket_line.Peso)
+                # Handle None value for Peso - use 1.0 as default if Peso is None
+                peso_value = float(ticket_line.Peso) if ticket_line.Peso is not None else 1.0
+                line_total = price_without_vat * peso_value
                 line_vat = line_total * vat_rate
                 
                 # Get product family, subfamily, class info
@@ -400,8 +402,8 @@ def create():
                 albaran_line.Comportamiento = getattr(ticket_line, 'comportamiento', 0)  # Usa il valore dal ticket
                 albaran_line.ComportamientoDevolucion = getattr(ticket_line, 'comportamiento_devolucion', 0)
                 
-                # Pesi e quantità
-                albaran_line.Peso = float(ticket_line.Peso)
+                # Pesi e quantità - Handle None value for Peso
+                albaran_line.Peso = peso_value  # Use the same peso_value calculated above
                 albaran_line.Medida2 = "un"  # Default come nell'esempio
                 
                 # Prezzi e IVA

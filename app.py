@@ -33,8 +33,8 @@ def create_app():
         # Override config with environment variables if present
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'dev-key-for-dblogix'))
         
-        # Set debug mode to True
-        app.config['DEBUG'] = True
+        # Set debug mode based on environment
+        app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
         
         # Database configuration can be updated from environment
         db_host = os.environ.get('DB_HOST')
@@ -107,26 +107,30 @@ def create_app():
         # Register template filters
         from utils import format_price, format_weight, current_time, b64encode
         
-        # Configurazione Flask-DebugToolbar
-        from flask_debugtoolbar import DebugToolbarExtension
-        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-        app.config['DEBUG_TB_ENABLED'] = app.debug
-        app.config['DEBUG_TB_HOSTS'] = ['127.0.0.1', 'localhost']
-        # Disabilita il debug toolbar per le rotte /fattura_pa/*
-        app.config['DEBUG_TB_TEMPLATE_EDITOR_ENABLED'] = False
-        app.config['DEBUG_TB_PANELS'] = [
-            'flask_debugtoolbar.panels.versions.VersionDebugPanel',
-            'flask_debugtoolbar.panels.timer.TimerDebugPanel',
-            'flask_debugtoolbar.panels.headers.HeaderDebugPanel',
-            'flask_debugtoolbar.panels.request_vars.RequestVarsDebugPanel',
-            'flask_debugtoolbar.panels.config_vars.ConfigVarsDebugPanel',
-            'flask_debugtoolbar.panels.template.TemplateDebugPanel',
-            'flask_debugtoolbar.panels.sqlalchemy.SQLAlchemyDebugPanel',
-            'flask_debugtoolbar.panels.logger.LoggingPanel',
-            'flask_debugtoolbar.panels.profiler.ProfilerDebugPanel',
-        ]
-        app.config['DEBUG_TB_EXCLUDE_PATHS'] = ['/fattura_pa/', '/fattura_pa/*', '/static/*']
-        toolbar = DebugToolbarExtension(app)
+        # Configurazione Flask-DebugToolbar (solo se in modalità debug)
+        if app.debug:
+            try:
+                from flask_debugtoolbar import DebugToolbarExtension
+                app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+                app.config['DEBUG_TB_ENABLED'] = True
+                app.config['DEBUG_TB_HOSTS'] = ['127.0.0.1', 'localhost']
+                # Disabilita il debug toolbar per le rotte /fattura_pa/*
+                app.config['DEBUG_TB_TEMPLATE_EDITOR_ENABLED'] = False
+                app.config['DEBUG_TB_PANELS'] = [
+                    'flask_debugtoolbar.panels.versions.VersionDebugPanel',
+                    'flask_debugtoolbar.panels.timer.TimerDebugPanel',
+                    'flask_debugtoolbar.panels.headers.HeaderDebugPanel',
+                    'flask_debugtoolbar.panels.request_vars.RequestVarsDebugPanel',
+                    'flask_debugtoolbar.panels.config_vars.ConfigVarsDebugPanel',
+                    'flask_debugtoolbar.panels.template.TemplateDebugPanel',
+                    'flask_debugtoolbar.panels.sqlalchemy.SQLAlchemyDebugPanel',
+                    'flask_debugtoolbar.panels.logger.LoggingPanel',
+                    'flask_debugtoolbar.panels.profiler.ProfilerDebugPanel',
+                ]
+                app.config['DEBUG_TB_EXCLUDE_PATHS'] = ['/fattura_pa/', '/fattura_pa/*', '/static/*']
+                toolbar = DebugToolbarExtension(app)
+            except ImportError:
+                logger.warning("Flask-DebugToolbar not available. Continuing without debug toolbar.")
         
         @app.template_filter('price')
         def price_filter(value):

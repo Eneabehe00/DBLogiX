@@ -681,24 +681,30 @@
                 </thead>
                 <tbody>
                     {% for ticket in article_tickets %}
-                    <tr>
-                        <td data-label="ID Ticket"><span class="badge bg-light text-dark">{{ ticket.IdTicket }}</span></td>
-                        <td data-label="Numero">{{ ticket.NumTicket }}</td>
-                        <td data-label="Data">{{ ticket.FechaFormateada }}</td>
-                        <td data-label="Stato">
+                    <tr data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;">
+                        <td>{{ ticket.IdTicket }}</td>
+                        <td>#{{ ticket.NumTicket }}</td>
+                        <td>{{ ticket.FechaFormateada }}</td>
+                        <td>
                             {% if ticket.Enviado == 1 %}
-                            <span class="badge badge-soft-success"><i class="fas fa-check-circle me-1"></i> {{ ticket.EstadoTicket }}</span>
+                            <span class="badge-soft badge-soft-success">{{ ticket.EstadoTicket }}</span>
                             {% else %}
-                            <span class="badge badge-soft-secondary"><i class="fas fa-clock me-1"></i> {{ ticket.EstadoTicket }}</span>
+                            <span class="badge-soft badge-soft-warning">{{ ticket.EstadoTicket }}</span>
                             {% endif %}
                         </td>
-                        <td data-label="Articolo">{{ ticket.Descripcion }}</td>
-                        <td data-label="Peso/Quantità">{{ ticket.Peso }}</td>
-                        <td class="text-end" data-label="Tipo">
-                            {% if ticket.Comportamiento == 1 %}
-                            <span class="badge badge-soft-primary">Pesato</span>
+                        <td>{{ ticket.Descripcion }}</td>
+                        <td>
+                            {% if ticket.Comportamiento == 0 %}
+                            {{ ticket.Peso|int if ticket.Peso == ticket.Peso|int else ticket.Peso }} unità
                             {% else %}
-                            <span class="badge badge-soft-primary">Unitario</span>
+                            {{ "%.3f"|format(ticket.Peso)|rstrip('0')|rstrip('.') }} kg
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if ticket.Comportamiento == 0 %}
+                            <span class="badge-soft badge-soft-info">Unità</span>
+                            {% else %}
+                            <span class="badge-soft badge-soft-primary">Peso</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -707,10 +713,9 @@
             </table>
         </div>
         {% else %}
-        <div class="text-center text-muted p-4">
-            <i class="fas fa-ticket-alt fa-3x mb-3"></i>
-            <h5>Nessun ticket trovato</h5>
-            <p>Non sono stati trovati ticket per questo articolo.</p>
+        <div class="text-center py-4">
+            <i class="fas fa-receipt text-muted mb-3" style="font-size: 2rem;"></i>
+            <p class="text-muted mb-0">Nessun ticket correlato trovato</p>
         </div>
         {% endif %}
     </div>
@@ -833,6 +838,14 @@
                 const lotNameText = this.cells[1].textContent;
                 lotName.textContent = lotNameText;
                 getLotDetails(lotId);
+            });
+        });
+
+        // Make ticket rows clickable
+        const ticketRows = document.querySelectorAll('tr[data-url]');
+        ticketRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                window.location.href = this.getAttribute('data-url');
             });
         });
     });

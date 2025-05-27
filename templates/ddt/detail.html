@@ -229,7 +229,13 @@
                                                     <td>
                                                         <div class="text-truncate" style="max-width: 160px;">{{ line.Descripcion }}</div>
                                                     </td>
-                                                    <td>{{ line.Peso }} {% if line.Comportamiento == 0 %}unità{% else %}kg{% endif %}</td>
+                                                    <td>
+                                                        {% if line.Comportamiento == 0 %}
+                                                            {{ (line.Peso | int) if line.Peso == (line.Peso | int) else line.Peso | round(3) }} unità
+                                                        {% else %}
+                                                            {{ line.Peso | round(3) | string | replace('.000', '') | replace('0000', '') }} kg
+                                                        {% endif %}
+                                                    </td>
                                                     <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(line.PrecioSinIVA) }}</td>
                                                     <td class="d-none d-lg-table-cell">{{ (line.PorcentajeIVA)|float }}%</td>
                                                     <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(line.ImporteSinIVASinDtoL) }}</td>

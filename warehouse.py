@@ -639,6 +639,14 @@ def process_qr():
                     expiration_info = None
                     # ... (keep existing expiration logic here if present) ...
 
+                    # Determina il peso/quantità corretti basandosi su comportamiento
+                    if ticket_line.comportamiento == 0:  # Unità
+                        display_weight = str(int(weight_kg)) if weight_kg == int(weight_kg) else str(weight_kg)
+                        weight_unit = "unità"
+                    else:  # kg
+                        display_weight = f"{weight_kg:.3f}".rstrip('0').rstrip('.')
+                        weight_unit = "kg"
+
                     db.session.commit() # Commit the log and any other changes
                     return jsonify({
                         'success': True,
@@ -652,7 +660,8 @@ def process_qr():
                             'id': product.IdArticulo,
                             'name': product.Descripcion,
                             'code': product.IdArticulo, # Assuming code is IdArticulo, adjust if different
-                            'weight': weight_kg 
+                            'weight': f"{display_weight} {weight_unit}",
+                            'comportamiento': ticket_line.comportamiento  # Aggiungo il comportamiento
                         },
                         # 'expiration': expiration_info, # Add back if logic is present
                         'scan_log_id': log.id
@@ -829,7 +838,8 @@ def get_ddt_items():
             TicketHeader.IdTicket,
             TicketHeader.NumTicket,
             Product.Descripcion.label('product_name'),
-            TicketLine.Peso.label('product_weight') # Corretto da UnidadReal a Peso
+            TicketLine.Peso.label('product_weight'), # Corretto da UnidadReal a Peso
+            TicketLine.comportamiento.label('comportamiento') # Aggiunto campo comportamiento
         ).join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)\
          .join(Product, TicketLine.IdArticulo == Product.IdArticulo)\
          .filter(TicketHeader.Enviado == 2).all()
@@ -838,14 +848,15 @@ def get_ddt_items():
             TicketHeader.IdTicket,
             TicketHeader.NumTicket,
             Product.Descripcion.label('product_name'),
-            TicketLine.Peso.label('product_weight') # Corretto da UnidadReal a Peso
+            TicketLine.Peso.label('product_weight'), # Corretto da UnidadReal a Peso
+            TicketLine.comportamiento.label('comportamiento') # Aggiunto campo comportamiento
         ).join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)\
          .join(Product, TicketLine.IdArticulo == Product.IdArticulo)\
          .filter(TicketHeader.Enviado == 3).all()
 
         # Convert to list of dicts for JSON response
-        ddt1_items = [{'ticket_id': t.IdTicket, 'ticket_number': t.NumTicket, 'product_name': t.product_name, 'product_weight': t.product_weight} for t in ddt1_tickets]
-        ddt2_items = [{'ticket_id': t.IdTicket, 'ticket_number': t.NumTicket, 'product_name': t.product_name, 'product_weight': t.product_weight} for t in ddt2_tickets]
+        ddt1_items = [{'ticket_id': t.IdTicket, 'ticket_number': t.NumTicket, 'product_name': t.product_name, 'product_weight': t.product_weight, 'comportamiento': t.comportamiento} for t in ddt1_tickets]
+        ddt2_items = [{'ticket_id': t.IdTicket, 'ticket_number': t.NumTicket, 'product_name': t.product_name, 'product_weight': t.product_weight, 'comportamiento': t.comportamiento} for t in ddt2_tickets]
         
         return jsonify({
             'success': True, 
@@ -946,7 +957,8 @@ def generate_ddt_step():
             TicketHeader.IdTicket,
             TicketHeader.NumTicket,
             Product.Descripcion.label('product_name'),
-            TicketLine.Peso.label('product_weight') # Corretto da UnidadReal a Peso
+            TicketLine.Peso.label('product_weight'), # Corretto da UnidadReal a Peso
+            TicketLine.comportamiento.label('comportamiento') # Aggiunto campo comportamiento
         ).join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket)\
          .join(Product, TicketLine.IdArticulo == Product.IdArticulo)\
          .filter(TicketHeader.Enviado == ddt_enviado_status).all()
@@ -955,7 +967,8 @@ def generate_ddt_step():
             'ticket_id': t.IdTicket, 
             'ticket_number': t.NumTicket, 
             'product_name': t.product_name, 
-            'product_weight': t.product_weight
+            'product_weight': t.product_weight,
+            'comportamiento': t.comportamiento
         } for t in ddt_tickets_query]
 
     except Exception as e:

@@ -116,7 +116,7 @@
                                             <tr>
                                                 <td>{{ item.ticket_number }}</td>
                                                 <td class="text-truncate" style="max-width: 200px;">{{ item.product_name }}</td>
-                                                <td>{{ item.product_weight }} kg</td>
+                                                <td>{{ item.product_weight }} {% if item.comportamiento == 0 %}unità{% else %}kg{% endif %}</td>
                                             </tr>
                                         {% endfor %}
                                     </tbody>
@@ -186,7 +186,7 @@
 
 <!-- JSON dati articoli per il JavaScript -->
 <script type="application/json" id="ticket-data-json">
-[{% if items and items|length > 0 %}{% for item in items %}{"id_ticket":{{ item.ticket_id }},"ticket_number":{{ item.ticket_number }},"product_name":"{{ item.product_name|replace('"', '\\"') }}","product_weight":{{ item.product_weight }}}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}]
+[{% if items and items|length > 0 %}{% for item in items %}{"id_ticket":{{ item.ticket_id }},"ticket_number":{{ item.ticket_number }},"product_name":"{{ item.product_name|replace('"', '\\"') }}","product_weight":{{ item.product_weight }},"comportamiento":{{ item.comportamiento }}}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}]
 </script>
 {% endblock %}
 

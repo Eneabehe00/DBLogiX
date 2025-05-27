@@ -376,7 +376,7 @@
                 btnProductDetails.style.display = 'block';
                 resultProductName.textContent = currentScanData.product.name;
                 resultProductCode.textContent = `Codice: ${currentScanData.product.code}`;
-                resultProductWeight.textContent = currentScanData.product.weight ? `Peso: ${currentScanData.product.weight} kg` : 'Peso: N/D';
+                resultProductWeight.textContent = currentScanData.product.weight ? `Peso: ${currentScanData.product.weight}` : 'Peso: N/D';
                 resultScanDate.textContent = `Scansione: ${currentScanData.scan_date}`;
             } else {
                 productDetails.classList.add('d-none');
@@ -559,7 +559,7 @@
                     if (data.product) {
                         modalProductName.textContent = data.product.name;
                         modalProductCode.textContent = data.product.code;
-                        modalProductWeight.textContent = data.product.weight ? `${data.product.weight} kg` : 'N/D';
+                        modalProductWeight.textContent = data.product.weight || 'N/D';
                         modalScanDate.textContent = data.scan_date;
                         modalProductDetailsDiv.style.display = 'block';
                     } else {
@@ -831,7 +831,9 @@
                     if(item.product_name) {
                         productInfo.textContent = item.product_name;
                         if(item.product_weight) {
-                            productInfo.textContent += ` (${item.product_weight} kg)`;
+                            // Usa comportamiento per determinare l'unità di misura: 0 = unità, 1 = kg
+                            const unit = item.comportamiento === 0 ? 'unità' : 'kg';
+                            productInfo.textContent += ` (${item.product_weight} ${unit})`;
                         }
                     } else {
                         productInfo.textContent = 'Prodotto non specificato';

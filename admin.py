@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from models import db, User, ScanLog, Product, TicketHeader, Company
-from forms import RegistrationForm, DbConfigForm, CompanyConfigForm
+from forms import RegistrationForm, DbConfigForm, CompanyConfigForm, ResetPasswordForm
 from sqlalchemy import func, desc
 from config import REMOTE_DB_CONFIG
 import pymysql
@@ -179,19 +179,15 @@ def delete_user(user_id):
 def reset_password(user_id):
     """Reset a user's password"""
     user = User.query.get_or_404(user_id)
+    form = ResetPasswordForm()
     
-    if request.method == 'POST':
-        new_password = request.form.get('password')
-        if not new_password or len(new_password) < 6:
-            flash('Password must be at least 6 characters long.', 'danger')
-            return redirect(url_for('admin.reset_password', user_id=user_id))
-        
-        user.set_password(new_password)
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
         db.session.commit()
         flash('Password reset successfully!', 'success')
         return redirect(url_for('admin.manage_users'))
     
-    return render_template('admin/configurazioni/reset_password.html', user=user)
+    return render_template('admin/configurazioni/reset_password.html', user=user, form=form)
 
 @admin_bp.route('/configurazioni/db-config', methods=['GET', 'POST'])
 @admin_required

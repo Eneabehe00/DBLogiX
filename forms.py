@@ -143,4 +143,8 @@ class ArticleForm(FlaskForm):
 
 class ArticleDeleteForm(FlaskForm):
     confirm = BooleanField('Confirm Deletion', validators=[DataRequired()])
-    submit = SubmitField('Delete') 
+    submit = SubmitField('Delete')
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    submit = SubmitField('Reimposta Password') 

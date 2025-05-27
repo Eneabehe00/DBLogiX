@@ -80,7 +80,11 @@
                                     
                                     {% if current_user.id != user.id %}
                                     <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            data-bs-toggle="modal" data-bs-target="#deleteUserModal-{{ user.id }}">
+                                            data-delete
+                                            data-id="{{ user.id }}"
+                                            data-name="{{ user.username }}"
+                                            data-type="utente"
+                                            data-url="{{ url_for('admin.delete_user', user_id=user.id) }}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                     {% else %}
@@ -89,30 +93,7 @@
                                     </button>
                                     {% endif %}
                                 </div>
-                                
-                                <!-- Delete Modal -->
-                                <div class="modal fade" id="deleteUserModal-{{ user.id }}" tabindex="-1" aria-labelledby="deleteUserModalLabel-{{ user.id }}" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="deleteUserModalLabel-{{ user.id }}">Conferma Eliminazione</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                Sei sicuro di voler eliminare l'utente <strong>{{ user.username }}</strong>?
-                                                <div class="alert alert-warning mt-3">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>Questa azione non può essere annullata.
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                                                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post">
-                                                    <button type="submit" class="btn btn-danger">Elimina</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
                             </td>
                         </tr>
                         {% else %}

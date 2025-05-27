@@ -281,7 +281,13 @@ def ticket_detail(ticket_id):
         TicketLine.IdArticulo,
         TicketLine.Descripcion.label('linea_descripcion'),
         TicketLine.FechaCaducidad,
-        Product.Descripcion.label('producto_descripcion')
+        TicketLine.Peso,
+        Product.Descripcion.label('producto_descripcion'),
+        Product.PrecioConIVA,
+        Product.EANScanner,
+        Product.IdFamilia,
+        Product.IdSubFamilia,
+        Product.IdIva
     ).join(
         Product, 
         TicketLine.IdArticulo == Product.IdArticulo
@@ -301,7 +307,13 @@ def ticket_detail(ticket_id):
                     TicketLine.IdArticulo,
                     TicketLine.Descripcion.label('linea_descripcion'),
                     TicketLine.FechaCaducidad,
-                    Product.Descripcion.label('producto_descripcion')
+                    TicketLine.Peso,
+                    Product.Descripcion.label('producto_descripcion'),
+                    Product.PrecioConIVA,
+                    Product.EANScanner,
+                    Product.IdFamilia,
+                    Product.IdSubFamilia,
+                    Product.IdIva
                 ).join(
                     Product, 
                     TicketLine.IdArticulo == Product.IdArticulo
@@ -315,19 +327,60 @@ def ticket_detail(ticket_id):
         except (ValueError, TypeError):
             logger.warning(f"Ticket #{ticket.NumTicket}: ID articolo dal QR non valido")
     
-    # Prepara i dati del prodotto principale
-    main_product = {
-        'id': None,
-        'name': "Nessun prodotto",
-        'description': None,
-        'expiration_date': None
-    }
-    
+    # Recupera l'oggetto Product completo se abbiamo trovato delle informazioni
+    product = None
     if main_product_info:
-        main_product['id'] = main_product_info.IdArticulo
-        main_product['name'] = main_product_info.producto_descripcion or main_product_info.linea_descripcion
-        main_product['description'] = main_product_info.linea_descripcion
-        main_product['expiration_date'] = main_product_info.FechaCaducidad
+        # Cerca informazioni aggiuntive dall'oggetto Article per campi estesi
+        from models import Article
+        article = Article.query.filter_by(IdArticulo=main_product_info.IdArticulo).first()
+        
+        # Crea un oggetto product con tutte le informazioni necessarie per il template
+        class ProductDetails:
+            def __init__(self, product_info, article_info=None):
+                self.product_id = product_info.IdArticulo
+                self.product_name = product_info.producto_descripcion or product_info.linea_descripcion
+                self.description = product_info.linea_descripcion or product_info.producto_descripcion
+                self.weight = product_info.Peso if hasattr(product_info, 'Peso') else None
+                self.price_per_kg = product_info.PrecioConIVA if hasattr(product_info, 'PrecioConIVA') else None
+                self.expiration_date = product_info.FechaCaducidad
+                self.notes = None
+                self.type = "Standard"
+                self.category = "Non specificata"
+                self.created_at = None
+                self.stock_status = "in_stock"
+                
+                # Informazioni aggiuntive dall'article se disponibili
+                if article_info:
+                    self.description = article_info.Descripcion1 or self.description
+                    self.notes = article_info.Texto1
+                    self.created_at = article_info.TimeStamp
+                    
+                    # Determina categoria basata su famiglia/sottofamiglia
+                    if article_info.IdFamilia:
+                        if article_info.IdFamilia == 1:
+                            self.category = "Alimentari"
+                        elif article_info.IdFamilia == 2:
+                            self.category = "Bevande"
+                        elif article_info.IdFamilia == 3:
+                            self.category = "Non Alimentari"
+                        else:
+                            self.category = f"Famiglia {article_info.IdFamilia}"
+        
+        product = ProductDetails(main_product_info, article)
+    
+    # Prepara anche le linee prodotto per la visualizzazione nella tabella
+    product_lines = []
+    if lines:
+        for line in lines:
+            line_product = line.product  # Usa la relationship definita nel modello
+            if line_product:
+                product_lines.append({
+                    'id': line_product.IdArticulo,
+                    'name': line_product.Descripcion or line.Descripcion,
+                    'quantity': line.Peso if line.Peso else 0,
+                    'weight': line.Peso if line.Peso else 0,
+                    'price': f"€ {line_product.PrecioConIVA:.2f}" if line_product.PrecioConIVA else "N/A"
+                })
     
     # Check for soon-to-expire products
     today = datetime.now()
@@ -364,11 +417,13 @@ def ticket_detail(ticket_id):
     return render_template('warehouse/ticket_detail.html', 
                           ticket=ticket,
                           lines=lines,
+                          product=product,
+                          product_lines=product_lines,
                           expiring_soon=expiring_soon,
                           expired=expired,
                           search_form=search_form,
                           expiring_count=expiring_count,
-                          main_product=main_product)
+                          now=datetime.now)
 
 @warehouse_bp.route('/ticket/<int:ticket_id>/checkout', methods=['POST'])
 @login_required

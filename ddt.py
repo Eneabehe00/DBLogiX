@@ -371,8 +371,8 @@ def create():
                 elif product.IdIva == 3:
                     vat_rate = 0.22  # 22%
                 
-                # Calculate prices
-                price_with_vat = float(product.PrecioConIVA)
+                # Calculate prices - Handle None value for PrecioConIVA
+                price_with_vat = float(product.PrecioConIVA) if product.PrecioConIVA is not None else 0.0
                 price_without_vat = price_with_vat / (1 + vat_rate)
                 # Handle None value for Peso - use 1.0 as default if Peso is None
                 peso_value = float(ticket_line.Peso) if ticket_line.Peso is not None else 1.0
@@ -1107,8 +1107,8 @@ def ticket_details(ticket_id, empresa_id):
                 ticket_data["items"].append({
                     "id": product.IdArticulo,
                     "description": product.Descripcion,
-                    "quantity": f"{line.Peso} {'unità' if line.comportamiento == 0 else 'Kg'}" if line.Peso else "N/A",
-                    "price": f"€ {product.PrecioConIVA}" if product.PrecioConIVA else "N/A"
+                    "quantity": f"{line.Peso} {'unità' if line.comportamiento == 0 else 'Kg'}" if line.Peso is not None else "N/A",
+                    "price": f"€ {product.PrecioConIVA}" if product.PrecioConIVA is not None else "N/A"
                 })
             except Exception as e:
                 print(f"Error processing line {line.IdLinea}: {str(e)}")
@@ -1165,9 +1165,9 @@ def search_tickets():
             ticket_lines.append({
                 "id": line.IdLinea,
                 "descripcion": product.Descripcion,
-                "peso": float(line.Peso) if line.Peso else 0,
+                "peso": float(line.Peso) if line.Peso is not None else 0,
                 "comportamiento": line.comportamiento,
-                "precio": float(product.PrecioConIVA) if product.PrecioConIVA else 0
+                "precio": float(product.PrecioConIVA) if product.PrecioConIVA is not None else 0
             })
         
         result.append({

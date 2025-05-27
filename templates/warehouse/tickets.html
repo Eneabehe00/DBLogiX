@@ -261,7 +261,7 @@
                                 {% endif %}
                             </td>
                             <td data-label="Stato">
-                                {% if ticket.Procesado %}
+                                {% if ticket.is_processed %}
                                 <span class="badge-soft badge-soft-success">Processato</span>
                                 {% else %}
                                 <span class="badge-soft badge-soft-warning">Pendente</span>

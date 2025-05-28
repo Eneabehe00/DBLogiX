@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import db, User, ScanLog, Product, TicketHeader, Company
-from forms import RegistrationForm, DbConfigForm, CompanyConfigForm, ResetPasswordForm
+from models import db, User, ScanLog, Product, TicketHeader, Company, SystemConfig
+from forms import RegistrationForm, DbConfigForm, CompanyConfigForm, ResetPasswordForm, SystemConfigForm
 from sqlalchemy import func, desc
 from config import REMOTE_DB_CONFIG
 import pymysql
@@ -55,8 +55,9 @@ def dashboard():
     
     # Ticket statistics
     total_tickets = TicketHeader.query.count()
-    pending_tickets = TicketHeader.query.filter_by(Enviado=0).count()
     processed_tickets = TicketHeader.query.filter_by(Enviado=1).count()
+    giacenza_tickets = TicketHeader.query.filter_by(Enviado=0).count()
+    expired_tickets = TicketHeader.query.filter_by(Enviado=4).count()
     
     # Most active users (top 5)
     active_users = db.session.query(
@@ -92,8 +93,9 @@ def dashboard():
                          view_scans=view_scans,
                          products_count=products_count,
                          total_tickets=total_tickets,
-                         pending_tickets=pending_tickets,
                          processed_tickets=processed_tickets,
+                         giacenza_tickets=giacenza_tickets,
+                         expired_tickets=expired_tickets,
                          active_users=active_users,
                          activity_data=json.dumps(activity_data))
 
@@ -322,4 +324,32 @@ def create_tables():
     except Exception as e:
         flash(f'Failed to create tables: {str(e)}', 'danger')
     
-    return redirect(url_for('admin.db_config')) 
+    return redirect(url_for('admin.db_config'))
+
+@admin_bp.route('/configurazioni/system-config', methods=['GET', 'POST'])
+@admin_required
+def system_config():
+    """Configure system settings"""
+    form = SystemConfigForm()
+    
+    # Pre-fill form with current config
+    if request.method == 'GET':
+        expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
+        form.expiry_warning_days.data = expiry_warning_days
+    
+    # Handle form submit
+    if form.validate_on_submit():
+        try:
+            # Save configuration
+            SystemConfig.set_config(
+                'expiry_warning_days', 
+                form.expiry_warning_days.data,
+                'Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"',
+                'integer'
+            )
+            
+            flash('Configurazioni salvate con successo!', 'success')
+        except Exception as e:
+            flash(f'Errore nel salvataggio delle configurazioni: {str(e)}', 'danger')
+    
+    return render_template('admin/configurazioni/system_config.html', form=form) 

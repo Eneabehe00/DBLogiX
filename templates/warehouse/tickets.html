@@ -41,13 +41,17 @@
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
                     <span class="text-white-50">{{ tickets.total if tickets.total else 0 }} tickets nel database</span>
-                    {% if current_status == 'pending' %}
+                    {% if current_status == 'giacenza' %}
                     <span class="status-badge warning ms-2">
-                        <i class="fas fa-clock me-1"></i>Pendenti
+                        <i class="fas fa-warehouse me-1"></i>Giacenza
                     </span>
                     {% elif current_status == 'processed' %}
                     <span class="status-badge success ms-2">
                         <i class="fas fa-check-circle me-1"></i>Processati
+                    </span>
+                    {% elif current_status == 'expired' %}
+                    <span class="status-badge danger ms-2">
+                        <i class="fas fa-times-circle me-1"></i>Scaduti
                     </span>
                     {% elif current_status == 'expiring' %}
                     <span class="status-badge danger ms-2">
@@ -78,11 +82,17 @@
                 <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
                     <i class="fas fa-list-ul me-1"></i> Tutti
                 </a>
-                <a href="{{ url_for('warehouse.tickets', status='pending', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-warning {% if current_status == 'pending' %}active{% endif %}">
-                    <i class="fas fa-clock me-1"></i> Pendenti
+                <a href="{{ url_for('warehouse.tickets', status='giacenza', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-warning {% if current_status == 'giacenza' %}active{% endif %}">
+                    <i class="fas fa-warehouse me-1"></i> Giacenza
                 </a>
                 <a href="{{ url_for('warehouse.tickets', status='processed', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
                     <i class="fas fa-check-circle me-1"></i> Processati
+                </a>
+                <a href="{{ url_for('warehouse.tickets', status='expired', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expired' %}active{% endif %}">
+                    <i class="fas fa-times-circle me-1"></i> Scaduti
+                    {% if expired_count > 0 %}
+                    <span class="badge bg-danger ms-1">{{ expired_count }}</span>
+                    {% endif %}
                 </a>
                 <a href="{{ url_for('warehouse.tickets', status='expiring', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expiring' %}active{% endif %}">
                     <i class="fas fa-exclamation-circle me-1"></i> Scadenza
@@ -105,11 +115,11 @@
                     <!-- Search form -->
                     <div class="search-wrapper">
                         <div class="position-relative">
-                            <input type="text" id="ticketSearch" class="form-control" placeholder="Cerca per #numero ticket o codice a barre..." value="{{ request.args.get('query', '') }}">
+                            <input type="text" id="ticketSearch" class="form-control" placeholder="Cerca per #numero ticket, codice a barre o nome prodotto..." value="{{ request.args.get('query', '') }}">
                             <div id="searchResults" class="search-results-dropdown"></div>
                         </div>
                         <div class="form-text text-muted mt-1">
-                            <i class="fas fa-info-circle"></i> Usa <code>#123</code> per cercare il ticket numero 123, o inserisci il codice a barre
+                            <i class="fas fa-info-circle"></i> Usa <code>#123</code> per cercare il ticket numero 123, oppure cerca per codice a barre o nome prodotto
                         </div>
                     </div>
                 </div>
@@ -222,7 +232,7 @@
                                 <span class="badge-soft badge-soft-danger">
                                     {{ expiry_data.expiry_date }}
                                     <span class="ms-1">
-                                        {% if expiry_data.days_remaining <= 0 %}
+                                        {% if expiry_data.days_remaining < 0 %}
                                             (Scaduto)
                                         {% else %}
                                             ({{ expiry_data.days_remaining }} giorni)
@@ -263,11 +273,7 @@
                                 {% endif %}
                             </td>
                             <td data-label="Stato">
-                                {% if ticket.is_processed %}
-                                <span class="badge-soft badge-soft-success">Processato</span>
-                                {% else %}
-                                <span class="badge-soft badge-soft-warning">Pendente</span>
-                                {% endif %}
+                                <span class="badge-soft badge-soft-{{ ticket.status_class }}">{{ ticket.status_text }}</span>
                             </td>
                         </tr>
                         {% endfor %}

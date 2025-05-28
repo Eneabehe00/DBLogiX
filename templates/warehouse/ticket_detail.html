@@ -52,13 +52,29 @@
         font-weight: 600;
         margin-bottom: 15px;
     }
-    .ticket-status.processed {
+    .ticket-status.success {
         background-color: rgba(40, 167, 69, 0.2);
         color: #28a745;
     }
-    .ticket-status.pending {
+    .ticket-status.warning {
         background-color: rgba(255, 193, 7, 0.2);
         color: #ffc107;
+    }
+    .ticket-status.danger {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+    .ticket-status.info {
+        background-color: rgba(23, 162, 184, 0.2);
+        color: #17a2b8;
+    }
+    .ticket-status.secondary {
+        background-color: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+    }
+    .ticket-status.dark {
+        background-color: rgba(52, 58, 64, 0.2);
+        color: #343a40;
     }
     .info-section {
         background-color: #f8f9fa;
@@ -152,9 +168,16 @@
                     <i class="fas fa-receipt me-2"></i>Dettaglio Ticket
                 </h1>
                 <p class="lead mt-2 mb-0">
-                    <span class="ticket-status {% if ticket.is_processed %}processed{% else %}pending{% endif %}">
-                        <i class="fas {% if ticket.is_processed %}fa-check-circle{% else %}fa-clock{% endif %} me-1"></i>
-                        {% if ticket.is_processed %}Processato{% else %}In attesa{% endif %}
+                    <span class="ticket-status {{ ticket.status_class }}">
+                        <i class="fas 
+                            {% if ticket.Enviado == 0 %}fa-warehouse
+                            {% elif ticket.Enviado == 1 %}fa-check-circle
+                            {% elif ticket.Enviado == 2 %}fa-file-alt
+                            {% elif ticket.Enviado == 3 %}fa-file-alt
+                            {% elif ticket.Enviado == 4 %}fa-times-circle
+                            {% else %}fa-question-circle
+                            {% endif %} me-1"></i>
+                        {{ ticket.status_text }}
                     </span>
                     <span class="text-white-50">·</span>
                     <span class="text-white-50">{{ ticket.formatted_date }}</span>
@@ -162,7 +185,7 @@
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="d-grid d-md-block gap-2">
-                    {% if not ticket.is_processed %}
+                    {% if ticket.Enviado == 0 %}
                     <form action="{{ url_for('warehouse.ticket_checkout', ticket_id=ticket.IdTicket) }}" method="post" class="d-inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-light action-btn mb-2 mb-md-0">
@@ -191,7 +214,7 @@
                     {% if expired %}
                     Questo ticket contiene prodotti già <strong>scaduti</strong>.
                     {% else %}
-                    Questo ticket contiene prodotti con scadenza entro <strong>2 giorni</strong>.
+                    Questo ticket contiene prodotti con scadenza entro <strong>{{ expiry_warning_days }} giorni</strong>.
                     {% endif %}
                 </p>
             </div>
@@ -213,19 +236,17 @@
                         
                         {% if product %}
                             {% if product.expiration_date %}
-                                {% set days_left = (product.expiration_date - now()).days %}
+                                {% set today_date = now().date() %}
+                                {% set expiry_date = product.expiration_date.date() if product.expiration_date.date else product.expiration_date %}
+                                {% set days_left = (expiry_date - today_date).days %}
                                 
-                                {% if days_left <= 0 %}
+                                {% if days_left < 0 %}
                                     <span class="badge bg-danger expiry-badge">
                                         <i class="fas fa-exclamation-circle me-1"></i>Scaduto
                                     </span>
-                                {% elif days_left <= 2 %}
+                                {% elif days_left <= expiry_warning_days %}
                                     <span class="badge bg-warning expiry-badge">
-                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ days_left }} giorni alla scadenza
-                                    </span>
-                                {% elif days_left <= 7 %}
-                                    <span class="badge bg-info expiry-badge">
-                                        <i class="fas fa-info-circle me-1"></i>{{ days_left }} giorni alla scadenza
+                                        <i class="fas fa-exclamation-triangle me-1"></i>In scadenza: {{ days_left }} giorni
                                     </span>
                                 {% else %}
                                     <span class="badge bg-success expiry-badge">
@@ -424,11 +445,7 @@
                     <div class="d-flex align-items-center justify-content-between flex-wrap">
                         <div class="mb-2 mb-md-0">
                             <span class="info-label">Stato:</span>
-                            {% if ticket.is_processed %}
-                            <span class="badge bg-success">Processato</span>
-                            {% else %}
-                            <span class="badge bg-warning">In attesa</span>
-                            {% endif %}
+                            <span class="badge bg-{{ ticket.status_class }}">{{ ticket.status_text }}</span>
                         </div>
                         
                         {% if ticket.processed_at %}
@@ -506,7 +523,7 @@
                         </button>
                         {% endif %}
                         
-                        {% if not ticket.is_processed %}
+                        {% if ticket.Enviado == 0 %}
                         <button class="btn btn-outline-info" onclick="addToDDT('{{ ticket.IdTicket }}', '1')">
                             <i class="fas fa-plus me-2"></i>Aggiungi a DDT Tipo 1
                         </button>

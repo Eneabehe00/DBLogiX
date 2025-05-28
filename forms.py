@@ -147,4 +147,12 @@ class ArticleDeleteForm(FlaskForm):
 
 class ResetPasswordForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
-    submit = SubmitField('Reimposta Password') 
+    submit = SubmitField('Reimposta Password')
+
+class SystemConfigForm(FlaskForm):
+    expiry_warning_days = IntegerField(
+        'Giorni Preavviso Scadenza', 
+        validators=[DataRequired(), NumberRange(min=0, max=30)],
+        description='Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"'
+    )
+    submit = SubmitField('Salva Configurazioni') 

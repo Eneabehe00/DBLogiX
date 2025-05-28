@@ -129,6 +129,42 @@ class TicketHeader(db.Model):
         return self.Enviado == 1
     
     @property
+    def is_expired(self):
+        return self.Enviado == 4
+    
+    @property
+    def status_text(self):
+        """Restituisce il testo dello stato del ticket"""
+        if self.Enviado == 0:
+            return "Giacenza"
+        elif self.Enviado == 1:
+            return "Processato"
+        elif self.Enviado == 2:
+            return "DDT1"
+        elif self.Enviado == 3:
+            return "DDT2"
+        elif self.Enviado == 4:
+            return "Scaduto"
+        else:
+            return "Sconosciuto"
+    
+    @property
+    def status_class(self):
+        """Restituisce la classe CSS per lo stato del ticket"""
+        if self.Enviado == 0:
+            return "warning"  # Giacenza
+        elif self.Enviado == 1:
+            return "success"  # Processato
+        elif self.Enviado == 2:
+            return "info"     # DDT1
+        elif self.Enviado == 3:
+            return "secondary"  # DDT2
+        elif self.Enviado == 4:
+            return "danger"   # Scaduto
+        else:
+            return "dark"     # Sconosciuto
+    
+    @property
     def formatted_date(self):
         if self.Fecha:
             return self.Fecha.strftime('%d/%m/%Y %H:%M')
@@ -194,7 +230,7 @@ class ScanLog(db.Model):
     scan_time = db.Column(db.String(20))
     
     def __repr__(self):
-        return f'<ScanLog {self.id}: User {self.user_id} - Ticket {self.ticket_id}>'
+        return f'<ScanLog {self.id}: User {self.user_id} - {self.action}>'
 
 
 class Company(db.Model):
@@ -680,4 +716,59 @@ class Section(db.Model):
     TimeStamp = db.Column(db.DateTime, nullable=True, default=datetime.utcnow)
     
     def __repr__(self):
-        return f'<Section {self.IdSeccion}: {self.NombreSeccion}>' 
+        return f'<Section {self.IdSeccion}: {self.NombreSeccion}>'
+
+class SystemConfig(db.Model):
+    __tablename__ = 'system_config'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    config_key = db.Column(db.String(50), unique=True, nullable=False)
+    config_value = db.Column(db.String(255))
+    description = db.Column(db.String(255))
+    data_type = db.Column(db.String(20), default='string')  # string, integer, boolean, float
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<SystemConfig {self.config_key}: {self.config_value}>'
+    
+    def get_typed_value(self):
+        """Restituisce il valore con il tipo corretto"""
+        if self.data_type == 'integer':
+            return int(self.config_value) if self.config_value else 0
+        elif self.data_type == 'boolean':
+            return self.config_value.lower() in ('true', '1', 'yes') if self.config_value else False
+        elif self.data_type == 'float':
+            return float(self.config_value) if self.config_value else 0.0
+        else:
+            return self.config_value or ''
+    
+    @staticmethod
+    def get_config(key, default=None):
+        """Ottiene un valore di configurazione"""
+        config = SystemConfig.query.filter_by(config_key=key).first()
+        if config:
+            return config.get_typed_value()
+        return default
+    
+    @staticmethod
+    def set_config(key, value, description=None, data_type='string'):
+        """Imposta un valore di configurazione"""
+        config = SystemConfig.query.filter_by(config_key=key).first()
+        if config:
+            config.config_value = str(value)
+            config.updated_at = datetime.utcnow()
+            if description:
+                config.description = description
+            if data_type:
+                config.data_type = data_type
+        else:
+            config = SystemConfig(
+                config_key=key,
+                config_value=str(value),
+                description=description,
+                data_type=data_type
+            )
+            db.session.add(config)
+        db.session.commit()
+        return config 

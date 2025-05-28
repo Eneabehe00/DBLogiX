@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import db, Product, TicketHeader, TicketLine, ScanLog, Client, Company
+from models import db, Product, TicketHeader, TicketLine, ScanLog, Client, Company, SystemConfig
 from forms import SearchForm, FilterForm, ManualScanForm
 from sqlalchemy import func, or_, select
 from datetime import datetime, timedelta
@@ -56,7 +56,7 @@ def index():
     recent_tickets = TicketHeader.query.order_by(TicketHeader.Fecha.desc()).limit(5).all()
     
     # Get pending tickets (not processed)
-    pending_tickets = TicketHeader.query.filter_by(Enviado=0).count()
+    giacenza_tickets = TicketHeader.query.filter_by(Enviado=0).count()
     
     # Get recent scans by current user (limit to 5) - only select the columns that exist in DB
     stmt = select(ScanLog.id, ScanLog.user_id, ScanLog.ticket_id, ScanLog.action, ScanLog.timestamp).where(
@@ -67,7 +67,7 @@ def index():
     return render_template('warehouse/index.html', 
                           products_count=products_count,
                           recent_tickets=recent_tickets,
-                          pending_tickets=pending_tickets,
+                          giacenza_tickets=giacenza_tickets,
                           recent_scans=recent_scans)
 
 # Product catalog and inventory
@@ -93,6 +93,9 @@ def tickets():
     page = request.args.get('page', 1, type=int)
     per_page = 20
     search_form = SearchForm()
+    
+    # Prima di tutto, aggiorna i ticket scaduti
+    update_expired_tickets()
     
     # Get date range params if provided
     start_date = request.args.get('start_date')
@@ -130,8 +133,26 @@ def tickets():
             if ticket_number.isdigit():
                 query = query.filter(TicketHeader.NumTicket == int(ticket_number))
         else:
-            # Default to barcode search
-            query = query.filter(TicketHeader.CodigoBarras.like(f'%{search_term}%'))
+            # Ricerca multipla: barcode, descrizione prodotto o descrizione linea
+            # Crea una subquery per i ticket che contengono prodotti con la descrizione cercata
+            product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
+                join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
+                filter(
+                    or_(
+                        Product.Descripcion.ilike(f'%{search_term}%'),
+                        TicketLine.Descripcion.ilike(f'%{search_term}%')
+                    )
+                ).subquery()
+            
+            # Applica filtro combinato: barcode O descrizione prodotto
+            query = query.filter(
+                or_(
+                    TicketHeader.CodigoBarras.like(f'%{search_term}%'),
+                    TicketHeader.IdTicket.in_(
+                        db.session.query(product_search_subquery.c.IdTicket)
+                    )
+                )
+            )
     
     # Crea subquery per trovare la linea con la data di scadenza più vicina per ogni ticket
     # Questa è la chiave: usiamo lo stesso approccio JOIN per tutti i filtri
@@ -150,20 +171,25 @@ def tickets():
     
     # Applica filtro di stato
     status = request.args.get('status')
-    if status == 'pending':
+    if status == 'giacenza':  # Cambiato da 'pending' a 'giacenza'
         query = query.filter_by(Enviado=0)
     elif status == 'processed':
         query = query.filter_by(Enviado=1)
+    elif status == 'expired':  # Nuovo filtro per ticket scaduti
+        query = query.filter_by(Enviado=4)
     elif status == 'expiring':
-        today = datetime.now()
-        seven_days_from_now = today + timedelta(days=7)
+        today = datetime.now().date()  # Usa solo la data, non l'ora
+        
+        # Ottieni i giorni di preavviso dalla configurazione (default 7 giorni)
+        expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
+        warning_date = today + timedelta(days=expiry_warning_days)
         
         # Correggo il filtro scadenza per mostrare SOLO prodotti con data di scadenza
         # Usiamo una subquery per trovare solo i ticket con almeno un prodotto in scadenza
         ticket_ids_with_expiry = db.session.query(TicketLine.IdTicket).filter(
             TicketLine.FechaCaducidad.isnot(None),
-            TicketLine.FechaCaducidad <= seven_days_from_now,
-            TicketLine.FechaCaducidad >= today
+            func.date(TicketLine.FechaCaducidad) <= warning_date,
+            func.date(TicketLine.FechaCaducidad) >= today
         ).distinct().subquery()
         
         # Usa la subquery per limitare i risultati solo ai ticket trovati
@@ -254,14 +280,19 @@ def tickets():
                 }
     
     # Count the total expiring tickets for the badge in filter
-    seven_days_from_now = today + timedelta(days=7)
+    today = datetime.now().date()  # Usa solo la data per il confronto
+    expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
+    warning_date = today + timedelta(days=expiry_warning_days)
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
         filter(
             TicketLine.FechaCaducidad.isnot(None),
-            TicketLine.FechaCaducidad <= seven_days_from_now,
-            TicketLine.FechaCaducidad >= today
+            func.date(TicketLine.FechaCaducidad) <= warning_date,
+            func.date(TicketLine.FechaCaducidad) >= today
         ).count()
+    
+    # Count expired tickets for the badge
+    expired_count = TicketHeader.query.filter_by(Enviado=4).count()
     
     return render_template('warehouse/tickets.html', 
                           tickets=tickets,
@@ -271,7 +302,45 @@ def tickets():
                           ticket_expiry=ticket_expiry,
                           search_form=search_form,
                           current_status=status,
-                          expiring_count=expiring_count)
+                          expiring_count=expiring_count,
+                          expired_count=expired_count)
+
+def update_expired_tickets():
+    """
+    Trova tutti i ticket che dovrebbero essere marcati come scaduti (Enviado = 4)
+    e li aggiorna nel database. Questa funzione viene eseguita ad ogni richiesta
+    della pagina tickets per mantenere i dati sempre aggiornati.
+    """
+    try:
+        from models import SystemConfig
+        today = datetime.now().date()  # Usa solo la data, non l'ora
+        
+        # Trova tutti i ticket in giacenza (Enviado = 0) che hanno prodotti scaduti
+        # Un prodotto è considerato scaduto solo DOPO la sua data di scadenza
+        expired_ticket_ids = db.session.query(TicketHeader.IdTicket).distinct().\
+            join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
+            filter(
+                TicketHeader.Enviado == 0,  # Solo ticket in giacenza
+                TicketLine.FechaCaducidad.isnot(None),
+                func.date(TicketLine.FechaCaducidad) < today  # Data di scadenza passata (confronto solo date)
+            ).all()
+        
+        if expired_ticket_ids:
+            # Estrai solo gli ID dei ticket dalla tupla
+            ticket_ids_list = [ticket_id[0] for ticket_id in expired_ticket_ids]
+            
+            # Aggiorna tutti i ticket scaduti in una volta sola
+            db.session.query(TicketHeader).filter(
+                TicketHeader.IdTicket.in_(ticket_ids_list)
+            ).update({TicketHeader.Enviado: 4}, synchronize_session=False)
+            
+            db.session.commit()
+            
+            print(f"Aggiornati {len(ticket_ids_list)} ticket come scaduti")
+    
+    except Exception as e:
+        print(f"Errore nell'aggiornamento dei ticket scaduti: {str(e)}")
+        db.session.rollback()
 
 @warehouse_bp.route('/ticket/<int:ticket_id>')
 @login_required
@@ -440,26 +509,32 @@ def ticket_detail(ticket_id):
                 })
     
     # Check for soon-to-expire products
-    today = datetime.now()
+    today = datetime.now().date()  # Usa solo la data per il confronto
+    expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
     expiring_soon = False
     expired = False
     
     for line in lines:
         if line.FechaCaducidad:
-            days_to_expire = (line.FechaCaducidad - today).days
-            if days_to_expire <= 2 and days_to_expire >= 0:
+            # Confronta solo le date, non l'ora
+            expiry_date = line.FechaCaducidad.date() if hasattr(line.FechaCaducidad, 'date') else line.FechaCaducidad
+            days_to_expire = (expiry_date - today).days
+            
+            if days_to_expire <= expiry_warning_days and days_to_expire >= 0:
                 expiring_soon = True
             elif days_to_expire < 0:
                 expired = True
     
     # Count the total expiring tickets for the badge in filter
-    seven_days_from_now = today + timedelta(days=7)
+    today = datetime.now().date()  # Usa solo la data per il confronto
+    expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
+    warning_date = today + timedelta(days=expiry_warning_days)
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
         filter(
             TicketLine.FechaCaducidad.isnot(None),
-            TicketLine.FechaCaducidad <= seven_days_from_now,
-            TicketLine.FechaCaducidad >= today
+            func.date(TicketLine.FechaCaducidad) <= warning_date,
+            func.date(TicketLine.FechaCaducidad) >= today
         ).count()
     
     # Log this view
@@ -480,6 +555,7 @@ def ticket_detail(ticket_id):
                           expired=expired,
                           search_form=search_form,
                           expiring_count=expiring_count,
+                          expiry_warning_days=expiry_warning_days,
                           now=datetime.now)
 
 @warehouse_bp.route('/ticket/<int:ticket_id>/checkout', methods=['POST'])
@@ -489,9 +565,15 @@ def ticket_checkout(ticket_id):
     ticket = TicketHeader.query.get_or_404(ticket_id)
     
     if ticket.Enviado == 1:
-        flash('This ticket has already been processed.', 'warning')
-    else:
-        # Mark the ticket as processed
+        flash('Questo ticket è già stato processato.', 'warning')
+    elif ticket.Enviado == 4:
+        flash('Non è possibile processare un ticket scaduto.', 'danger')
+    elif ticket.Enviado == 2:
+        flash('Questo ticket è già assegnato a DDT1.', 'info')
+    elif ticket.Enviado == 3:
+        flash('Questo ticket è già assegnato a DDT2.', 'info')
+    elif ticket.Enviado == 0:
+        # Mark the ticket as processed (only if it's in giacenza)
         ticket.Enviado = 1
         
         # Log this checkout
@@ -503,7 +585,9 @@ def ticket_checkout(ticket_id):
         db.session.add(log)
         db.session.commit()
         
-        flash('Ticket processed successfully!', 'success')
+        flash('Ticket processato con successo!', 'success')
+    else:
+        flash(f'Stato ticket non riconosciuto: {ticket.Enviado}', 'danger')
     
     return redirect(url_for('warehouse.ticket_detail', ticket_id=ticket_id))
 
@@ -1280,8 +1364,26 @@ def api_tickets_search():
             if ticket_number.isdigit():
                 ticket_query = ticket_query.filter(TicketHeader.NumTicket == int(ticket_number))
         else:
-            # Otherwise, search by barcode
-            ticket_query = ticket_query.filter(TicketHeader.CodigoBarras.like(f'%{query}%'))
+            # Ricerca multipla: barcode, descrizione prodotto o descrizione linea
+            # Crea una subquery per i ticket che contengono prodotti con la descrizione cercata
+            product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
+                join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
+                filter(
+                    or_(
+                        Product.Descripcion.ilike(f'%{query}%'),
+                        TicketLine.Descripcion.ilike(f'%{query}%')
+                    )
+                ).subquery()
+            
+            # Applica filtro combinato: barcode O descrizione prodotto
+            ticket_query = ticket_query.filter(
+                or_(
+                    TicketHeader.CodigoBarras.like(f'%{query}%'),
+                    TicketHeader.IdTicket.in_(
+                        db.session.query(product_search_subquery.c.IdTicket)
+                    )
+                )
+            )
     
     # Limit and order results
     tickets = ticket_query.order_by(TicketHeader.Fecha.desc()).limit(10).all()

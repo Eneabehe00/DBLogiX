@@ -362,12 +362,19 @@
                 btnCheckout.innerHTML = '<i class="fas fa-list-alt me-2"></i>In DDT2';
                 btnCheckout.classList.remove('btn-success');
                 btnCheckout.classList.add('btn-outline-secondary');
-            } else { // Pending / Available
+            } else if (currentScanData.enviado === "4") { // Expired
+                resultTicketStatus.className = 'badge bg-danger';
+                resultTicketStatus.textContent = 'Scaduto';
+                btnCheckout.disabled = true; // Cannot checkout expired tickets
+                btnCheckout.innerHTML = '<i class="fas fa-times-circle me-2"></i>Ticket Scaduto';
+                btnCheckout.classList.remove('btn-success');
+                btnCheckout.classList.add('btn-outline-danger');
+            } else { // Giacenza / Available
                 resultTicketStatus.className = 'badge bg-warning';
-                resultTicketStatus.textContent = 'Pendente';
+                resultTicketStatus.textContent = 'Giacenza';
                 btnCheckout.disabled = false;
                 btnCheckout.innerHTML = '<i class="fas fa-check me-2"></i>Scarica da Magazzino';
-                btnCheckout.classList.remove('btn-outline-success', 'btn-outline-info', 'btn-outline-secondary');
+                btnCheckout.classList.remove('btn-outline-success', 'btn-outline-info', 'btn-outline-secondary', 'btn-outline-danger');
                 btnCheckout.classList.add('btn-success');
             }
 

@@ -40,8 +40,8 @@
                                     <i class="fas fa-receipt"></i>
                                 </div>
                                 <div class="stat-info">
-                                    <h3>{{ pending_tickets }}</h3>
-                                    <p>Ticket Pendenti</p>
+                                    <h3>{{ giacenza_tickets }}</h3>
+                                    <p>Giacenza</p>
                                 </div>
                             </div>
                         </div>
@@ -79,12 +79,12 @@
             </div>
             
             <div class="col-6 col-lg-3">
-                <a href="{{ url_for('warehouse.tickets', status='pending') }}" class="quick-action-item">
+                <a href="{{ url_for('warehouse.tickets', status='giacenza') }}" class="quick-action-item">
                     <div class="quick-action-icon bg-warning-soft">
-                        <i class="fas fa-receipt"></i>
+                        <i class="fas fa-warehouse"></i>
                     </div>
-                    <h3>Ticket Pendenti</h3>
-                    <p>Visualizza e gestisci i ticket pendenti</p>
+                    <h3>Giacenza</h3>
+                    <p>Visualizza e gestisci i ticket in giacenza</p>
                 </a>
             </div>
             
@@ -151,11 +151,7 @@
                                     <td data-label="Numero">#{{ ticket.NumTicket }}</td>
                                     <td data-label="Data">{{ ticket.formatted_date }}</td>
                                     <td data-label="Stato">
-                                        {% if ticket.is_processed %}
-                                        <span class="badge bg-success">Processato</span>
-                                        {% else %}
-                                        <span class="badge bg-warning">Pendente</span>
-                                        {% endif %}
+                                        <span class="badge bg-{{ ticket.status_class }}">{{ ticket.status_text }}</span>
                                     </td>
                                     <td class="text-end" data-label="Azioni">
                                         <a href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" 

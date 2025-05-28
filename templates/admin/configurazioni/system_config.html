@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazioni Sistema - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Configurazioni Sistema</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Configurazioni Sistema
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Gestisci le impostazioni di sistema</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt text-primary me-2"></i>Gestione Scadenze
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-4">
+                            <div class="form-floating">
+                                {{ form.expiry_warning_days(class="form-control") }}
+                                {{ form.expiry_warning_days.label(class="form-label") }}
+                            </div>
+                            {% if form.expiry_warning_days.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.expiry_warning_days.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                {{ form.expiry_warning_days.description }}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-light p-3 rounded mb-4">
+                            <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Come funziona:</h6>
+                            <ul class="mb-0 small">
+                                <li><strong>Giacenza:</strong> Ticket appena creati, pronti per essere processati</li>
+                                <li><strong>In Scadenza:</strong> Ticket con prodotti che scadranno entro i giorni configurati</li>
+                                <li><strong>Scaduti:</strong> Ticket con prodotti già scaduti (vengono automaticamente contrassegnati)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Annulla
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Informazioni aggiuntive -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>Informazioni Tecniche
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Stati Ticket:</h6>
+                            <ul class="list-unstyled small">
+                                <li><span class="badge bg-warning me-2">0</span>Giacenza</li>
+                                <li><span class="badge bg-success me-2">1</span>Processato</li>
+                                <li><span class="badge bg-info me-2">2</span>DDT1</li>
+                                <li><span class="badge bg-secondary me-2">3</span>DDT2</li>
+                                <li><span class="badge bg-danger me-2">4</span>Scaduto</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Calcolo Scadenze:</h6>
+                            <p class="small mb-0">
+                                Il sistema controlla automaticamente la data di scadenza dei prodotti 
+                                nei ticket e li contrassegna come "In Scadenza" o "Scaduti" in base 
+                                alla configurazione impostata.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aggiungi validazione in tempo reale
+    const expiryDaysInput = document.getElementById('expiry_warning_days');
+    
+    if (expiryDaysInput) {
+        expiryDaysInput.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            const formText = this.parentNode.nextElementSibling.nextElementSibling;
+            
+            if (value >= 0 && value <= 30) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                formText.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i>I ticket verranno contrassegnati come "In Scadenza" ${value} giorni prima della scadenza`;
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+                formText.innerHTML = `<i class="fas fa-exclamation-circle text-danger me-1"></i>Il valore deve essere compreso tra 0 e 30 giorni`;
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

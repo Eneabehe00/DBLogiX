@@ -686,10 +686,18 @@
                         <td>#{{ ticket.NumTicket }}</td>
                         <td>{{ ticket.FechaFormateada }}</td>
                         <td>
-                            {% if ticket.Enviado == 1 %}
-                            <span class="badge-soft badge-soft-success">{{ ticket.EstadoTicket }}</span>
-                            {% else %}
+                            {% if ticket.Enviado == 0 %}
                             <span class="badge-soft badge-soft-warning">{{ ticket.EstadoTicket }}</span>
+                            {% elif ticket.Enviado == 1 %}
+                            <span class="badge-soft badge-soft-success">{{ ticket.EstadoTicket }}</span>
+                            {% elif ticket.Enviado == 2 %}
+                            <span class="badge-soft badge-soft-info">{{ ticket.EstadoTicket }}</span>
+                            {% elif ticket.Enviado == 3 %}
+                            <span class="badge-soft badge-soft-secondary">{{ ticket.EstadoTicket }}</span>
+                            {% elif ticket.Enviado == 4 %}
+                            <span class="badge-soft badge-soft-danger">{{ ticket.EstadoTicket }}</span>
+                            {% else %}
+                            <span class="badge-soft badge-soft-dark">{{ ticket.EstadoTicket }}</span>
                             {% endif %}
                         </td>
                         <td>{{ ticket.Descripcion }}</td>

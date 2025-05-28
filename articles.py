@@ -141,10 +141,18 @@ def load_article_tickets(id_articulo, limit=10):
                 ticket["FechaFormateada"] = "N/A"
             
             # Impostare lo stato del ticket
-            if ticket["Enviado"] == 1:
+            if ticket["Enviado"] == 0:
+                ticket["EstadoTicket"] = "Giacenza"
+            elif ticket["Enviado"] == 1:
                 ticket["EstadoTicket"] = "Processato"
+            elif ticket["Enviado"] == 2:
+                ticket["EstadoTicket"] = "DDT1"
+            elif ticket["Enviado"] == 3:
+                ticket["EstadoTicket"] = "DDT2"
+            elif ticket["Enviado"] == 4:
+                ticket["EstadoTicket"] = "Scaduto"
             else:
-                ticket["EstadoTicket"] = "Pendente"
+                ticket["EstadoTicket"] = "Sconosciuto"
                 
             tickets.append(ticket)
         

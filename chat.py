@@ -56,8 +56,20 @@ def get_messages():
 def send_message():
     """Send a new chat message"""
     try:
+        from flask import session
         data = request.get_json()
         message_text = data.get('message', '').strip()
+        
+        # Debug logging dettagliato
+        logger.info(f"=== SEND MESSAGE DEBUG ===")
+        logger.info(f"Current user authenticated: {current_user.is_authenticated}")
+        logger.info(f"Current user ID: {current_user.id}")
+        logger.info(f"Current user username: {current_user.username}")
+        logger.info(f"Flask session keys: {list(session.keys())}")
+        logger.info(f"Flask session _user_id: {session.get('_user_id')}")
+        logger.info(f"Flask session _fresh: {session.get('_fresh')}")
+        logger.info(f"Request headers: {dict(request.headers)}")
+        logger.info(f"Message text: {message_text}")
         
         if not message_text:
             return jsonify({'success': False, 'error': 'Il messaggio non può essere vuoto'}), 400
@@ -72,8 +84,15 @@ def send_message():
             timestamp=datetime.utcnow()
         )
         
+        logger.info(f"Created message object with user_id: {message.user_id}")
+        
         db.session.add(message)
         db.session.commit()
+        
+        # Verifico che il messaggio sia stato salvato correttamente
+        saved_message = ChatMessage.query.get(message.id)
+        logger.info(f"Saved message user_id: {saved_message.user_id}")
+        logger.info(f"Saved message username: {saved_message.user.username}")
         
         # Return the message data
         return jsonify({
@@ -174,4 +193,22 @@ def get_unread_count():
         
     except Exception as e:
         logger.error(f"Error getting unread count: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500 
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@chat_bp.route('/api/debug/current-user', methods=['GET'])
+@api_login_required
+def debug_current_user():
+    """Debug endpoint to check current user"""
+    from flask import session
+    
+    return jsonify({
+        'success': True,
+        'debug_info': {
+            'current_user_id': current_user.id,
+            'current_user_username': current_user.username,
+            'current_user_authenticated': current_user.is_authenticated,
+            'session_user_id': session.get('_user_id'),
+            'session_fresh': session.get('_fresh'),
+            'session_keys': list(session.keys())
+        }
+    }) 

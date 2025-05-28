@@ -775,16 +775,18 @@ class SystemConfig(db.Model):
     
 class ChatMessage(db.Model):
     """Model for chat messages"""
-    _tablename_ = 'chat_messages'
+    __tablename__ = 'chat_message'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
+    room_id = db.Column(db.Integer, db.ForeignKey('chat_room.id'), nullable=True)
     
-    # Relationship
+    # Relationships
     user = db.relationship('User', backref=db.backref('chat_messages', lazy='dynamic'))
+    room = db.relationship('ChatRoom', backref=db.backref('messages', lazy='dynamic'))
     
     def to_dict(self):
         return {
@@ -794,16 +796,17 @@ class ChatMessage(db.Model):
             'message': self.message,
             'timestamp': self.timestamp.isoformat(),
             'is_read': self.is_read,
-            'formatted_time': self.timestamp.strftime('%H:%M')
+            'formatted_time': self.timestamp.strftime('%H:%M'),
+            'room_id': self.room_id
         }
     
-    def _repr_(self):
+    def __repr__(self):
         return f'<ChatMessage {self.id}: {self.user.username}>'
 
 
 class ChatRoom(db.Model):
     """Model for chat rooms (for future expansion to private chats)"""
-    _tablename_ = 'chat_rooms'
+    __tablename__ = 'chat_room'
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -815,5 +818,5 @@ class ChatRoom(db.Model):
     # Relationship
     creator = db.relationship('User', backref=db.backref('created_rooms', lazy='dynamic'))
     
-    def _repr_(self):
+    def __repr__(self):
         return f'<ChatRoom {self.id}: {self.name}>'

@@ -160,9 +160,11 @@ def create_app():
         @app.context_processor
         def utility_processor():
             from datetime import datetime
+            from flask_wtf.csrf import generate_csrf
             return {
                 'current_time': current_time,
-                'now': lambda: datetime.now()
+                'now': lambda: datetime.now(),
+                'csrf_token': generate_csrf
             }
         
         # Add root route that redirects to login

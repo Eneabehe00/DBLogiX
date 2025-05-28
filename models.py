@@ -772,3 +772,48 @@ class SystemConfig(db.Model):
             db.session.add(config)
         db.session.commit()
         return config 
+    
+class ChatMessage(db.Model):
+    """Model for chat messages"""
+    _tablename_ = 'chat_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+    
+    # Relationship
+    user = db.relationship('User', backref=db.backref('chat_messages', lazy='dynamic'))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username,
+            'message': self.message,
+            'timestamp': self.timestamp.isoformat(),
+            'is_read': self.is_read,
+            'formatted_time': self.timestamp.strftime('%H:%M')
+        }
+    
+    def _repr_(self):
+        return f'<ChatMessage {self.id}: {self.user.username}>'
+
+
+class ChatRoom(db.Model):
+    """Model for chat rooms (for future expansion to private chats)"""
+    _tablename_ = 'chat_rooms'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    is_global = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # Relationship
+    creator = db.relationship('User', backref=db.backref('created_rooms', lazy='dynamic'))
+    
+    def _repr_(self):
+        return f'<ChatRoom {self.id}: {self.name}>'

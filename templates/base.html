@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% if current_user.is_authenticated %}
+    <meta name="current-user-id" content="{{ current_user.id }}">
+    {% endif %}
     <title>{% block title %}DBLogiX - Gestione Magazzino{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -16,6 +19,9 @@
     <!-- Custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    {% if current_user.is_authenticated %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+    {% endif %}
     {% if request.endpoint and request.endpoint.startswith('admin.') %}
         <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     {% elif request.endpoint and request.endpoint.startswith('articles.') %}
@@ -245,7 +251,7 @@
             
             <footer class="app-footer">
                 <div class="container-fluid">
-                    <span class="text-muted">© 2025 DBLogiX - Gestione Magazzino by DB Company - 011 2663302</span>
+                    <span class="text-muted">© 2023 DBLogiX - Gestione Magazzino con Bilancia Dibal</span>
                 </div>
             </footer>
         </main>
@@ -265,6 +271,10 @@
     <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
     <!-- Delete Confirmation -->
     <script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
+    {% if current_user.is_authenticated %}
+    <!-- Chat Widget -->
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    {% endif %}
     
     {% block extra_js %}{% endblock %}
 </body>

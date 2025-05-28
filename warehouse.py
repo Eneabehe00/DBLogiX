@@ -292,8 +292,12 @@ def tickets():
         warning_date = today + timedelta(days=expiry_warning_days)
         
         # Correggo il filtro scadenza per mostrare SOLO prodotti con data di scadenza
+        # E SOLO ticket non ancora processati (Enviado = 0)
         # Usiamo una subquery per trovare solo i ticket con almeno un prodotto in scadenza
-        ticket_ids_with_expiry = db.session.query(TicketLine.IdTicket).filter(
+        ticket_ids_with_expiry = db.session.query(TicketLine.IdTicket).join(
+            TicketHeader, TicketLine.IdTicket == TicketHeader.IdTicket
+        ).filter(
+            TicketHeader.Enviado == 0,  # Solo ticket in giacenza
             TicketLine.FechaCaducidad.isnot(None),
             func.date(TicketLine.FechaCaducidad) <= warning_date,
             func.date(TicketLine.FechaCaducidad) >= today
@@ -393,6 +397,7 @@ def tickets():
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
         filter(
+            TicketHeader.Enviado == 0,  # Solo ticket in giacenza
             TicketLine.FechaCaducidad.isnot(None),
             func.date(TicketLine.FechaCaducidad) <= warning_date,
             func.date(TicketLine.FechaCaducidad) >= today
@@ -639,6 +644,7 @@ def ticket_detail(ticket_id):
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
         filter(
+            TicketHeader.Enviado == 0,  # Solo ticket in giacenza
             TicketLine.FechaCaducidad.isnot(None),
             func.date(TicketLine.FechaCaducidad) <= warning_date,
             func.date(TicketLine.FechaCaducidad) >= today

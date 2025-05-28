@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import db, Product, TicketHeader, TicketLine, ScanLog, Client, Company, SystemConfig
+from models import db, Product, TicketHeader, TicketLine, ScanLog, Client, Company, SystemConfig, User
 from forms import SearchForm, FilterForm, ManualScanForm
 from sqlalchemy import func, or_, select
 from datetime import datetime, timedelta
@@ -49,26 +49,133 @@ except Exception as e:
 @login_required
 def index():
     """Home page with dashboard overview"""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, select
+    
     # Get summary statistics
     products_count = Product.query.count()
     
-    # Get recent tickets (limit to 5)
-    recent_tickets = TicketHeader.query.order_by(TicketHeader.Fecha.desc()).limit(5).all()
+    # Get recent tickets (limit to 5) with enhanced data
+    recent_tickets_query = db.session.query(TicketHeader).order_by(TicketHeader.Fecha.desc()).limit(5)
+    recent_tickets_raw = recent_tickets_query.all()
+    
+    # Enhance tickets with additional data
+    enhanced_tickets = []
+    for ticket in recent_tickets_raw:
+        # Get main product info for this ticket
+        main_product_info = db.session.query(
+            TicketLine.IdArticulo,
+            TicketLine.Descripcion.label('linea_descripcion'),
+            Product.Descripcion.label('producto_descripcion')
+        ).join(
+            Product, 
+            TicketLine.IdArticulo == Product.IdArticulo,
+            isouter=True
+        ).filter(
+            TicketLine.IdTicket == ticket.IdTicket
+        ).first()
+        
+        # Get earliest expiry date for this ticket
+        earliest_expiry = db.session.query(
+            func.min(TicketLine.FechaCaducidad).label('earliest_expiry')
+        ).filter(
+            TicketLine.IdTicket == ticket.IdTicket,
+            TicketLine.FechaCaducidad.isnot(None)
+        ).scalar()
+        
+        # Create enhanced ticket object
+        enhanced_ticket = type('EnhancedTicket', (), {})()
+        
+        # Copy original ticket properties
+        for attr in dir(ticket):
+            if not attr.startswith('_'):
+                setattr(enhanced_ticket, attr, getattr(ticket, attr))
+        
+        # Add article name
+        if main_product_info:
+            enhanced_ticket.article_name = (
+                main_product_info.producto_descripcion or 
+                main_product_info.linea_descripcion
+            )
+        else:
+            enhanced_ticket.article_name = None
+        
+        # Add expiry information
+        enhanced_ticket.expiry_date = earliest_expiry
+        if earliest_expiry:
+            enhanced_ticket.formatted_expiry = earliest_expiry.strftime('%d/%m/%Y')
+            
+            # Calculate expiry status
+            today = datetime.now().date()
+            expiry_date = earliest_expiry.date() if hasattr(earliest_expiry, 'date') else earliest_expiry
+            days_to_expire = (expiry_date - today).days
+            
+            if days_to_expire < 0:
+                enhanced_ticket.expiry_class = 'danger'
+            elif days_to_expire <= 7:
+                enhanced_ticket.expiry_class = 'warning'
+            else:
+                enhanced_ticket.expiry_class = 'success'
+        else:
+            enhanced_ticket.formatted_expiry = None
+            enhanced_ticket.expiry_class = None
+        
+        # Add formatted date
+        if ticket.Fecha:
+            enhanced_ticket.formatted_date = ticket.Fecha.strftime('%d/%m/%Y')
+        else:
+            enhanced_ticket.formatted_date = 'N/D'
+        
+        # Add status information
+        if ticket.Enviado == 0:
+            enhanced_ticket.status_text = 'Giacenza'
+            enhanced_ticket.status_class = 'warning'
+        elif ticket.Enviado == 1:
+            enhanced_ticket.status_text = 'Processato'
+            enhanced_ticket.status_class = 'success'
+        elif ticket.Enviado == 4:
+            enhanced_ticket.status_text = 'Scaduto'
+            enhanced_ticket.status_class = 'danger'
+        else:
+            enhanced_ticket.status_text = 'Altro'
+            enhanced_ticket.status_class = 'secondary'
+        
+        enhanced_tickets.append(enhanced_ticket)
     
     # Get pending tickets (not processed)
     giacenza_tickets = TicketHeader.query.filter_by(Enviado=0).count()
     
-    # Get recent scans by current user (limit to 5) - only select the columns that exist in DB
-    stmt = select(ScanLog.id, ScanLog.user_id, ScanLog.ticket_id, ScanLog.action, ScanLog.timestamp).where(
-        ScanLog.user_id == current_user.id
+    # Get recent scans with user information (limit to 5)
+    recent_scans_query = db.session.query(
+        ScanLog.id,
+        ScanLog.user_id,
+        ScanLog.ticket_id,
+        ScanLog.action,
+        ScanLog.timestamp,
+        User.username.label('user_name')
+    ).join(
+        User, ScanLog.user_id == User.id
     ).order_by(ScanLog.timestamp.desc()).limit(5)
-    recent_scans = db.session.execute(stmt).all()
+    
+    recent_scans_raw = recent_scans_query.all()
+    
+    # Convert to objects for template compatibility
+    enhanced_scans = []
+    for scan in recent_scans_raw:
+        enhanced_scan = type('EnhancedScan', (), {})()
+        enhanced_scan.id = scan.id
+        enhanced_scan.user_id = scan.user_id
+        enhanced_scan.ticket_id = scan.ticket_id
+        enhanced_scan.action = scan.action
+        enhanced_scan.timestamp = scan.timestamp
+        enhanced_scan.user_name = scan.user_name
+        enhanced_scans.append(enhanced_scan)
     
     return render_template('warehouse/index.html', 
                           products_count=products_count,
-                          recent_tickets=recent_tickets,
+                          recent_tickets=enhanced_tickets,
                           giacenza_tickets=giacenza_tickets,
-                          recent_scans=recent_scans)
+                          recent_scans=enhanced_scans)
 
 # Product catalog and inventory
 

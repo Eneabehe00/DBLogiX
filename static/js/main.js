@@ -55,6 +55,91 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Handle clickable table rows globally
+    const handleClickableRows = function() {
+        const clickableRows = document.querySelectorAll('.clickable-row, .home-table-row');
+        clickableRows.forEach(function(row) {
+            // Add keyboard accessibility
+            if (!row.hasAttribute('tabindex')) {
+                row.setAttribute('tabindex', '0');
+            }
+            if (!row.hasAttribute('role')) {
+                row.setAttribute('role', 'button');
+            }
+            
+            // Remove existing event listeners to prevent duplicates
+            const newRow = row.cloneNode(true);
+            row.parentNode.replaceChild(newRow, row);
+            
+            // Handle click events
+            newRow.addEventListener('click', function(e) {
+                // Don't trigger if clicking on buttons, links, or form elements
+                if (e.target.closest('button, a, input, select, textarea, .btn')) {
+                    return;
+                }
+                
+                e.preventDefault();
+                
+                const href = this.getAttribute('data-href');
+                if (href && href !== '#' && href !== '') {
+                    // Add visual feedback
+                    this.style.transform = 'scale(0.98)';
+                    this.style.transition = 'transform 0.1s ease';
+                    
+                    // Navigate after brief delay for visual feedback
+                    setTimeout(function() {
+                        window.location.href = href;
+                    }, 100);
+                }
+            });
+            
+            // Handle keyboard navigation
+            newRow.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.click();
+                }
+            });
+            
+            // Add hover effects for better UX
+            newRow.addEventListener('mouseenter', function() {
+                if (!this.style.backgroundColor || this.style.backgroundColor === '') {
+                    this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+                }
+            });
+            
+            newRow.addEventListener('mouseleave', function() {
+                if (this.style.backgroundColor === 'rgba(13, 110, 253, 0.05)') {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+    };
+    
+    // Initialize clickable rows
+    handleClickableRows();
+    
+    // Reinitialize clickable rows when content is dynamically loaded
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        const newClickableRows = node.querySelectorAll ? node.querySelectorAll('.clickable-row, .home-table-row') : [];
+                        if (newClickableRows.length > 0 || node.classList?.contains('clickable-row') || node.classList?.contains('home-table-row')) {
+                            setTimeout(handleClickableRows, 100);
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
     // Initialize date pickers if present
     if (typeof $.fn.datepicker !== 'undefined') {
         $('.datepicker').datepicker({
@@ -281,5 +366,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.innerHTML = 'Test Connection';
             });
         });
+    }
+    
+    // Debug logging for development
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('DBLogiX Main: Enhanced table interactions loaded');
+        console.log('Features: Clickable rows, responsive tables, accessibility improvements');
     }
 }); 

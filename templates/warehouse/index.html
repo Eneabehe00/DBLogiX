@@ -9,51 +9,34 @@
 {% block content %}
 <!-- Welcome Section -->
 <div class="container-fluid">
-    <div class="home-header">
+    <!-- Minimal Header -->
+    <div class="home-header-minimal">
         <div class="row align-items-center">
-            <div class="col-lg-6">
-                <h1 class="welcome-title">
+            <div class="col-md-8">
+                <h1 class="welcome-title-small">
                     <i class="fas fa-warehouse text-primary me-2"></i>
                     DBLogiX Dashboard
                 </h1>
-                <p class="welcome-subtitle">
-                    Gestisci il tuo magazzino in modo semplice ed efficiente
-                </p>
             </div>
-            <div class="col-lg-6">
-                <div class="stats-overview">
-                    <div class="row g-3">
-                        <div class="col-6 col-sm-4">
-                            <div class="stat-card">
-                                <div class="stat-icon bg-primary bg-opacity-10">
-                                    <i class="fas fa-boxes"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <h3>{{ products_count }}</h3>
-                                    <p>Prodotti</p>
-                                </div>
+            <div class="col-md-4">
+                <div class="stats-compact">
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <div class="stat-compact">
+                                <div class="stat-number">{{ products_count }}</div>
+                                <div class="stat-text">Prodotti</div>
                             </div>
                         </div>
-                        <div class="col-6 col-sm-4">
-                            <div class="stat-card">
-                                <div class="stat-icon bg-warning bg-opacity-10">
-                                    <i class="fas fa-receipt"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <h3>{{ giacenza_tickets }}</h3>
-                                    <p>Giacenza</p>
-                                </div>
+                        <div class="col-4">
+                            <div class="stat-compact">
+                                <div class="stat-number">{{ giacenza_tickets }}</div>
+                                <div class="stat-text">Giacenza</div>
                             </div>
                         </div>
-                        <div class="col-6 col-sm-4">
-                            <div class="stat-card">
-                                <div class="stat-icon bg-success bg-opacity-10">
-                                    <i class="fas fa-qrcode"></i>
-                                </div>
-                                <div class="stat-info">
-                                    <h3><i class="fas fa-camera"></i></h3>
-                                    <p>Scanner QR</p>
-                                </div>
+                        <div class="col-4">
+                            <div class="stat-compact">
+                                <div class="stat-number"><i class="fas fa-qrcode"></i></div>
+                                <div class="stat-text">Scanner</div>
                             </div>
                         </div>
                     </div>
@@ -64,9 +47,6 @@
     
     <!-- Quick Actions -->
     <div class="quick-actions mb-4">
-        <h2 class="section-title">
-            <i class="fas fa-bolt text-warning me-2"></i>Azioni Rapide
-        </h2>
         <div class="row g-3">
             <div class="col-6 col-lg-3">
                 <a href="{{ url_for('warehouse.scanner') }}" class="quick-action-item">
@@ -121,11 +101,12 @@
     </div>
     
     <!-- Activity Sections -->
-    <div class="row g-4">
+    <!-- Desktop View (2 columns) -->
+    <div class="row g-4 d-none d-md-flex">
         <!-- Recent tickets -->
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-clock text-primary me-2"></i>Ticket Recenti
                     </h5>
@@ -136,28 +117,39 @@
                 <div class="card-body p-0">
                     {% if recent_tickets %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
+                        <table class="table table-hover mb-0" id="recentTicketsTable">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Numero</th>
+                                    <th>Articolo</th>
                                     <th>Data</th>
+                                    <th>Scadenza</th>
                                     <th>Stato</th>
-                                    <th class="text-end">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for ticket in recent_tickets %}
-                                <tr>
-                                    <td data-label="Numero">#{{ ticket.NumTicket }}</td>
-                                    <td data-label="Data">{{ ticket.formatted_date }}</td>
+                                <tr class="ticket-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;">
+                                    <td data-label="Numero">
+                                        <span class="ticket-number">#{{ ticket.NumTicket }}</span>
+                                    </td>
+                                    <td data-label="Articolo">
+                                        <span>{{ ticket.article_name or 'N/D' }}</span>
+                                    </td>
+                                    <td data-label="Data">
+                                        <span class="text-muted">{{ ticket.formatted_date }}</span>
+                                    </td>
+                                    <td data-label="Scadenza">
+                                        {% if ticket.expiry_date %}
+                                            <span class="badge bg-{{ ticket.expiry_class or 'secondary' }}">
+                                                {{ ticket.formatted_expiry }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/D</span>
+                                        {% endif %}
+                                    </td>
                                     <td data-label="Stato">
                                         <span class="badge bg-{{ ticket.status_class }}">{{ ticket.status_text }}</span>
-                                    </td>
-                                    <td class="text-end" data-label="Azioni">
-                                        <a href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" 
-                                           class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Visualizza dettagli">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -165,10 +157,10 @@
                         </table>
                     </div>
                     {% else %}
-                    <div class="empty-state">
-                        <i class="fas fa-ticket-alt"></i>
-                        <h3>Nessun ticket recente</h3>
-                        <p>Non ci sono ticket recenti da visualizzare</p>
+                    <div class="p-5 text-center">
+                        <i class="fas fa-ticket-alt text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5>Nessun ticket recente</h5>
+                        <p class="text-muted">Non ci sono ticket recenti da visualizzare</p>
                     </div>
                     {% endif %}
                 </div>
@@ -177,8 +169,8 @@
         
         <!-- Recent Activities -->
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-history text-primary me-2"></i>Attività Recenti
                     </h5>
@@ -191,38 +183,46 @@
                 <div class="card-body p-0">
                     {% if recent_scans %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
+                        <table class="table table-hover mb-0" id="recentActivitiesTable">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Ticket</th>
-                                    <th>Azione</th>
+                                    <th>Utente</th>
+                                    <th>Operazione</th>
                                     <th>Data/Ora</th>
-                                    <th class="text-end">Dettagli</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for scan in recent_scans %}
-                                <tr>
-                                    <td data-label="Ticket">#{{ scan.ticket_id }}</td>
-                                    <td data-label="Azione">
-                                        {% if scan.action == 'checkout' %}
-                                        <span class="badge bg-success">Checkout</span>
+                                <tr class="activity-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}" style="cursor: pointer;">
+                                    <td data-label="Ticket">
+                                        <span class="activity-number">#{{ scan.ticket_id or 'N/D' }}</span>
+                                    </td>
+                                    <td data-label="Utente">
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar me-2">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <span>{{ scan.user_name or 'Sistema' }}</span>
+                                        </div>
+                                    </td>
+                                    <td data-label="Operazione">
+                                        {% if scan.action == 'scan' %}
+                                            <span class="badge-soft badge-soft-primary">Scansione</span>
+                                        {% elif scan.action == 'checkout' %}
+                                            <span class="badge-soft badge-soft-success">Processato</span>
+                                        {% elif scan.action == 'view' %}
+                                            <span class="badge-soft badge-soft-info">Visualizzato</span>
+                                        {% elif scan.action == 'scan_success' %}
+                                            <span class="badge-soft badge-soft-success">Scansione OK</span>
+                                        {% elif scan.action == 'scan_fail' %}
+                                            <span class="badge-soft badge-soft-danger">Scansione Fallita</span>
                                         {% else %}
-                                        <span class="badge bg-info">Visualizzazione</span>
+                                            <span class="badge-soft badge-soft-secondary">{{ scan.action|title }}</span>
                                         {% endif %}
                                     </td>
-                                    <td data-label="Data/Ora">{{ scan.timestamp.strftime('%d/%m/%Y %H:%M') }}</td>
-                                    <td class="text-end" data-label="Dettagli">
-                                        {% if scan.ticket_id %}
-                                        <a href="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) }}" 
-                                           class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Visualizza ticket">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% else %}
-                                        <button class="btn btn-sm btn-icon btn-outline-secondary" disabled title="Ticket non disponibile">
-                                            <i class="fas fa-eye-slash"></i>
-                                        </button>
-                                        {% endif %}
+                                    <td data-label="Data/Ora">
+                                        <span class="text-muted">{{ scan.timestamp.strftime('%d/%m/%Y %H:%M') }}</span>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -230,12 +230,152 @@
                         </table>
                     </div>
                     {% else %}
-                    <div class="empty-state">
-                        <i class="fas fa-history"></i>
-                        <h3>Nessuna attività recente</h3>
-                        <p>Non ci sono attività recenti da visualizzare</p>
+                    <div class="p-5 text-center">
+                        <i class="fas fa-history text-muted mb-3" style="font-size: 3rem;"></i>
+                        <h5>Nessuna attività recente</h5>
+                        <p class="text-muted">Non ci sono attività recenti da visualizzare</p>
                     </div>
                     {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mobile View (Tabs) -->
+    <div class="d-block d-md-none">
+        <div class="card shadow-sm">
+            <!-- Tab Navigation -->
+            <div class="card-header bg-transparent p-0">
+                <ul class="nav nav-tabs mobile-tabs" id="mobileTabs" role="tablist">
+                    <li class="nav-item flex-fill" role="presentation">
+                        <button class="nav-link active w-100" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-pane" type="button" role="tab">
+                            <i class="fas fa-clock me-2"></i>Ticket Recenti
+                        </button>
+                    </li>
+                    <li class="nav-item flex-fill" role="presentation">
+                        <button class="nav-link w-100" id="activities-tab" data-bs-toggle="tab" data-bs-target="#activities-pane" type="button" role="tab">
+                            <i class="fas fa-history me-2"></i>Attività Recenti
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Tab Content -->
+            <div class="tab-content" id="mobileTabContent">
+                <!-- Tickets Tab -->
+                <div class="tab-pane fade show active" id="tickets-pane" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="fw-bold">Ticket Recenti</span>
+                        <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-list-ul me-1"></i>Tutti
+                        </a>
+                    </div>
+                    <div class="mobile-table-container">
+                        {% if recent_tickets %}
+                            {% for ticket in recent_tickets %}
+                            <div class="mobile-table-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}">
+                                <div class="row g-0">
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Numero</div>
+                                            <div class="mobile-value ticket-number">#{{ ticket.NumTicket }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Data</div>
+                                            <div class="mobile-value text-muted">{{ ticket.formatted_date }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Articolo</div>
+                                            <div class="mobile-value">{{ ticket.article_name or 'N/D' }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Stato</div>
+                                            <div class="mobile-value">
+                                                <span class="badge bg-{{ ticket.status_class }}">{{ ticket.status_text }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="p-4 text-center">
+                            <i class="fas fa-ticket-alt text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted mb-0">Nessun ticket recente</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Activities Tab -->
+                <div class="tab-pane fade" id="activities-pane" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="fw-bold">Attività Recenti</span>
+                        {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin.scan_logs') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-list-alt me-1"></i>Tutte
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="mobile-table-container">
+                        {% if recent_scans %}
+                            {% for scan in recent_scans %}
+                            <div class="mobile-table-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}">
+                                <div class="row g-0">
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Ticket</div>
+                                            <div class="mobile-value activity-number">#{{ scan.ticket_id or 'N/D' }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Utente</div>
+                                            <div class="mobile-value">{{ scan.user_name or 'Sistema' }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Operazione</div>
+                                            <div class="mobile-value">
+                                                {% if scan.action == 'scan' %}
+                                                    <span class="badge-soft badge-soft-primary">Scansione</span>
+                                                {% elif scan.action == 'checkout' %}
+                                                    <span class="badge-soft badge-soft-success">Processato</span>
+                                                {% elif scan.action == 'view' %}
+                                                    <span class="badge-soft badge-soft-info">Visualizzato</span>
+                                                {% elif scan.action == 'scan_success' %}
+                                                    <span class="badge-soft badge-soft-success">Scansione OK</span>
+                                                {% elif scan.action == 'scan_fail' %}
+                                                    <span class="badge-soft badge-soft-danger">Scansione Fallita</span>
+                                                {% else %}
+                                                    <span class="badge-soft badge-soft-secondary">{{ scan.action|title }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="mobile-cell">
+                                            <div class="mobile-label">Data/Ora</div>
+                                            <div class="mobile-value text-muted">{{ scan.timestamp.strftime('%d/%m %H:%M') }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="p-4 text-center">
+                            <i class="fas fa-history text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted mb-0">Nessuna attività recente</p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,4 +385,23 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+<script>
+    $(document).ready(function() {
+        // Make rows clickable to view detail
+        $('.ticket-row, .activity-row').on('click', function() {
+            const url = $(this).data('url');
+            if (url && url !== '#') {
+                window.location.href = url;
+            }
+        });
+        
+        // Make mobile rows clickable
+        $('.mobile-table-row').on('click', function() {
+            const url = $(this).data('url');
+            if (url && url !== '#') {
+                window.location.href = url;
+            }
+        });
+    });
+</script>
 {% endblock %} 

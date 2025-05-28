@@ -1,6 +1,6 @@
 /**
  * DBLogiX - Home Page JavaScript
- * Adds interactive functionality to the home page
+ * Essential functionality for the home page without animations
  */
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
         new bootstrap.Tooltip(tooltip);
     });
     
-    // Add hover effects to stat cards
+    // Simple hover effects for stat cards
     const statCards = document.querySelectorAll('.stat-card');
     statCards.forEach(function(card) {
         card.addEventListener('mouseenter', function() {
@@ -21,27 +21,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add click handler for quick action items
+    // Simple click handler for quick action items
     const quickActions = document.querySelectorAll('.quick-action-item');
     quickActions.forEach(function(action) {
         action.addEventListener('click', function(e) {
-            // Add a ripple effect when clicked
-            const ripple = document.createElement('div');
-            ripple.classList.add('ripple-effect');
+            // Add simple loading state
+            const icon = this.querySelector('i');
+            const originalClass = icon.className;
+            icon.className = 'fas fa-spinner fa-spin';
             
-            const rect = this.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            
-            this.appendChild(ripple);
-            
-            // Remove the ripple after animation completes
+            // Restore icon after short delay
             setTimeout(function() {
-                ripple.remove();
-            }, 600);
+                icon.className = originalClass;
+            }, 1000);
         });
     });
     
@@ -59,46 +51,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add animation to empty states
-    const emptyStates = document.querySelectorAll('.empty-state');
-    emptyStates.forEach(function(state) {
-        state.style.opacity = '0';
-        state.style.transform = 'translateY(20px)';
-        
-        setTimeout(function() {
-            state.style.transition = 'all 0.5s ease';
-            state.style.opacity = '1';
-            state.style.transform = 'translateY(0)';
-        }, 100);
+    // Enhanced loading states for buttons
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            // Don't add loading state to buttons that have data-no-loading attribute
+            if (this.hasAttribute('data-no-loading')) return;
+            
+            const icon = this.querySelector('i');
+            if (icon && !icon.classList.contains('fa-spinner')) {
+                const originalClass = icon.className;
+                icon.className = 'fas fa-spinner fa-spin me-1';
+                
+                // Restore after timeout
+                setTimeout(function() {
+                    icon.className = originalClass;
+                }, 2000);
+            }
+        });
     });
     
-    // Add CSS for ripple effect
-    const style = document.createElement('style');
-    style.textContent = `
-        .ripple-effect {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            width: 100px;
-            height: 100px;
-            margin-top: -50px;
-            margin-left: -50px;
-            transform: scale(0);
-            animation: ripple 0.6s linear;
-            pointer-events: none;
-        }
-        
-        @keyframes ripple {
-            to {
-                transform: scale(4);
-                opacity: 0;
-            }
-        }
-        
-        .quick-action-item {
-            position: relative;
-            overflow: hidden;
-        }
-    `;
-    document.head.appendChild(style);
+    // Console log for debugging
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('DBLogiX Home: Simplified functionality loaded');
+    }
 }); 

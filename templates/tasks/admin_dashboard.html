@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Task Management - Dashboard Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .task-card {
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .task-card.completed {
+        border-left-color: #28a745;
+    }
+    .task-card.in-progress {
+        border-left-color: #ffc107;
+    }
+    .task-card.pending {
+        border-left-color: #6c757d;
+    }
+    .progress {
+        height: 8px;
+    }
+    .ticket-item {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 5px 0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .ticket-item:hover {
+        background-color: #f8f9fa;
+        border-color: #007bff;
+    }
+    .ticket-item.selected {
+        background-color: #e3f2fd;
+        border-color: #2196f3;
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+    }
+    .notification-badge {
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.8em;
+        position: absolute;
+        top: -5px;
+        right: -5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-tasks"></i> Task Management - Dashboard Admin</h2>
+                <div>
+                    <a href="{{ url_for('tasks.create_task') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Crea Nuovo Task
+                    </a>
+                    <a href="{{ url_for('tasks.notifications') }}" class="btn btn-outline-info position-relative">
+                        <i class="fas fa-bell"></i> Notifiche
+                        {% if stats.pending_tasks > 0 %}
+                        <span class="notification-badge">{{ stats.pending_tasks }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <i class="fas fa-list fa-2x mb-2"></i>
+                    <h4>{{ stats.total_tasks }}</h4>
+                    <p class="mb-0">Task Totali</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white text-center">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4>{{ stats.pending_tasks }}</h4>
+                    <p class="mb-0">In Attesa</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white text-center">
+                <div class="card-body">
+                    <i class="fas fa-play fa-2x mb-2"></i>
+                    <h4>{{ stats.in_progress_tasks }}</h4>
+                    <p class="mb-0">In Corso</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white text-center">
+                <div class="card-body">
+                    <i class="fas fa-check fa-2x mb-2"></i>
+                    <h4>{{ stats.completed_tasks }}</h4>
+                    <p class="mb-0">Completati</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Available Tickets Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Ticket Disponibili:</strong> {{ stats.available_tickets }} ticket con Enviado = 0 sono disponibili per essere assegnati ai task.
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Tutti i Task</h5>
+                </div>
+                <div class="card-body">
+                    {% if tasks %}
+                    <div class="row">
+                        {% for task in tasks %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card task-card {{ task.status }}">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <strong>{{ task.task_number }}</strong>
+                                    <span class="badge badge-{{ 'success' if task.status == 'completed' else 'warning' if task.status == 'in_progress' else 'secondary' }}">
+                                        {{ task.status.upper() }}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ task.title }}</h6>
+                                    <p class="card-text text-muted small">{{ task.description[:100] }}...</p>
+                                    
+                                    <!-- Progress Bar -->
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <small>Progresso</small>
+                                            <small>{{ task.completed_tickets }}/{{ task.total_tickets }}</small>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" 
+                                                 data-progress="{{ task.progress_percentage }}"
+                                                 data-width="{{ task.progress_percentage }}"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Task Info -->
+                                    <div class="row small">
+                                        <div class="col-6">
+                                            <strong>Priorità:</strong> 
+                                            <span class="text-{{ 'danger' if task.priority == 'high' else 'warning' if task.priority == 'medium' else 'secondary' }}">
+                                                {{ task.priority.upper() }}
+                                            </span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Creato:</strong> {{ task.created_at.strftime('%d/%m/%Y') }}
+                                        </div>
+                                    </div>
+
+                                    {% if task.assignee %}
+                                    <div class="mt-2 small">
+                                        <strong>Assegnato a:</strong> {{ task.assignee.username }}
+                                    </div>
+                                    {% endif %}
+
+                                    {% if task.deadline %}
+                                    <div class="mt-2 small">
+                                        <strong>Scadenza:</strong> 
+                                        <span class="{% if task.deadline < now() %}text-danger{% elif (task.deadline - now()).days < 1 %}text-warning{% endif %}">
+                                            {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> Visualizza
+                                        </a>
+                                        {% if not task.assignee %}
+                                        <button type="button" class="btn btn-sm btn-outline-success" 
+                                                data-bs-toggle="modal" data-bs-target="#assignModal{{ task.id_task }}">
+                                            <i class="fas fa-user-plus"></i> Assegna
+                                        </button>
+                                        {% endif %}
+                                        {% if task.is_completed and not task.ddt_generated %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                data-bs-toggle="modal" data-bs-target="#ddtModal{{ task.id_task }}">
+                                            <i class="fas fa-file-alt"></i> DDT
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                data-bs-toggle="modal" data-bs-target="#deleteTaskModalQuick{{ task.id_task }}"
+                                                title="Elimina Task">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assignment Modal -->
+                        {% if not task.assignee %}
+                        <div class="modal fade" id="assignModal{{ task.id_task }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Assegna Task: {{ task.task_number }}</h5>
+                                        <button type="button" class="close" data-bs-dismiss="modal">
+                                            <span>&times;</span>
+                                        </button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('tasks.assign_task', task_id=task.id_task) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-body">
+                                            <div class="form-group">
+                                                <label>Seleziona Utente:</label>
+                                                <select name="user_id" class="form-control" required>
+                                                    <option value="">-- Seleziona Utente --</option>
+                                                    {% for user in users %}
+                                                    <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                            <button type="submit" class="btn btn-success">Assegna Task</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- DDT Generation Modal -->
+                        {% if task.is_completed and not task.ddt_generated %}
+                        <div class="modal fade" id="ddtModal{{ task.id_task }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Genera DDT per Task: {{ task.task_number }}</h5>
+                                        <button type="button" class="close" data-bs-dismiss="modal">
+                                            <span>&times;</span>
+                                        </button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('tasks.complete_task', task_id=task.id_task) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-body">
+                                            <div class="alert alert-success">
+                                                <i class="fas fa-check-circle"></i>
+                                                Task completato! Tutti i prodotti sono stati verificati.
+                                            </div>
+                                            <div class="form-group">
+                                                <label>Seleziona Cliente per DDT:</label>
+                                                <select name="client_id" class="form-control" required>
+                                                    <option value="">-- Seleziona Cliente --</option>
+                                                    {% for client in clients %}
+                                                    <option value="{{ client.IdCliente }}">
+                                                        {{ client.Nombre }} - {{ client.Direccion }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="fas fa-file-alt"></i> Genera DDT
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Quick Delete Task Modal -->
+                        <div class="modal fade" id="deleteTaskModalQuick{{ task.id_task }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">
+                                            <i class="fas fa-exclamation-triangle"></i> Elimina Task: {{ task.task_number }}
+                                        </h5>
+                                        <button type="button" class="close text-white" data-bs-dismiss="modal">
+                                            <span>&times;</span>
+                                        </button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id_task) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-body">
+                                            <div class="alert alert-danger">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <strong>Attenzione!</strong> Questa azione è irreversibile.
+                                            </div>
+                                            <p><strong>Stai per eliminare il task:</strong></p>
+                                            <ul>
+                                                <li><strong>Numero:</strong> {{ task.task_number }}</li>
+                                                <li><strong>Titolo:</strong> {{ task.title }}</li>
+                                                <li><strong>Ticket associati:</strong> {{ task.total_tickets }}</li>
+                                                <li><strong>Status:</strong> {{ task.status }}</li>
+                                            </ul>
+                                            <p>Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code>.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="fas fa-trash"></i> Elimina Task
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nessun task presente</h5>
+                        <p class="text-muted">Crea il primo task per iniziare la gestione del magazzino.</p>
+                        <a href="{{ url_for('tasks.create_task') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crea Nuovo Task
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Debug: Check if Bootstrap is loaded
+    console.log('jQuery loaded:', typeof $ !== 'undefined');
+    console.log('Bootstrap modal available:', typeof bootstrap !== 'undefined');
+    
+    // Auto refresh task progress every 30 seconds
+    setInterval(function() {
+        location.reload();
+    }, 30000);
+    
+    // Add tooltips using Bootstrap 5
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Debug: Check if modals exist
+    console.log('Modals found:', $('[id^="deleteTaskModalQuick"]').length);
+    
+    // Debug: Add click listener to delete buttons
+    $('.btn-outline-danger[data-bs-target^="#deleteTaskModalQuick"]').on('click', function(e) {
+        const target = $(this).data('bs-target');
+        console.log('Delete button clicked, target:', target);
+        console.log('Modal exists:', $(target).length > 0);
+        
+        if ($(target).length === 0) {
+            console.error('Modal not found:', target);
+            e.preventDefault();
+            alert('Errore: Modal non trovato. Controlla la console per i dettagli.');
+            return false;
+        }
+    });
+    
+    // Update progress bar colors and width based on completion
+    $('.progress-bar[data-progress]').each(function() {
+        const progress = parseInt($(this).data('progress'));
+        const width = $(this).data('width');
+        
+        // Set width
+        $(this).css('width', width + '%');
+        
+        // Set color based on progress
+        if (progress === 100) {
+            $(this).removeClass('bg-info').addClass('bg-success');
+        }
+    });
+});
+</script>
+{% endblock %} 

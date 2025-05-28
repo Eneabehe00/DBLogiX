@@ -135,7 +135,14 @@
                             <span>Scanner</span>
                         </a>
                     </li>
-                    
+                                        
+                    <!-- Tasks -->
+                    <li class="sidebar-item {% if request.endpoint and request.endpoint.startswith('tasks.') %}active{% endif %}">
+                        <a href="{{ url_for('tasks.index') }}" class="sidebar-link">
+                            <i class="fas fa-tasks"></i>
+                            <span>Task</span>
+                        </a>
+                    </li>
                     <!-- DDT -->
                     <li class="sidebar-item {% if request.endpoint and request.endpoint.startswith('ddt.') %}active{% endif %}">
                         <a href="{{ url_for('ddt.index') }}" class="sidebar-link">

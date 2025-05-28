@@ -820,3 +820,220 @@ class ChatRoom(db.Model):
     
     def __repr__(self):
         return f'<ChatRoom {self.id}: {self.name}>'
+    
+
+class Task(db.Model):
+    """Model for task management"""
+    __tablename__ = 'tasks'
+    
+    id_task = db.Column(db.Integer, primary_key=True)
+    task_number = db.Column(db.String(20), unique=True, nullable=False)  # Unique task number
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, assigned
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    assigned_to = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    assigned_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    deadline = db.Column(db.DateTime)
+    priority = db.Column(db.String(10), default='medium')  # low, medium, high, urgent
+    
+    # Progress tracking
+    total_tickets = db.Column(db.Integer, default=0)
+    completed_tickets = db.Column(db.Integer, default=0)
+    
+    # DDT generation fields
+    client_id = db.Column(db.Integer, db.ForeignKey('dat_cliente.IdCliente'))
+    ddt_generated = db.Column(db.Boolean, default=False)
+    ddt_id = db.Column(db.BigInteger)
+    
+    # Relationships
+    creator = db.relationship('User', foreign_keys=[created_by], backref=db.backref('created_tasks', lazy='dynamic'))
+    assignee = db.relationship('User', foreign_keys=[assigned_to], backref=db.backref('assigned_tasks', lazy='dynamic'))
+    client = db.relationship('Client', backref=db.backref('tasks', lazy='dynamic'))
+    task_tickets = db.relationship('TaskTicket', backref='task', lazy='dynamic', cascade='all, delete-orphan')
+    
+    @property
+    def progress_percentage(self):
+        if self.total_tickets == 0:
+            return 0
+        return int((self.completed_tickets / self.total_tickets) * 100)
+    
+    @property
+    def is_completed(self):
+        return self.status == 'completed' and self.completed_tickets == self.total_tickets
+    
+    def update_progress(self):
+        """Update the progress counters"""
+        completed_count = self.task_tickets.filter_by(status='completed').count()
+        total_count = self.task_tickets.count()
+        
+        self.completed_tickets = completed_count
+        self.total_tickets = total_count
+        
+        # Auto-update status based on progress
+        if total_count == 0:
+            self.status = 'pending'
+        elif completed_count == total_count and total_count > 0:
+            self.status = 'completed'
+            if not self.completed_at:
+                self.completed_at = datetime.utcnow()
+        elif completed_count > 0:
+            self.status = 'in_progress'
+        
+        db.session.commit()
+    
+    def generate_task_number(self):
+        """Generate a unique task number"""
+        from datetime import datetime
+        date_str = datetime.now().strftime('%Y%m%d')
+        
+        # Find the highest task number for today
+        existing_tasks = Task.query.filter(Task.task_number.like(f'TASK-{date_str}-%')).all()
+        
+        if not existing_tasks:
+            sequence = 1
+        else:
+            sequences = []
+            for task in existing_tasks:
+                try:
+                    seq_part = task.task_number.split('-')[-1]
+                    sequences.append(int(seq_part))
+                except (ValueError, IndexError):
+                    continue
+            
+            sequence = max(sequences) + 1 if sequences else 1
+        
+        return f'TASK-{date_str}-{sequence:04d}'
+    
+    def __repr__(self):
+        return f'<Task {self.id_task}: {self.task_number}>'
+
+
+class TaskTicket(db.Model):
+    """Model for associating tickets with tasks"""
+    __tablename__ = 'task_tickets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id_task'), nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('dat_ticket_cabecera.IdTicket'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending, in_progress, completed, verified
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    started_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    verified_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    notes = db.Column(db.Text)
+    
+    # Scan tracking
+    total_items = db.Column(db.Integer, default=0)
+    scanned_items = db.Column(db.Integer, default=0)
+    
+    # Relationships
+    ticket = db.relationship('TicketHeader', backref=db.backref('task_assignments', lazy='dynamic'))
+    verifier = db.relationship('User', backref=db.backref('verified_task_tickets', lazy='dynamic'))
+    scan_results = db.relationship('TaskTicketScan', backref='task_ticket', lazy='dynamic', cascade='all, delete-orphan')
+    
+    @property
+    def scan_progress_percentage(self):
+        if self.total_items == 0:
+            return 0
+        return int((self.scanned_items / self.total_items) * 100)
+    
+    @property
+    def is_scan_completed(self):
+        return self.total_items > 0 and self.scanned_items >= self.total_items
+    
+    def update_scan_progress(self):
+        """Update scan progress from ticket lines"""
+        if self.ticket:
+            self.total_items = self.ticket.lines.count()
+            self.scanned_items = self.scan_results.filter_by(status='success').count()
+            
+            # Auto-update status based on scan progress
+            if self.is_scan_completed and self.status != 'completed':
+                self.status = 'completed'
+                self.completed_at = datetime.utcnow()
+            elif self.scanned_items > 0 and self.status == 'pending':
+                self.status = 'in_progress'
+                self.started_at = datetime.utcnow()
+        
+        db.session.commit()
+    
+    def __repr__(self):
+        return f'<TaskTicket {self.id}: Task {self.task_id} - Ticket {self.ticket_id}>'
+
+
+class TaskTicketScan(db.Model):
+    """Model for tracking individual product scans within task tickets"""
+    __tablename__ = 'task_ticket_scans'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    task_ticket_id = db.Column(db.Integer, db.ForeignKey('task_tickets.id'), nullable=False)
+    ticket_line_id = db.Column(db.Integer, db.ForeignKey('dat_ticket_linea.IdLineaTicket'))
+    product_id = db.Column(db.Integer, db.ForeignKey('dat_articulo.IdArticulo'))
+    scanned_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # Scan data
+    scanned_code = db.Column(db.String(100))  # The QR code that was scanned
+    expected_code = db.Column(db.String(100))  # The expected QR code from ticket line
+    status = db.Column(db.String(20), default='pending')  # success, error, mismatch
+    error_message = db.Column(db.Text)
+    
+    # Timestamps
+    scanned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Additional verification data
+    weight_expected = db.Column(db.Numeric(15, 3))
+    weight_scanned = db.Column(db.Numeric(15, 3))
+    expiry_date_expected = db.Column(db.DateTime)
+    expiry_date_scanned = db.Column(db.DateTime)
+    
+    # Relationships
+    ticket_line = db.relationship('TicketLine', backref=db.backref('scan_results', lazy='dynamic'))
+    product = db.relationship('Product', backref=db.backref('task_scans', lazy='dynamic'))
+    scanner = db.relationship('User', backref=db.backref('performed_scans', lazy='dynamic'))
+    
+    @property
+    def is_match(self):
+        return self.status == 'success'
+    
+    @property
+    def formatted_status(self):
+        status_map = {
+            'success': 'Verificato ✓',
+            'error': 'Errore ✗',
+            'mismatch': 'Non corrispondente ⚠',
+            'pending': 'In attesa...'
+        }
+        return status_map.get(self.status, self.status)
+    
+    def __repr__(self):
+        return f'<TaskTicketScan {self.id}: {self.status}>'
+
+
+class TaskNotification(db.Model):
+    """Model for task-related notifications"""
+    __tablename__ = 'task_notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id_task'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    notification_type = db.Column(db.String(50), nullable=False)  # task_assigned, task_completed, task_updated
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    read_at = db.Column(db.DateTime)
+    
+    # Relationships
+    task = db.relationship('Task', backref=db.backref('notifications', lazy='dynamic'))
+    user = db.relationship('User', backref=db.backref('task_notifications', lazy='dynamic'))
+    
+    def mark_as_read(self):
+        self.is_read = True
+        self.read_at = datetime.utcnow()
+        db.session.commit()
+    
+    def __repr__(self):
+        return f'<TaskNotification {self.id}: {self.notification_type}>' 

@@ -8,8 +8,9 @@ import qrcode
 import io
 import base64
 
-from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea, Product
+from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea, Company, Product
 from utils import admin_required
+from forms import DDTCreateForm
 
 tasks_bp = Blueprint('tasks', __name__)
 
@@ -769,11 +770,14 @@ def complete_task(task_id):
     """Mark task as ready for DDT generation"""
     task = Task.query.get_or_404(task_id)
     
-    if not task.is_completed:
+# Controlla se viene dal preview
+    from_preview = request.form.get('from_preview') == 'true'
+    
+    if not from_preview and not task.is_completed:
         flash('Il task non può essere completato: non tutti i ticket sono stati verificati.', 'error')
         return redirect(url_for('tasks.view_task', task_id=task_id))
     
-    client_id = request.form.get('client_id')
+    client_id = request.form.get('cliente_id')
     if not client_id:
         flash('Seleziona un cliente per generare il DDT.', 'error')
         return redirect(url_for('tasks.view_task', task_id=task_id))
@@ -804,7 +808,6 @@ def generate_ddt_from_task(task, client_id):
         raise ValueError("Cliente non trovato")
     
     # Create DDT header
-    from models import Company
     company = Company.query.first()
     
     # Get next DDT ID using the same logic as ddt.py
@@ -1083,18 +1086,34 @@ def api_available_tickets():
 @tasks_bp.route('/task/<int:task_id>/delete', methods=['POST'])
 @admin_required
 def delete_task(task_id):
-    """Delete a task and reset associated tickets to Enviado=0"""
+    """Delete a task and reset associated tickets to Enviado=0 only if no DDT was generated"""
     task = Task.query.get_or_404(task_id)
     
     try:
         # Get all task tickets before deletion
         task_tickets = TaskTicket.query.filter_by(task_id=task_id).all()
         
-        # Reset all associated tickets to Enviado=0
-        for task_ticket in task_tickets:
-            ticket = TicketHeader.query.get(task_ticket.ticket_id)
-            if ticket:
-                ticket.Enviado = 0
+# Check if DDT was already generated from this task
+        if task.ddt_generated and task.ddt_id:
+            # DDT already generated - DO NOT reset ticket status
+            # Tickets must remain Enviado = 1 (processed) because they're already in a DDT
+            current_app.logger.info(f"Task {task.task_number} had DDT #{task.ddt_id} generated - keeping tickets as processed (Enviado = 1)")
+            tickets_reset = 0
+            
+            # Just log which tickets are being preserved
+            for task_ticket in task_tickets:
+                ticket = TicketHeader.query.get(task_ticket.ticket_id)
+                if ticket:
+                    current_app.logger.info(f"Preserving Ticket #{ticket.NumTicket} status (Enviado = {ticket.Enviado}) - already in DDT #{task.ddt_id}")
+        else:
+            # No DDT generated - safe to reset tickets to Enviado=0
+            tickets_reset = 0
+            for task_ticket in task_tickets:
+                ticket = TicketHeader.query.get(task_ticket.ticket_id)
+                if ticket:
+                    ticket.Enviado = 0
+                    tickets_reset += 1
+                    current_app.logger.info(f"Reset Ticket #{ticket.NumTicket} to Enviado = 0 (task deleted before DDT generation)")
         
         # Delete task notifications
         TaskNotification.query.filter_by(task_id=task_id).delete()
@@ -1112,7 +1131,11 @@ def delete_task(task_id):
         
         db.session.commit()
         
-        flash(f'Task {task_number} eliminato con successo. I ticket sono stati rimessi a disposizione.', 'success')
+# Different success messages based on DDT status
+        if task.ddt_generated and task.ddt_id:
+            flash(f'Task {task_number} eliminato con successo. I ticket restano processati perché già inclusi nel DDT #{task.ddt_id}.', 'success')
+        else:
+            flash(f'Task {task_number} eliminato con successo. {tickets_reset} ticket sono stati rimessi a disposizione.', 'success')
         return redirect(url_for('tasks.admin_dashboard'))
         
     except Exception as e:
@@ -1125,7 +1148,7 @@ def delete_task(task_id):
 @tasks_bp.route('/remove-ticket', methods=['POST'])
 @admin_required
 def remove_ticket_from_task():
-    """Remove a ticket from a task"""
+    """Remove a ticket from a task - only if no DDT was generated"""
     task_id = request.form.get('task_id')
     task_ticket_id = request.form.get('task_ticket_id')
     
@@ -1138,10 +1161,16 @@ def remove_ticket_from_task():
         task = Task.query.get_or_404(task_id)
         
         # Get the ticket and reset its status
+        # Check if DDT was already generated from this task
+        if task.ddt_generated and task.ddt_id:
+            flash(f'Impossibile rimuovere il ticket da un task con DDT #{task.ddt_id} già generato.', 'error')
+            return redirect(url_for('tasks.view_task', task_id=task_id))
+        
+        #Get the ticket and reset its status (only if no DDT was generated)
         ticket = TicketHeader.query.get(task_ticket.ticket_id)
         if ticket:
             ticket.Enviado = 0
-        
+            current_app.logger.info(f"Reset Ticket #{ticket.NumTicket} to Enviado = 0 (removed from task before DDT generation)")
         # Delete associated scans
         TaskTicketScan.query.filter_by(task_ticket_id=task_ticket_id).delete()
         
@@ -1162,8 +1191,63 @@ def remove_ticket_from_task():
         current_app.logger.error(f"Error removing ticket from task: {str(e)}")
         flash(f'Errore durante la rimozione del ticket: {str(e)}', 'error')
         return redirect(url_for('tasks.view_task', task_id=task_id))
+        
 
-
+@tasks_bp.route('/task/<int:task_id>/preview_ddt', methods=['GET', 'POST'])
+@admin_required
+def preview_ddt_from_task(task_id):
+    """Preview DDT from task before final generation"""
+    task = Task.query.get_or_404(task_id)
+    
+    if not task.is_completed:
+        flash('Il task non può essere completato: non tutti i ticket sono stati verificati.', 'error')
+        return redirect(url_for('tasks.view_task', task_id=task_id))
+    
+    if request.method == 'GET':
+        # Show client selection page
+        clients = Client.query.all()
+        return render_template('tasks/select_client_for_ddt.html', 
+                             task=task, 
+                             clients=clients)
+    
+    # POST method - process client selection
+    client_id = request.form.get('client_id')
+    if not client_id:
+        flash('Seleziona un cliente per generare il DDT.', 'error')
+        return redirect(url_for('tasks.preview_ddt_from_task', task_id=task_id))
+    
+    try:
+        # Prepara i dati per il preview DDT nel formato richiesto
+        client = Client.query.get_or_404(int(client_id))
+        company = Company.query.first()
+        
+        # Raccoglie tutti i ticket del task nel formato standard
+        tickets_data = []
+        for task_ticket in task.task_tickets:
+            ticket = task_ticket.ticket
+            tickets_data.append({
+                'id_ticket': ticket.IdTicket,
+                'id_empresa': ticket.IdEmpresa or 1,
+                'id_tienda': ticket.IdTienda or 1,
+                'id_balanza_maestra': ticket.IdBalanzaMaestra or 1,
+                'id_balanza_esclava': ticket.IdBalanzaEsclava or -1,
+                'tipo_venta': ticket.TipoVenta or 2
+            })
+        
+        # Renderizza il template di redirect per POST
+        return render_template('tasks/redirect_to_preview.html',
+                             cliente_id=client.IdCliente,
+                             id_empresa=company.IdEmpresa if company else 1,
+                             tickets_json=json.dumps(tickets_data),
+                             from_task='true',
+                             task_id=task_id,
+                             preview_url=url_for('ddt.preview'))
+        
+    except Exception as e:
+        flash(f'Errore nella preparazione del preview: {str(e)}', 'error')
+        return redirect(url_for('tasks.view_task', task_id=task_id))
+    
+    
 @tasks_bp.route('/delete-all', methods=['POST'])
 @admin_required
 def delete_all_tasks():

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, current_app
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_, not_, exists
@@ -155,6 +155,122 @@ def select_tickets(cliente_id):
                           form=form,
                           create_form=create_form,
                           id_empresa=id_empresa)
+
+@ddt_bp.route('/preview', methods=['POST'])
+@login_required
+def preview():
+    """Step 2.5: Preview DDT before final creation with ability to modify tickets"""
+    # Get form data
+    cliente_id = request.form.get('cliente_id')
+    id_empresa = request.form.get('id_empresa', 1)
+    tickets_data = request.form.get('tickets') or request.form.get('selected_tickets')
+    
+    # Parametri aggiuntivi per gestire i task e warehouse
+    from_task = request.form.get('from_task') == 'true'
+    from_warehouse = request.form.get('from_warehouse') == 'true'
+    task_id = request.form.get('task_id')
+    
+    if not cliente_id:
+        flash('ID cliente mancante', 'danger')
+        return redirect(url_for('ddt.new'))
+    
+    if not tickets_data:
+        flash('Nessun ticket selezionato', 'danger')
+        if from_task and task_id:
+            return redirect(url_for('tasks.view_task', task_id=task_id))
+        elif from_warehouse:
+            return redirect(url_for('warehouse.scanner'))
+        return redirect(url_for('ddt.select_tickets', cliente_id=cliente_id))
+    
+    # Get client and company info
+    cliente = Client.query.get_or_404(int(cliente_id))
+    empresa = Company.query.get_or_404(int(id_empresa))
+    
+    # Parse selected tickets
+    try:
+        selected_tickets = json.loads(tickets_data)
+    except json.JSONDecodeError:
+        flash('Formato dati ticket non valido', 'danger')
+        if from_task and task_id:
+            return redirect(url_for('tasks.view_task', task_id=task_id))
+        return redirect(url_for('ddt.select_tickets', cliente_id=cliente_id))
+    
+    # Get detailed ticket information
+    preview_data = []
+    total_amount = 0
+    total_weight = 0
+    
+    for ticket_info in selected_tickets:
+        ticket = TicketHeader.query.filter_by(
+            IdTicket=ticket_info['id_ticket'],
+            IdEmpresa=ticket_info['id_empresa']
+        ).first()
+        
+        if ticket:
+            # Get ticket lines
+            lines = TicketLine.query.filter_by(
+                IdTicket=ticket.IdTicket
+            ).all()
+            
+            ticket_total = 0
+            ticket_lines_data = []
+            
+            for line in lines:
+                # Get product info
+                product = Product.query.get(line.IdArticulo)
+                if product:
+                    line_amount = float(line.Peso or 0) * float(product.PrecioConIVA or 0)
+                    ticket_total += line_amount
+                    
+                    ticket_lines_data.append({
+                        'id_articulo': line.IdArticulo,
+                        'descripcion': line.Descripcion,
+                        'peso': line.Peso,
+                        'precio': product.PrecioConIVA,
+                        'importe': line_amount,
+                        'fecha_caducidad': line.FechaCaducidad
+                    })
+            
+            preview_data.append({
+                'ticket': {
+                    'IdTicket': ticket.IdTicket,
+                    'NumTicket': ticket.NumTicket,
+                    'Fecha': ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else None,
+                    'IdEmpresa': ticket.IdEmpresa,
+                    'IdTienda': ticket.IdTienda,
+                    'IdBalanzaMaestra': ticket.IdBalanzaMaestra,
+                    'IdBalanzaEsclava': ticket.IdBalanzaEsclava,
+                    'TipoVenta': ticket.TipoVenta
+                },
+                'ticket_info': ticket_info,
+                'lines': ticket_lines_data,
+                'ticket_total': ticket_total
+            })
+            
+            total_amount += ticket_total
+            total_weight += sum(float(line.get('peso', 0)) for line in ticket_lines_data)
+    
+    # Get all available tickets for adding more
+    available_tickets = TicketHeader.query.filter(
+        TicketHeader.Enviado == 0,
+        ~TicketHeader.IdTicket.in_([t['id_ticket'] for t in selected_tickets])
+    ).order_by(TicketHeader.Fecha.desc()).limit(50).all()
+    
+    # Create form for final DDT creation
+    create_form = DDTCreateForm()
+    
+    return render_template('ddt/preview.html',
+                          cliente=cliente,
+                          empresa=empresa,
+                          preview_data=preview_data,
+                          total_amount=total_amount,
+                          total_weight=total_weight,
+                          available_tickets=available_tickets,
+                          create_form=create_form,
+                          selected_tickets_json=tickets_data,
+                          from_task=from_task,
+                          from_warehouse=from_warehouse,
+                          task_id=task_id)
 
 @ddt_bp.route('/create', methods=['POST'])
 @login_required
@@ -343,18 +459,18 @@ def create():
             # IMPORTANTE: Aggiungiamo log aggiuntivi per debuggare il problema
             print(f"DEBUG: Elaborazione ticket {ticket['id_ticket']}")
             
-            # Get ticket lines - usa l'ID del ticket ORIGINALE passato dal frontend
-            ticket_lines = TicketLine.query.filter_by(
+            # Get ticket lines
+            lines = TicketLine.query.filter_by(
                 IdTicket=ticket['id_ticket']
-            ).populate_existing().all()
+            ).all()
             
-            print(f"DEBUG: Trovate {len(ticket_lines)} linee per il ticket {ticket['id_ticket']}")
+            print(f"DEBUG: Trovate {len(lines)} linee per il ticket {ticket['id_ticket']}")
             print(f"DEBUG: Dettaglio linee per il ticket {ticket['id_ticket']}:")
-            for tl in ticket_lines:
+            for tl in lines:
                 print(f"  - IdLineaTicket: {tl.IdLineaTicket}, IdArticulo: {tl.IdArticulo}, Descripcion: {tl.Descripcion}")
             
             # Create an AlbaranLinea for each product in the ticket
-            for ticket_line in ticket_lines:
+            for ticket_line in lines:
                 line_count += 1
                 product = Product.query.get(ticket_line.IdArticulo)
                 
@@ -1217,3 +1333,362 @@ def inittest():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}) 
+
+@ddt_bp.route('/api/preview/add_ticket', methods=['POST'])
+@login_required
+def api_add_ticket_to_preview():
+    """API to add a ticket to DDT preview"""
+    data = request.get_json()
+    ticket_id = data.get('ticket_id')
+    empresa_id = data.get('empresa_id', 1)
+    
+    if not ticket_id:
+        return jsonify({'success': False, 'message': 'ID ticket mancante'})
+    
+    # Get ticket info
+    ticket = TicketHeader.query.filter_by(
+        IdTicket=ticket_id,
+        IdEmpresa=empresa_id
+    ).first()
+    
+    if not ticket:
+        return jsonify({'success': False, 'message': 'Ticket non trovato'})
+    
+    if ticket.Enviado != 0:
+        return jsonify({'success': False, 'message': 'Ticket già processato'})
+    
+    # Get ticket lines and calculate total
+    lines = TicketLine.query.filter_by(
+        IdTicket=ticket.IdTicket
+    ).all()
+    
+    ticket_total = 0
+    ticket_lines_data = []
+    
+    for line in lines:
+        product = Product.query.get(line.IdArticulo)
+        if product:
+            line_amount = float(line.Peso or 0) * float(product.PrecioConIVA or 0)
+            ticket_total += line_amount
+            
+            ticket_lines_data.append({
+                'id_articulo': line.IdArticulo,
+                'descripcion': line.Descripcion,
+                'peso': float(line.Peso or 0),
+                'precio': float(product.PrecioConIVA or 0),
+                'importe': line_amount,
+                'fecha_caducidad': line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad else None
+            })
+    
+    return jsonify({
+        'success': True,
+        'ticket': {
+            'id_ticket': ticket.IdTicket,
+            'num_ticket': ticket.NumTicket,
+            'fecha': ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else '',
+            'lines': ticket_lines_data,
+            'total': ticket_total,
+            'id_empresa': ticket.IdEmpresa,
+            'id_tienda': ticket.IdTienda or 1,
+            'id_balanza_maestra': ticket.IdBalanzaMaestra or 1,
+            'id_balanza_esclava': ticket.IdBalanzaEsclava or -1,
+            'tipo_venta': ticket.TipoVenta or 2
+        }
+    })
+
+@ddt_bp.route('/api/preview/remove_ticket', methods=['POST'])
+@login_required
+def api_remove_ticket_from_preview():
+    """API to remove a ticket from DDT preview"""
+    data = request.get_json()
+    ticket_id = data.get('ticket_id')
+    from_task = data.get('from_task', False)  # Indica se viene da un task
+    
+    if not ticket_id:
+        return jsonify({'success': False, 'message': 'ID ticket mancante'})
+    
+    try:
+        # Trova il ticket e resetta il suo stato
+        ticket = TicketHeader.query.get(ticket_id)
+        if ticket:
+            ticket.Enviado = 0  # Reset to not sent/processed
+            db.session.commit()
+            
+            current_app.logger.info(f"🔄 Ticket #{ticket.NumTicket} rimosso dalla preview DDT - stato reimpostato a Enviado = 0")
+            
+            if from_task:
+                current_app.logger.info(f"📋 Ticket #{ticket.NumTicket} rimosso da task DDT preview - non sarà più incluso nel task")
+        
+        return jsonify({'success': True, 'message': 'Ticket rimosso dal preview e stato reimpostato'})
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Errore nella rimozione ticket dalla preview: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore durante la rimozione: {str(e)}'})
+
+@ddt_bp.route('/api/preview/search_tickets', methods=['GET'])
+@login_required
+def api_search_tickets_for_preview():
+    """API to search available tickets for adding to DDT preview"""
+    query = request.args.get('q', '').strip()
+    excluded_tickets = request.args.get('excluded', '').split(',')
+    excluded_tickets = [int(x) for x in excluded_tickets if x.isdigit()]
+    
+    # Build base query
+    base_query = TicketHeader.query.filter(TicketHeader.Enviado == 0)
+    
+    # Exclude already selected tickets
+    if excluded_tickets:
+        base_query = base_query.filter(~TicketHeader.IdTicket.in_(excluded_tickets))
+    
+    # Apply search filter if provided
+    if query:
+        if query.isdigit():
+            # Search by ticket number
+            base_query = base_query.filter(TicketHeader.NumTicket.like(f'%{query}%'))
+        else:
+            # Search by product description in ticket lines
+            base_query = base_query.join(TicketLine).filter(
+                TicketLine.Descripcion.like(f'%{query}%')
+            )
+    
+    tickets = base_query.order_by(TicketHeader.Fecha.desc()).limit(20).all()
+    
+    results = []
+    for ticket in tickets:
+        # Get ticket summary info
+        lines_count = TicketLine.query.filter_by(
+            IdTicket=ticket.IdTicket,
+            IdEmpresa=ticket.IdEmpresa
+        ).count()
+        
+        results.append({
+            'id_ticket': ticket.IdTicket,
+            'num_ticket': ticket.NumTicket,
+            'fecha': ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else '',
+            'lines_count': lines_count,
+            'id_empresa': ticket.IdEmpresa
+        })
+    
+    return jsonify({'success': True, 'tickets': results})
+
+@ddt_bp.route('/api/preview/create_ticket', methods=['POST'])
+@login_required
+def api_create_manual_ticket():
+    """API to create a manual ticket from DDT preview"""
+    data = request.get_json()
+    
+    # Validazione dati richiesti
+    required_fields = ['cliente_id', 'empresa_id', 'products']
+    for field in required_fields:
+        if field not in data or not data[field]:
+            return jsonify({'success': False, 'message': f'Campo {field} mancante'})
+    
+    cliente_id = data.get('cliente_id')
+    empresa_id = data.get('empresa_id', 1)
+    products = data.get('products', [])
+    
+    if not products:
+        return jsonify({'success': False, 'message': 'Almeno un prodotto è richiesto'})
+    
+    try:
+        # Verifica/crea il prodotto con ID 999
+        product_999 = Product.query.get(999)
+        if not product_999:
+            # Crea il prodotto di riferimento con ID 999
+            product_999 = Product(
+                IdArticulo=999,
+                Descripcion="Prodotto Personalizzato",
+                PrecioConIVA=1.00,
+                IdFamilia=1,
+                IdSubFamilia=1,
+                IdIva=3,  # Default 22%
+                TeclaDirecta=0,
+                TaraFija=0
+            )
+            db.session.add(product_999)
+            db.session.flush()
+        
+        # Verifica/crea anche il record Article per ID 999
+        article_999 = Article.query.get(999)
+        if not article_999:
+            # Crea il record Article per ID 999
+            article_999 = Article(
+                IdArticulo=999,
+                Descripcion="Prodotto Personalizzato",
+                Descripcion1="Prodotto creato manualmente",
+                PrecioConIVA=1.00,
+                PrecioSinIVA=0.82,  # Prezzo senza IVA al 22%
+                IdFamilia=1,
+                IdSubFamilia=1,
+                IdIva=3,  # 22%
+                IdTipo=1,  # Pesato
+                IdDepartamento=1,
+                IdSeccion=1,
+                TeclaDirecta=0,
+                TaraFija=0,
+                Favorito=True,
+                EnVenta=True,
+                IncluirGestionStock=False,
+                IdClase=1,
+                IdEmpresa=1,
+                Usuario="DBLogiX",
+                Modificado=True,
+                Operacion="A",
+                Marca=1
+            )
+            db.session.add(article_999)
+            db.session.flush()
+        
+        # Genera nuovo ID ticket
+        max_ticket_id = db.session.query(db.func.max(TicketHeader.IdTicket)).scalar() or 0
+        new_ticket_id = max_ticket_id + 1
+        
+        # Genera numero ticket
+        max_num_ticket = db.session.query(db.func.max(TicketHeader.NumTicket)).scalar() or 0
+        new_num_ticket = max_num_ticket + 1
+        
+        # Crea nuovo TicketHeader
+        ticket_header = TicketHeader(
+            IdTicket=new_ticket_id,
+            IdEmpresa=empresa_id,
+            IdTienda=1,  # Default
+            IdBalanzaMaestra=1,  # Default
+            IdBalanzaEsclava=-1,  # Default
+            TipoVenta=2,  # Default
+            NumTicket=new_num_ticket,
+            Fecha=datetime.now(),
+            NumLineas=len(products),
+            Enviado=0  # Ticket pendente
+        )
+        
+        db.session.add(ticket_header)
+        db.session.flush()  # Per ottenere l'ID
+        
+        # Crea le righe del ticket
+        ticket_lines_data = []
+        total_ticket = 0
+        
+        for idx, product_data in enumerate(products, 1):
+            peso = float(product_data.get('peso', 1))
+            descripcion = product_data.get('descripcion', 'Prodotto Personalizzato')
+            precio = float(product_data.get('precio', 1.00))
+            id_iva = int(product_data.get('id_iva', 3))  # Default 22%
+            fecha_caducidad = product_data.get('fecha_caducidad')
+            
+            # Aggiorna il prodotto 999 con i nuovi dati (ultimo prodotto aggiunto)
+            if idx == len(products):  # Solo per l'ultimo prodotto
+                product_999.Descripcion = descripcion
+                product_999.PrecioConIVA = precio
+                product_999.IdIva = id_iva
+                
+                # Aggiorna anche l'Article se esiste
+                if article_999:
+                    article_999.Descripcion = descripcion
+                    article_999.PrecioConIVA = precio
+                    article_999.IdIva = id_iva
+                    
+                    # Calcola prezzo senza IVA
+                    vat_rate = 0
+                    if id_iva == 1:
+                        vat_rate = 0.04  # 4%
+                    elif id_iva == 2:
+                        vat_rate = 0.10  # 10%
+                    elif id_iva == 3:
+                        vat_rate = 0.22  # 22%
+                    
+                    precio_sin_iva = precio / (1 + vat_rate)
+                    article_999.PrecioSinIVA = precio_sin_iva
+            
+            # Genera ID univoco per IdLineaTicket
+            max_line_id = db.session.query(db.func.max(TicketLine.IdLineaTicket)).scalar() or 0
+            new_line_id = max_line_id + 1
+            
+            # Crea TicketLine
+            ticket_line = TicketLine(
+                IdLineaTicket=new_line_id,  # Aggiungi ID esplicito
+                IdTicket=new_ticket_id,
+                IdArticulo=999,  # Usa sempre ID 999
+                Descripcion=descripcion,
+                Peso=peso,
+                FechaCaducidad=datetime.strptime(fecha_caducidad, '%Y-%m-%d') if fecha_caducidad else None,
+                comportamiento=product_data.get('comportamiento', 1)  # Default peso
+            )
+            
+            db.session.add(ticket_line)
+            
+            # Calcola importo linea
+            importe = peso * precio
+            total_ticket += importe
+            
+            # Prepara dati per risposta
+            ticket_lines_data.append({
+                'id_articulo': 999,
+                'descripcion': descripcion,
+                'peso': float(peso),
+                'precio': precio,
+                'importe': importe,
+                'fecha_caducidad': fecha_caducidad
+            })
+        
+        # Commit della transazione
+        db.session.commit()
+        
+        # Prepara risposta con i dati del ticket creato
+        return jsonify({
+            'success': True,
+            'message': 'Ticket creato con successo',
+            'ticket': {
+                'id_ticket': new_ticket_id,
+                'num_ticket': new_num_ticket,
+                'fecha': ticket_header.Fecha.strftime('%d/%m/%Y %H:%M'),
+                'lines': ticket_lines_data,
+                'total': total_ticket,
+                'id_empresa': empresa_id,
+                'id_tienda': 1,
+                'id_balanza_maestra': 1,
+                'id_balanza_esclava': -1,
+                'tipo_venta': 2
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Errore nella creazione del ticket manuale: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore durante la creazione: {str(e)}'}) 
+
+@ddt_bp.route('/api/products/search', methods=['GET'])
+@login_required
+def api_search_products():
+    """API to search products for manual ticket creation"""
+    query = request.args.get('q', '').strip()
+    
+    if len(query) < 2:
+        return jsonify({'success': True, 'products': []})
+    
+    # Cerca prodotti per descrizione o ID
+    products_query = Product.query
+    
+    if query.isdigit():
+        # Ricerca per ID articolo
+        products_query = products_query.filter(Product.IdArticulo == int(query))
+    else:
+        # Ricerca per descrizione
+        products_query = products_query.filter(Product.Descripcion.like(f'%{query}%'))
+    
+    products = products_query.limit(20).all()
+    
+    # Formatta risultati
+    results = []
+    for product in products:
+        results.append({
+            'id': product.IdArticulo,
+            'descripcion': product.Descripcion,
+            'precio': float(product.PrecioConIVA or 0),
+            'ean': product.EANScanner or '',
+            'famiglia': product.IdFamilia,
+            'subfamiglia': product.IdSubFamilia,
+            'iva': product.IdIva
+        })
+    
+    return jsonify({'success': True, 'products': results}) 

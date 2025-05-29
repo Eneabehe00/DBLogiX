@@ -34,7 +34,7 @@
 </div>
 
 <div class="container-fluid">
-    <form id="createDDTForm" method="POST" action="{{ url_for('ddt.create') }}">
+    <form id="createDDTForm" method="POST" action="{{ url_for('ddt.preview') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
         <input type="hidden" name="cliente_nombre" value="{{ cliente.Nombre }}">
@@ -47,12 +47,12 @@
                     <i class="fas fa-ticket-alt me-2"></i>Seleziona Ticket per <strong>{{ cliente.Nombre }}</strong>
                 </h5>
                 <button type="button" id="btnCreaDDT" class="btn btn-success" disabled>
-                    <i class="fas fa-file-invoice"></i> Crea DDT
+                    <i class="fas fa-eye"></i> Anteprima DDT
                 </button>
             </div>
             <div class="form-card-body">
                 <div id="statusMessage" class="alert alert-info mb-3">
-                    <span id="statusContent">Seleziona almeno un ticket per creare il DDT.</span>
+                    <span id="statusContent">Seleziona almeno un ticket per vedere l'anteprima del DDT.</span>
                 </div>
 
                 <div class="table-responsive">
@@ -109,7 +109,7 @@
                     <i class="fas fa-times"></i> Annulla
                 </a>
                 <button type="submit" class="btn form-btn form-btn-save" id="submitDDT" disabled>
-                    <i class="fas fa-save"></i> Crea DDT
+                    <i class="fas fa-eye"></i> Anteprima DDT
                 </button>
             </div>
         </div>
@@ -151,7 +151,7 @@
         const $statusMessage = $('#statusMessage');
         const $createDDTForm = $('#createDDTForm');
         
-        // Funzione per aggiornare lo stato del pulsante "Crea DDT"
+        // Funzione per aggiornare lo stato del pulsante "Anteprima DDT"
         function updateCreaDDTButton() {
             const checkedCount = $('.ticket-checkbox:checked').length;
             const isEnabled = checkedCount > 0;
@@ -160,7 +160,7 @@
             $submitDDT.prop('disabled', !isEnabled);
             
             if (checkedCount === 0) {
-                showStatus('Seleziona almeno un ticket per creare il DDT.', 'info');
+                showStatus('Seleziona almeno un ticket per vedere l\'anteprima del DDT.', 'info');
             } else {
                 showStatus(`${checkedCount} ticket selezionati.`, 'success');
             }
@@ -192,16 +192,16 @@
             updateCreaDDTButton();
         });
         
-        // Gestione pulsante "Crea DDT"
+        // Gestione pulsante "Anteprima DDT"
         $btnCreaDDT.on('click', function(e) {
             e.preventDefault();
-            console.log('Creazione DDT iniziata...');
+            console.log('Anteprima DDT iniziata...');
             
             const selectedTickets = [];
             const $checkedBoxes = $('.ticket-checkbox:checked');
             
             if ($checkedBoxes.length === 0) {
-                alert('Devi selezionare almeno un ticket per creare il DDT.');
+                alert('Devi selezionare almeno un ticket per vedere l\'anteprima del DDT.');
                 return;
             }
             
@@ -218,13 +218,13 @@
                 });
             });
             
-            console.log('Ticket da includere nel DDT:', selectedTickets);
+            console.log('Ticket da includere nell\'anteprima DDT:', selectedTickets);
             console.log('Cliente ID:', $('input[name="cliente_id"]').val());
             console.log('ID Empresa:', $('input[name="id_empresa"]').val());
             
             // Aggiorna form e invia
             $hiddenSelectedTickets.val(JSON.stringify(selectedTickets));
-            showStatus(`Creazione DDT con ${selectedTickets.length} ticket...`);
+            showStatus(`Caricamento anteprima con ${selectedTickets.length} ticket...`);
             
             // Submit del form
             $createDDTForm.submit();

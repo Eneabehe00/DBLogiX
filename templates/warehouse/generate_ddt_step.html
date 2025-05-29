@@ -142,12 +142,13 @@
                     <hr>
 
                     <h5 class="mb-3"><i class="fas fa-user text-primary me-2"></i>Seleziona Cliente</h5>
-                    <form id="generate-ddt-form" method="POST" action="{{ url_for('ddt.create') }}">
+                    <form id="generate-ddt-form" method="POST" action="{{ url_for('ddt.preview') }}">
                         {{ form.hidden_tag() }}
                         <input type="hidden" name="cliente_id" id="selected_customer_id" value="">
                         <input type="hidden" name="cliente_nome" id="selected_customer_name" value="">
                         <input type="hidden" name="id_empresa" id="id_empresa" value="">
                         <input type="hidden" name="tickets" id="tickets_json" value="">
+                        <input type="hidden" name="from_warehouse" value="true">
 
                         <div class="mb-4 position-relative">
                             <label for="customer_search" class="form-label">Cliente</label>
@@ -174,7 +175,7 @@
                                 <i class="fas fa-arrow-left"></i><span>Torna ai Ticket</span>
                             </a>
                             <button type="submit" class="btn btn-success btn-action" id="btn-finalize-ddt" {% if not items or items|length == 0 %}disabled{% endif %}>
-                                <i class="fas fa-file-alt"></i><span>Genera DDT</span>
+                                <i class="fas fa-file-alt"></i><span>Anteprima DDT</span>
                             </button>
                         </div>
                     </form>

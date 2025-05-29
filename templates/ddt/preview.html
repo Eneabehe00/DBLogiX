@@ -380,6 +380,7 @@
 // Dati iniziali del server
 const INITIAL_TICKETS_DATA = {{ selected_tickets_json|tojson|safe }};
 const INITIAL_PREVIEW_DATA = {{ preview_data|tojson|safe }};
+const FROM_TASK = {{ from_task|tojson|safe }};
 
 // Variabili globali per mantenere i dati dei ticket
 let currentTickets = JSON.parse(INITIAL_TICKETS_DATA);
@@ -590,23 +591,47 @@ function addTicketToPreview(ticket) {
 
 function removeTicket(ticketId) {
     if (confirm('Sei sicuro di voler rimuovere questo ticket dal DDT?')) {
-        // Rimuovi dai dati correnti
-        currentTickets = currentTickets.filter(t => t.id_ticket !== ticketId);
-        delete previewData[ticketId];
-        
-        // Rimuovi dalla UI
-        const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-        if (ticketElement) {
-            ticketElement.remove();
-        }
-        
-        // Aggiorna riepilogo e form
-        updateSummary();
-        updateFormData();
-        
-        // Pulisci i risultati di ricerca per permettere di ri-aggiungere il ticket
-        document.getElementById('search-results').innerHTML = '';
-        document.getElementById('search-tickets').value = '';
+        // Chiama API per aggiornare lo stato del ticket nel database
+        fetch('{{ url_for("ddt.api_remove_ticket_from_preview") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ticket_id: ticketId,
+                from_task: FROM_TASK
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Rimuovi dai dati correnti
+                currentTickets = currentTickets.filter(t => t.id_ticket !== ticketId);
+                delete previewData[ticketId];
+                
+                // Rimuovi dalla UI
+                const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+                if (ticketElement) {
+                    ticketElement.remove();
+                }
+                
+                // Aggiorna riepilogo e form
+                updateSummary();
+                updateFormData();
+                
+                // Pulisci i risultati di ricerca per permettere di ri-aggiungere il ticket
+                document.getElementById('search-results').innerHTML = '';
+                document.getElementById('search-tickets').value = '';
+                
+                console.log('Ticket rimosso dal preview e stato aggiornato nel database');
+            } else {
+                alert('Errore nella rimozione del ticket: ' + (data.message || 'Errore sconosciuto'));
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Errore di rete durante la rimozione del ticket');
+        });
     }
 }
 

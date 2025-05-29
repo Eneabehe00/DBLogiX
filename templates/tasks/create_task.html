@@ -2,597 +2,335 @@
 
 {% block title %}Crea Nuovo Task{% endblock %}
 
-{% block head %}
-<style>
-    .task-form-container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
-    .card-header-custom {
-        background: linear-gradient(135deg, #007bff, #0056b3);
-        color: white;
-        border: none;
-    }
-    
-    .ticket-item {
-        border: 2px solid #dee2e6;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        background: #ffffff;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: relative;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .ticket-item:hover {
-        border-color: #007bff;
-        box-shadow: 0 6px 16px rgba(0,123,255,0.2);
-        transform: translateY(-3px);
-    }
-    
-    .ticket-item.selected {
-        border-color: #28a745 !important;
-        background: linear-gradient(135deg, #f8fff9, #e8f8e8) !important;
-        box-shadow: 0 8px 20px rgba(40,167,69,0.3) !important;
-        transform: translateY(-3px);
-    }
-    
-    .ticket-checkbox {
-        width: 24px !important;
-        height: 24px !important;
-        cursor: pointer;
-        border: 2px solid #007bff;
-        border-radius: 4px;
-    }
-    
-    .ticket-item.selected .ticket-checkbox {
-        background-color: #28a745;
-        border-color: #28a745;
-    }
-    
-    .ticket-item.selected .ticket-checkbox:checked {
-        background-color: #28a745;
-        border-color: #28a745;
-    }
-    
-    .ticket-header {
-        display: flex;
-        justify-content: between;
-        align-items: center;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .ticket-selection {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: bold;
-        color: #007bff;
-        font-size: 16px;
-    }
-    
-    .ticket-item.selected .ticket-selection {
-        color: #28a745;
-    }
-    
-    .ticket-info {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 15px;
-        margin-top: 15px;
-    }
-    
-    .info-item {
-        text-align: center;
-        padding: 10px;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
-    
-    .info-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        color: #6c757d;
-        font-weight: 600;
-        margin-bottom: 5px;
-    }
-    
-    .info-value {
-        font-size: 14px;
-        font-weight: bold;
-        color: #333;
-    }
-    
-    .selected-summary {
-        position: sticky;
-        top: 20px;
-        z-index: 10;
-        border-radius: 12px;
-        border: 2px solid #28a745;
-        background: linear-gradient(135deg, #e8f8e8, #f8fff9);
-    }
-    
-    .btn-selection {
-        border-radius: 20px;
-        padding: 8px 20px;
-        font-weight: 600;
-        border: 2px solid;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-selection:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .form-section {
-        background: #ffffff;
-        border: 1px solid #dee2e6;
-        border-radius: 12px;
-        padding: 25px;
-        margin-bottom: 25px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .section-title {
-        color: #007bff;
-        font-weight: 700;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 18px;
-    }
-    
-    .loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.7);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-    }
-    
-    .loading-spinner {
-        background: white;
-        padding: 40px;
-        border-radius: 15px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-    
-    .create-button {
-        background: linear-gradient(135deg, #28a745, #20c997) !important;
-        border: none !important;
-        border-radius: 12px;
-        padding: 15px 30px;
-        font-size: 16px;
-        font-weight: 700;
-        color: white !important;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(40,167,69,0.3);
-    }
-    
-    .btn-success.create-button {
-        background: linear-gradient(135deg, #28a745, #20c997) !important;
-        border-color: #28a745 !important;
-    }
-    
-    .create-button:hover:not(:disabled) {
-        background: linear-gradient(135deg, #20c997, #28a745) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(40,167,69,0.4);
-    }
-    
-    .create-button:disabled {
-        background: #6c757d !important;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-    }
-    
-    @media (max-width: 768px) {
-        .ticket-info {
-            grid-template-columns: 1fr;
-            gap: 10px;
-        }
-        
-        .col-md-6 {
-            margin-bottom: 15px;
-        }
-        
-        .ticket-item {
-            padding: 15px;
-        }
-    }
-</style>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-plus-circle text-primary"></i> Crea Nuovo Task</h2>
-                <a href="{{ url_for('tasks.admin_dashboard') }}" class="btn btn-outline-secondary btn-selection">
+<div class="task-form-container">
+    <!-- Page Header -->
+    <div class="task-page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="task-page-title">
+                    <i class="fas fa-plus-circle"></i>
+                    Crea Nuovo Task
+                </h1>
+                <p class="task-page-subtitle">Configura un nuovo task di gestione magazzino</p>
+            </div>
+            <div>
+                <a href="{{ url_for('tasks.admin_dashboard') }}" class="task-btn task-btn-outline-primary">
                     <i class="fas fa-arrow-left"></i> Torna al Dashboard
                 </a>
             </div>
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('tasks.create_task') }}" id="create-task-form">
+    <form method="POST" id="createTaskForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="row">
-            <!-- Task Details Form -->
-            <div class="col-md-4">
-                <div class="form-section">
-                    <h4 class="section-title">
-                        <i class="fas fa-info-circle"></i> Dettagli Task
-                    </h4>
-                    
-                    <div class="form-group mb-4">
-                        <label for="title" class="font-weight-bold">Titolo Task *</label>
-                        <input type="text" class="form-control form-control-lg" id="title" name="title" required
-                               placeholder="Es: Verifica Inventario Magazzino A">
-                    </div>
-                    
-                    <div class="form-group mb-4">
-                        <label for="description" class="font-weight-bold">Descrizione</label>
-                        <textarea class="form-control" id="description" name="description" rows="4"
-                                  placeholder="Descrizione dettagliata del task e delle operazioni da svolgere..."></textarea>
-                    </div>
-                    
-                    <div class="form-group mb-4">
-                        <label for="priority" class="font-weight-bold">Priorità</label>
-                        <select class="form-control form-control-lg" id="priority" name="priority">
-                            <option value="low">🟡 Bassa</option>
-                            <option value="medium" selected>🟠 Media</option>
-                            <option value="high">🔴 Alta</option>
-                            <option value="urgent">🚨 Urgente</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group mb-4">
-                        <label for="deadline" class="font-weight-bold">Scadenza (opzionale)</label>
-                        <input type="datetime-local" class="form-control form-control-lg" id="deadline" name="deadline">
-                    </div>
-
-                    <!-- Selected Tickets Summary -->
-                    <div class="selected-summary" id="summary-card" style="display: none;">
-                        <div class="card-header bg-success text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-clipboard-check"></i> Ticket Selezionati
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div id="selected-summary">
-                            <p class="mb-0">Nessun ticket selezionato</p>
-                            </div>
+        
+        <!-- Task Information Section -->
+        <div class="task-form-section">
+            <div class="task-form-section-header">
+                <i class="fas fa-info-circle"></i>
+                Informazioni Task
+            </div>
+            <div class="task-form-section-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="task-form-group">
+                            <label for="title" class="task-form-label">
+                                <i class="fas fa-heading"></i> Titolo Task *
+                            </label>
+                            <input type="text" 
+                                   class="form-control task-form-control" 
+                                   id="title" 
+                                   name="title" 
+                                   required
+                                   placeholder="Es: Verifica Stock Gennaio 2024">
                         </div>
                     </div>
-
-                    <!-- Create Button -->
-                    <div class="mt-4">
-                        <button type="submit" class="btn create-button btn-block btn-lg" id="create-btn" disabled>
-                            <i class="fas fa-rocket"></i> Crea Task
-                        </button>
-                        <small class="text-muted d-block mt-2 text-center">
-                            Seleziona almeno un ticket e inserisci un titolo
-                        </small>
+                    <div class="col-md-3">
+                        <div class="task-form-group">
+                            <label for="priority" class="task-form-label">
+                                <i class="fas fa-exclamation-triangle"></i> Priorità
+                            </label>
+                            <select class="form-control task-form-control" id="priority" name="priority">
+                                <option value="low">Bassa</option>
+                                <option value="medium" selected>Media</option>
+                                <option value="high">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="task-form-group">
+                            <label for="deadline" class="task-form-label">
+                                <i class="fas fa-calendar-alt"></i> Scadenza
+                            </label>
+                            <input type="datetime-local" 
+                                   class="form-control task-form-control" 
+                                   id="deadline" 
+                                   name="deadline">
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Tickets Selection -->
-            <div class="col-md-8">
-                <div class="form-section">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="section-title">
-                            <i class="fas fa-ticket-alt"></i> Seleziona Ticket
-                        </h4>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-outline-success btn-selection" id="select-all">
-                                <i class="fas fa-check-double"></i> Seleziona Tutti
-                            </button>
-                            <button type="button" class="btn btn-outline-warning btn-selection" id="deselect-all">
-                                <i class="fas fa-times"></i> Deseleziona Tutti
-                            </button>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="task-form-group">
+                            <label for="description" class="task-form-label">
+                                <i class="fas fa-align-left"></i> Descrizione
+                            </label>
+                            <textarea class="form-control task-form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="3"
+                                      placeholder="Descrizione dettagliata del task..."></textarea>
                         </div>
                     </div>
-
-                    {% if tickets %}
-                    <div class="alert alert-info border-left-primary">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>{{ tickets|length }} ticket disponibili</strong> (con Enviado = 0)
-                    </div>
-
-                    <div class="row">
-                        {% for ticket in tickets %}
-                        <div class="col-lg-6 mb-3">
-                            <div class="ticket-item" data-ticket-id="{{ ticket.IdTicket }}">
-                                <div class="ticket-header">
-                                    <div class="ticket-selection">
-                                        <input type="checkbox" name="tickets" value="{{ ticket.IdTicket }}" 
-                                               class="ticket-checkbox" id="ticket-{{ ticket.IdTicket }}">
-                                        <label for="ticket-{{ ticket.IdTicket }}" class="mb-0">
-                                            SELEZIONA QUESTO TICKET
-                                        </label>
-                                    </div>
-                                    <span class="badge badge-primary badge-pill">
-                                        ID: {{ ticket.IdTicket }}
-                                    </span>
-                                </div>
-                                
-                                <h5 class="font-weight-bold text-dark mb-3">
-                                        <i class="fas fa-ticket-alt text-primary"></i>
-                                        Ticket #{{ ticket.NumTicket }}
-                                </h5>
-
-                                <div class="ticket-info">
-                                    <div class="info-item">
-                                        <div class="info-label">Data Creazione</div>
-                                        <div class="info-value">{{ ticket.formatted_date or 'N/A' }}</div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Prodotti</div>
-                                        <div class="info-value">{{ ticket.NumLineas or 0 }}</div>
-                                    </div>
-                                    <div class="info-item">
-                                        <div class="info-label">Stato</div>
-                                        <span class="badge badge-warning">Non Inviato</span>
-                                    </div>
-                                </div>
-
-                                {% if ticket.CodigoBarras %}
-                                <div class="mt-3 p-2 bg-light rounded">
-                                    <small class="text-muted">
-                                        <strong>Codice:</strong> {{ ticket.CodigoBarras[:50] }}...
-                                    </small>
-                                </div>
-                                {% endif %}
-
-                                <!-- Ticket Lines Preview -->
-                                {% if ticket.lines and ticket.lines.count() > 0 %}
-                                <div class="mt-3 p-2 bg-light rounded">
-                                    <small class="text-muted">
-                                        <strong>Primi prodotti:</strong><br>
-                                        {% for line in ticket.lines.limit(2) %}
-                                        • {{ line.Descripcion[:40] }}...{% if not loop.last %}<br>{% endif %}
-                                        {% endfor %}
-                                        {% if ticket.lines.count() > 2 %}
-                                        <br><em>...e altri {{ ticket.lines.count() - 2 }} prodotti</em>
-                                        {% endif %}
-                                    </small>
-                                </div>
-                                {% endif %}
-                            </div>
+                    <div class="col-md-4">
+                        <div class="task-form-group">
+                            <label for="assigned_user_id" class="task-form-label">
+                                <i class="fas fa-user"></i> Assegna a Utente
+                            </label>
+                            <select class="form-control task-form-control" id="assigned_user_id" name="assigned_user_id">
+                                <option value="">-- Assegna dopo la creazione --</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Opzionale: puoi assegnare il task durante la creazione</small>
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-ticket-alt fa-4x text-muted mb-4"></i>
-                        <h4 class="text-muted">Nessun ticket disponibile</h4>
-                        <p class="text-muted mb-0">Non ci sono ticket con Enviado = 0 disponibili per creare un task.</p>
-                        <p class="text-muted">I ticket devono avere lo stato "Non inviato" per essere inclusi in un task.</p>
-                        <hr class="my-4">
-                        <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-plus"></i> Vai ai Ticket del Magazzino
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
+
+        <!-- Ticket Selection Section -->
+        <div class="task-form-section">
+            <div class="task-form-section-header">
+                <i class="fas fa-ticket-alt"></i>
+                Selezione Ticket
+                <span class="badge bg-primary ms-2" id="selectedCount">0 selezionati</span>
+            </div>
+            <div class="task-form-section-body">
+                {% if tickets %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="mb-0">
+                            <i class="fas fa-info-circle text-info"></i>
+                            Seleziona i ticket da includere nel task. Sono disponibili <strong>{{ tickets|length }}</strong> ticket.
+                        </p>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                                <i class="fas fa-check-square"></i> Seleziona Tutti
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">
+                                <i class="fas fa-square"></i> Deseleziona Tutti
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ticket Grid -->
+                <div class="ticket-grid">
+                    {% for ticket in tickets %}
+                    <div class="ticket-card-minimal" data-ticket-id="{{ ticket.IdTicket }}">
+                        <div class="ticket-card-header">
+                            <div class="ticket-selection">
+                                <input type="checkbox" 
+                                       class="form-check-input ticket-checkbox" 
+                                       name="tickets" 
+                                       value="{{ ticket.IdTicket }}" 
+                                       id="ticket_{{ ticket.IdTicket }}">
+                                <label class="form-check-label fw-bold" for="ticket_{{ ticket.IdTicket }}">
+                                    Ticket #{{ ticket.NumTicket }}
+                                </label>
+                            </div>
+                            <div class="ticket-badges">
+                                <span class="badge bg-info">{{ ticket.NumLineas }} linee</span>
+                                <span class="badge bg-success">Disponibile</span>
+                            </div>
+                        </div>
+                        
+                        <div class="ticket-card-body">
+                            <!-- Data e Ora Stampa -->
+                            <div class="ticket-info-row">
+                                <div class="ticket-info-item">
+                                    <i class="fas fa-calendar text-primary"></i>
+                                    <div>
+                                        <small class="text-muted">Data Stampa</small>
+                                        <div class="fw-medium">{{ ticket.Fecha.strftime('%d/%m/%Y') if ticket.Fecha else 'N/A' }}</div>
+                                    </div>
+                                </div>
+                                <div class="ticket-info-item">
+                                    <i class="fas fa-clock text-primary"></i>
+                                    <div>
+                                        <small class="text-muted">Ora</small>
+                                        <div class="fw-medium">{{ ticket.Fecha.strftime('%H:%M') if ticket.Fecha else 'N/A' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- QR Code -->
+                            {% if ticket.CodigoBarras %}
+                            <div class="ticket-info-row">
+                                <div class="ticket-info-item-full">
+                                    <i class="fas fa-qrcode text-success"></i>
+                                    <div>
+                                        <small class="text-muted">QR Code</small>
+                                        <div class="qr-code-display">{{ ticket.CodigoBarras[:20] }}{{ '...' if ticket.CodigoBarras|length > 20 else '' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Prodotti del Ticket -->
+                            <div class="ticket-products">
+                                <small class="text-muted mb-1 d-block">
+                                    <i class="fas fa-boxes"></i> Prodotti ({{ ticket.NumLineas }})
+                                </small>
+                                {% if ticket.lines %}
+                                <div class="products-list">
+                                    {% for line in ticket.lines[:3] %}
+                                    <div class="product-item">
+                                        <div class="product-info">
+                                            <div class="product-name">{{ line.Descripcion[:40] }}{{ '...' if line.Descripcion|length > 40 else '' }}</div>
+                                            <div class="product-details">
+                                                <span class="product-code">Cod: {{ line.IdArticulo }}</span>
+                                                <span class="product-weight">{{ line.Peso }}kg</span>
+                                                {% if line.FechaCaducidad %}
+                                                {% set expiry_date = line.FechaCaducidad.date() if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad %}
+                                                {% set today = now().date() %}
+                                                <span class="product-expiry {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}">
+                                                    <i class="fas fa-calendar-times"></i> {{ line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m/%Y') }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                    {% if ticket.NumLineas > 3 %}
+                                    <div class="product-item more-products">
+                                        <small class="text-muted">
+                                            <i class="fas fa-ellipsis-h"></i> e altri {{ ticket.NumLineas - 3 }} prodotti
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="text-muted">
+                                    <small>{{ ticket.NumLineas }} prodotti - Dettagli non disponibili</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="task-empty-state">
+                    <i class="fas fa-ticket-alt"></i>
+                    <h5>Nessun ticket disponibile</h5>
+                    <p>Non ci sono ticket disponibili per la creazione di un task. I ticket devono avere Enviado = 0.</p>
+                    <a href="{{ url_for('tasks.admin_dashboard') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Torna al Dashboard
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Selected Summary -->
+        <div id="selectedSummary" class="selected-summary card shadow-sm" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-check-circle"></i>
+                    Riepilogo Selezione
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <h4 class="text-success mb-1" id="summaryTicketCount">0</h4>
+                            <small class="text-muted">Ticket Selezionati</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <h4 class="text-info mb-1" id="summaryLineCount">0</h4>
+                            <small class="text-muted">Linee Totali</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <h4 class="text-warning mb-1" id="summaryProductCount">0</h4>
+                            <small class="text-muted">Prodotti</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="summary-stat">
+                            <button type="submit" class="btn btn-success btn-lg" id="createTaskBtn">
+                                <i class="fas fa-plus-circle"></i> Crea Task
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Button (fallback) -->
+        {% if tickets %}
+        <div class="text-center mt-4" id="createButtonContainer">
+            <button type="submit" class="btn btn-success btn-lg" id="createButtonMain" disabled>
+                <i class="fas fa-plus-circle"></i> Crea Task
+            </button>
+            <p class="text-muted mt-2">Seleziona almeno un ticket per creare il task</p>
+        </div>
+        {% endif %}
     </form>
 </div>
 
 <!-- Loading Overlay -->
-<div class="loading-overlay" id="loading-overlay">
+<div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner">
-        <i class="fas fa-cog fa-spin fa-3x text-primary mb-3"></i>
-        <h4 class="text-primary">Creando il task...</h4>
-        <p class="text-muted mb-0">Attendere prego, operazione in corso...</p>
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Caricamento...</span>
+        </div>
+        <h5 class="mt-3">Creazione Task in corso...</h5>
+        <p class="text-muted">Attendere prego...</p>
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing ticket selection...');
-    
-    let selectedTickets = new Set();
-    
-    // Get all ticket items and checkboxes
-    const ticketItems = document.querySelectorAll('.ticket-item');
-    const checkboxes = document.querySelectorAll('.ticket-checkbox');
-    const createBtn = document.getElementById('create-btn');
-    const titleInput = document.getElementById('title');
-    const summaryCard = document.getElementById('summary-card');
-    const summaryDiv = document.getElementById('selected-summary');
-    
-    console.log(`Found ${ticketItems.length} ticket items and ${checkboxes.length} checkboxes`);
-    
-    // Function to update visual state of ticket item
-    function updateTicketVisual(ticketItem, selected) {
-        if (selected) {
-            ticketItem.classList.add('selected');
-        } else {
-            ticketItem.classList.remove('selected');
-        }
-    }
-    
-    // Function to update selected summary
-    function updateSelectedSummary() {
-        const count = selectedTickets.size;
-        console.log(`Updating summary for ${count} selected tickets`);
-        
-        if (count === 0) {
-            summaryDiv.innerHTML = '<p class="mb-0 text-muted">Nessun ticket selezionato</p>';
-            summaryCard.style.display = 'none';
-        } else {
-            let totalProducts = 0;
-            selectedTickets.forEach(ticketId => {
-                const ticketItem = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (ticketItem) {
-                    const productElement = ticketItem.querySelector('.info-value');
-                    if (productElement) {
-                        const productCount = parseInt(productElement.textContent) || 0;
-                        totalProducts += productCount;
-                    }
-                }
-            });
-            
-            summaryDiv.innerHTML = `
-                <div class="row text-center">
-                    <div class="col-6">
-                        <h4 class="text-success mb-1">${count}</h4>
-                        <small class="text-muted">Ticket</small>
-                    </div>
-                    <div class="col-6">
-                        <h4 class="text-primary mb-1">${totalProducts}</h4>
-                        <small class="text-muted">Prodotti</small>
-                    </div>
-                </div>
-            `;
-            summaryCard.style.display = 'block';
-        }
-    }
-    
-    // Function to update create button state
-    function updateCreateButton() {
-        const hasTitle = titleInput.value.trim().length > 0;
-        const hasTickets = selectedTickets.size > 0;
-        
-        console.log(`Button update - Title: ${hasTitle}, Tickets: ${hasTickets}`);
-        
-        if (hasTitle && hasTickets) {
-            createBtn.disabled = false;
-            createBtn.classList.remove('btn-secondary');
-            createBtn.classList.add('btn-success', 'create-button');
-            createBtn.innerHTML = '<i class="fas fa-rocket"></i> Crea Task';
-        } else {
-            createBtn.disabled = true;
-            createBtn.classList.remove('btn-success', 'create-button');
-            createBtn.classList.add('btn-secondary');
-            createBtn.innerHTML = '<i class="fas fa-lock"></i> Completa i campi richiesti';
-        }
-    }
-    
-    // Handle checkbox changes
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function(e) {
-            e.stopPropagation();
-            const ticketId = this.value;
-            const ticketItem = this.closest('.ticket-item');
-            
-            console.log(`Checkbox changed for ticket ${ticketId}, checked: ${this.checked}`);
-            
-            if (this.checked) {
-                selectedTickets.add(ticketId);
-                updateTicketVisual(ticketItem, true);
-            } else {
-                selectedTickets.delete(ticketId);
-                updateTicketVisual(ticketItem, false);
-            }
-        
-        updateSelectedSummary();
-        updateCreateButton();
-        });
-    });
-    
-    // Handle ticket item clicks
-    ticketItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            // Skip if clicking directly on checkbox or label
-            if (e.target.type === 'checkbox' || e.target.tagName === 'LABEL') {
-                return;
-            }
-            
-            const checkbox = this.querySelector('.ticket-checkbox');
-            const ticketId = this.dataset.ticketId;
-            
-            console.log(`Ticket item clicked for ticket ${ticketId}`);
-            
-            // Toggle checkbox
-            checkbox.checked = !checkbox.checked;
-            
-            // Trigger change event
-            checkbox.dispatchEvent(new Event('change'));
-        });
-    });
-    
-    // Select all button
-    document.getElementById('select-all').addEventListener('click', function() {
-        console.log('Select all clicked');
-        
-        checkboxes.forEach(checkbox => {
-            if (!checkbox.checked) {
-                checkbox.checked = true;
-                checkbox.dispatchEvent(new Event('change'));
-            }
-        });
-    });
-    
-    // Deselect all button
-    document.getElementById('deselect-all').addEventListener('click', function() {
-        console.log('Deselect all clicked');
-        
-        checkboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                checkbox.checked = false;
-                checkbox.dispatchEvent(new Event('change'));
-            }
-        });
-    });
-    
-    // Title input change
-    titleInput.addEventListener('input', function() {
-        console.log(`Title input changed: "${this.value}"`);
-        updateCreateButton();
-    });
-    
-    // Form submission
-    document.getElementById('create-task-form').addEventListener('submit', function(e) {
-        console.log('Form submitted');
-        
-        if (selectedTickets.size === 0) {
-            e.preventDefault();
-            alert('⚠️ Seleziona almeno un ticket per creare il task.');
-            return false;
-        }
-        
-        if (titleInput.value.trim().length === 0) {
-            e.preventDefault();
-            alert('⚠️ Inserisci un titolo per il task.');
-            titleInput.focus();
-            return false;
-        }
-        
-        // Show loading state
-        document.getElementById('loading-overlay').style.display = 'flex';
-        createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando Task...';
-        createBtn.disabled = true;
-        
-        console.log(`Submitting form with ${selectedTickets.size} selected tickets:`, Array.from(selectedTickets));
-        return true;
-    });
-    
-    // Initial state
-    titleInput.focus();
-    updateCreateButton();
-    updateSelectedSummary();
-    
-    console.log('Ticket selection initialization complete');
-});
-</script>
+<style>
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    background: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.border-danger { border-color: #dc3545 !important; }
+.border-warning { border-color: #ffc107 !important; }
+.border-secondary { border-color: #6c757d !important; }
+</style>
 {% endblock %} 

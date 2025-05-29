@@ -2,13 +2,13 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from sqlalchemy import desc, and_, or_
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import json
 import qrcode
 import io
 import base64
 
-from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea
+from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea, Product
 from utils import admin_required
 
 tasks_bp = Blueprint('tasks', __name__)
@@ -27,23 +27,57 @@ def index():
 @admin_required
 def admin_dashboard():
     """Admin dashboard for task management"""
-    # Get all tasks with counts
-    tasks = Task.query.order_by(desc(Task.created_at)).all()
+    # Get filter parameters
+    title_filter = request.args.get('title', '').strip()
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    priority_filter = request.args.get('priority', '')
+    status_filter = request.args.get('status', '')
+    
+    # Base query
+    query = Task.query
+    
+    # Apply filters
+    if title_filter:
+        query = query.filter(Task.title.ilike(f'%{title_filter}%'))
+    
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(Task.created_at >= date_from_obj)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Task.created_at < date_to_obj)
+        except ValueError:
+            pass
+    
+    if priority_filter:
+        query = query.filter(Task.priority == priority_filter)
+    
+    if status_filter:
+        query = query.filter(Task.status == status_filter)
+    
+    # Get filtered tasks
+    tasks = query.order_by(desc(Task.created_at)).all()
     
     # Update progress for all tasks
     for task in tasks:
         task.update_progress()
     
-    # Get available tickets (Enviado = 0)
-    available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
+    # Separate completed and non-completed tasks
+    completed_tasks = [task for task in tasks if task.status == 'completed']
+    active_tasks = [task for task in tasks if task.status != 'completed']
     
     # Get task statistics
     stats = {
         'total_tasks': Task.query.count(),
         'pending_tasks': Task.query.filter_by(status='pending').count(),
         'in_progress_tasks': Task.query.filter_by(status='in_progress').count(),
-        'completed_tasks': Task.query.filter_by(status='completed').count(),
-        'available_tickets': len(available_tickets)
+        'completed_tasks': Task.query.filter_by(status='completed').count()
     }
     
     # Get users for assignment
@@ -53,23 +87,53 @@ def admin_dashboard():
     clients = Client.query.order_by(Client.Nombre).all()
     
     return render_template('tasks/admin_dashboard.html', 
-                         tasks=tasks, 
-                         available_tickets=available_tickets,
+                         active_tasks=active_tasks,
+                         completed_tasks=completed_tasks,
                          stats=stats,
                          users=users,
-                         clients=clients)
+                         clients=clients,
+                         current_filters={
+                             'title': title_filter,
+                             'date_from': date_from,
+                             'date_to': date_to,
+                             'priority': priority_filter,
+                             'status': status_filter
+                         },
+                         now=datetime.now)
 
 
 @tasks_bp.route('/user')
 @login_required
 def user_dashboard():
     """User dashboard for assigned tasks"""
-    # Get tasks assigned to current user
-    assigned_tasks = Task.query.filter_by(assigned_to=current_user.id).order_by(desc(Task.assigned_at)).all()
+    # Get filter parameters
+    title_filter = request.args.get('title', '').strip()
+    priority_filter = request.args.get('priority', '')
+    status_filter = request.args.get('status', '')
+    
+    # Base query for tasks assigned to current user
+    query = Task.query.filter_by(assigned_to=current_user.id)
+    
+    # Apply filters
+    if title_filter:
+        query = query.filter(Task.title.ilike(f'%{title_filter}%'))
+    
+    if priority_filter:
+        query = query.filter(Task.priority == priority_filter)
+    
+    if status_filter:
+        query = query.filter(Task.status == status_filter)
+    
+    # Get filtered tasks
+    assigned_tasks = query.order_by(desc(Task.assigned_at)).all()
     
     # Update progress for assigned tasks
     for task in assigned_tasks:
         task.update_progress()
+    
+    # Separate completed and non-completed tasks
+    completed_tasks = [task for task in assigned_tasks if task.status == 'completed']
+    active_tasks = [task for task in assigned_tasks if task.status != 'completed']
     
     # Get task statistics for user
     stats = {
@@ -86,9 +150,11 @@ def user_dashboard():
     ).order_by(desc(TaskNotification.created_at)).limit(5).all()
     
     return render_template('tasks/user_dashboard.html', 
-                         tasks=assigned_tasks,
+                         active_tasks=active_tasks,
+                         completed_tasks=completed_tasks,
                          stats=stats,
-                         notifications=unread_notifications)
+                         notifications=unread_notifications,
+                         now=datetime.now)
 
 
 @tasks_bp.route('/create', methods=['GET', 'POST'])
@@ -108,6 +174,13 @@ def create_task():
             
             # Generate unique task number
             task.task_number = task.generate_task_number()
+            
+            # Handle assignment during creation
+            assigned_user_id = request.form.get('assigned_user_id')
+            if assigned_user_id and assigned_user_id != '':
+                task.assigned_to = int(assigned_user_id)
+                task.assigned_at = datetime.utcnow()
+                task.status = 'assigned'
             
             db.session.add(task)
             db.session.flush()  # Get the task ID
@@ -130,6 +203,17 @@ def create_task():
             # Update progress
             task.update_progress()
             
+            # Create notification for assigned user
+            if task.assigned_to:
+                notification = TaskNotification(
+                    task_id=task.id_task,
+                    user_id=task.assigned_to,
+                    notification_type='task_assigned',
+                    title=f'Nuovo Task Assegnato: {task.task_number}',
+                    message=f'Ti è stato assegnato il task "{task.title}". Clicca per visualizzare i dettagli.'
+                )
+                db.session.add(notification)
+            
             db.session.commit()
             
             flash(f'Task {task.task_number} creato con successo!', 'success')
@@ -142,16 +226,27 @@ def create_task():
     # GET request - show form
     available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
     
-    # Calculate actual line count for each ticket
+    # Calculate actual line count and load lines for each ticket
     for ticket in available_tickets:
+        # Load ticket lines with product details
+        ticket_lines = db.session.query(TicketLine).join(
+            Product, TicketLine.IdArticulo == Product.IdArticulo
+        ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
+        
+        # Attach lines to ticket object for template access
+        ticket.lines = ticket_lines
+        
         # Count actual lines in database
-        actual_lines = TicketLine.query.filter_by(IdTicket=ticket.IdTicket).count()
+        actual_lines = len(ticket_lines)
         # Update NumLineas if it's wrong
         if ticket.NumLineas != actual_lines:
             ticket.NumLineas = actual_lines
             # Don't commit here, just for display
+    
+    # Get users for assignment
+    users = User.query.filter_by(is_admin=False).all()
         
-    return render_template('tasks/create_task.html', tickets=available_tickets)
+    return render_template('tasks/create_task.html', tickets=available_tickets, users=users)
 
 
 @tasks_bp.route('/task/<int:task_id>')
@@ -183,7 +278,8 @@ def view_task(task_id):
                          task=task, 
                          task_tickets=task_tickets,
                          users=users,
-                         clients=clients)
+                         clients=clients,
+                         now=datetime.now)
 
 
 @tasks_bp.route('/task/<int:task_id>/assign', methods=['POST'])
@@ -216,33 +312,192 @@ def assign_task(task_id):
     return redirect(url_for('tasks.view_task', task_id=task_id))
 
 
+@tasks_bp.route('/ticket/<int:task_ticket_id>/process_scan', methods=['POST'])
+@login_required
+def process_scan(task_ticket_id):
+    """Process a scanned code for simplified scanning interface"""
+    try:
+        task_ticket = TaskTicket.query.get_or_404(task_ticket_id)
+        scanned_code = request.form.get('scanned_code', '').strip()
+        
+        if not scanned_code:
+            return jsonify({'success': False, 'message': 'Codice non valido'})
+        
+        # Check if user has permission
+        if not current_user.is_admin and task_ticket.task.assigned_to != current_user.id:
+            return jsonify({'success': False, 'message': 'Non autorizzato'})
+        
+        # Get current product to scan
+        ticket_lines = TicketLine.query.filter_by(IdTicket=task_ticket.ticket_id).all()
+        scanned_lines = TaskTicketScan.query.filter_by(task_ticket_id=task_ticket_id).all()
+        scanned_line_ids = [scan.ticket_line_id for scan in scanned_lines]
+        
+        # Find next unscanned line
+        current_line = None
+        for line in ticket_lines:
+            if line.IdLineaTicket not in scanned_line_ids:
+                current_line = line
+                break
+        
+        if not current_line:
+            return jsonify({'success': False, 'message': 'Tutti i prodotti sono già stati scansionati'})
+        
+        # Validate scanned code matches expected product
+        # Here you can implement your QR code validation logic
+        # For now, we'll assume the scan is successful if code is not empty
+        
+        # Create scan record
+        scan = TaskTicketScan(
+            task_ticket_id=task_ticket_id,
+            ticket_line_id=current_line.IdLineaTicket,
+            scanned_code=scanned_code,
+            scanned_at=datetime.utcnow(),
+            scanned_by=current_user.id,
+            status='completed'
+        )
+        db.session.add(scan)
+        
+        # Update progress
+        task_ticket.update_scan_progress()
+        task_ticket.task.update_progress()
+        
+        # Check if ticket is completed
+        remaining_lines = [line for line in ticket_lines if line.IdLineaTicket not in scanned_line_ids + [current_line.IdLineaTicket]]
+        
+        if not remaining_lines:
+            # Ticket completed
+            task_ticket.status = 'completed'
+            task_ticket.completed_at = datetime.utcnow()
+            
+            # Check if there are more tickets in the task
+            task = task_ticket.task
+            task.update_progress()
+            
+            # Find next ticket in task
+            next_task_ticket = TaskTicket.query.filter(
+                TaskTicket.task_id == task.id_task,
+                TaskTicket.status != 'completed',
+                TaskTicket.id != task_ticket_id
+            ).first()
+            
+            db.session.commit()
+            
+            if next_task_ticket:
+                return jsonify({
+                    'success': True, 
+                    'message': 'Prodotto scansionato! Passaggio al prossimo ticket...',
+                    'next_ticket_id': next_task_ticket.id
+                })
+            else:
+                # All tickets completed
+                task.status = 'completed' if task.progress_percentage == 100 else 'in_progress'
+                db.session.commit()
+                return jsonify({
+                    'success': True, 
+                    'message': 'Task completato!',
+                    'task_completed': True
+                })
+        else:
+            db.session.commit()
+            return jsonify({
+                'success': True, 
+                'message': 'Prodotto scansionato con successo!'
+            })
+            
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in process_scan: {str(e)}")
+        return jsonify({'success': False, 'message': 'Errore durante la scansione'})
+
+
 @tasks_bp.route('/ticket/<int:task_ticket_id>/scan')
 @login_required
 def scan_ticket(task_ticket_id):
-    """Scan interface for a specific ticket in a task"""
+    """Scan products in a ticket - simplified interface with task-based progress"""
     task_ticket = TaskTicket.query.get_or_404(task_ticket_id)
     
     # Check permissions
     if not current_user.is_admin and task_ticket.task.assigned_to != current_user.id:
-        flash('Non hai il permesso di accedere a questo ticket.', 'error')
-        return redirect(url_for('tasks.index'))
+        flash('Non hai i permessi per accedere a questo ticket.', 'error')
+        return redirect(url_for('tasks.user_dashboard'))
     
-    # Update scan progress
-    task_ticket.update_scan_progress()
+    # Get the task and all its tickets
+    task = task_ticket.task
+    all_task_tickets = TaskTicket.query.filter_by(task_id=task.id_task).order_by(TaskTicket.id).all()
     
-    # Get ticket lines that need to be scanned
-    ticket_lines = task_ticket.ticket.lines.all()
+    # Calculate task progress (based on completed tickets)
+    completed_tickets = [tt for tt in all_task_tickets if tt.status == 'completed']
+    total_tickets = len(all_task_tickets)
+    completed_count = len(completed_tickets)
     
-    # Get existing scan results
-    scan_results = {}
-    for scan in task_ticket.scan_results.all():
-        if scan.ticket_line_id:
-            scan_results[scan.ticket_line_id] = scan
+    # Find the current ticket position (1-based index)
+    current_ticket_index = 1
+    for i, tt in enumerate(all_task_tickets):
+        if tt.id == task_ticket_id:
+            current_ticket_index = i + 1
+            break
     
-    return render_template('tasks/scan_ticket.html', 
-                         task_ticket=task_ticket, 
-                         ticket_lines=ticket_lines,
-                         scan_results=scan_results)
+    # Get current product to scan from this ticket
+    ticket_lines = TicketLine.query.filter_by(IdTicket=task_ticket.ticket_id).all()
+    scanned_lines = TaskTicketScan.query.filter_by(task_ticket_id=task_ticket_id, status='success').all()
+    scanned_line_ids = [scan.ticket_line_id for scan in scanned_lines]
+    
+    # Find current product to scan
+    current_product = None
+    for line in ticket_lines:
+        if line.IdLineaTicket not in scanned_line_ids:
+            current_product = line
+            break
+    
+    # If no current product, this ticket is completed
+    if not current_product:
+        # Mark ticket as completed if not already
+        if task_ticket.status != 'completed':
+            task_ticket.status = 'completed'
+            task_ticket.completed_at = datetime.utcnow()
+            task_ticket.update_scan_progress()
+            task.update_progress()
+            db.session.commit()
+        
+        # Find next incomplete ticket in the task
+        next_ticket = None
+        for tt in all_task_tickets:
+            if tt.status != 'completed':
+                next_ticket = tt
+                break
+        
+        if next_ticket:
+            # Redirect to next ticket
+            flash(f'Ticket #{task_ticket.ticket.NumTicket} completato! Passaggio al prossimo ticket.', 'success')
+            return redirect(url_for('tasks.scan_ticket', task_ticket_id=next_ticket.id))
+        else:
+            # All tickets completed - mark task as completed and redirect to dashboard
+            task.status = 'completed'
+            task.completed_at = datetime.utcnow()
+            db.session.commit()
+            
+            # Create notification for admin
+            notification = TaskNotification(
+                task_id=task.id_task,
+                user_id=task.created_by,
+                notification_type='task_completed',
+                title=f'Task Completato: {task.task_number}',
+                message=f'Il task "{task.title}" è stato completato da {current_user.username}.'
+            )
+            db.session.add(notification)
+            db.session.commit()
+            
+            flash(f'🎉 Task {task.task_number} completato con successo!', 'success')
+            return redirect(url_for('tasks.user_dashboard'))
+    
+    return render_template('tasks/scan_ticket.html',
+                         task_ticket=task_ticket,
+                         current_product=current_product,
+                         # Task-based progress
+                         current_ticket_index=current_ticket_index,
+                         total_tickets=total_tickets,
+                         completed_tickets_count=completed_count,
+                         task_progress_percentage=int((completed_count / total_tickets * 100)) if total_tickets > 0 else 0)
 
 
 @tasks_bp.route('/api/scan', methods=['POST'])
@@ -250,10 +505,29 @@ def scan_ticket(task_ticket_id):
 def api_scan_product():
     """API endpoint for scanning QR codes"""
     try:
+        # Check if request has JSON data
+        if not request.is_json:
+            current_app.logger.error("Request is not JSON")
+            return jsonify({'success': False, 'message': 'Richiesta deve essere in formato JSON'}), 400
+        
         data = request.get_json()
+        if not data:
+            current_app.logger.error("No JSON data received")
+            return jsonify({'success': False, 'message': 'Nessun dato ricevuto'}), 400
+        
         task_ticket_id = data.get('task_ticket_id')
         scanned_code = data.get('scanned_code')
         ticket_line_id = data.get('ticket_line_id')
+        
+        current_app.logger.info(f"🔍 Scan request: task_ticket_id={task_ticket_id}, scanned_code={scanned_code}")
+        
+        if not task_ticket_id:
+            current_app.logger.error("Missing task_ticket_id")
+            return jsonify({'success': False, 'message': 'ID ticket task mancante'}), 400
+        
+        if not scanned_code:
+            current_app.logger.error("Missing scanned_code")
+            return jsonify({'success': False, 'message': 'Codice scansionato mancante'}), 400
         
         task_ticket = TaskTicket.query.get_or_404(task_ticket_id)
         
@@ -393,23 +667,43 @@ def api_scan_product():
         task_ticket.task.update_progress()
         
         # Check if this specific ticket within the task is now fully verified
-        if success and task_ticket.status == 'completed':
-            # All products in this ticket have been successfully scanned
-            # Update ticket status to Enviado = 10 (completed in task)
-            expected_ticket.Enviado = 10
-            current_app.logger.info(f"✅ Ticket #{expected_ticket_num} completato - impostato Enviado = 10")
+        ticket_completed = False
+        next_ticket_id = None
+        task_completed = False
         
-        # Check if entire task is completed
-        if task_ticket.task.is_completed:
-            # Create notification for admin
-            notification = TaskNotification(
-                task_id=task_ticket.task.id_task,
-                user_id=task_ticket.task.created_by,
-                notification_type='task_completed',
-                title=f'Task Completato: {task_ticket.task.task_number}',
-                message=f'Il task "{task_ticket.task.title}" è stato completato da {current_user.username}.'
-            )
-            db.session.add(notification)
+        if success:
+            # Check if current ticket is now completed
+            if task_ticket.status == 'completed':
+                ticket_completed = True
+                # Update ticket status to Enviado = 10 (completed in task)
+                expected_ticket.Enviado = 10
+                current_app.logger.info(f"✅ Ticket #{expected_ticket_num} completato - impostato Enviado = 10")
+                
+                # Find next incomplete ticket in the task
+                all_task_tickets = TaskTicket.query.filter_by(task_id=task_ticket.task_id).order_by(TaskTicket.id).all()
+                next_ticket = None
+                for tt in all_task_tickets:
+                    if tt.status != 'completed' and tt.id != task_ticket.id:
+                        next_ticket = tt
+                        break
+                
+                if next_ticket:
+                    next_ticket_id = next_ticket.id
+                else:
+                    # All tickets completed - mark task as completed
+                    task_ticket.task.status = 'completed'
+                    task_ticket.task.completed_at = datetime.utcnow()
+                    task_completed = True
+                    
+                    # Create notification for admin
+                    notification = TaskNotification(
+                        task_id=task_ticket.task.id_task,
+                        user_id=task_ticket.task.created_by,
+                        notification_type='task_completed',
+                        title=f'Task Completato: {task_ticket.task.task_number}',
+                        message=f'Il task "{task_ticket.task.title}" è stato completato da {current_user.username}.'
+                    )
+                    db.session.add(notification)
         
         db.session.commit()
         
@@ -418,12 +712,15 @@ def api_scan_product():
             if weight > 0:
                 success_message += f' Peso: {weight:.3f}kg'
             
-            return jsonify({
+            response_data = {
                 'success': True, 
                 'message': success_message,
                 'scan_id': scan_result.id,
                 'ticket_verified': True,
                 'product_verified': True,
+                'ticket_completed': ticket_completed,
+                'task_completed': task_completed,
+                'next_ticket_id': next_ticket_id,
                 'scan_details': {
                     'ticket_number': ticket_num,
                     'product_id': product_id,
@@ -431,7 +728,14 @@ def api_scan_product():
                     'scan_date': formatted_date,
                     'scan_time': formatted_time
                 }
-            })
+            }
+            
+            if ticket_completed and next_ticket_id:
+                response_data['message'] += f' Passaggio al prossimo ticket...'
+            elif task_completed:
+                response_data['message'] = f'🎉 Task {task_ticket.task.task_number} completato!'
+            
+            return jsonify(response_data)
         else:
             return jsonify({
                 'success': False, 
@@ -439,6 +743,8 @@ def api_scan_product():
                 'scan_id': scan_result.id,
                 'ticket_verified': status != 'ticket_mismatch',
                 'product_verified': False,
+                'ticket_completed': False,
+                'task_completed': False,
                 'scan_details': {
                     'ticket_number': ticket_num,
                     'product_id': product_id,
@@ -450,7 +756,10 @@ def api_scan_product():
             })
     
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Scan error: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'Errore del sistema: {str(e)}'}), 500
 
 
@@ -639,12 +948,51 @@ def generate_ddt_from_task(task, client_id):
 @tasks_bp.route('/notifications')
 @login_required
 def notifications():
-    """View user notifications"""
-    notifications = TaskNotification.query.filter_by(
-        user_id=current_user.id
+    """View user notifications with day-based pagination"""
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    day_before_yesterday = today - timedelta(days=2)
+    
+    # Get notifications grouped by day
+    today_notifications = TaskNotification.query.filter(
+        TaskNotification.user_id == current_user.id,
+        db.func.date(TaskNotification.created_at) == today
     ).order_by(desc(TaskNotification.created_at)).all()
     
-    return render_template('tasks/notifications.html', notifications=notifications)
+    yesterday_notifications = TaskNotification.query.filter(
+        TaskNotification.user_id == current_user.id,
+        db.func.date(TaskNotification.created_at) == yesterday
+    ).order_by(desc(TaskNotification.created_at)).all()
+    
+    day_before_notifications = TaskNotification.query.filter(
+        TaskNotification.user_id == current_user.id,
+        db.func.date(TaskNotification.created_at) == day_before_yesterday
+    ).order_by(desc(TaskNotification.created_at)).all()
+    
+    return render_template('tasks/notifications.html', 
+                         today_notifications=today_notifications,
+                         yesterday_notifications=yesterday_notifications,
+                         day_before_notifications=day_before_notifications)
+
+
+@tasks_bp.route('/notifications/mark-all-read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    """Mark all notifications as read for current user"""
+    try:
+        unread_notifications = TaskNotification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False
+        ).all()
+        
+        for notification in unread_notifications:
+            notification.mark_as_read()
+        
+        return jsonify({'success': True, 'marked_count': len(unread_notifications)})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @tasks_bp.route('/notifications/<int:notification_id>/read', methods=['POST'])
@@ -813,4 +1161,49 @@ def remove_ticket_from_task():
         db.session.rollback()
         current_app.logger.error(f"Error removing ticket from task: {str(e)}")
         flash(f'Errore durante la rimozione del ticket: {str(e)}', 'error')
-        return redirect(url_for('tasks.view_task', task_id=task_id)) 
+        return redirect(url_for('tasks.view_task', task_id=task_id))
+
+
+@tasks_bp.route('/delete-all', methods=['POST'])
+@admin_required
+def delete_all_tasks():
+    """Delete all tasks and reset associated tickets to Enviado=0"""
+    try:
+        # Get all tasks
+        all_tasks = Task.query.all()
+        total_tasks = len(all_tasks)
+        
+        if total_tasks == 0:
+            flash('Nessun task da eliminare.', 'info')
+            return redirect(url_for('tasks.admin_dashboard'))
+        
+        # Reset all associated tickets to Enviado=0
+        for task in all_tasks:
+            task_tickets = TaskTicket.query.filter_by(task_id=task.id_task).all()
+            for task_ticket in task_tickets:
+                ticket = TicketHeader.query.get(task_ticket.ticket_id)
+                if ticket:
+                    ticket.Enviado = 0
+        
+        # Delete all task notifications
+        TaskNotification.query.delete()
+        
+        # Delete all task ticket scans
+        TaskTicketScan.query.delete()
+        
+        # Delete all task tickets
+        TaskTicket.query.delete()
+        
+        # Delete all tasks
+        Task.query.delete()
+        
+        db.session.commit()
+        
+        flash(f'Eliminati {total_tasks} task con successo. Tutti i ticket sono stati rimessi a disposizione.', 'success')
+        return redirect(url_for('tasks.admin_dashboard'))
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting all tasks: {str(e)}")
+        flash(f'Errore durante l\'eliminazione di tutti i task: {str(e)}', 'error')
+        return redirect(url_for('tasks.admin_dashboard')) 

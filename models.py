@@ -936,13 +936,16 @@ class TaskTicket(db.Model):
     
     @property
     def scan_progress_percentage(self):
-        if self.total_items == 0:
+        if self.total_items is None or self.total_items == 0:
             return 0
-        return int((self.scanned_items / self.total_items) * 100)
+        scanned = self.scanned_items or 0
+        return int((scanned / self.total_items) * 100)
     
     @property
     def is_scan_completed(self):
-        return self.total_items > 0 and self.scanned_items >= self.total_items
+        total = self.total_items or 0
+        scanned = self.scanned_items or 0
+        return total > 0 and scanned >= total
     
     def update_scan_progress(self):
         """Update scan progress from ticket lines"""

@@ -273,6 +273,42 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Select2 for advanced selects -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <!-- Initialize jQuery safety check -->
+    <script>
+    // Ensure jQuery is loaded and CSRF tokens are available
+    function ensureJQueryAndCSRF() {
+        // Check jQuery
+        if (typeof $ === 'undefined') {
+            console.error('jQuery not loaded properly');
+            return false;
+        }
+        
+        // Ensure CSRF token meta tag exists
+        let csrfToken = $('meta[name=csrf-token]').attr('content');
+        if (!csrfToken) {
+            console.warn('CSRF token not found in meta tag');
+            // Try to get from form if available
+            csrfToken = $('input[name=csrf_token]').val();
+            if (!csrfToken) {
+                console.error('No CSRF token available');
+                return false;
+            }
+        }
+        
+        // Make CSRF token globally available
+        if (typeof window.csrfToken === 'undefined') {
+            window.csrfToken = csrfToken;
+        }
+        
+        return true;
+    }
+    
+    $(document).ready(function() {
+        ensureJQueryAndCSRF();
+    });
+    </script>
+    
     <!-- Custom scripts -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>

@@ -1,0 +1,127 @@
+<!-- Assignment Modal -->
+{% if not task.assignee %}
+<div class="modal fade" id="assignModal{{ task.id_task }}" tabindex="-1" aria-labelledby="assignModalLabel{{ task.id_task }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignModalLabel{{ task.id_task }}">
+                    <i class="fas fa-user-plus"></i> Assegna Task: {{ task.task_number }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tasks.assign_task', task_id=task.id_task) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="user_id{{ task.id_task }}" class="form-label">Seleziona Utente:</label>
+                        <select name="user_id" id="user_id{{ task.id_task }}" class="form-select" required>
+                            <option value="">-- Seleziona Utente --</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        L'utente riceverà una notifica dell'assegnazione del task.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-user-plus"></i> Assegna Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- DDT Generation Modal -->
+{% if task.is_completed and not task.ddt_generated %}
+<div class="modal fade" id="ddtModal{{ task.id_task }}" tabindex="-1" aria-labelledby="ddtModalLabel{{ task.id_task }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="ddtModalLabel{{ task.id_task }}">
+                    <i class="fas fa-file-alt"></i> Genera DDT per Task: {{ task.task_number }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tasks.complete_task', task_id=task.id_task) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Task completato!</strong> Tutti i prodotti sono stati verificati.
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_id{{ task.id_task }}" class="form-label">Seleziona Cliente per DDT:</label>
+                        <select name="client_id" id="client_id{{ task.id_task }}" class="form-select" required>
+                            <option value="">-- Seleziona Cliente --</option>
+                            {% for client in clients %}
+                            <option value="{{ client.IdCliente }}">
+                                {{ client.Nombre }} - {{ client.Direccion }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Verrà generato un Documento di Trasporto con tutti i prodotti verificati del task.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-file-alt"></i> Genera DDT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Delete Task Modal -->
+<div class="modal fade" id="deleteModal{{ task.id_task }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ task.id_task }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel{{ task.id_task }}">
+                    <i class="fas fa-exclamation-triangle"></i> Elimina Task: {{ task.task_number }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id_task) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attenzione!</strong> Questa azione è irreversibile.
+                    </div>
+                    <p><strong>Stai per eliminare il task:</strong></p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-tag text-primary"></i> <strong>Numero:</strong> {{ task.task_number }}</li>
+                        <li><i class="fas fa-heading text-info"></i> <strong>Titolo:</strong> {{ task.title }}</li>
+                        <li><i class="fas fa-ticket-alt text-warning"></i> <strong>Ticket associati:</strong> {{ task.total_tickets }}</li>
+                        <li><i class="fas fa-info-circle text-secondary"></i> <strong>Status:</strong> {{ task.status }}</li>
+                    </ul>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-undo"></i>
+                        Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code> e saranno nuovamente disponibili per l'assegnazione.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annulla
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Elimina Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> 

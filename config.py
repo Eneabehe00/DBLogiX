@@ -12,7 +12,7 @@ class Config:
 
 # Remote database configuration (Bilancia)
 REMOTE_DB_CONFIG = {
-    'host': '192.168.1.22',
+    'host': '192.168.1.32',
     'user': 'user',
     'password': 'dibal',
     'database': 'sys_datos',
@@ -27,13 +27,13 @@ REMOTE_DB_CONFIG = {
 }
 
 # SQLAlchemy URI for the local database
-SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://user:dibal@192.168.1.21:3306/sys_datos"
+SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://user:dibal@192.168.1.32:3306/sys_datos"
 
 # Optional easier-to-use configuration without SQLAlchemy for direct connections
 def get_direct_connection_config():
     """Returns a dictionary for direct connection to MySQL without SQLAlchemy"""
     return {
-    'host': '192.168.1.22',
+    'host': '192.168.1.32',
         'user': REMOTE_DB_CONFIG['user'],
         'password': REMOTE_DB_CONFIG['password'],
         'database': REMOTE_DB_CONFIG['database'],

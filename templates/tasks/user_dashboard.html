@@ -3,299 +3,347 @@
 {% block title %}I Miei Task{% endblock %}
 
 {% block extra_css %}
-<style>
-    .task-card {
-        border-left: 4px solid #007bff;
-        transition: all 0.3s ease;
-    }
-    .task-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .task-card.completed {
-        border-left-color: #28a745;
-    }
-    .task-card.in-progress {
-        border-left-color: #ffc107;
-    }
-    .task-card.pending {
-        border-left-color: #6c757d;
-    }
-    .progress {
-        height: 8px;
-    }
-    .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        border: none;
-    }
-    .notification-card {
-        border-left: 4px solid #17a2b8;
-        background-color: #f8f9fa;
-    }
-    .priority-high {
-        color: #dc3545;
-    }
-    .priority-medium {
-        color: #ffc107;
-    }
-    .priority-low {
-        color: #6c757d;
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-user-check"></i> I Miei Task</h2>
-                <div>
-                    <a href="{{ url_for('tasks.notifications') }}" class="btn btn-outline-info">
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">I Miei Task</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-user-check me-2"></i>I Miei Task
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Task assegnati a {{ current_user.username }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('tasks.notifications') }}" class="action-btn position-relative">
                         <i class="fas fa-bell"></i> Notifiche
                         {% if notifications %}
-                        <span class="badge badge-danger">{{ notifications|length }}</span>
+                        <span class="badge bg-danger position-absolute" style="top: -8px; right: -8px; font-size: 0.7rem;">{{ notifications|length }}</span>
                         {% endif %}
                     </a>
-                    <button class="btn btn-outline-secondary" onclick="location.reload()">
+                    <button class="action-btn" onclick="location.reload()">
                         <i class="fas fa-sync-alt"></i> Aggiorna
                     </button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
+<div class="container-fluid">
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stats-card text-center">
-                <div class="card-body">
-                    <i class="fas fa-list fa-2x mb-2"></i>
-                    <h4>{{ stats.total_assigned }}</h4>
-                    <p class="mb-0">Task Assegnati</p>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card primary">
+                <div class="stats-icon">
+                    <i class="fas fa-list"></i>
                 </div>
+                <div class="stats-number">{{ stats.total_assigned }}</div>
+                <div class="stats-label">Task Assegnati</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white text-center">
-                <div class="card-body">
-                    <i class="fas fa-clock fa-2x mb-2"></i>
-                    <h4>{{ stats.pending }}</h4>
-                    <p class="mb-0">In Attesa</p>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card warning">
+                <div class="stats-icon">
+                    <i class="fas fa-clock"></i>
                 </div>
+                <div class="stats-number">{{ stats.pending }}</div>
+                <div class="stats-label">In Attesa</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white text-center">
-                <div class="card-body">
-                    <i class="fas fa-play fa-2x mb-2"></i>
-                    <h4>{{ stats.in_progress }}</h4>
-                    <p class="mb-0">In Corso</p>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card info">
+                <div class="stats-icon">
+                    <i class="fas fa-play"></i>
                 </div>
+                <div class="stats-number">{{ stats.in_progress }}</div>
+                <div class="stats-label">In Corso</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white text-center">
-                <div class="card-body">
-                    <i class="fas fa-check fa-2x mb-2"></i>
-                    <h4>{{ stats.completed }}</h4>
-                    <p class="mb-0">Completati</p>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stats-card success">
+                <div class="stats-icon">
+                    <i class="fas fa-check"></i>
                 </div>
+                <div class="stats-number">{{ stats.completed }}</div>
+                <div class="stats-label">Completati</div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Notifications -->
-    {% if notifications %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card notification-card">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-bell"></i> Notifiche Recenti</h6>
-                </div>
-                <div class="card-body">
-                    {% for notification in notifications %}
-                    <div class="alert alert-info alert-dismissible fade show mb-2" role="alert">
-                        <strong>{{ notification.title }}</strong><br>
-                        <small>{{ notification.message }}</small>
-                        <small class="text-muted d-block">{{ notification.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
-                        <button type="button" class="close" data-dismiss="alert">
-                            <span>&times;</span>
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" 
+                               class="form-control" 
+                               id="title" 
+                               name="title" 
+                               value="{{ request.args.get('title', '') }}"
+                               placeholder="Cerca per titolo...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control" id="priority" name="priority">
+                            <option value="">Tutte le priorità</option>
+                            <option value="low" {% if request.args.get('priority') == 'low' %}selected{% endif %}>Bassa</option>
+                            <option value="medium" {% if request.args.get('priority') == 'medium' %}selected{% endif %}>Media</option>
+                            <option value="high" {% if request.args.get('priority') == 'high' %}selected{% endif %}>Alta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control" id="status" name="status">
+                            <option value="">Tutti gli stati</option>
+                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>In Attesa</option>
+                            <option value="assigned" {% if request.args.get('status') == 'assigned' %}selected{% endif %}>Assegnato</option>
+                            <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Corso</option>
+                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completato</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Filtra
                         </button>
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Tasks List -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-tasks"></i> I Miei Task Assegnati</h5>
-                </div>
-                <div class="card-body">
-                    {% if tasks %}
-                    <div class="row">
-                        {% for task in tasks %}
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card task-card {{ task.status }}">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <strong>{{ task.task_number }}</strong>
-                                    <div>
-                                        <span class="badge badge-{{ 'success' if task.status == 'completed' else 'warning' if task.status == 'in_progress' else 'secondary' }}">
-                                            {{ task.status.upper() }}
-                                        </span>
-                                        <span class="badge badge-outline-{{ 'danger' if task.priority == 'high' else 'warning' if task.priority == 'medium' else 'secondary' }} priority-{{ task.priority }}">
-                                            <i class="fas fa-exclamation-triangle"></i> {{ task.priority.upper() }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ task.title }}</h6>
-                                    <p class="card-text text-muted small">{{ task.description[:100] }}{% if task.description|length > 100 %}...{% endif %}</p>
-                                    
-                                    <!-- Progress Bar -->
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between">
-                                            <small><strong>Progresso Scansioni</strong></small>
-                                            <small><strong>{{ task.completed_tickets }}/{{ task.total_tickets }}</strong></small>
-                                        </div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-{{ 'success' if task.progress_percentage == 100 else 'info' }}" 
-                                                 style="width: {{ task.progress_percentage }}%"></div>
-                                        </div>
-                                        <small class="text-muted">{{ task.progress_percentage }}% completato</small>
-                                    </div>
-
-                                    <!-- Task Info -->
-                                    <div class="row small mb-2">
-                                        <div class="col-6">
-                                            <strong>Assegnato:</strong><br>
-                                            {{ task.assigned_at.strftime('%d/%m/%Y') if task.assigned_at else 'N/A' }}
-                                        </div>
-                                        <div class="col-6">
-                                            <strong>Creato da:</strong><br>
-                                            {{ task.creator.username }}
-                                        </div>
-                                    </div>
-
-                                    {% if task.deadline %}
-                                    <div class="mb-2 small">
-                                        <strong>Scadenza:</strong> 
-                                        <span class="{% if task.deadline < now() %}text-danger{% elif (task.deadline - now()).days < 1 %}text-warning{% endif %}">
-                                            {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
-                                            {% if task.deadline < now() %}
-                                            <i class="fas fa-exclamation-triangle text-danger"></i>
-                                            {% elif (task.deadline - now()).days < 1 %}
-                                            <i class="fas fa-clock text-warning"></i>
-                                            {% endif %}
-                                        </span>
-                                    </div>
-                                    {% endif %}
-
-                                    <!-- DDT Status -->
-                                    {% if task.ddt_generated %}
-                                    <div class="alert alert-success small py-2 mb-2">
-                                        <i class="fas fa-file-alt"></i> DDT Generato
-                                        {% if task.client %}
-                                        per {{ task.client.Nombre }}
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <div class="card-footer">
-                                    <div class="btn-group w-100" role="group">
-                                        <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye"></i> Dettagli
-                                        </a>
-                                        {% if task.status != 'completed' %}
-                                        <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
-                                           class="btn btn-sm btn-success">
-                                            <i class="fas fa-qrcode"></i> Inizia Scansione
-                                        </a>
-                                        {% else %}
-                                        <button class="btn btn-sm btn-outline-success" disabled>
-                                            <i class="fas fa-check"></i> Completato
-                                        </button>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-user-check fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Nessun task assegnato</h5>
-                        <p class="text-muted">Al momento non hai task assegnati. Controlla più tardi o contatta l'amministratore.</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
-    <!-- Help Section -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-info">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0"><i class="fas fa-question-circle"></i> Come Funziona</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center mb-3">
-                                <i class="fas fa-eye fa-2x text-primary mb-2"></i>
-                                <h6>1. Visualizza Task</h6>
-                                <p class="small text-muted">Clicca su "Dettagli" per vedere i ticket assegnati al task.</p>
+    <!-- Active Tasks Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-tasks me-2 text-primary"></i>Task Attivi ({{ active_tasks|length }})
+            </h5>
+            <small class="text-muted">Task in corso di lavorazione</small>
+        </div>
+        <div class="card-body">
+            {% if active_tasks %}
+            <div class="row">
+                {% for task in active_tasks %}
+                <div class="col-lg-6 col-xl-4 mb-3">
+                    <div class="task-card task-{{ task.status }}">
+                        <div class="task-card-header">
+                            <h6 class="task-card-title">{{ task.task_number }}</h6>
+                            <div>
+                                <span class="task-status-badge task-status-{{ task.status }}">
+                                    {{ task.status.replace('_', ' ').title() }}
+                                </span>
+                                <span class="task-priority-badge task-priority-{{ task.priority }}">
+                                    {{ task.priority.title() }}
+                                </span>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center mb-3">
-                                <i class="fas fa-qrcode fa-2x text-success mb-2"></i>
-                                <h6>2. Scansiona Prodotti</h6>
-                                <p class="small text-muted">Usa il QR scanner per verificare ogni prodotto nella lista.</p>
+                        
+                        <div class="task-card-body">
+                            <h6 class="mb-2">{{ task.title }}</h6>
+                            
+                            <!-- Progress -->
+                            <div class="task-progress">
+                                <div class="task-progress-label">
+                                    <span>Progresso</span>
+                                    <span>{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
+                                </div>
+                                <div class="task-progress-bar">
+                                    <div class="task-progress-fill {% if task.progress_percentage < 100 %}warning{% endif %}" 
+                                         style="width: {{ task.progress_percentage }}%"></div>
+                                </div>
                             </div>
+
+                            <!-- Task Meta -->
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Assegnato</span>
+                                    <span class="task-meta-value">{{ task.assigned_at.strftime('%d/%m/%Y') if task.assigned_at else 'N/A' }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Creato da</span>
+                                    <span class="task-meta-value">{{ task.creator.username }}</span>
+                                </div>
+                            </div>
+
+                            {% if task.deadline %}
+                            <div class="mt-2">
+                                <span class="task-meta-label">Scadenza:</span>
+                                <span class="{% if task.deadline < now() %}text-danger{% elif (task.deadline - now()).days < 1 %}text-warning{% endif %}">
+                                    {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                                    {% if task.deadline < now() %}
+                                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                                    {% elif (task.deadline - now()).days < 1 %}
+                                    <i class="fas fa-clock text-warning"></i>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center mb-3">
-                                <i class="fas fa-check-circle fa-2x text-info mb-2"></i>
-                                <h6>3. Completa Task</h6>
-                                <p class="small text-muted">Una volta scansionati tutti i prodotti, il task sarà completato.</p>
+                        
+                        <div class="task-card-footer">
+                            <div class="btn-group">
+                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> Visualizza
+                                </a>
+                                {% if task.status != 'completed' and task.task_tickets and task.task_tickets.first() and task.task_tickets.first().id %}
+                                <a href="{{ url_for('tasks.scan_ticket', task_ticket_id=task.task_tickets.first().id) }}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-qrcode"></i> Scansiona
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
+            {% else %}
+            <div class="task-empty-state">
+                <i class="fas fa-tasks"></i>
+                <h5>Nessun task attivo</h5>
+                <p>Non hai task attualmente in lavorazione. Tutti i tuoi task sono stati completati.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Completed Tasks Section -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-check-circle me-2 text-primary"></i>Task Completati ({{ completed_tasks|length }})
+            </h5>
+            <small class="text-muted">Task completati da te</small>
+        </div>
+        <div class="card-body">
+            {% if completed_tasks %}
+            <div class="row">
+                {% for task in completed_tasks %}
+                <div class="col-lg-6 col-xl-4 mb-3">
+                    <div class="task-card task-completed">
+                        <div class="task-card-header">
+                            <h6 class="task-card-title">{{ task.task_number }}</h6>
+                            <div>
+                                <span class="task-status-badge task-status-completed">
+                                    Completato
+                                </span>
+                                {% if task.ddt_generated %}
+                                <span class="badge bg-success ms-1">
+                                    <i class="fas fa-file-alt"></i> DDT
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="task-card-body">
+                            <h6 class="mb-2">{{ task.title }}</h6>
+                            
+                            <!-- Progress -->
+                            <div class="task-progress">
+                                <div class="task-progress-label">
+                                    <span>Completato</span>
+                                    <span><i class="fas fa-check text-success"></i> {{ task.total_tickets }}/{{ task.total_tickets }}</span>
+                                </div>
+                                <div class="task-progress-bar">
+                                    <div class="task-progress-fill" style="width: 100%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Task Meta -->
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Completato</span>
+                                    <span class="task-meta-value">{{ task.created_at.strftime('%d/%m/%Y') }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Creato da</span>
+                                    <span class="task-meta-value">{{ task.creator.username }}</span>
+                                </div>
+                            </div>
+
+                            {% if task.ddt_generated and task.client %}
+                            <div class="mt-2">
+                                <span class="task-meta-label">Cliente DDT:</span>
+                                <span class="text-success">{{ task.client.Nombre }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="task-card-footer">
+                            <div class="btn-group">
+                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> Visualizza
+                                </a>
+                                {% if task.ddt_generated and task.ddt_id %}
+                                <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" 
+                                   class="btn btn-sm btn-success">
+                                    <i class="fas fa-file-alt"></i> DDT #{{ task.ddt_id }}
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="task-empty-state">
+                <i class="fas fa-check-circle"></i>
+                <h5>Nessun task completato</h5>
+                <p>Non hai ancora completato nessun task. I task completati appariranno qui.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-$(document).ready(function() {
-    // Auto refresh every 60 seconds
-    setInterval(function() {
-        // Only refresh if no modals are open
-        if (!$('.modal').hasClass('show')) {
-            location.reload();
-        }
-    }, 60000);
-    
-    // Add tooltips
-    $('[data-toggle="tooltip"]').tooltip();
-    
-    // Mark notifications as read when dismissed
-    $('.alert-dismissible').on('closed.bs.alert', function() {
-        // Add AJAX call to mark notification as read if needed
+// Wait for jQuery to be loaded
+function waitForJQuery(callback) {
+    if (typeof $ !== 'undefined' && $.fn && $.fn.jquery) {
+        callback();
+    } else {
+        setTimeout(function() {
+            waitForJQuery(callback);
+        }, 100);
+    }
+}
+
+waitForJQuery(function() {
+    $(document).ready(function() {
+        // Auto-submit form on filter change
+        $('#filterForm input, #filterForm select').on('change', function() {
+            $('#filterForm').submit();
+        });
+
+        // Update progress bars
+        $('.task-progress-fill').each(function() {
+            const width = $(this).css('width');
+            $(this).css('width', '0').animate({width: width}, 1000);
+        });
+
+        // Add tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
     });
 });
 </script>

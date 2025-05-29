@@ -1,0 +1,993 @@
+{% extends "base.html" %}
+{% block title %}Anteprima DDT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+<style>
+.preview-card {
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.preview-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-top-left-radius: 0.35rem;
+    border-top-right-radius: 0.35rem;
+}
+
+.ticket-item {
+    border: 1px solid #e3e6f0;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.ticket-item:hover {
+    box-shadow: 0 0.125rem 0.5rem rgba(58, 59, 69, 0.15);
+}
+
+.ticket-header {
+    background-color: #f8f9fc;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e3e6f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ticket-body {
+    padding: 1rem;
+}
+
+.line-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.line-item:last-child {
+    border-bottom: none;
+}
+
+.search-section {
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.summary-box {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.btn-remove-ticket {
+    color: #e74a3b;
+    border: 1px solid #e74a3b;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-remove-ticket:hover {
+    background-color: #e74a3b;
+    color: white;
+}
+
+.btn-add-ticket {
+    color: #28a745;
+    border: 1px solid #28a745;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-add-ticket:hover {
+    background-color: #28a745;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-eye me-2"></i>Anteprima DDT
+            </h1>
+            <p class="text-muted">Verifica e modifica il contenuto del DDT prima della generazione</p>
+        </div>
+        <div>
+            <a href="{{ url_for('ddt.select_tickets', cliente_id=cliente.IdCliente) }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Indietro
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Anteprima DDT -->
+        <div class="col-lg-8">
+            <div class="preview-card">
+                <div class="preview-header">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="mb-1">
+                                <i class="fas fa-file-invoice me-2"></i>Documento di Trasporto
+                            </h4>
+                            <p class="mb-0 opacity-75">Anteprima DDT</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <h5 class="mb-1">Cliente: {{ cliente.Nombre }}</h5>
+                            <p class="mb-0 opacity-75">{{ cliente.Direccion or 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <!-- Riepilogo -->
+                    <div class="summary-box m-3">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <h3 id="total-tickets">{{ preview_data|length }}</h3>
+                                <p class="mb-0">Ticket Selezionati</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h3 id="total-weight">{{ "%.3f"|format(total_weight) }} kg</h3>
+                                <p class="mb-0">Peso Totale</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h3 id="total-amount">€ {{ "%.2f"|format(total_amount) }}</h3>
+                                <p class="mb-0">Importo Totale</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Ticket -->
+                    <div class="p-3" id="tickets-container">
+                        {% for item in preview_data %}
+                        <div class="ticket-item" data-ticket-id="{{ item.ticket.IdTicket }}">
+                            <div class="ticket-header">
+                                <div>
+                                    <strong>Ticket #{{ item.ticket.NumTicket }}</strong>
+                                    <span class="text-muted ms-2">
+                                        {{ item.ticket.Fecha }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-primary me-2">{{ item.lines|length }} articoli</span>
+                                    <span class="badge bg-success me-2">€ {{ "%.2f"|format(item.ticket_total) }}</span>
+                                    <button type="button" class="btn btn-sm btn-remove-ticket" 
+                                            onclick="removeTicket({{ item.ticket.IdTicket }})">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="ticket-body">
+                                {% for line in item.lines %}
+                                <div class="line-item d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                        <strong>{{ line.descripcion }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            Codice: {{ line.id_articulo }} | 
+                                            Peso: {{ "%.3f"|format(line.peso) }} kg |
+                                            Prezzo: € {{ "%.2f"|format(line.precio) }}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>€ {{ "%.2f"|format(line.importe) }}</strong>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pannello di controllo -->
+        <div class="col-lg-4">
+            <!-- Cerca e aggiungi ticket -->
+            <div class="search-section">
+                <h5 class="mb-3">
+                    <i class="fas fa-plus-circle me-2"></i>Aggiungi Ticket
+                </h5>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="search-tickets" 
+                           placeholder="Cerca ticket per numero o prodotto...">
+                </div>
+                <div id="search-results"></div>
+                
+                <!-- Pulsante Crea Ticket Manuale -->
+                <div class="text-center mt-3 pt-3" style="border-top: 1px solid #e3e6f0;">
+                    <button type="button" class="btn btn-primary" id="btn-create-manual-ticket">
+                        <i class="fas fa-plus me-2"></i>Crea Ticket Manuale
+                    </button>
+                </div>
+            </div>
+
+            <!-- Azioni finali -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Azioni
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if from_task %}
+                    <form id="final-ddt-form" method="POST" action="{{ url_for('tasks.complete_task', task_id=task_id) }}">
+                        {{ create_form.hidden_tag() }}
+                        <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+                        <input type="hidden" name="id_empresa" value="{{ empresa.IdEmpresa }}">
+                        <input type="hidden" id="final-tickets-data" name="tickets" value="{{ selected_tickets_json }}">
+                        <input type="hidden" name="from_preview" value="true">
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Generazione DDT da Task</strong><br>
+                            I ticket di questo task verranno processati e marcati come inviati.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ddt-notes" class="form-label">Note DDT (opzionale)</label>
+                            <textarea class="form-control" id="ddt-notes" name="note" rows="3"
+                                      placeholder="Aggiungi note per il DDT..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="create-final-ddt">
+                                <i class="fas fa-file-invoice me-2"></i>Genera DDT da Task
+                            </button>
+                            <a href="{{ url_for('tasks.view_task', task_id=task_id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Torna al Task
+                            </a>
+                        </div>
+                    </form>
+                    {% elif from_warehouse %}
+                    <form id="final-ddt-form" method="POST" action="{{ url_for('ddt.create') }}">
+                        {{ create_form.hidden_tag() }}
+                        <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+                        <input type="hidden" name="id_empresa" value="{{ empresa.IdEmpresa }}">
+                        <input type="hidden" id="final-tickets-data" name="tickets" value="{{ selected_tickets_json }}">
+                        <input type="hidden" name="from_warehouse" value="true">
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Generazione DDT da Warehouse</strong><br>
+                            I ticket selezionati dal warehouse verranno processati e inclusi nel DDT.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ddt-notes" class="form-label">Note DDT (opzionale)</label>
+                            <textarea class="form-control" id="ddt-notes" name="note" rows="3"
+                                      placeholder="Aggiungi note per il DDT..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="create-final-ddt">
+                                <i class="fas fa-file-invoice me-2"></i>Genera DDT Definitivo
+                            </button>
+                            <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Torna al Warehouse
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
+                    <form id="final-ddt-form" method="POST" action="{{ url_for('ddt.create') }}">
+                        {{ create_form.hidden_tag() }}
+                        <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+                        <input type="hidden" name="id_empresa" value="{{ empresa.IdEmpresa }}">
+                        <input type="hidden" id="final-tickets-data" name="tickets" value="{{ selected_tickets_json }}">
+                        
+                        <div class="mb-3">
+                            <label for="ddt-notes" class="form-label">Note DDT (opzionale)</label>
+                            <textarea class="form-control" id="ddt-notes" name="note" rows="3"
+                                      placeholder="Aggiungi note per il DDT..."></textarea>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="create-final-ddt">
+                                <i class="fas fa-file-invoice me-2"></i>Genera DDT Definitivo
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetPreview()">
+                                <i class="fas fa-undo me-2"></i>Ricomincia
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Creazione Ticket Manuale -->
+<div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createTicketModalLabel">
+                    <i class="fas fa-plus me-2"></i>Crea Ticket Manuale
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="manual-ticket-form">
+                    <!-- Ricerca Prodotti -->
+                    <div class="mb-4">
+                        <label for="product-search" class="form-label">
+                            <i class="fas fa-search me-1"></i>Cerca Prodotto
+                        </label>
+                        <input type="text" class="form-control" id="product-search" 
+                               placeholder="Cerca per nome o ID prodotto...">
+                        <div id="product-search-results" class="mt-2"></div>
+                    </div>
+                    
+                    <!-- Lista Prodotti Selezionati -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold">
+                            <i class="fas fa-list me-1"></i>Prodotti nel Ticket
+                        </h6>
+                        <div id="selected-products-list" class="border rounded p-3 bg-light">
+                            <p class="text-muted mb-0 text-center">Nessun prodotto selezionato</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Riepilogo -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-primary" id="ticket-total-products">0</h5>
+                                    <p class="card-text">Prodotti</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-success" id="ticket-total-amount">€ 0.00</h5>
+                                    <p class="card-text">Totale</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-success" id="save-manual-ticket" disabled>
+                    <i class="fas fa-save me-1"></i>Crea Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dati iniziali del server
+const INITIAL_TICKETS_DATA = {{ selected_tickets_json|tojson|safe }};
+const INITIAL_PREVIEW_DATA = {{ preview_data|tojson|safe }};
+
+// Variabili globali per mantenere i dati dei ticket
+let currentTickets = JSON.parse(INITIAL_TICKETS_DATA);
+let previewData = {};
+
+// Inizializza i dati di preview
+function initializePreviewData() {
+    for (let item of INITIAL_PREVIEW_DATA) {
+        previewData[item.ticket.IdTicket] = {
+            ticket: item.ticket,
+            lines: item.lines,
+            total: item.ticket_total
+        };
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inizializza i dati
+    initializePreviewData();
+    
+    // Setup search functionality
+    setupTicketSearch();
+    
+    // Update hidden form data
+    updateFormData();
+});
+
+function setupTicketSearch() {
+    const searchInput = document.getElementById('search-tickets');
+    const resultsContainer = document.getElementById('search-results');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            resultsContainer.innerHTML = '';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            searchTickets(query);
+        }, 300);
+    });
+}
+
+function searchTickets(query) {
+    const resultsContainer = document.getElementById('search-results');
+    const excludedTickets = currentTickets.map(t => t.id_ticket).join(',');
+    
+    resultsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Ricerca...</div>';
+    
+    fetch(`{{ url_for('ddt.api_search_tickets_for_preview') }}?q=${encodeURIComponent(query)}&excluded=${excludedTickets}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displaySearchResults(data.tickets);
+        } else {
+            resultsContainer.innerHTML = '<div class="text-danger">Errore nella ricerca</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        resultsContainer.innerHTML = '<div class="text-danger">Errore di rete</div>';
+    });
+}
+
+function displaySearchResults(tickets) {
+    const resultsContainer = document.getElementById('search-results');
+    
+    if (tickets.length === 0) {
+        resultsContainer.innerHTML = '<div class="text-muted">Nessun ticket trovato</div>';
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    tickets.forEach(ticket => {
+        html += `
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Ticket #${ticket.num_ticket}</strong><br>
+                    <small class="text-muted">${ticket.fecha} | ${ticket.lines_count} linee</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-add-ticket" 
+                        onclick="addTicket(${ticket.id_ticket}, ${ticket.id_empresa})">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    resultsContainer.innerHTML = html;
+}
+
+function addTicket(ticketId, empresaId) {
+    // Verifica se il ticket è già presente
+    if (currentTickets.some(t => t.id_ticket === ticketId)) {
+        alert('Questo ticket è già incluso nel DDT');
+        return;
+    }
+    
+    // Mostra loading
+    const btn = event.target.closest('button');
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    
+    fetch('{{ url_for("ddt.api_add_ticket_to_preview") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ticket_id: ticketId,
+            empresa_id: empresaId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Aggiungi il ticket ai dati correnti
+            const ticketInfo = {
+                id_ticket: data.ticket.id_ticket,
+                id_empresa: data.ticket.id_empresa,
+                id_tienda: data.ticket.id_tienda,
+                id_balanza_maestra: data.ticket.id_balanza_maestra,
+                id_balanza_esclava: data.ticket.id_balanza_esclava,
+                tipo_venta: data.ticket.tipo_venta
+            };
+            
+            currentTickets.push(ticketInfo);
+            previewData[ticketId] = {
+                ticket: data.ticket,
+                lines: data.ticket.lines,
+                total: data.ticket.total
+            };
+            
+            // Aggiorna la UI
+            addTicketToPreview(data.ticket);
+            updateSummary();
+            updateFormData();
+            
+            // Rimuovi dalla ricerca
+            btn.closest('.list-group-item').remove();
+            
+        } else {
+            alert(data.message || 'Errore nell\'aggiunta del ticket');
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        alert('Errore di rete');
+        btn.innerHTML = originalHTML;
+        btn.disabled = false;
+    });
+}
+
+function addTicketToPreview(ticket) {
+    const container = document.getElementById('tickets-container');
+    
+    let linesHTML = '';
+    ticket.lines.forEach(line => {
+        linesHTML += `
+            <div class="line-item d-flex justify-content-between align-items-center">
+                <div class="flex-grow-1">
+                    <strong>${line.descripcion}</strong><br>
+                    <small class="text-muted">
+                        Codice: ${line.id_articulo} | 
+                        Peso: ${line.peso.toFixed(3)} kg |
+                        Prezzo: € ${line.precio.toFixed(2)}
+                    </small>
+                </div>
+                <div class="text-end">
+                    <strong>€ ${line.importe.toFixed(2)}</strong>
+                </div>
+            </div>
+        `;
+    });
+    
+    const ticketHTML = `
+        <div class="ticket-item" data-ticket-id="${ticket.id_ticket}">
+            <div class="ticket-header">
+                <div>
+                    <strong>Ticket #${ticket.num_ticket}</strong>
+                    <span class="text-muted ms-2">${ticket.fecha}</span>
+                </div>
+                <div>
+                    <span class="badge bg-primary me-2">${ticket.lines.length} articoli</span>
+                    <span class="badge bg-success me-2">€ ${ticket.total.toFixed(2)}</span>
+                    <button type="button" class="btn btn-sm btn-remove-ticket" 
+                            onclick="removeTicket(${ticket.id_ticket})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="ticket-body">
+                ${linesHTML}
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', ticketHTML);
+}
+
+function removeTicket(ticketId) {
+    if (confirm('Sei sicuro di voler rimuovere questo ticket dal DDT?')) {
+        // Rimuovi dai dati correnti
+        currentTickets = currentTickets.filter(t => t.id_ticket !== ticketId);
+        delete previewData[ticketId];
+        
+        // Rimuovi dalla UI
+        const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+        if (ticketElement) {
+            ticketElement.remove();
+        }
+        
+        // Aggiorna riepilogo e form
+        updateSummary();
+        updateFormData();
+        
+        // Pulisci i risultati di ricerca per permettere di ri-aggiungere il ticket
+        document.getElementById('search-results').innerHTML = '';
+        document.getElementById('search-tickets').value = '';
+    }
+}
+
+function updateSummary() {
+    const totalTickets = currentTickets.length;
+    let totalWeight = 0;
+    let totalAmount = 0;
+    
+    currentTickets.forEach(ticket => {
+        const data = previewData[ticket.id_ticket];
+        if (data) {
+            totalAmount += data.total;
+            data.lines.forEach(line => {
+                totalWeight += line.peso;
+            });
+        }
+    });
+    
+    document.getElementById('total-tickets').textContent = totalTickets;
+    document.getElementById('total-weight').textContent = totalWeight.toFixed(3) + ' kg';
+    document.getElementById('total-amount').textContent = '€ ' + totalAmount.toFixed(2);
+}
+
+function updateFormData() {
+    document.getElementById('final-tickets-data').value = JSON.stringify(currentTickets);
+}
+
+function resetPreview() {
+    if (confirm('Sei sicuro di voler ricominciare? Tutte le modifiche andranno perse.')) {
+        window.location.href = '{{ url_for("ddt.select_tickets", cliente_id=cliente.IdCliente) }}';
+    }
+}
+
+// Valida il form prima dell'invio
+document.getElementById('final-ddt-form').addEventListener('submit', function(e) {
+    if (currentTickets.length === 0) {
+        e.preventDefault();
+        alert('Devi selezionare almeno un ticket per creare il DDT.');
+        return false;
+    }
+    
+    // Conferma creazione
+    const ticketsCount = currentTickets.length;
+    if (!confirm(`Sei sicuro di voler creare il DDT con ${ticketsCount} ticket selezionati?`)) {
+        e.preventDefault();
+        return false;
+    }
+    
+    // Mostra loading
+    const btn = document.getElementById('create-final-ddt');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generazione in corso...';
+    btn.disabled = true;
+});
+
+// ===== FUNZIONALITÀ CREAZIONE TICKET MANUALE =====
+
+let selectedProducts = [];
+let productSearchTimeout;
+
+// Setup modal creazione ticket manuale
+document.getElementById('btn-create-manual-ticket').addEventListener('click', function() {
+    selectedProducts = [];
+    updateSelectedProductsList();
+    updateTicketTotals();
+    document.getElementById('product-search').value = '';
+    document.getElementById('product-search-results').innerHTML = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('createTicketModal'));
+    modal.show();
+});
+
+// Ricerca prodotti
+document.getElementById('product-search').addEventListener('input', function() {
+    clearTimeout(productSearchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        document.getElementById('product-search-results').innerHTML = '';
+        return;
+    }
+    
+    productSearchTimeout = setTimeout(() => {
+        searchProducts(query);
+    }, 300);
+});
+
+function searchProducts(query) {
+    const resultsContainer = document.getElementById('product-search-results');
+    resultsContainer.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Ricerca...</div>';
+    
+    fetch(`{{ url_for('ddt.api_search_products') }}?q=${encodeURIComponent(query)}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayProductResults(data.products);
+        } else {
+            resultsContainer.innerHTML = '<div class="text-danger">Errore nella ricerca</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        resultsContainer.innerHTML = '<div class="text-danger">Errore di rete</div>';
+    });
+}
+
+function displayProductResults(products) {
+    const resultsContainer = document.getElementById('product-search-results');
+    
+    if (products.length === 0) {
+        resultsContainer.innerHTML = '<div class="text-muted">Nessun prodotto trovato</div>';
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    products.forEach(product => {
+        const isAlreadySelected = selectedProducts.some(p => p.id === product.id);
+        html += `
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${isAlreadySelected ? 'disabled' : ''}">
+                <div>
+                    <strong>${product.descripcion}</strong><br>
+                    <small class="text-muted">
+                        ID: ${product.id} | Prezzo: € ${product.precio.toFixed(2)}
+                        ${product.ean ? ` | EAN: ${product.ean}` : ''}
+                    </small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" 
+                        onclick="addProductToTicket(${product.id}, '${product.descripcion.replace(/'/g, "\\'")}', ${product.precio})"
+                        ${isAlreadySelected ? 'disabled' : ''}>
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    resultsContainer.innerHTML = html;
+}
+
+function addProductToTicket(productId, descripcion, precio) {
+    // Verifica se già presente
+    if (selectedProducts.some(p => p.id === productId)) {
+        alert('Prodotto già aggiunto al ticket');
+        return;
+    }
+    
+    // Aggiungi prodotto con ID 999 come riferimento
+    selectedProducts.push({
+        id: 999, // Usa sempre ID 999 come riferimento
+        original_id: productId, // Mantieni l'ID originale per riferimento
+        descripcion: descripcion,
+        precio: precio,
+        peso: 1.0,
+        fecha_caducidad: '',
+        comportamiento: 1, // Default peso
+        id_iva: 3 // Default 22% IVA
+    });
+    
+    updateSelectedProductsList();
+    updateTicketTotals();
+    
+    // Rimuovi dalla ricerca
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.closest('.list-group-item').classList.add('disabled');
+}
+
+function removeProductFromTicket(index) {
+    selectedProducts.splice(index, 1);
+    updateSelectedProductsList();
+    updateTicketTotals();
+    
+    // Aggiorna la ricerca se necessario
+    const searchQuery = document.getElementById('product-search').value.trim();
+    if (searchQuery.length >= 2) {
+        searchProducts(searchQuery);
+    }
+}
+
+function updateSelectedProductsList() {
+    const container = document.getElementById('selected-products-list');
+    
+    if (selectedProducts.length === 0) {
+        container.innerHTML = '<p class="text-muted mb-0 text-center">Nessun prodotto selezionato</p>';
+        document.getElementById('save-manual-ticket').disabled = true;
+        return;
+    }
+    
+    let html = '';
+    selectedProducts.forEach((product, index) => {
+        html += `
+            <div class="card mb-2">
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <!-- Nome Prodotto -->
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label small fw-bold">Nome Prodotto</label>
+                            <input type="text" class="form-control form-control-sm" 
+                                   value="${product.descripcion}" 
+                                   onchange="updateProductDescription(${index}, this.value)"
+                                   placeholder="Inserisci nome prodotto...">
+                        </div>
+                        
+                        <!-- Peso/Quantità -->
+                        <div class="col-md-3">
+                            <label class="form-label small">Peso/Qt</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   value="${product.peso}" step="0.001" min="0.001"
+                                   onchange="updateProductWeight(${index}, this.value)">
+                        </div>
+                        
+                        <!-- Prezzo Unitario -->
+                        <div class="col-md-3">
+                            <label class="form-label small">Prezzo €</label>
+                            <input type="number" class="form-control form-control-sm" 
+                                   value="${product.precio}" step="0.01" min="0.01"
+                                   onchange="updateProductPrice(${index}, this.value)">
+                        </div>
+                        
+                        <!-- IVA -->
+                        <div class="col-md-2">
+                            <label class="form-label small">IVA</label>
+                            <select class="form-control form-control-sm" 
+                                    onchange="updateProductIva(${index}, this.value)">
+                                <option value="1" ${product.id_iva === 1 ? 'selected' : ''}>4%</option>
+                                <option value="2" ${product.id_iva === 2 ? 'selected' : ''}>10%</option>
+                                <option value="3" ${product.id_iva === 3 ? 'selected' : ''}>22%</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Scadenza -->
+                        <div class="col-md-2">
+                            <label class="form-label small">Scadenza</label>
+                            <input type="date" class="form-control form-control-sm" 
+                                   value="${product.fecha_caducidad}"
+                                   onchange="updateProductExpiry(${index}, this.value)">
+                        </div>
+                        
+                        <!-- Totale e Rimuovi -->
+                        <div class="col-md-1 text-end">
+                            <label class="form-label small">Totale</label>
+                            <div class="fw-bold text-success">€ ${(product.peso * product.precio).toFixed(2)}</div>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <label class="form-label small">&nbsp;</label>
+                            <button type="button" class="btn btn-sm btn-outline-danger d-block" 
+                                    onclick="removeProductFromTicket(${index})"
+                                    title="Rimuovi prodotto">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    document.getElementById('save-manual-ticket').disabled = false;
+}
+
+function updateProductDescription(index, newDescription) {
+    selectedProducts[index].descripcion = newDescription.trim();
+}
+
+function updateProductPrice(index, newPrice) {
+    selectedProducts[index].precio = parseFloat(newPrice) || 0.01;
+    updateTicketTotals();
+}
+
+function updateProductIva(index, newIvaId) {
+    selectedProducts[index].id_iva = parseInt(newIvaId);
+    // Aggiorna anche il display per mostrare il nuovo totale con IVA
+    updateTicketTotals();
+}
+
+function updateProductWeight(index, newWeight) {
+    selectedProducts[index].peso = parseFloat(newWeight) || 1.0;
+    updateTicketTotals();
+}
+
+function updateProductExpiry(index, newExpiry) {
+    selectedProducts[index].fecha_caducidad = newExpiry;
+}
+
+function updateTicketTotals() {
+    const totalProducts = selectedProducts.length;
+    const totalAmount = selectedProducts.reduce((sum, product) => sum + (product.peso * product.precio), 0);
+    
+    document.getElementById('ticket-total-products').textContent = totalProducts;
+    document.getElementById('ticket-total-amount').textContent = `€ ${totalAmount.toFixed(2)}`;
+}
+
+// Salva ticket manuale
+document.getElementById('save-manual-ticket').addEventListener('click', function() {
+    if (selectedProducts.length === 0) {
+        alert('Aggiungi almeno un prodotto al ticket');
+        return;
+    }
+    
+    // Validazione: verifica che tutti i prodotti abbiano nome e prezzo
+    for (let i = 0; i < selectedProducts.length; i++) {
+        const product = selectedProducts[i];
+        if (!product.descripcion.trim()) {
+            alert(`Il prodotto ${i + 1} deve avere un nome`);
+            return;
+        }
+        if (product.precio <= 0) {
+            alert(`Il prodotto ${i + 1} deve avere un prezzo valido`);
+            return;
+        }
+    }
+    
+    // Mostra loading
+    const btn = this;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creazione...';
+    btn.disabled = true;
+    
+    // Prepara dati - usa sempre ID 999 per tutti i prodotti
+    const ticketData = {
+        cliente_id: {{ cliente.IdCliente }},
+        empresa_id: {{ empresa.IdEmpresa }},
+        products: selectedProducts.map(product => ({
+            product_id: 999, // Usa sempre ID 999
+            peso: product.peso,
+            descripcion: product.descripcion,
+            precio: product.precio,
+            id_iva: product.id_iva,
+            fecha_caducidad: product.fecha_caducidad,
+            comportamiento: product.comportamiento
+        }))
+    };
+    
+    // Invia richiesta
+    fetch('{{ url_for("ddt.api_create_manual_ticket") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ticketData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Aggiungi il nuovo ticket al preview
+            const ticketInfo = {
+                id_ticket: data.ticket.id_ticket,
+                id_empresa: data.ticket.id_empresa,
+                id_tienda: data.ticket.id_tienda,
+                id_balanza_maestra: data.ticket.id_balanza_maestra,
+                id_balanza_esclava: data.ticket.id_balanza_esclava,
+                tipo_venta: data.ticket.tipo_venta
+            };
+            
+            currentTickets.push(ticketInfo);
+            previewData[data.ticket.id_ticket] = {
+                ticket: data.ticket,
+                lines: data.ticket.lines,
+                total: data.ticket.total
+            };
+            
+            // Aggiorna UI
+            addTicketToPreview(data.ticket);
+            updateSummary();
+            updateFormData();
+            
+            // Chiudi modal
+            bootstrap.Modal.getInstance(document.getElementById('createTicketModal')).hide();
+            
+            alert('Ticket creato con successo!');
+        } else {
+            alert(data.message || 'Errore nella creazione del ticket');
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        alert('Errore di rete');
+    })
+    .finally(() => {
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Crea Ticket';
+        btn.disabled = false;
+    });
+});
+</script>
+{% endblock %} 

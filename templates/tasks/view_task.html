@@ -3,389 +3,259 @@
 {% block title %}{{ task.task_number }} - Dettagli Task{% endblock %}
 
 {% block extra_css %}
-<style>
-    .task-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    .ticket-card {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        margin-bottom: 15px;
-    }
-    .ticket-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .ticket-card.completed {
-        border-color: #28a745;
-        background-color: #f8fff9;
-    }
-    .ticket-card.in-progress {
-        border-color: #ffc107;
-        background-color: #fffbf0;
-    }
-    .progress {
-        height: 8px;
-    }
-    .status-badge {
-        font-size: 0.9em;
-        padding: 5px 10px;
-        border-radius: 15px;
-    }
-    .priority-high {
-        color: #dc3545;
-    }
-    .priority-medium {
-        color: #ffc107;
-    }
-    .priority-low {
-        color: #6c757d;
-    }
-    .scan-progress-circle {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: conic-gradient(#28a745 0deg, #e9ecef 0deg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        color: white;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        font-size: 0.8em;
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Task Header -->
-    <div class="task-header">
-        <div class="row align-items-center">
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.admin_dashboard') if current_user.is_admin else url_for('tasks.user_dashboard') }}" class="text-white">Task</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">{{ task.task_number }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
             <div class="col-md-8">
-                <div class="d-flex align-items-center mb-2">
-                    <h2 class="mb-0 mr-3">{{ task.task_number }}</h2>
-                    <span class="badge badge-{{ 'success' if task.status == 'completed' else 'warning' if task.status == 'in_progress' else 'secondary' }} status-badge">
-                        {{ task.status.upper() }}
-                    </span>
-                    <span class="badge badge-outline-light ml-2 priority-{{ task.priority }}">
-                        <i class="fas fa-exclamation-triangle"></i> {{ task.priority.upper() }}
-                    </span>
-                </div>
-                <h4 class="mb-2">{{ task.title }}</h4>
-                {% if task.description %}
-                <p class="mb-0">{{ task.description }}</p>
-                {% endif %}
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-tasks me-2"></i>{{ task.task_number }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ task.title }}</span>
+                </p>
             </div>
-            <div class="col-md-4 text-right">
-                <div class="d-flex justify-content-end align-items-center">
-                    <div class="text-center mr-3">
-                        <div class="scan-progress-circle" 
-                             data-progress="{{ task.progress_percentage }}">
-                            {{ task.progress_percentage }}%
-                        </div>
-                        <small>Progresso</small>
-                    </div>
-                    <div>
-                        {% if current_user.is_admin %}
-                        <a href="{{ url_for('tasks.admin_dashboard') }}" class="btn btn-outline-light">
-                            <i class="fas fa-arrow-left"></i> Dashboard Admin
-                        </a>
-                        {% else %}
-                        <a href="{{ url_for('tasks.user_dashboard') }}" class="btn btn-outline-light">
-                            <i class="fas fa-arrow-left"></i> I Miei Task
-                        </a>
-                        {% endif %}
-                    </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('tasks.admin_dashboard') if current_user.is_admin else url_for('tasks.user_dashboard') }}" class="action-btn mb-2 mb-md-0">
+                        <i class="fas fa-arrow-left"></i> {{ 'Dashboard Admin' if current_user.is_admin else 'I Miei Task' }}
+                    </a>
+                    {% if current_user.is_admin %}
+                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
+                        <i class="fas fa-trash"></i> Elimina Task
+                    </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+</div>
 
+<div class="container-fluid">
     <!-- Task Info -->
     <div class="row mb-4">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informazioni Task</h5>
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i>Informazioni Task</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Creato da:</strong> {{ task.creator.username }}</p>
-                            <p><strong>Data creazione:</strong> {{ task.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
-                            {% if task.assignee %}
-                            <p><strong>Assegnato a:</strong> {{ task.assignee.username }}</p>
-                            <p><strong>Data assegnazione:</strong> {{ task.assigned_at.strftime('%d/%m/%Y %H:%M') if task.assigned_at else 'N/A' }}</p>
-                            {% endif %}
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Creato da</span>
+                                    <span class="task-meta-value">{{ task.creator.username }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Data creazione</span>
+                                    <span class="task-meta-value">{{ task.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                                </div>
+                                {% if task.assignee %}
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Assegnato a</span>
+                                    <span class="task-meta-value">{{ task.assignee.username }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Data assegnazione</span>
+                                    <span class="task-meta-value">{{ task.assigned_at.strftime('%d/%m/%Y %H:%M') if task.assigned_at else 'N/A' }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            {% if task.deadline %}
-                            <p><strong>Scadenza:</strong> 
-                                <span class="{% if task.deadline < now() %}text-danger{% elif (task.deadline - now()).days < 1 %}text-warning{% endif %}">
-                                    {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
-                                </span>
-                            </p>
-                            {% endif %}
-                            <p><strong>Priorità:</strong> 
-                                <span class="priority-{{ task.priority }}">{{ task.priority.upper() }}</span>
-                            </p>
-                            <p><strong>Ticket totali:</strong> {{ task.total_tickets }}</p>
-                            <p><strong>Ticket completati:</strong> {{ task.completed_tickets }}</p>
+                            <div class="task-meta">
+                                {% if task.deadline %}
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Scadenza</span>
+                                    <span class="task-meta-value {% if task.deadline < now() %}text-danger{% elif (task.deadline - now()).days < 1 %}text-warning{% endif %}">
+                                        {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Priorità</span>
+                                    <span class="task-priority-badge task-priority-{{ task.priority }}">{{ task.priority.upper() }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Stato</span>
+                                    <span class="task-status-badge task-status-{{ task.status }}">{{ task.status.replace('_', ' ').title() }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Progresso</span>
+                                    <span class="task-meta-value">{{ task.completed_tickets }}/{{ task.total_tickets }} ticket</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    {% if task.description %}
+                    <div class="mt-3">
+                        <h6>Descrizione:</h6>
+                        <p class="text-muted">{{ task.description }}</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <!-- Task Actions -->
-            {% if current_user.is_admin %}
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="fas fa-cogs"></i> Azioni Task</h6>
-                </div>
-                <div class="card-body">
-                    {% if not task.assignee %}
-                    <!-- Assegna Task -->
-                    <form method="POST" action="{{ url_for('tasks.assign_task', task_id=task.id_task) }}" class="mb-2">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <div class="form-group">
-                            <label for="user_id">Assegna a:</label>
-                            <select name="user_id" id="user_id" class="form-control form-control-sm" required>
-                                <option value="">Seleziona utente...</option>
-                                {% for user in users %}
-                                <option value="{{ user.id }}">{{ user.username }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm btn-block">
-                            <i class="fas fa-user-plus"></i> Assegna Task
-                        </button>
-                    </form>
-                    {% endif %}
-                    
-                    <!-- Elimina Task -->
-                    <button type="button" class="btn btn-danger btn-sm btn-block" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
-                        <i class="fas fa-trash"></i> Elimina Task
-                    </button>
-                </div>
-            </div>
-            {% endif %}
-            
             {% if task.is_completed and current_user.is_admin and not task.ddt_generated %}
-            <div class="card border-success">
+            <div class="card shadow-sm border-success">
                 <div class="card-header bg-success text-white">
                     <h6 class="mb-0"><i class="fas fa-check-circle"></i> Task Completato!</h6>
                 </div>
                 <div class="card-body">
                     <p class="mb-3">Tutti i ticket sono stati verificati. Procedi con la generazione del DDT.</p>
-                    <button type="button" class="btn btn-warning btn-block" data-bs-toggle="modal" data-bs-target="#ddtModal">
+                    <button type="button" class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#ddtModal">
                         <i class="fas fa-file-alt"></i> Genera DDT
                     </button>
                 </div>
             </div>
             {% elif task.ddt_generated %}
-            <div class="card border-info">
+            <div class="card shadow-sm border-info">
                 <div class="card-header bg-info text-white">
                     <h6 class="mb-0"><i class="fas fa-file-alt"></i> DDT Generato</h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-2"><strong>Cliente:</strong> {{ task.client.Nombre if task.client else 'N/A' }}</p>
-                    <p class="mb-2"><strong>DDT ID:</strong> {{ task.ddt_id }}</p>
-                    <p class="mb-3"><strong>Ticket processati:</strong> {{ task.total_tickets }} ticket inviati</p>
-                    <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" class="btn btn-info btn-block">
-                        <i class="fas fa-eye"></i> Visualizza DDT
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Cliente</span>
+                            <span class="task-meta-value">{{ task.client.Nombre if task.client else 'N/A' }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">DDT ID</span>
+                            <span class="task-meta-value">{{ task.ddt_id }}</span>
+                        </div>
+                    </div>
+                    {% if task.ddt_id %}
+                    <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" class="btn btn-info w-100 mt-2">
+                        <i class="fas fa-external-link-alt"></i> Visualizza DDT
                     </a>
-                    <small class="text-muted d-block mt-2">
-                        <i class="fas fa-info-circle"></i> Tutti i ticket sono ora in stato "INVIATO" (Enviado = 1)
-                    </small>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}
         </div>
     </div>
 
-    <!-- Tickets List -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-ticket-alt"></i> Ticket del Task ({{ task_tickets|length }})</h5>
-                </div>
-                <div class="card-body">
-                    {% if task_tickets %}
-                    {% for task_ticket in task_tickets %}
-                    <div class="ticket-card {{ 'completed' if task_ticket.status == 'completed' else 'in-progress' if task_ticket.status == 'in_progress' else '' }}">
-                        <div class="card-header">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <h6 class="mb-0">
-                                        <i class="fas fa-ticket-alt text-primary"></i>
-                                        Ticket #{{ task_ticket.ticket.NumTicket }}
-                                        <span class="badge badge-{{ 'success' if task_ticket.status == 'completed' else 'warning' if task_ticket.status == 'in_progress' else 'secondary' }} ml-2">
-                                            {{ task_ticket.status.upper() }}
-                                        </span>
-                                        <!-- Enviado Status Indicator -->
-                                        {% if task_ticket.ticket.Enviado == 1 %}
-                                        <span class="badge badge-info ml-1" title="Ticket processato e inviato via DDT">
-                                            <i class="fas fa-shipping-fast"></i> INVIATO
-                                        </span>
-                                        {% elif task_ticket.ticket.Enviado == 10 %}
-                                        <span class="badge badge-primary ml-1" title="Ticket verificato nel task">
-                                            <i class="fas fa-check"></i> VERIFICATO
-                                        </span>
-                                        {% elif task_ticket.ticket.Enviado == 0 %}
-                                        <span class="badge badge-secondary ml-1" title="Ticket in attesa">
-                                            <i class="fas fa-clock"></i> ATTESA
-                                        </span>
-                                        {% endif %}
-                                    </h6>
-                                </div>
-                                <div class="col-md-6 text-right">
-                                    <span class="text-muted">ID: {{ task_ticket.ticket.IdTicket }}</span>
-                                    {% if current_user.is_admin %}
-                                    <button type="button" class="btn btn-outline-danger btn-sm ml-2 remove-ticket-btn" 
-                                            data-task-ticket-id="{{ task_ticket.id }}"
-                                            data-ticket-number="{{ task_ticket.ticket.NumTicket }}"
-                                            title="Rimuovi ticket dal task">
-                                        <i class="fas fa-unlink"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <p class="mb-1"><strong>Data Ticket:</strong> {{ task_ticket.ticket.formatted_date }}</p>
-                                            <p class="mb-1"><strong>Prodotti:</strong> {{ task_ticket.total_items }} items</p>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <p class="mb-1"><strong>Scansionati:</strong> {{ task_ticket.scanned_items }}/{{ task_ticket.total_items }}</p>
-                                            {% if task_ticket.completed_at %}
-                                            <p class="mb-1"><strong>Completato:</strong> {{ task_ticket.completed_at.strftime('%d/%m/%Y %H:%M') }}</p>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Progress Bar -->
-                                    <div class="mt-2">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <small>Progresso Scansione</small>
-                                            <small>{{ task_ticket.scan_progress_percentage }}%</small>
-                                        </div>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-info" 
-                                                 data-progress="{{ task_ticket.scan_progress_percentage }}"
-                                                 data-width="{{ task_ticket.scan_progress_percentage }}"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 text-center">
-                                    {% if task_ticket.status == 'completed' %}
-                                    <div class="mb-2">
-                                        <i class="fas fa-check-circle fa-3x text-success"></i>
-                                        <p class="mb-0 text-success font-weight-bold">Completato</p>
-                                    </div>
-                                    {% elif not current_user.is_admin and task.assigned_to == current_user.id %}
-                                    <div class="mb-2">
-                                        <a href="{{ url_for('tasks.scan_ticket', task_ticket_id=task_ticket.id) }}" 
-                                           class="btn btn-success btn-lg">
-                                            <i class="fas fa-qrcode"></i><br>
-                                            <small>Inizia Scansione</small>
-                                        </a>
-                                    </div>
-                                    {% else %}
-                                    <div class="mb-2">
-                                        <i class="fas fa-clock fa-3x text-muted"></i>
-                                        <p class="mb-0 text-muted">In attesa</p>
-                                    </div>
-                                    {% endif %}
-                                    
-                                    {% if task_ticket.notes %}
-                                    <div class="alert alert-info py-1 mt-2">
-                                        <small><strong>Note:</strong> {{ task_ticket.notes }}</small>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Nessun ticket assegnato</h5>
-                        <p class="text-muted">Questo task non ha ticket assegnati.</p>
-                    </div>
-                    {% endif %}
-                </div>
+    <!-- Task Tickets -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-ticket-alt me-2 text-primary"></i>Ticket del Task ({{ task.total_tickets }})
+            </h5>
+            <div class="d-flex align-items-center gap-3">
+                <small class="text-muted">{{ task.completed_tickets }} completati</small>
+                {% if not current_user.is_admin and task.status != 'completed' and task.task_tickets and task.task_tickets.first() %}
+                <a href="{{ url_for('tasks.scan_ticket', task_ticket_id=task.task_tickets.first().id) }}" 
+                   class="btn btn-primary">
+                    <i class="fas fa-qrcode"></i> Scansiona
+                </a>
+                {% endif %}
             </div>
         </div>
-    </div>
-</div>
+        <div class="card-body">
+            {% if task_tickets %}
+            <div class="row">
+                {% for task_ticket in task_tickets %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="ticket-card {% if task_ticket.status == 'completed' %}completed{% elif task_ticket.status == 'in_progress' %}in-progress{% endif %}">
+                        <div class="ticket-header">
+                            <h6 class="mb-0">Ticket #{{ task_ticket.ticket.NumTicket }}</h6>
+                            <span class="task-status-badge task-status-{{ task_ticket.status }}">
+                                {{ task_ticket.status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+                        
+                        <div class="ticket-info">
+                            <div class="ticket-info-item">
+                                <div class="ticket-info-label">Data</div>
+                                <div class="ticket-info-value">
+                                    {{ task_ticket.ticket.Fecha.strftime('%d/%m/%Y') if task_ticket.ticket.Fecha else 'N/A' }}
+                                </div>
+                            </div>
+                            <div class="ticket-info-item">
+                                <div class="ticket-info-label">Linee</div>
+                                <div class="ticket-info-value">{{ task_ticket.ticket.NumLineas }}</div>
+                            </div>
+                            <div class="ticket-info-item">
+                                <div class="ticket-info-label">Scansionate</div>
+                                <div class="ticket-info-value">{{ task_ticket.scanned_items }}/{{ task_ticket.ticket.NumLineas }}</div>
+                            </div>
+                        </div>
 
-<!-- DDT Generation Modal -->
-{% if task.is_completed and current_user.is_admin and not task.ddt_generated %}
-<div class="modal fade" id="ddtModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Genera DDT per Task: {{ task.task_number }}</h5>
-                <button type="button" class="close" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                        <!-- Progress -->
+                        <div class="task-progress mt-2">
+                            <div class="task-progress-label">
+                                <span>Progresso</span>
+                                <span>{{ task_ticket.scan_progress_percentage }}%</span>
+                            </div>
+                            <div class="task-progress-bar">
+                                <div class="task-progress-fill {% if task_ticket.scan_progress_percentage < 100 %}warning{% endif %}" 
+                                     style="width: {{ task_ticket.scan_progress_percentage }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 d-flex gap-2">
+                            {% if not current_user.is_admin %}
+                            <!-- Removed individual scan buttons -->
+                            {% else %}
+                            {% if task_ticket.id %}
+                            <a href="{{ url_for('warehouse.ticket_detail', ticket_id=task_ticket.ticket_id) }}" 
+                               class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Dettaglio Ticket
+                            </a>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('tasks.remove_ticket_from_task') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="task_id" value="{{ task.id_task }}">
+                                <input type="hidden" name="task_ticket_id" value="{{ task_ticket.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                        onclick="return confirm('Sei sicuro di voler rimuovere questo ticket dal task?')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
-            <form method="POST" action="{{ url_for('tasks.complete_task', task_id=task.id_task) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-body">
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i>
-                        Task completato! Tutti i prodotti sono stati verificati.
-                    </div>
-                    <div class="form-group">
-                        <label>Seleziona Cliente per DDT:</label>
-                        <select name="client_id" class="form-control" required>
-                            <option value="">-- Seleziona Cliente --</option>
-                            {% for client in clients %}
-                            <option value="{{ client.IdCliente }}">
-                                {{ client.Nombre }} - {{ client.Direccion }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-file-alt"></i> Genera DDT
-                    </button>
-                </div>
-            </form>
+            {% else %}
+            <div class="task-empty-state">
+                <i class="fas fa-ticket-alt"></i>
+                <h5>Nessun ticket associato</h5>
+                <p>Non ci sono ticket associati a questo task.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-{% endif %}
 
 <!-- Delete Task Modal -->
 {% if current_user.is_admin %}
-<div class="modal fade" id="deleteTaskModal" tabindex="-1">
+<div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="deleteTaskModalLabel">
                     <i class="fas fa-exclamation-triangle"></i> Elimina Task: {{ task.task_number }}
                 </h5>
-                <button type="button" class="close text-white" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id_task) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -395,16 +265,33 @@
                         <strong>Attenzione!</strong> Questa azione è irreversibile.
                     </div>
                     <p><strong>Stai per eliminare il task:</strong></p>
-                    <ul>
-                        <li><strong>Numero:</strong> {{ task.task_number }}</li>
-                        <li><strong>Titolo:</strong> {{ task.title }}</li>
-                        <li><strong>Ticket associati:</strong> {{ task.total_tickets }}</li>
-                        <li><strong>Status:</strong> {{ task.status }}</li>
-                    </ul>
-                    <p>Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code>.</p>
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Numero</span>
+                            <span class="task-meta-value">{{ task.task_number }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Titolo</span>
+                            <span class="task-meta-value">{{ task.title }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Ticket associati</span>
+                            <span class="task-meta-value">{{ task.total_tickets }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Status</span>
+                            <span class="task-status-badge task-status-{{ task.status }}">{{ task.status }}</span>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-undo"></i>
+                        Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code> e saranno nuovamente disponibili per l'assegnazione.
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annulla
+                    </button>
                     <button type="submit" class="btn btn-danger">
                         <i class="fas fa-trash"></i> Elimina Task
                     </button>
@@ -413,34 +300,46 @@
         </div>
     </div>
 </div>
+{% endif %}
 
-<!-- Remove Ticket Modal -->
-<div class="modal fade" id="removeTicketModal" tabindex="-1">
+<!-- DDT Generation Modal -->
+{% if task.is_completed and current_user.is_admin and not task.ddt_generated %}
+<div class="modal fade" id="ddtModal" tabindex="-1" aria-labelledby="ddtModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title">
-                    <i class="fas fa-unlink"></i> Rimuovi Ticket dal Task
+                <h5 class="modal-title" id="ddtModalLabel">
+                    <i class="fas fa-file-alt"></i> Genera DDT per Task: {{ task.task_number }}
                 </h5>
-                <button type="button" class="close text-dark" data-bs-dismiss="modal">
-                    <span>&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="{{ url_for('tasks.remove_ticket_from_task') }}" id="removeTicketForm">
+            <form method="POST" action="{{ url_for('tasks.complete_task', task_id=task.id_task) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="task_id" value="{{ task.id_task }}">
-                <input type="hidden" name="task_ticket_id" id="ticketToRemove">
                 <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Il ticket sarà rimosso dal task e tornerà allo stato <code>Enviado = 0</code>.
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Task completato!</strong> Tutti i prodotti sono stati verificati.
                     </div>
-                    <p>Vuoi rimuovere il ticket <strong id="ticketNumberToRemove"></strong> dal task?</p>
+                    <div class="mb-3">
+                        <label for="client_id" class="form-label">Seleziona Cliente per DDT:</label>
+                        <select name="client_id" id="client_id" class="form-select" required>
+                            <option value="">-- Seleziona Cliente --</option>
+                            {% for client in clients %}
+                            <option value="{{ client.IdCliente }}">
+                                {{ client.Nombre }} - {{ client.Direccion }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Verrà generato un Documento di Trasporto con tutti i prodotti verificati del task.
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="submit" class="btn btn-warning">
-                        <i class="fas fa-unlink"></i> Rimuovi Ticket
+                        <i class="fas fa-file-alt"></i> Genera DDT
                     </button>
                 </div>
             </form>
@@ -448,56 +347,4 @@
     </div>
 </div>
 {% endif %}
-
-<script>
-$(document).ready(function() {
-    // Auto refresh every 30 seconds
-    setInterval(function() {
-        if (!$('.modal').hasClass('show')) {
-            location.reload();
-        }
-    }, 30000);
-    
-    // Add tooltips using Bootstrap 5
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Set up progress circles and bars
-    $('.scan-progress-circle[data-progress]').each(function() {
-        const progress = parseInt($(this).data('progress'));
-        const degrees = progress * 3.6;
-        $(this).css('background', `conic-gradient(#28a745 ${degrees}deg, #e9ecef ${degrees}deg)`);
-    });
-    
-    $('.progress-bar[data-progress]').each(function() {
-        const progress = parseInt($(this).data('progress'));
-        const width = $(this).data('width');
-        
-        // Set width
-        $(this).css('width', width + '%');
-        
-        // Set color based on progress
-        if (progress === 100) {
-            $(this).removeClass('bg-info').addClass('bg-success');
-        }
-    });
-    
-    // Handle remove ticket button clicks
-    $(document).on('click', '.remove-ticket-btn', function() {
-        const taskTicketId = $(this).data('task-ticket-id');
-        const ticketNumber = $(this).data('ticket-number');
-        removeTicket(taskTicketId, ticketNumber);
-    });
-});
-
-// Function to remove ticket from task
-function removeTicket(taskTicketId, ticketNumber) {
-    $('#ticketToRemove').val(taskTicketId);
-    $('#ticketNumberToRemove').text(ticketNumber);
-    var removeModal = new bootstrap.Modal(document.getElementById('removeTicketModal'));
-    removeModal.show();
-}
-</script>
 {% endblock %} 

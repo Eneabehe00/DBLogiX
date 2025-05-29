@@ -2,51 +2,216 @@
 
 {% block title %}Notifiche Task{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2><i class="fas fa-bell"></i> Notifiche Task</h2>
-                <a href="{{ url_for('tasks.index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Torna ai Task
-                </a>
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.user_dashboard') }}" class="text-white">I Miei Task</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Notifiche</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-bell me-2"></i>Notifiche Task
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Gestisci le tue notifiche relative ai task</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <button type="button" class="action-btn mb-2 mb-md-0" onclick="TasksJS.markAllAsRead()">
+                        <i class="fas fa-check-double"></i> Segna tutto come letto
+                    </button>
+                    <a href="{{ url_for('tasks.user_dashboard') }}" class="action-btn">
+                        <i class="fas fa-arrow-left"></i> Torna ai Task
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-list"></i> Tutte le Notifiche</h5>
-                </div>
-                <div class="card-body">
-                    {% if notifications %}
-                    {% for notification in notifications %}
-                    <div class="alert alert-{{ 'success' if notification.notification_type == 'task_completed' else 'info' if notification.notification_type == 'task_assigned' else 'warning' }} 
-                              {% if not notification.is_read %}alert-dismissible fade show{% else %}border-left{% endif %}" role="alert">
-                        <h6 class="alert-heading">{{ notification.title }}</h6>
-                        <p class="mb-1">{{ notification.message }}</p>
-                        <hr>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <small class="mb-0">{{ notification.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
-                            {% if not notification.is_read %}
-                            <button type="button" class="btn btn-sm btn-outline-secondary" 
-                                    onclick="markAsRead({{ notification.id }})">
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Notifiche</h5>
+        </div>
+        <div class="card-body">
+            <!-- Tabs for day filtering -->
+            <ul class="nav nav-tabs mb-4" id="notificationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="today-tab" data-bs-toggle="tab" data-bs-target="#today" type="button" role="tab" aria-controls="today" aria-selected="true">
+                        <i class="fas fa-calendar-day"></i> Oggi
+                        <span class="badge bg-primary ms-1" id="today-count">{{ today_notifications|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="yesterday-tab" data-bs-toggle="tab" data-bs-target="#yesterday" type="button" role="tab" aria-controls="yesterday" aria-selected="false">
+                        <i class="fas fa-calendar-minus"></i> Ieri
+                        <span class="badge bg-secondary ms-1" id="yesterday-count">{{ yesterday_notifications|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="day-before-tab" data-bs-toggle="tab" data-bs-target="#day-before" type="button" role="tab" aria-controls="day-before" aria-selected="false">
+                        <i class="fas fa-calendar-alt"></i> L'altro ieri
+                        <span class="badge bg-secondary ms-1" id="day-before-count">{{ day_before_notifications|length }}</span>
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab content -->
+            <div class="tab-content" id="notificationTabContent">
+                <!-- Today notifications -->
+                <div class="tab-pane fade show active" id="today" role="tabpanel" aria-labelledby="today-tab">
+                    {% if today_notifications %}
+                    {% for notification in today_notifications %}
+                    <div class="notification-item {% if not notification.is_read %}unread{% endif %}" 
+                         onclick="TasksJS.handleNotificationClick({{ notification.id }}, {{ notification.task_id }})">
+                        <div class="notification-header">
+                            <h6 class="notification-title">
+                                {% if notification.notification_type == 'task_assigned' %}
+                                <i class="fas fa-user-plus text-info"></i>
+                                {% elif notification.notification_type == 'task_completed' %}
+                                <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle text-primary"></i>
+                                {% endif %}
+                                {{ notification.title }}
+                            </h6>
+                            <div class="notification-meta">
+                                <small class="text-muted">{{ notification.created_at.strftime('%H:%M') }}</small>
+                                {% if not notification.is_read %}
+                                <span class="badge bg-primary ms-2">Nuovo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="notification-body">
+                            <p class="mb-0">{{ notification.message }}</p>
+                        </div>
+                        {% if not notification.is_read %}
+                        <div class="notification-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); TasksJS.markAsRead({{ notification.id }})">
                                 <i class="fas fa-check"></i> Segna come letto
                             </button>
-                            {% else %}
-                            <small class="text-muted"><i class="fas fa-check-circle"></i> Letto</small>
-                            {% endif %}
                         </div>
+                        {% endif %}
                     </div>
                     {% endfor %}
                     {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Nessuna notifica</h5>
-                        <p class="text-muted">Non hai notifiche relative ai task.</p>
+                    <div class="task-empty-state">
+                        <i class="fas fa-calendar-day"></i>
+                        <h5>Nessuna notifica oggi</h5>
+                        <p>Non hai ricevuto notifiche oggi.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Yesterday notifications -->
+                <div class="tab-pane fade" id="yesterday" role="tabpanel" aria-labelledby="yesterday-tab">
+                    {% if yesterday_notifications %}
+                    {% for notification in yesterday_notifications %}
+                    {% if not notification.is_read or notification.is_read %}
+                    <div class="notification-item {% if not notification.is_read %}unread{% endif %}" 
+                         onclick="TasksJS.handleNotificationClick({{ notification.id }}, {{ notification.task_id }})">
+                        <div class="notification-header">
+                            <h6 class="notification-title">
+                                {% if notification.notification_type == 'task_assigned' %}
+                                <i class="fas fa-user-plus text-info"></i>
+                                {% elif notification.notification_type == 'task_completed' %}
+                                <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle text-primary"></i>
+                                {% endif %}
+                                {{ notification.title }}
+                            </h6>
+                            <div class="notification-meta">
+                                <small class="text-muted">{{ notification.created_at.strftime('%H:%M') }}</small>
+                                {% if not notification.is_read %}
+                                <span class="badge bg-primary ms-2">Nuovo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="notification-body">
+                            <p class="mb-0">{{ notification.message }}</p>
+                        </div>
+                        {% if not notification.is_read %}
+                        <div class="notification-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); TasksJS.markAsRead({{ notification.id }})">
+                                <i class="fas fa-check"></i> Segna come letto
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    <div class="task-empty-state">
+                        <i class="fas fa-calendar-minus"></i>
+                        <h5>Nessuna notifica ieri</h5>
+                        <p>Non hai ricevuto notifiche ieri.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Day before yesterday notifications -->
+                <div class="tab-pane fade" id="day-before" role="tabpanel" aria-labelledby="day-before-tab">
+                    {% if day_before_notifications %}
+                    {% for notification in day_before_notifications %}
+                    {% if not notification.is_read or notification.is_read %}
+                    <div class="notification-item {% if not notification.is_read %}unread{% endif %}" 
+                         onclick="TasksJS.handleNotificationClick({{ notification.id }}, {{ notification.task_id }})">
+                        <div class="notification-header">
+                            <h6 class="notification-title">
+                                {% if notification.notification_type == 'task_assigned' %}
+                                <i class="fas fa-user-plus text-info"></i>
+                                {% elif notification.notification_type == 'task_completed' %}
+                                <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle text-primary"></i>
+                                {% endif %}
+                                {{ notification.title }}
+                            </h6>
+                            <div class="notification-meta">
+                                <small class="text-muted">{{ notification.created_at.strftime('%H:%M') }}</small>
+                                {% if not notification.is_read %}
+                                <span class="badge bg-primary ms-2">Nuovo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="notification-body">
+                            <p class="mb-0">{{ notification.message }}</p>
+                        </div>
+                        {% if not notification.is_read %}
+                        <div class="notification-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                    onclick="event.stopPropagation(); TasksJS.markAsRead({{ notification.id }})">
+                                <i class="fas fa-check"></i> Segna come letto
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    {% else %}
+                    <div class="task-empty-state">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h5>Nessuna notifica l'altro ieri</h5>
+                        <p>Non hai ricevuto notifiche l'altro ieri.</p>
                     </div>
                     {% endif %}
                 </div>
@@ -54,18 +219,4 @@
         </div>
     </div>
 </div>
-
-<script>
-function markAsRead(notificationId) {
-    $.ajax({
-        url: `/tasks/notifications/${notificationId}/read`,
-        method: 'POST',
-        success: function(response) {
-            if (response.success) {
-                location.reload();
-            }
-        }
-    });
-}
-</script>
 {% endblock %} 

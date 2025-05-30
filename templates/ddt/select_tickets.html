@@ -3,6 +3,350 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+<style>
+    .ticket-selector-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    
+    .client-info-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        color: white;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .client-info-card {
+        background: rgba(255,255,255,0.1);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    .search-filters-section {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: 1px solid #e9ecef;
+    }
+    
+    .filter-input {
+        border: 2px solid #e9ecef;
+        border-radius: 50px;
+        padding: 0.8rem 1.5rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+    
+    .tickets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .ticket-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .ticket-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        border-color: #667eea;
+    }
+    
+    .ticket-card.selected {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    }
+    
+    .ticket-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .ticket-id {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+    }
+    
+    .ticket-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-giacenza {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-processato {
+        background: #d1e7dd;
+        color: #0f5132;
+    }
+    
+    .ticket-date {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .ticket-summary {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .summary-item:last-child {
+        margin-bottom: 0;
+        font-weight: 600;
+        border-top: 1px solid #dee2e6;
+        padding-top: 0.5rem;
+    }
+    
+    .summary-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .summary-value {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .products-preview {
+        margin-bottom: 1rem;
+    }
+    
+    .product-preview-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 0.85rem;
+    }
+    
+    .product-preview-item:last-child {
+        border-bottom: none;
+    }
+    
+    .product-name {
+        color: #495057;
+        flex: 1;
+        margin-right: 1rem;
+    }
+    
+    .product-details {
+        color: #6c757d;
+        font-size: 0.8rem;
+    }
+    
+    .ticket-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .view-details-btn {
+        background: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+    }
+    
+    .view-details-btn:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+    }
+    
+    .ticket-checkbox {
+        width: 20px;
+        height: 20px;
+        accent-color: #28a745;
+    }
+    
+    .selected-indicator {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: #28a745;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.3s ease;
+    }
+    
+    .ticket-card.selected .selected-indicator {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    .selection-summary {
+        position: sticky;
+        bottom: 2rem;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+        margin-top: 2rem;
+        border: 2px solid #e9ecef;
+    }
+    
+    .selection-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .selection-stats {
+        color: #6c757d;
+    }
+    
+    .selection-total {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #28a745;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+    
+    .btn-modern {
+        padding: 0.8rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        min-width: 150px;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-preview {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .btn-preview:disabled {
+        background: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    .no-tickets-message {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+        font-size: 1.1rem;
+    }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .filter-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+    
+    .filter-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .tickets-count {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+    }
+    
+    .select-all-section {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .select-all-checkbox {
+        width: 20px;
+        height: 20px;
+        accent-color: #667eea;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -21,7 +365,7 @@
                     <i class="fas fa-file-invoice me-2"></i>Crea Nuovo DDT
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
-                    <span class="text-white-50">Fase 2: Selezione Ticket per {{ cliente_nombre }}</span>
+                    <span class="text-white-50">Fase 2: Selezione Ticket</span>
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -33,7 +377,102 @@
     </div>
 </div>
 
-<div class="container-fluid">
+<div class="container-fluid ticket-selector-container">
+    <!-- Client Info Section -->
+    <div class="client-info-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3 class="mb-3">
+                    <i class="fas fa-user me-2"></i>Cliente Selezionato
+                </h3>
+                <div class="client-info-card">
+                    <h4 class="mb-2">{{ cliente.Nombre }}</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><i class="fas fa-map-marker-alt me-2"></i>{{ cliente.Direccion or 'Indirizzo non disponibile' }}</p>
+                            <p class="mb-1"><i class="fas fa-city me-2"></i>{{ cliente.Poblacion or 'Città non disponibile' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><i class="fas fa-id-card me-2"></i>{{ cliente.DNI or 'P.IVA/CF non disponibile' }}</p>
+                            <p class="mb-1"><i class="fas fa-phone me-2"></i>{{ cliente.Telefono1 or 'Telefono non disponibile' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="fas fa-ticket-alt" style="font-size: 4rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filters Section -->
+    <div class="search-filters-section">
+        <h5 class="mb-3">
+            <i class="fas fa-filter me-2"></i>Ricerca e Filtri
+        </h5>
+        <div class="filter-controls">
+            <div class="filter-group">
+                <label class="filter-label">Ricerca per ID o prodotti</label>
+                <input type="text" id="searchInput" class="form-control filter-input" placeholder="Cerca per ID ticket, numero o nome prodotto...">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Data dal</label>
+                <input type="date" id="dateFromInput" class="form-control filter-input">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Data al</label>
+                <input type="date" id="dateToInput" class="form-control filter-input">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Importo minimo</label>
+                <input type="number" id="amountMinInput" class="form-control filter-input" placeholder="€ 0.00" step="0.01">
+            </div>
+        </div>
+        <div class="tickets-count mt-2">
+            <span id="ticketsCount">Caricamento ticket...</span>
+        </div>
+    </div>
+
+    <!-- Select All Section -->
+    <div class="select-all-section d-none" id="selectAllSection">
+        <div class="d-flex align-items-center">
+            <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox me-3">
+            <label for="selectAllCheckbox" class="mb-0 font-weight-bold">Seleziona tutti i ticket visibili</label>
+        </div>
+        <small class="text-muted">Seleziona/deseleziona tutti i ticket mostrati nella ricerca corrente</small>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Caricamento...</span>
+        </div>
+        <p class="mt-2">Caricamento ticket in corso...</p>
+    </div>
+
+    <!-- Tickets Grid -->
+    <div class="tickets-grid" id="ticketsGrid">
+        <!-- I ticket verranno caricati qui tramite JavaScript -->
+    </div>
+
+    <!-- No Results Message -->
+    <div class="no-tickets-message d-none" id="noTicketsMessage">
+        <i class="fas fa-search fa-3x mb-3" style="opacity: 0.3;"></i>
+        <p>Nessun ticket trovato con i criteri di ricerca specificati.</p>
+        <small>Prova a modificare i filtri di ricerca o contatta l'amministratore se i ticket non sono presenti nel sistema.</small>
+    </div>
+
+    <!-- Selection Summary -->
+    <div class="selection-summary d-none" id="selectionSummary">
+        <div class="selection-info">
+            <div class="selection-stats">
+                <span id="selectedCount">0</span> ticket selezionati
+            </div>
+            <div class="selection-total">
+                Totale: €<span id="selectedTotal">0.00</span>
+            </div>
+        </div>
+        
     <form id="createDDTForm" method="POST" action="{{ url_for('ddt.preview') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
@@ -41,94 +480,35 @@
         <input type="hidden" id="selectedTickets" name="selected_tickets" value="">
         <input type="hidden" name="id_empresa" value="{{ id_empresa }}">
         
-        <div class="form-card">
-            <div class="form-card-header d-flex justify-content-between align-items-center">
-                <h5 class="form-card-title">
-                    <i class="fas fa-ticket-alt me-2"></i>Seleziona Ticket per <strong>{{ cliente.Nombre }}</strong>
-                </h5>
-                <button type="button" id="btnCreaDDT" class="btn btn-success" disabled>
-                    <i class="fas fa-eye"></i> Anteprima DDT
-                </button>
-            </div>
-            <div class="form-card-body">
-                <div id="statusMessage" class="alert alert-info mb-3">
-                    <span id="statusContent">Seleziona almeno un ticket per vedere l'anteprima del DDT.</span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th style="width: 50px;">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="checkSelectAll">
-                                    </div>
-                                </th>
-                                <th>ID Ticket</th>
-                                <th>Data</th>
-                                <th>N. Linee</th>
-                                <th>Dettagli</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if tickets %}
-                                {% for ticket in tickets %}
-                                <tr>
-                                    <td>
-                                        <div class="form-check">
-                                            <input class="form-check-input ticket-checkbox" type="checkbox" 
-                                                data-ticket="{{ ticket.IdTicket }}"
-                                                data-empresa="{{ ticket.IdEmpresa }}"
-                                                data-tienda="{{ ticket.IdTienda }}"
-                                                data-balanza-maestra="{{ ticket.IdBalanzaMaestra }}"
-                                                data-balanza-esclava="{{ ticket.IdBalanzaEsclava }}"
-                                                data-tipo-venta="{{ ticket.TipoVenta }}">
-                                        </div>
-                                    </td>
-                                    <td>{{ ticket.IdTicket }}</td>
-                                    <td>{{ ticket.Fecha|date }}</td>
-                                    <td>{{ ticket.NumLineas }}</td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-info view-ticket-btn" data-ticket-id="{{ ticket.IdTicket }}">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="5" class="text-center">Nessun ticket disponibile per questo cliente</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="form-card-footer">
-                <a href="{{ url_for('ddt.new') }}" class="btn form-btn form-btn-cancel">
-                    <i class="fas fa-times"></i> Annulla
+            <div class="action-buttons">
+                <a href="{{ url_for('ddt.new') }}" class="btn btn-modern btn-cancel">
+                    <i class="fas fa-times me-2"></i>Annulla
                 </a>
-                <button type="submit" class="btn form-btn form-btn-save" id="submitDDT" disabled>
-                    <i class="fas fa-eye"></i> Anteprima DDT
+                <button type="submit" class="btn btn-modern btn-preview" id="previewBtn" disabled>
+                    <i class="fas fa-eye me-2"></i>Anteprima DDT
                 </button>
             </div>
+        </form>
         </div>
-    </form>
 </div>
 
-<!-- Modal per visualizzare i dettagli del ticket -->
+<!-- Modal for ticket details -->
 <div class="modal fade" id="ticketDetailsModal" tabindex="-1" aria-labelledby="ticketDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="ticketDetailsModalLabel">Dettagli Ticket</h5>
+                <h5 class="modal-title" id="ticketDetailsModalLabel">
+                    <i class="fas fa-ticket-alt me-2"></i>Dettagli Ticket
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="ticketDetailsContent">
+                <div class="text-center">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Caricamento...</span>
+                    </div>
+                    <p class="mt-2">Caricamento dettagli ticket...</p>
                 </div>
-                <p class="text-center">Caricamento dettagli ticket...</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
@@ -141,230 +521,388 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Elementi DOM
-        const $checkSelectAll = $('#checkSelectAll');
-        const $ticketCheckboxes = $('.ticket-checkbox');
-        const $btnCreaDDT = $('#btnCreaDDT');
-        const $submitDDT = $('#submitDDT');
-        const $hiddenSelectedTickets = $('#selectedTickets');
-        const $statusContent = $('#statusContent');
-        const $statusMessage = $('#statusMessage');
-        const $createDDTForm = $('#createDDTForm');
+    let allTickets = [];
+    let filteredTickets = [];
+    let selectedTickets = new Set();
+    
+    const ticketsGrid = document.getElementById('ticketsGrid');
+    const searchInput = document.getElementById('searchInput');
+    const dateFromInput = document.getElementById('dateFromInput');
+    const dateToInput = document.getElementById('dateToInput');
+    const amountMinInput = document.getElementById('amountMinInput');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const noTicketsMessage = document.getElementById('noTicketsMessage');
+    const ticketsCount = document.getElementById('ticketsCount');
+    const selectAllSection = document.getElementById('selectAllSection');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const selectionSummary = document.getElementById('selectionSummary');
+    const selectedCount = document.getElementById('selectedCount');
+    const selectedTotal = document.getElementById('selectedTotal');
+    const previewBtn = document.getElementById('previewBtn');
+    
+    // Load all tickets on page load
+    loadAllTickets();
+    
+    function loadAllTickets() {
+        loadingSpinner.style.display = 'block';
+        ticketsGrid.style.display = 'none';
         
-        // Funzione per aggiornare lo stato del pulsante "Anteprima DDT"
-        function updateCreaDDTButton() {
-            const checkedCount = $('.ticket-checkbox:checked').length;
-            const isEnabled = checkedCount > 0;
-            
-            $btnCreaDDT.prop('disabled', !isEnabled);
-            $submitDDT.prop('disabled', !isEnabled);
-            
-            if (checkedCount === 0) {
-                showStatus('Seleziona almeno un ticket per vedere l\'anteprima del DDT.', 'info');
-            } else {
-                showStatus(`${checkedCount} ticket selezionati.`, 'success');
-            }
+        fetch('{{ url_for("ddt.get_all_tickets") }}')
+            .then(response => response.json())
+            .then(data => {
+                allTickets = data;
+                filteredTickets = [...allTickets];
+                displayTickets(filteredTickets);
+                updateTicketsCount(filteredTickets.length, allTickets.length);
+                loadingSpinner.style.display = 'none';
+                ticketsGrid.style.display = 'grid';
+                selectAllSection.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento dei ticket:', error);
+                loadingSpinner.style.display = 'none';
+                showNoTicketsMessage();
+            });
+    }
+    
+    function displayTickets(tickets) {
+        ticketsGrid.innerHTML = '';
+        
+        if (tickets.length === 0) {
+            showNoTicketsMessage();
+            return;
         }
         
-        // Funzione per mostrare messaggi di stato
-        function showStatus(message, type = 'info') {
-            $statusContent.text(message);
-            $statusMessage.removeClass('alert-info alert-success alert-warning alert-danger');
-            $statusMessage.addClass(`alert-${type}`);
+        hideNoTicketsMessage();
+        
+        tickets.forEach(ticket => {
+            const ticketCard = createTicketCard(ticket);
+            ticketsGrid.appendChild(ticketCard);
+        });
+        
+        updateSelectionSummary();
+    }
+    
+    function createTicketCard(ticket) {
+        const card = document.createElement('div');
+        card.className = 'ticket-card';
+        card.dataset.ticketId = ticket.id_ticket;
+        
+        const isSelected = selectedTickets.has(ticket.id_ticket);
+        if (isSelected) {
+            card.classList.add('selected');
         }
         
-        // Seleziona/Deseleziona tutti
-        $checkSelectAll.on('change', function() {
-            const isChecked = $(this).prop('checked');
-            console.log('Seleziona tutti:', isChecked);
+        // Format products preview
+        let productsPreviewHtml = '';
+        if (ticket.products_preview && ticket.products_preview.length > 0) {
+            productsPreviewHtml = ticket.products_preview.map(product => `
+                <div class="product-preview-item">
+                    <span class="product-name">${product.descripcion}</span>
+                    <span class="product-details">${product.peso}${product.comportamiento === 0 ? ' un' : ' kg'} × €${product.precio.toFixed(2)}</span>
+                </div>
+            `).join('');
             
-            $ticketCheckboxes.prop('checked', isChecked).trigger('change');
-            updateCreaDDTButton();
-        });
+            if (ticket.total_items > ticket.products_preview.length) {
+                productsPreviewHtml += `
+                    <div class="product-preview-item" style="font-style: italic; color: #6c757d;">
+                        <span>... e altri ${ticket.total_items - ticket.products_preview.length} prodotti</span>
+                    </div>
+                `;
+            }
+        } else {
+            productsPreviewHtml = '<div class="text-muted text-center">Nessun prodotto disponibile</div>';
+        }
         
-        // Gestione click sui singoli checkbox
-        $ticketCheckboxes.on('change', function() {
-            // Aggiorna lo stato "Seleziona tutti" in base allo stato corrente
-            const allChecked = $('.ticket-checkbox:checked').length === $ticketCheckboxes.length;
-            $checkSelectAll.prop('checked', allChecked && $ticketCheckboxes.length > 0);
+        card.innerHTML = `
+            <div class="selected-indicator">
+                <i class="fas fa-check"></i>
+            </div>
             
-            // Aggiorna UI
-            updateCreaDDTButton();
-        });
+            <div class="ticket-header">
+                <div class="ticket-id">Ticket #${ticket.num_ticket || ticket.id_ticket}</div>
+                <div class="ticket-status status-${ticket.status_class}">${ticket.status}</div>
+            </div>
+            
+            <div class="ticket-date">
+                <i class="fas fa-calendar me-1"></i>${ticket.fecha}
+            </div>
+            
+            <div class="ticket-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Articoli:</span>
+                    <span class="summary-value">${ticket.total_items}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Peso totale:</span>
+                    <span class="summary-value">${ticket.total_weight.toFixed(3)} kg</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Totale:</span>
+                    <span class="summary-value">€${ticket.total_amount.toFixed(2)}</span>
+                </div>
+            </div>
+            
+            <div class="products-preview">
+                <strong style="font-size: 0.9rem; color: #495057;">Anteprima prodotti:</strong>
+                <div style="margin-top: 0.5rem;">
+                    ${productsPreviewHtml}
+                </div>
+            </div>
+            
+            <div class="ticket-actions">
+                <input type="checkbox" class="ticket-checkbox" ${isSelected ? 'checked' : ''}>
+                <button type="button" class="view-details-btn" onclick="viewTicketDetails(${ticket.id_ticket}, ${ticket.id_empresa})">
+                    <i class="fas fa-eye me-1"></i>Dettagli
+                </button>
+            </div>
+        `;
         
-        // Gestione pulsante "Anteprima DDT"
-        $btnCreaDDT.on('click', function(e) {
-            e.preventDefault();
-            console.log('Anteprima DDT iniziata...');
-            
-            const selectedTickets = [];
-            const $checkedBoxes = $('.ticket-checkbox:checked');
-            
-            if ($checkedBoxes.length === 0) {
-                alert('Devi selezionare almeno un ticket per vedere l\'anteprima del DDT.');
+        // Add click handler for selection
+        card.addEventListener('click', (e) => {
+            // Don't trigger selection if clicking on checkbox or button
+            if (e.target.type === 'checkbox' || e.target.tagName === 'BUTTON' || e.target.closest('button')) {
                 return;
             }
-            
-            // Raccolta dati dai ticket selezionati
-            $checkedBoxes.each(function() {
-                const $this = $(this);
-                selectedTickets.push({
-                    id_ticket: $this.data('ticket'),
-                    id_empresa: $this.data('empresa'),
-                    id_tienda: $this.data('tienda'),
-                    id_balanza_maestra: $this.data('balanza-maestra'),
-                    id_balanza_esclava: $this.data('balanza-esclava'),
-                    tipo_venta: $this.data('tipo-venta')
-                });
-            });
-            
-            console.log('Ticket da includere nell\'anteprima DDT:', selectedTickets);
-            console.log('Cliente ID:', $('input[name="cliente_id"]').val());
-            console.log('ID Empresa:', $('input[name="id_empresa"]').val());
-            
-            // Aggiorna form e invia
-            $hiddenSelectedTickets.val(JSON.stringify(selectedTickets));
-            showStatus(`Caricamento anteprima con ${selectedTickets.length} ticket...`);
-            
-            // Submit del form
-            $createDDTForm.submit();
+            toggleTicketSelection(ticket.id_ticket, card);
         });
         
-        // Gestione pulsante submit
-        $submitDDT.on('click', function(e) {
-            e.preventDefault();
-            
-            const selectedTickets = [];
-            const $checkedBoxes = $('.ticket-checkbox:checked');
-            
-            if ($checkedBoxes.length === 0) {
-                alert('Devi selezionare almeno un ticket per creare il DDT.');
-                return;
+        // Add checkbox change handler
+        const checkbox = card.querySelector('.ticket-checkbox');
+        checkbox.addEventListener('change', (e) => {
+            e.stopPropagation();
+            toggleTicketSelection(ticket.id_ticket, card);
+        });
+        
+        return card;
+    }
+    
+    function toggleTicketSelection(ticketId, cardElement) {
+        const checkbox = cardElement.querySelector('.ticket-checkbox');
+        
+        if (selectedTickets.has(ticketId)) {
+            selectedTickets.delete(ticketId);
+            cardElement.classList.remove('selected');
+            checkbox.checked = false;
+        } else {
+            selectedTickets.add(ticketId);
+            cardElement.classList.add('selected');
+            checkbox.checked = true;
+        }
+        
+        updateSelectionSummary();
+        updateSelectAllCheckbox();
+    }
+    
+    function updateSelectionSummary() {
+        const count = selectedTickets.size;
+        let total = 0;
+        
+        // Calculate total amount
+        allTickets.forEach(ticket => {
+            if (selectedTickets.has(ticket.id_ticket)) {
+                total += ticket.total_amount;
+            }
+        });
+        
+        selectedCount.textContent = count;
+        selectedTotal.textContent = total.toFixed(2);
+        
+        if (count > 0) {
+            selectionSummary.classList.remove('d-none');
+            previewBtn.disabled = false;
+        } else {
+            selectionSummary.classList.add('d-none');
+            previewBtn.disabled = true;
+        }
+        
+        // Update hidden form field
+        const selectedTicketsData = allTickets.filter(ticket => selectedTickets.has(ticket.id_ticket))
+            .map(ticket => ({
+                id_ticket: ticket.id_ticket,
+                id_empresa: ticket.id_empresa,
+                id_tienda: ticket.id_tienda,
+                id_balanza_maestra: ticket.id_balanza_maestra,
+                id_balanza_esclava: ticket.id_balanza_esclava,
+                tipo_venta: ticket.tipo_venta
+            }));
+        
+        document.getElementById('selectedTickets').value = JSON.stringify(selectedTicketsData);
+    }
+    
+    function updateSelectAllCheckbox() {
+        const visibleTickets = filteredTickets.filter(ticket => selectedTickets.has(ticket.id_ticket));
+        selectAllCheckbox.checked = filteredTickets.length > 0 && visibleTickets.length === filteredTickets.length;
+        selectAllCheckbox.indeterminate = visibleTickets.length > 0 && visibleTickets.length < filteredTickets.length;
+    }
+    
+    function updateTicketsCount(showing, total) {
+        if (showing === total) {
+            ticketsCount.textContent = `Visualizzando tutti i ${total} ticket disponibili`;
+        } else {
+            ticketsCount.textContent = `Visualizzando ${showing} di ${total} ticket`;
+        }
+    }
+    
+    function showNoTicketsMessage() {
+        noTicketsMessage.classList.remove('d-none');
+        ticketsGrid.style.display = 'none';
+        selectAllSection.classList.add('d-none');
+    }
+    
+    function hideNoTicketsMessage() {
+        noTicketsMessage.classList.add('d-none');
+        ticketsGrid.style.display = 'grid';
+        selectAllSection.classList.remove('d-none');
+    }
+    
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const dateFrom = dateFromInput.value;
+        const dateTo = dateToInput.value;
+        const amountMin = parseFloat(amountMinInput.value) || 0;
+        
+        filteredTickets = allTickets.filter(ticket => {
+            // Search filter
+            if (searchTerm) {
+                const matchesSearch = 
+                    ticket.id_ticket.toString().includes(searchTerm) ||
+                    (ticket.num_ticket && ticket.num_ticket.toString().includes(searchTerm)) ||
+                    (ticket.last_product && ticket.last_product.toLowerCase().includes(searchTerm)) ||
+                    ticket.products_preview.some(product => 
+                        product.descripcion.toLowerCase().includes(searchTerm)
+                    );
+                
+                if (!matchesSearch) return false;
             }
             
-            // Raccolta dati dai ticket selezionati
-            $checkedBoxes.each(function() {
-                const $this = $(this);
-                selectedTickets.push({
-                    id_ticket: $this.data('ticket'),
-                    id_empresa: $this.data('empresa'),
-                    id_tienda: $this.data('tienda'),
-                    id_balanza_maestra: $this.data('balanza-maestra'),
-                    id_balanza_esclava: $this.data('balanza-esclava'),
-                    tipo_venta: $this.data('tipo-venta')
-                });
-            });
+            // Date filters
+            if (dateFrom && ticket.fecha_iso < dateFrom) return false;
+            if (dateTo && ticket.fecha_iso > dateTo) return false;
             
-            // Debug dei valori
-            console.log('Submitting form with:');
-            console.log('- Selected tickets:', selectedTickets);
-            console.log('- Cliente ID:', $('input[name="cliente_id"]').val());
-            console.log('- ID Empresa:', $('input[name="id_empresa"]').val());
+            // Amount filter
+            if (ticket.total_amount < amountMin) return false;
             
-            // Aggiorna form e invia
-            $hiddenSelectedTickets.val(JSON.stringify(selectedTickets));
-            $createDDTForm.submit();
+            return true;
         });
         
-        // Gestione visualizzazione dettagli ticket
-        $('.view-ticket-btn').on('click', function() {
-            const ticketId = $(this).data('ticket-id');
-            const $modal = $('#ticketDetailsModal');
-            const $modalContent = $('#ticketDetailsContent');
-            
-            // Mostra modal con loader
-            $modalContent.html(`
-                <div class="d-flex justify-content-center">
+        displayTickets(filteredTickets);
+        updateTicketsCount(filteredTickets.length, allTickets.length);
+        updateSelectAllCheckbox();
+    }
+    
+    // Event listeners for filters
+    searchInput.addEventListener('input', applyFilters);
+    dateFromInput.addEventListener('change', applyFilters);
+    dateToInput.addEventListener('change', applyFilters);
+    amountMinInput.addEventListener('input', applyFilters);
+    
+    // Select all functionality
+    selectAllCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            // Select all visible tickets
+            filteredTickets.forEach(ticket => {
+                selectedTickets.add(ticket.id_ticket);
+            });
+        } else {
+            // Deselect all visible tickets
+            filteredTickets.forEach(ticket => {
+                selectedTickets.delete(ticket.id_ticket);
+            });
+        }
+        
+        // Update UI
+        displayTickets(filteredTickets);
+        updateSelectionSummary();
+    });
+    
+    // Focus on search input
+    searchInput.focus();
+});
+
+// Global function for viewing ticket details
+function viewTicketDetails(ticketId, empresaId) {
+    const modal = new bootstrap.Modal(document.getElementById('ticketDetailsModal'));
+    const modalContent = document.getElementById('ticketDetailsContent');
+    
+    // Show modal with loader
+    modalContent.innerHTML = `
+        <div class="text-center">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Caricamento...</span>
                     </div>
+            <p class="mt-2">Caricamento dettagli ticket...</p>
                 </div>
-                <p class="text-center mt-2">Caricamento dettagli ticket...</p>
-            `);
+    `;
             
-            const modal = new bootstrap.Modal($modal);
             modal.show();
             
-            // Carica dettagli ticket
-            fetch(`{{ url_for('ddt.ticket_details', ticket_id=0, empresa_id=1) }}`.replace('/0/', `/${ticketId}/`))
+    // Load ticket details
+    fetch(`{{ url_for('ddt.ticket_details', ticket_id=0, empresa_id=1) }}`.replace('/0/', `/${ticketId}/`).replace('/1', `/${empresaId}`))
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Mostra dettagli del ticket
-                        let html = `
-                            <div class="mb-3">
-                                <h6>Informazioni Ticket #${ticketId}</h6>
-                                <table class="table table-bordered">
-                                    <tr>
-                                        <th>Data:</th>
-                                        <td>${data.ticket.Fecha}</td>
-                                        <th>Cliente:</th>
-                                        <td>${data.ticket.NombreCliente}</td>
-                                    </tr>
+                modalContent.innerHTML = `
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">INFORMAZIONI TICKET</h6>
+                            <table class="table table-sm">
+                                <tr><th>ID Ticket:</th><td>#${ticketId}</td></tr>
+                                <tr><th>Data:</th><td>${data.ticket.date}</td></tr>
+                                <tr><th>Numero linee:</th><td>${data.ticket.num_lines}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">STATISTICHE</h6>
+                            <table class="table table-sm">
+                                <tr><th>Totale articoli:</th><td>${data.items.length}</td></tr>
+                                <tr><th>Azienda ID:</th><td>${empresaId}</td></tr>
                                 </table>
                             </div>
-                        `;
+                    </div>
                         
-                        // Aggiungi righe del ticket
-                        if (data.lines && data.lines.length > 0) {
-                            html += `
-                                <h6>Articoli (${data.lines.length})</h6>
+                    <h6 class="text-muted mb-3">DETTAGLIO PRODOTTI</h6>
                                 <div class="table-responsive">
-                                    <table class="table table-striped table-hover">
+                        <table class="table table-striped">
                                         <thead>
                                             <tr>
                                                 <th>ID</th>
-                                                <th>Articolo</th>
+                                    <th>Descrizione</th>
                                                 <th>Quantità</th>
                                                 <th>Prezzo</th>
-                                                <th>Totale</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                            `;
-                            
-                            data.lines.forEach(line => {
-                                html += `
+                                ${data.items.map(item => `
                                     <tr>
-                                        <td>${line.IdArticulo}</td>
-                                        <td>${line.Descripcion}</td>
-                                        <td>${line.Cantidad}</td>
-                                        <td>${line.Precio.toFixed(2)} €</td>
-                                        <td>${line.Total.toFixed(2)} €</td>
+                                        <td>${item.id}</td>
+                                        <td>${item.description}</td>
+                                        <td>${item.quantity}</td>
+                                        <td>${item.price}</td>
                                     </tr>
-                                `;
-                            });
-                            
-                            html += `
+                                `).join('')}
                                         </tbody>
                                     </table>
                                 </div>
                             `;
                         } else {
-                            html += `<p class="text-center">Nessun articolo trovato per questo ticket.</p>`;
-                        }
-                        
-                        $modalContent.html(html);
-                    } else {
-                        $modalContent.html(`
+                modalContent.innerHTML = `
                             <div class="alert alert-danger">
-                                Errore durante il caricamento dei dettagli: ${data.message}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Errore durante il caricamento: ${data.error}
                             </div>
-                        `);
+                `;
                     }
                 })
                 .catch(error => {
-                    console.error('Errore durante il caricamento dei dettagli del ticket:', error);
-                    $modalContent.html(`
+            console.error('Errore:', error);
+            modalContent.innerHTML = `
                         <div class="alert alert-danger">
-                            Si è verificato un errore durante il caricamento dei dettagli del ticket.
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Si è verificato un errore durante il caricamento dei dettagli.
                         </div>
-                    `);
-                });
+            `;
         });
-        
-        // Inizializzazione
-        updateCreaDDTButton();
-    });
+}
 </script>
 {% endblock %} 

@@ -1100,6 +1100,9 @@ function resetPreview() {
 
 // Valida il form prima dell'invio
 document.getElementById('final-ddt-form').addEventListener('submit', function(e) {
+    // Aggiorna i dati del form prima dell'invio
+    updateFormData();
+    
     const totalTickets = currentTickets.length + manualTickets.length;
     
     if (totalTickets === 0) {
@@ -1107,6 +1110,12 @@ document.getElementById('final-ddt-form').addEventListener('submit', function(e)
         alert('Devi selezionare almeno un ticket per creare il DDT.');
         return false;
     }
+    
+    // DEBUG: Mostra i dati che verranno inviati
+    console.log('🚀 DEBUG: Invio form DDT con dati:');
+    console.log('    currentTickets:', currentTickets.length);
+    console.log('    manualTickets:', manualTickets.length);
+    console.log('    ticketDiscounts:', ticketDiscounts);
     
     // Conferma creazione
     if (!confirm(`Sei sicuro di voler creare il DDT con ${totalTickets} ticket selezionati?`)) {

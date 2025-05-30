@@ -217,6 +217,7 @@
                                                     <th>Peso/Qta.</th>
                                                     <th class="d-none d-md-table-cell">Prezzo</th>
                                                     <th class="d-none d-lg-table-cell">IVA %</th>
+                                                    <th class="d-none d-lg-table-cell">Sconto %</th>
                                                     <th class="d-none d-md-table-cell">Imponibile</th>
                                                     <th class="d-none d-lg-table-cell">IVA</th>
                                                     <th>Totale</th>
@@ -238,6 +239,13 @@
                                                     </td>
                                                     <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(line.PrecioSinIVA) }}</td>
                                                     <td class="d-none d-lg-table-cell">{{ (line.PorcentajeIVA)|float }}%</td>
+                                                    <td class="d-none d-lg-table-cell">
+                                                        {% if line.Descuento and line.Descuento > 0 %}
+                                                            <span class="text-success">-{{ line.Descuento }}%</span>
+                                                        {% else %}
+                                                            <span class="text-muted">-</span>
+                                                        {% endif %}
+                                                    </td>
                                                     <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(line.ImporteSinIVASinDtoL) }}</td>
                                                     <td class="d-none d-lg-table-cell">€ {{ "%.2f"|format(line.ImporteDelIVAConDtoL) }}</td>
                                                     <td>€ {{ "%.2f"|format(line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL) }}</td>
@@ -247,7 +255,7 @@
                                             <tfoot>
                                                 <tr class="table-light">
                                                     <td colspan="2" class="text-end fw-bold">Totali Ticket:</td>
-                                                    <td class="fw-bold" colspan="6">
+                                                    <td class="fw-bold" colspan="7">
                                                         {% set subtotal = 0 %}
                                                         {% for line in ticket_lines %}
                                                             {% set subtotal = subtotal + (line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL) %}

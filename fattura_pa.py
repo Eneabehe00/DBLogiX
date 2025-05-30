@@ -395,28 +395,54 @@ def invoice_detail_page(filename):
             'size': f"{file_size / 1024:.1f} KB",
             'invoice_number': None,
             'invoice_date': None,
-            'client_name': None,
-            'client_address': None,
-            'client_vat': None,
-            'client_fiscal_code': None,
-            'client_email': None,
-            'client_phone': None,
-            'company_name': None,
-            'company_vat': None,
-            'company_address': None,
-            'total_amount': None,
+            'document_type': None,
             'currency': None,
+            'causale': None,
+            'total_amount': None,
             'ddt_reference': None,
             'ddt_date': None,
             'ddt_id': None,
+            
+            # Company data (CedentePrestatore)
+            'company_name': None,
+            'company_vat': None,
+            'company_fiscal_code': None,
+            'company_address': None,
+            'company_cap': None,
+            'company_city': None,
+            'company_province': None,
+            'company_country': None,
+            'company_regime': None,
+            
+            # Client data (CessionarioCommittente)
+            'client_name': None,
+            'client_vat': None,
+            'client_fiscal_code': None,
+            'client_address': None,
+            'client_cap': None,
+            'client_city': None,
+            'client_province': None,
+            'client_country': None,
+            'client_email': None,
+            'client_phone': None,
+            
+            # Transmission data (DatiTrasmissione)
             'transmission_id': None,
+            'transmission_format': None,
             'destination_code': None,
+            'pec_destination': None,
+            
+            # Payment data
+            'payment_conditions': None,
+            'payment_method': None,
+            'payment_due_date': None,
+            'payment_amount': None,
+            'iban': None,
+            
             'xml_content': None,
             'invoice_lines': [],
             'vat_summary': [],
-            'payment_terms': None,
-            'payment_method': None,
-            'payment_due_date': None
+            'ddt_data': None
         }
         
         try:
@@ -427,298 +453,498 @@ def invoice_detail_page(filename):
             with open(file_path, 'r', encoding='utf-8') as f:
                 invoice_details['xml_content'] = f.read()
             
-            # Define namespaces for proper XML navigation
+            # Define namespaces
             namespaces = {
                 'p': 'http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2'
             }
             
-            # === 1. EXTRACT TRANSMISSION DATA (DatiTrasmissione) ===
-            dati_trasmissione = root.find('.//p:DatiTrasmissione', namespaces)
-            if dati_trasmissione is not None:
-                progressivo_elem = dati_trasmissione.find('p:ProgressivoInvio', namespaces)
-                if progressivo_elem is not None:
-                    invoice_details['transmission_id'] = progressivo_elem.text
+            # === HEADER DATA ===
+            header = root.find('.//FatturaElettronicaHeader', namespaces)
+            if header is not None:
+                
+                # === DatiTrasmissione ===
+                dati_trasmissione = header.find('DatiTrasmissione', namespaces)
+                if dati_trasmissione is not None:
+                    # Transmission ID
+                    prog_elem = dati_trasmissione.find('ProgressivoInvio', namespaces)
+                    if prog_elem is not None:
+                        invoice_details['transmission_id'] = prog_elem.text
                     
-                codice_dest_elem = dati_trasmissione.find('p:CodiceDestinatario', namespaces)
-                if codice_dest_elem is not None:
-                    invoice_details['destination_code'] = codice_dest_elem.text
+                    # Format
+                    format_elem = dati_trasmissione.find('FormatoTrasmissione', namespaces)
+                    if format_elem is not None:
+                        invoice_details['transmission_format'] = format_elem.text
+                    
+                    # Destination code
+                    dest_elem = dati_trasmissione.find('CodiceDestinatario', namespaces)
+                    if dest_elem is not None:
+                        invoice_details['destination_code'] = dest_elem.text
+                    
+                    # PEC destination
+                    pec_elem = dati_trasmissione.find('PECDestinatario', namespaces)
+                    if pec_elem is not None:
+                        invoice_details['pec_destination'] = pec_elem.text
+                
+                # === CedentePrestatore (Company data) ===
+                cedente = header.find('CedentePrestatore', namespaces)
+                if cedente is not None:
+                    # Dati Anagrafici
+                    dati_anag = cedente.find('DatiAnagrafici', namespaces)
+                    if dati_anag is not None:
+                        # VAT
+                        id_fiscale = dati_anag.find('IdFiscaleIVA', namespaces)
+                        if id_fiscale is not None:
+                            paese_elem = id_fiscale.find('IdPaese', namespaces)
+                            codice_elem = id_fiscale.find('IdCodice', namespaces)
+                            if paese_elem is not None and codice_elem is not None:
+                                invoice_details['company_vat'] = f"{paese_elem.text}{codice_elem.text}"
+                        
+                        # Fiscal Code
+                        cf_elem = dati_anag.find('CodiceFiscale', namespaces)
+                        if cf_elem is not None:
+                            invoice_details['company_fiscal_code'] = cf_elem.text
+                        
+                        # Company name
+                        anagrafica = dati_anag.find('Anagrafica', namespaces)
+                        if anagrafica is not None:
+                            denom_elem = anagrafica.find('Denominazione', namespaces)
+                            if denom_elem is not None:
+                                invoice_details['company_name'] = denom_elem.text
+                        
+                        # Regime fiscale
+                        regime_elem = dati_anag.find('RegimeFiscale', namespaces)
+                        if regime_elem is not None:
+                            invoice_details['company_regime'] = regime_elem.text
+                    
+                    # Sede
+                    sede = cedente.find('Sede', namespaces)
+                    if sede is not None:
+                        addr_elem = sede.find('Indirizzo', namespaces)
+                        if addr_elem is not None:
+                            invoice_details['company_address'] = addr_elem.text
+                        
+                        cap_elem = sede.find('CAP', namespaces)
+                        if cap_elem is not None:
+                            invoice_details['company_cap'] = cap_elem.text
+                        
+                        comune_elem = sede.find('Comune', namespaces)
+                        if comune_elem is not None:
+                            invoice_details['company_city'] = comune_elem.text
+                        
+                        prov_elem = sede.find('Provincia', namespaces)
+                        if prov_elem is not None:
+                            invoice_details['company_province'] = prov_elem.text
+                        
+                        nazione_elem = sede.find('Nazione', namespaces)
+                        if nazione_elem is not None:
+                            invoice_details['company_country'] = nazione_elem.text
+                
+                # === CessionarioCommittente (Client data) ===
+                cessionario = header.find('CessionarioCommittente', namespaces)
+                if cessionario is not None:
+                    # Dati Anagrafici
+                    dati_anag = cessionario.find('DatiAnagrafici', namespaces)
+                    if dati_anag is not None:
+                        # VAT
+                        id_fiscale = dati_anag.find('IdFiscaleIVA', namespaces)
+                        if id_fiscale is not None:
+                            paese_elem = id_fiscale.find('IdPaese', namespaces)
+                            codice_elem = id_fiscale.find('IdCodice', namespaces)
+                            if paese_elem is not None and codice_elem is not None:
+                                invoice_details['client_vat'] = f"{paese_elem.text}{codice_elem.text}"
+                        
+                        # Fiscal Code
+                        cf_elem = dati_anag.find('CodiceFiscale', namespaces)
+                        if cf_elem is not None:
+                            invoice_details['client_fiscal_code'] = cf_elem.text
+                        
+                        # Client name
+                        anagrafica = dati_anag.find('Anagrafica', namespaces)
+                        if anagrafica is not None:
+                            denom_elem = anagrafica.find('Denominazione', namespaces)
+                            if denom_elem is not None:
+                                invoice_details['client_name'] = denom_elem.text
+                    
+                    # Sede
+                    sede = cessionario.find('Sede', namespaces)
+                    if sede is not None:
+                        addr_elem = sede.find('Indirizzo', namespaces)
+                        if addr_elem is not None:
+                            invoice_details['client_address'] = addr_elem.text
+                        
+                        cap_elem = sede.find('CAP', namespaces)
+                        if cap_elem is not None:
+                            invoice_details['client_cap'] = cap_elem.text
+                        
+                        comune_elem = sede.find('Comune', namespaces)
+                        if comune_elem is not None:
+                            invoice_details['client_city'] = comune_elem.text
+                        
+                        prov_elem = sede.find('Provincia', namespaces)
+                        if prov_elem is not None:
+                            invoice_details['client_province'] = prov_elem.text
+                        
+                        nazione_elem = sede.find('Nazione', namespaces)
+                        if nazione_elem is not None:
+                            invoice_details['client_country'] = nazione_elem.text
+                    
+                    # Contatti (email, phone)
+                    contatti = cessionario.find('Contatti', namespaces)
+                    if contatti is not None:
+                        email_elem = contatti.find('Email', namespaces)
+                        if email_elem is not None:
+                            invoice_details['client_email'] = email_elem.text
+                        
+                        tel_elem = contatti.find('Telefono', namespaces)
+                        if tel_elem is not None:
+                            invoice_details['client_phone'] = tel_elem.text
             
-            # === 2. EXTRACT COMPANY DATA (CedentePrestatore) ===
-            cedente = root.find('.//p:CedentePrestatore', namespaces)
-            if cedente is not None:
-                # Company VAT and fiscal data
-                id_fiscale = cedente.find('.//p:IdFiscaleIVA', namespaces)
-                if id_fiscale is not None:
-                    id_paese = id_fiscale.find('p:IdPaese', namespaces)
-                    id_codice = id_fiscale.find('p:IdCodice', namespaces)
-                    if id_paese is not None and id_codice is not None:
-                        invoice_details['company_vat'] = f"{id_paese.text}{id_codice.text}"
+            # === BODY DATA ===
+            body = root.find('.//FatturaElettronicaBody', namespaces)
+            if body is not None:
                 
-                # Company name
-                denominazione = cedente.find('.//p:Denominazione', namespaces)
-                if denominazione is not None:
-                    invoice_details['company_name'] = denominazione.text
+                # === DatiGenerali ===
+                dati_generali = body.find('DatiGenerali', namespaces)
+                if dati_generali is not None:
+                    
+                    # DatiGeneraliDocumento
+                    dati_gen_doc = dati_generali.find('DatiGeneraliDocumento', namespaces)
+                    if dati_gen_doc is not None:
+                        # Document type
+                        tipo_elem = dati_gen_doc.find('TipoDocumento', namespaces)
+                        if tipo_elem is not None:
+                            invoice_details['document_type'] = tipo_elem.text
+                        
+                        # Currency
+                        divisa_elem = dati_gen_doc.find('Divisa', namespaces)
+                        if divisa_elem is not None:
+                            invoice_details['currency'] = divisa_elem.text
+                        
+                        # Invoice date
+                        data_elem = dati_gen_doc.find('Data', namespaces)
+                        if data_elem is not None:
+                            try:
+                                invoice_date = datetime.strptime(data_elem.text, '%Y-%m-%d')
+                                invoice_details['invoice_date'] = invoice_date.strftime('%d/%m/%Y')
+                            except:
+                                invoice_details['invoice_date'] = data_elem.text
+                        
+                        # Invoice number
+                        numero_elem = dati_gen_doc.find('Numero', namespaces)
+                        if numero_elem is not None:
+                            invoice_details['invoice_number'] = numero_elem.text
+                        
+                        # Causale
+                        causale_elem = dati_gen_doc.find('Causale', namespaces)
+                        if causale_elem is not None:
+                            invoice_details['causale'] = causale_elem.text
+                    
+                    # DatiDDT
+                    dati_ddt = dati_generali.find('DatiDDT', namespaces)
+                    if dati_ddt is not None:
+                        # DDT number
+                        num_ddt_elem = dati_ddt.find('NumeroDDT', namespaces)
+                        if num_ddt_elem is not None:
+                            invoice_details['ddt_reference'] = num_ddt_elem.text
+                        
+                        # DDT date
+                        data_ddt_elem = dati_ddt.find('DataDDT', namespaces)
+                        if data_ddt_elem is not None:
+                            try:
+                                ddt_date = datetime.strptime(data_ddt_elem.text, '%Y-%m-%d')
+                                invoice_details['ddt_date'] = ddt_date.strftime('%d/%m/%Y')
+                            except:
+                                invoice_details['ddt_date'] = data_ddt_elem.text
                 
-                # Company address
-                sede = cedente.find('.//p:Sede', namespaces)
-                if sede is not None:
-                    address_parts = []
-                    indirizzo = sede.find('p:Indirizzo', namespaces)
-                    cap = sede.find('p:CAP', namespaces)
-                    comune = sede.find('p:Comune', namespaces)
-                    provincia = sede.find('p:Provincia', namespaces)
-                    nazione = sede.find('p:Nazione', namespaces)
+                # === DatiBeniServizi (Invoice Lines) ===
+                dati_beni = body.find('DatiBeniServizi', namespaces)
+                if dati_beni is not None:
                     
-                    if indirizzo is not None:
-                        address_parts.append(indirizzo.text)
-                    if cap is not None and comune is not None:
-                        address_parts.append(f"{cap.text} {comune.text}")
-                    if provincia is not None:
-                        address_parts.append(f"({provincia.text})")
-                    if nazione is not None:
-                        address_parts.append(nazione.text)
+                    # Extract invoice lines
+                    invoice_lines = []
+                    for linea in dati_beni.findall('DettaglioLinee', namespaces):
+                        line_data = {}
+                        
+                        num_elem = linea.find('NumeroLinea', namespaces)
+                        desc_elem = linea.find('Descrizione', namespaces)
+                        qty_elem = linea.find('Quantita', namespaces)
+                        unit_elem = linea.find('UnitaMisura', namespaces)
+                        price_elem = linea.find('PrezzoUnitario', namespaces)
+                        total_elem = linea.find('PrezzoTotale', namespaces)
+                        vat_elem = linea.find('AliquotaIVA', namespaces)
+                        
+                        if num_elem is not None:
+                            line_data['numero'] = num_elem.text
+                        if desc_elem is not None:
+                            line_data['descrizione'] = desc_elem.text
+                        if qty_elem is not None:
+                            line_data['quantita'] = qty_elem.text
+                        if unit_elem is not None:
+                            line_data['unita'] = unit_elem.text
+                        if price_elem is not None:
+                            line_data['prezzo_unitario'] = price_elem.text
+                        if total_elem is not None:
+                            line_data['prezzo_totale'] = total_elem.text
+                        if vat_elem is not None:
+                            line_data['aliquota_iva'] = vat_elem.text
+                            
+                        invoice_lines.append(line_data)
                     
-                    invoice_details['company_address'] = ', '.join(address_parts) if address_parts else None
-            
-            # === 3. EXTRACT CLIENT DATA (CessionarioCommittente) ===
-            cessionario = root.find('.//p:CessionarioCommittente', namespaces)
-            if cessionario is not None:
-                # Client VAT number
-                id_fiscale = cessionario.find('.//p:IdFiscaleIVA', namespaces)
-                if id_fiscale is not None:
-                    id_paese = id_fiscale.find('p:IdPaese', namespaces)
-                    id_codice = id_fiscale.find('p:IdCodice', namespaces)
-                    if id_paese is not None and id_codice is not None:
-                        invoice_details['client_vat'] = f"{id_paese.text}{id_codice.text}"
+                    invoice_details['invoice_lines'] = invoice_lines
+                    
+                    # Extract VAT summary
+                    vat_summary = []
+                    for riepilogo in dati_beni.findall('DatiRiepilogo', namespaces):
+                        vat_data = {}
+                        
+                        aliq_elem = riepilogo.find('AliquotaIVA', namespaces)
+                        imp_elem = riepilogo.find('ImponibileImporto', namespaces)
+                        imposta_elem = riepilogo.find('Imposta', namespaces)
+                        esig_elem = riepilogo.find('EsigibilitaIVA', namespaces)
+                        
+                        if aliq_elem is not None:
+                            vat_data['aliquota'] = aliq_elem.text
+                        if imp_elem is not None:
+                            vat_data['imponibile'] = imp_elem.text
+                        if imposta_elem is not None:
+                            vat_data['imposta'] = imposta_elem.text
+                        if esig_elem is not None:
+                            vat_data['esigibilita'] = esig_elem.text
+                            
+                        vat_summary.append(vat_data)
+                    
+                    invoice_details['vat_summary'] = vat_summary
                 
-                # Client fiscal code (if different from VAT)
-                codice_fiscale = cessionario.find('.//p:CodiceFiscale', namespaces)
-                if codice_fiscale is not None:
-                    invoice_details['client_fiscal_code'] = codice_fiscale.text
-                
-                # Client name
-                denominazione = cessionario.find('.//p:Denominazione', namespaces)
-                if denominazione is not None:
-                    invoice_details['client_name'] = denominazione.text
-                
-                # Client address
-                sede = cessionario.find('.//p:Sede', namespaces)
-                if sede is not None:
-                    address_parts = []
-                    indirizzo = sede.find('p:Indirizzo', namespaces)
-                    cap = sede.find('p:CAP', namespaces)
-                    comune = sede.find('p:Comune', namespaces)
-                    provincia = sede.find('p:Provincia', namespaces)
-                    nazione = sede.find('p:Nazione', namespaces)
+                # === DatiPagamento (Payment data) ===
+                dati_pagamento = body.find('DatiPagamento', namespaces)
+                if dati_pagamento is not None:
+                    # Payment conditions
+                    cond_elem = dati_pagamento.find('CondizioniPagamento', namespaces)
+                    if cond_elem is not None:
+                        invoice_details['payment_conditions'] = cond_elem.text
                     
-                    if indirizzo is not None:
-                        address_parts.append(indirizzo.text)
-                    if cap is not None and comune is not None:
-                        address_parts.append(f"{cap.text} {comune.text}")
-                    if provincia is not None:
-                        address_parts.append(f"({provincia.text})")
-                    if nazione is not None:
-                        address_parts.append(nazione.text)
+                    # Payment details
+                    dettaglio_pag = dati_pagamento.find('DettaglioPagamento', namespaces)
+                    if dettaglio_pag is not None:
+                        # Payment method
+                        modal_elem = dettaglio_pag.find('ModalitaPagamento', namespaces)
+                        if modal_elem is not None:
+                            invoice_details['payment_method'] = modal_elem.text
+                        
+                        # Due date
+                        scad_elem = dettaglio_pag.find('DataScadenzaPagamento', namespaces)
+                        if scad_elem is not None:
+                            try:
+                                due_date = datetime.strptime(scad_elem.text, '%Y-%m-%d')
+                                invoice_details['payment_due_date'] = due_date.strftime('%d/%m/%Y')
+                            except:
+                                invoice_details['payment_due_date'] = scad_elem.text
+                        
+                        # Payment amount
+                        imp_pag_elem = dettaglio_pag.find('ImportoPagamento', namespaces)
+                        if imp_pag_elem is not None:
+                            invoice_details['payment_amount'] = imp_pag_elem.text
+                            invoice_details['total_amount'] = imp_pag_elem.text  # Also set total_amount
+                        
+                        # IBAN
+                        iban_elem = dettaglio_pag.find('IBAN', namespaces)
+                        if iban_elem is not None:
+                            invoice_details['iban'] = iban_elem.text
+                            
+            # Try to get DDT data from database if we have the DDT reference
+            if invoice_details['ddt_reference']:
+                try:
+                    # Search for DDT by number and date if available
+                    ddt_search_filters = [AlbaranCabecera.NumAlbaran == int(invoice_details['ddt_reference'])]
                     
-                    invoice_details['client_address'] = ', '.join(address_parts) if address_parts else None
-            
-            # === 4. EXTRACT GENERAL DOCUMENT DATA (DatiGenerali) ===
-            dati_generali = root.find('.//p:DatiGenerali', namespaces)
-            if dati_generali is not None:
-                # Invoice basic data
-                dati_doc = dati_generali.find('p:DatiGeneraliDocumento', namespaces)
-                if dati_doc is not None:
-                    # Invoice number
-                    numero_elem = dati_doc.find('p:Numero', namespaces)
-                    if numero_elem is not None:
-                        invoice_details['invoice_number'] = numero_elem.text
-                    
-                    # Invoice date
-                    data_elem = dati_doc.find('p:Data', namespaces)
-                    if data_elem is not None:
+                    # If we have DDT date, add it to search filters for more precision
+                    if invoice_details['ddt_date']:
                         try:
-                            invoice_date = datetime.strptime(data_elem.text, '%Y-%m-%d')
-                            invoice_details['invoice_date'] = invoice_date.strftime('%d/%m/%Y')
+                            # Convert DDT date to search for matching date
+                            ddt_date_search = datetime.strptime(invoice_details['ddt_date'], '%d/%m/%Y').date()
+                            ddt_search_filters.append(db.func.date(AlbaranCabecera.Fecha) == ddt_date_search)
                         except:
-                            invoice_details['invoice_date'] = data_elem.text
+                            logger.warning(f"Could not parse DDT date {invoice_details['ddt_date']} for precise search")
                     
-                    # Currency
-                    divisa_elem = dati_doc.find('p:Divisa', namespaces)
-                    if divisa_elem is not None:
-                        invoice_details['currency'] = divisa_elem.text
-                
-                # DDT Reference data
-                dati_ddt = dati_generali.find('p:DatiDDT', namespaces)
-                if dati_ddt is not None:
-                    # DDT number
-                    numero_ddt_elem = dati_ddt.find('p:NumeroDDT', namespaces)
-                    if numero_ddt_elem is not None:
-                        invoice_details['ddt_reference'] = numero_ddt_elem.text
+                    # Find the DDT
+                    ddt = AlbaranCabecera.query.filter(*ddt_search_filters).first()
                     
-                    # DDT date
-                    data_ddt_elem = dati_ddt.find('p:DataDDT', namespaces)
-                    if data_ddt_elem is not None:
-                        try:
-                            ddt_date = datetime.strptime(data_ddt_elem.text, '%Y-%m-%d')
-                            invoice_details['ddt_date'] = ddt_date.strftime('%d/%m/%Y')
-                        except:
-                            invoice_details['ddt_date'] = data_ddt_elem.text
-            
-            # === 5. EXTRACT INVOICE LINES (DettaglioLinee) ===
-            invoice_lines = []
-            for linea in root.findall('.//p:DettaglioLinee', namespaces):
-                line_data = {}
-                
-                # Line number
-                num_elem = linea.find('p:NumeroLinea', namespaces)
-                if num_elem is not None:
-                    line_data['numero'] = num_elem.text
-                
-                # Description
-                desc_elem = linea.find('p:Descrizione', namespaces)
-                if desc_elem is not None:
-                    line_data['descrizione'] = desc_elem.text
-                
-                # Quantity
-                qty_elem = linea.find('p:Quantita', namespaces)
-                if qty_elem is not None:
-                    line_data['quantita'] = qty_elem.text
-                
-                # Unit of measure
-                unit_elem = linea.find('p:UnitaMisura', namespaces)
-                if unit_elem is not None:
-                    line_data['unita'] = unit_elem.text
-                
-                # Unit price
-                price_elem = linea.find('p:PrezzoUnitario', namespaces)
-                if price_elem is not None:
-                    line_data['prezzo_unitario'] = price_elem.text
-                
-                # Total price
-                total_elem = linea.find('p:PrezzoTotale', namespaces)
-                if total_elem is not None:
-                    line_data['prezzo_totale'] = total_elem.text
-                
-                # VAT rate
-                vat_elem = linea.find('p:AliquotaIVA', namespaces)
-                if vat_elem is not None:
-                    line_data['aliquota_iva'] = vat_elem.text
-                
-                invoice_lines.append(line_data)
-            
-            invoice_details['invoice_lines'] = invoice_lines
-            
-            # === 6. EXTRACT VAT SUMMARY (DatiRiepilogo) ===
-            vat_summary = []
-            for riepilogo in root.findall('.//p:DatiRiepilogo', namespaces):
-                vat_data = {}
-                
-                # VAT rate
-                aliq_elem = riepilogo.find('p:AliquotaIVA', namespaces)
-                if aliq_elem is not None:
-                    vat_data['aliquota'] = aliq_elem.text
-                
-                # Taxable amount
-                imp_elem = riepilogo.find('p:ImponibileImporto', namespaces)
-                if imp_elem is not None:
-                    vat_data['imponibile'] = imp_elem.text
-                
-                # VAT amount
-                imposta_elem = riepilogo.find('p:Imposta', namespaces)
-                if imposta_elem is not None:
-                    vat_data['imposta'] = imposta_elem.text
-                
-                vat_summary.append(vat_data)
-            
-            invoice_details['vat_summary'] = vat_summary
-            
-            # === 7. EXTRACT PAYMENT DATA (DatiPagamento) ===
-            dati_pagamento = root.find('.//p:DatiPagamento', namespaces)
-            if dati_pagamento is not None:
-                # Payment terms
-                condizioni_elem = dati_pagamento.find('p:CondizioniPagamento', namespaces)
-                if condizioni_elem is not None:
-                    payment_terms_map = {
-                        'TP01': 'Pagamento a rate',
-                        'TP02': 'Pagamento completo',
-                        'TP03': 'Anticipo'
-                    }
-                    invoice_details['payment_terms'] = payment_terms_map.get(condizioni_elem.text, condizioni_elem.text)
-                
-                # Payment details
-                dettaglio = dati_pagamento.find('p:DettaglioPagamento', namespaces)
-                if dettaglio is not None:
-                    # Payment method
-                    modalita_elem = dettaglio.find('p:ModalitaPagamento', namespaces)
-                    if modalita_elem is not None:
-                        payment_method_map = {
-                            'MP01': 'Contanti',
-                            'MP02': 'Assegno',
-                            'MP03': 'Assegno circolare',
-                            'MP04': 'Contanti presso tesoreria',
-                            'MP05': 'Bonifico',
-                            'MP06': 'Vaglia cambiario',
-                            'MP07': 'Bollettino bancario',
-                            'MP08': 'Carta di pagamento',
-                            'MP09': 'RID',
-                            'MP10': 'RID utenze',
-                            'MP11': 'RID veloce',
-                            'MP12': 'RIBA',
-                            'MP13': 'MAV',
-                            'MP14': 'Quietanza erario',
-                            'MP15': 'Giroconto su conti di contabilità speciale',
-                            'MP16': 'Domiciliazione bancaria',
-                            'MP17': 'Domiciliazione postale',
-                            'MP18': 'Bollettino di c/c postale',
-                            'MP19': 'SEPA Direct Debit',
-                            'MP20': 'SEPA Direct Debit CORE',
-                            'MP21': 'SEPA Direct Debit B2B',
-                            'MP22': 'Trattenuta su somme già riscosse'
+                    if ddt:
+                        logger.info(f"Found DDT {ddt.NumAlbaran} (ID: {ddt.IdAlbaran}) for invoice {filename}")
+                        invoice_details['ddt_id'] = ddt.IdAlbaran
+                        
+                        # === EXTRACT COMPLETE DDT DATA ===
+                        invoice_details['ddt_data'] = {
+                            # DDT Header Information
+                            'header': {
+                                'id_albaran': ddt.IdAlbaran,
+                                'num_albaran': ddt.NumAlbaran,
+                                'fecha': ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else None,
+                                'fecha_modificacion': ddt.FechaModificacion.strftime('%d/%m/%Y %H:%M') if ddt.FechaModificacion else None,
+                                'tipo': ddt.Tipo,
+                                'estado_ticket': ddt.EstadoTicket,
+                                'enviado': ddt.Enviado,
+                                'usuario': ddt.Usuario,
+                                'referencia_documento': ddt.ReferenciaDocumento,
+                                'observaciones_documento': ddt.ObservacionesDocumento,
+                                'codigo_barras': ddt.CodigoBarras,
+                                'num_lineas': ddt.NumLineas
+                            },
+                            
+                            # Company Information (from DDT)
+                            'company': {
+                                'id_empresa': ddt.IdEmpresa,
+                                'nombre_empresa': ddt.NombreEmpresa,
+                                'cif_vat': ddt.CIF_VAT_Empresa,
+                                'direccion': ddt.DireccionEmpresa,
+                                'poblacion': ddt.PoblacionEmpresa,
+                                'cp': ddt.CPEmpresa,
+                                'telefono': ddt.TelefonoEmpresa,
+                                'provincia': ddt.ProvinciaEmpresa,
+                                'nombre_tienda': ddt.NombreTienda,
+                                'nombre_balanza_maestra': ddt.NombreBalanzaMaestra,
+                                'nombre_balanza_esclava': ddt.NombreBalanzaEsclava
+                            },
+                            
+                            # Client Information (from DDT)
+                            'client': {
+                                'id_cliente': ddt.IdCliente,
+                                'nombre_cliente': ddt.NombreCliente,
+                                'dni_cliente': ddt.DNICliente,
+                                'email_cliente': ddt.EmailCliente,
+                                'direccion_cliente': ddt.DireccionCliente,
+                                'poblacion_cliente': ddt.PoblacionCliente,
+                                'provincia_cliente': ddt.ProvinciaCliente,
+                                'pais_cliente': ddt.PaisCliente,
+                                'cp_cliente': ddt.CPCliente,
+                                'telefono_cliente': ddt.TelefonoCliente,
+                                'observaciones_cliente': ddt.ObservacionesCliente,
+                                'ean_cliente': ddt.EANCliente
+                            },
+                            
+                            # Vendor Information (from DDT)
+                            'vendor': {
+                                'id_vendedor': ddt.IdVendedor,
+                                'nombre_vendedor': ddt.NombreVendedor
+                            },
+                            
+                            # Financial Totals (from DDT)
+                            'totals': {
+                                'importe_lineas': float(ddt.ImporteLineas) if ddt.ImporteLineas else 0,
+                                'porc_descuento': float(ddt.PorcDescuento) if ddt.PorcDescuento else 0,
+                                'importe_descuento': float(ddt.ImporteDescuento) if ddt.ImporteDescuento else 0,
+                                'importe_re': float(ddt.ImporteRE) if ddt.ImporteRE else 0,
+                                'importe_total_sin_re': float(ddt.ImporteTotalSinRE) if ddt.ImporteTotalSinRE else 0,
+                                'importe_total_sin_iva_con_dto': float(ddt.ImporteTotalSinIVAConDtoLConDtoTotal) if ddt.ImporteTotalSinIVAConDtoLConDtoTotal else 0,
+                                'importe_total_del_iva': float(ddt.ImporteTotalDelIVAConDtoLConDtoTotal) if ddt.ImporteTotalDelIVAConDtoLConDtoTotal else 0,
+                                'importe_total': float(ddt.ImporteTotal) if ddt.ImporteTotal else 0,
+                                'importe_sin_redondeo': float(ddt.ImporteSinRedondeo) if ddt.ImporteSinRedondeo else 0,
+                                'importe_del_redondeo': float(ddt.ImporteDelRedondeo) if ddt.ImporteDelRedondeo else 0
+                            },
+                            
+                            # DDT Lines (Products)
+                            'lines': [],
+                            
+                            # Transport and Tariff Information
+                            'transport': {
+                                'id_tarifa': ddt.IdTarifa,
+                                'nombre_tarifa': ddt.NombreTarifa,
+                                'descuento_tarifa': float(ddt.DescuentoTarifa) if ddt.DescuentoTarifa else 0,
+                                'tipo_tarifa': ddt.TipoTarifa,
+                                'fecha_inicio_tarifa': ddt.FechaInicioTarifa.strftime('%d/%m/%Y') if ddt.FechaInicioTarifa else None,
+                                'fecha_fin_tarifa': ddt.FechaFinTarifa.strftime('%d/%m/%Y') if ddt.FechaFinTarifa else None
+                            }
                         }
-                        invoice_details['payment_method'] = payment_method_map.get(modalita_elem.text, modalita_elem.text)
-                    
-                    # Payment due date
-                    scadenza_elem = dettaglio.find('p:DataScadenzaPagamento', namespaces)
-                    if scadenza_elem is not None:
-                        try:
-                            due_date = datetime.strptime(scadenza_elem.text, '%Y-%m-%d')
-                            invoice_details['payment_due_date'] = due_date.strftime('%d/%m/%Y')
-                        except:
-                            invoice_details['payment_due_date'] = scadenza_elem.text
-                    
-                    # Total payment amount
-                    importo_elem = dettaglio.find('p:ImportoPagamento', namespaces)
-                    if importo_elem is not None:
-                        invoice_details['total_amount'] = importo_elem.text
-                    
+                        
+                        # === GET DDT LINES (PRODUCTS) ===
+                        ddt_lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
+                        
+                        lines_data = []
+                        for line in ddt_lines:
+                            line_data = {
+                                'id_linea_albaran': line.IdLineaAlbaran,
+                                'id_ticket': line.IdTicket,
+                                'id_articulo': line.IdArticulo,
+                                'descripcion': line.Descripcion,
+                                'descripcion1': line.Descripcion1,
+                                'comportamiento': line.Comportamiento,
+                                'entrada_manual': line.EntradaManual,
+                                'peso': float(line.Peso) if line.Peso else 0,
+                                'peso_bruto': float(line.PesoBruto) if line.PesoBruto else 0,
+                                'cantidad2': float(line.Cantidad2) if line.Cantidad2 else 0,
+                                'medida2': line.Medida2,
+                                'precio': float(line.Precio) if line.Precio else 0,
+                                'precio_sin_iva': float(line.PrecioSinIVA) if line.PrecioSinIVA else 0,
+                                'porcentaje_iva': float(line.PorcentajeIVA) if line.PorcentajeIVA else 0,
+                                'recargo_equivalencia': float(line.RecargoEquivalencia) if line.RecargoEquivalencia else 0,
+                                'descuento': float(line.Descuento) if line.Descuento else 0,
+                                'tipo_descuento': line.TipoDescuento,
+                                'importe': float(line.Importe) if line.Importe else 0,
+                                'importe_sin_iva_sin_dtol': float(line.ImporteSinIVASinDtoL) if line.ImporteSinIVASinDtoL else 0,
+                                'importe_sin_iva_con_dtol': float(line.ImporteSinIVAConDtoL) if line.ImporteSinIVAConDtoL else 0,
+                                'importe_del_iva_con_dtol': float(line.ImporteDelIVAConDtoL) if line.ImporteDelIVAConDtoL else 0,
+                                'importe_del_re': float(line.ImporteDelRE) if line.ImporteDelRE else 0,
+                                'importe_del_descuento': float(line.ImporteDelDescuento) if line.ImporteDelDescuento else 0,
+                                'tara': float(line.Tara) if line.Tara else 0,
+                                'tara_fija': float(line.TaraFija) if line.TaraFija else 0,
+                                'tara_porcentual': float(line.TaraPorcentual) if line.TaraPorcentual else 0,
+                                'detalle_tara': line.DetalleTara,
+                                'fecha_caducidad': line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad else None,
+                                'fecha_envasado': line.FechaEnvasado.strftime('%d/%m/%Y') if line.FechaEnvasado else None,
+                                'fecha_fabricacion': line.FechaFabricacion.strftime('%d/%m/%Y') if line.FechaFabricacion else None,
+                                'texto_lote': line.TextoLote,
+                                'ean_scanner_articulo': line.EANScannerArticulo,
+                                'id_clase': line.IdClase,
+                                'nombre_clase': line.NombreClase,
+                                'id_familia': line.IdFamilia,
+                                'nombre_familia': line.NombreFamilia,
+                                'id_seccion': line.IdSeccion,
+                                'nombre_seccion': line.NombreSeccion,
+                                'id_sub_familia': line.IdSubFamilia,
+                                'nombre_sub_familia': line.NombreSubFamilia,
+                                'id_departamento': line.IdDepartamento,
+                                'nombre_departamento': line.NombreDepartamento,
+                                'texto1': line.Texto1,
+                                'texto_libre': line.TextoLibre,
+                                'peso_pieza': float(line.PesoPieza) if line.PesoPieza else 0,
+                                'unidades_caja': line.UnidadesCaja,
+                                'facturada': line.Facturada,
+                                'cantidad_facturada': float(line.CantidadFacturada) if line.CantidadFacturada else 0,
+                                'id_campania': line.IdCampania,
+                                'nombre_campania': line.NombreCampania,
+                                'producto_en_promocion': line.ProductoEnPromocion,
+                                'nombre_plataforma': line.NombrePlataforma,
+                                'hay_tara_aplicada': line.HayTaraAplicada
+                            }
+                            lines_data.append(line_data)
+                        
+                        invoice_details['ddt_data']['lines'] = lines_data
+                        
+                        logger.info(f"Retrieved {len(lines_data)} lines for DDT {ddt.NumAlbaran}")
+                        
+                        # === SUMMARY STATISTICS ===
+                        invoice_details['ddt_data']['statistics'] = {
+                            'total_lines': len(lines_data),
+                            'total_products': len(set(line['id_articulo'] for line in lines_data if line['id_articulo'])),
+                            'total_weight': sum(line['peso'] for line in lines_data),
+                            'total_amount_no_vat': sum(line['importe_sin_iva_con_dtol'] for line in lines_data),
+                            'total_vat': sum(line['importe_del_iva_con_dtol'] for line in lines_data),
+                            'total_amount': sum(line['importe'] for line in lines_data),
+                            'unique_tickets': len(set(line['id_ticket'] for line in lines_data if line['id_ticket']))
+                        }
+                        
+                    else:
+                        logger.warning(f"DDT with number {invoice_details['ddt_reference']} not found in database")
+                        invoice_details['ddt_data'] = None
+                        
+                except Exception as e:
+                    logger.error(f"Error fetching DDT data for invoice {filename}: {str(e)}")
+                    invoice_details['ddt_data'] = None
+            
+            return render_template('fattura_pa/detail.html', invoice_details=invoice_details)
+        
         except ET.ParseError as e:
             logger.error(f"Error parsing XML for {filename}: {str(e)}")
-        
-        # === 8. CROSS-REFERENCE WITH DDT DATABASE ===
-        if invoice_details['ddt_reference']:
-            try:
-                ddt = AlbaranCabecera.query.filter_by(NumAlbaran=int(invoice_details['ddt_reference'])).first()
-                if ddt:
-                    invoice_details['ddt_id'] = ddt.IdAlbaran
-                    
-                    # Cross-reference client data (use XML as primary, DDT as backup/verification)
-                    if not invoice_details['client_email'] and ddt.EmailCliente:
-                        invoice_details['client_email'] = ddt.EmailCliente
-                    if not invoice_details['client_phone'] and ddt.TelefonoCliente:
-                        invoice_details['client_phone'] = ddt.TelefonoCliente
-                    
-                    # Log any discrepancies for verification
-                    if invoice_details['client_name'] and ddt.NombreCliente:
-                        if invoice_details['client_name'].strip().lower() != ddt.NombreCliente.strip().lower():
-                            logger.warning(f"Client name mismatch for invoice {filename}: XML='{invoice_details['client_name']}' vs DDT='{ddt.NombreCliente}'")
-                    
-                    # If XML doesn't have client data, use DDT as fallback
-                    if not invoice_details['client_name'] and ddt.NombreCliente:
-                        invoice_details['client_name'] = ddt.NombreCliente
-                        logger.info(f"Using DDT client name as fallback for invoice {filename}")
-                        
-            except Exception as e:
-                logger.error(f"Error cross-referencing DDT data for invoice {filename}: {str(e)}")
         
         return render_template('fattura_pa/detail.html', invoice_details=invoice_details)
         
@@ -808,4 +1034,156 @@ def delete_invoice_ajax(filename):
         
     except Exception as e:
         logger.error(f"Error deleting invoice {filename}: {str(e)}")
-        return jsonify({'success': False, 'message': f'Errore durante la cancellazione: {str(e)}'}), 500 
+        return jsonify({'success': False, 'message': f'Errore durante la cancellazione: {str(e)}'}), 500
+
+@fattura_pa_bp.route('/test/<filename>')
+@login_required
+def test_invoice_parsing(filename):
+    """Test route to debug XML parsing - shows all extracted data"""
+    try:
+        fatture_dir = os.path.join(current_app.root_path, 'Fatture')
+        file_path = os.path.join(fatture_dir, filename)
+        
+        if not os.path.exists(file_path):
+            return f"File {filename} not found", 404
+        
+        # Parse XML and extract all data
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+        
+        # Define namespaces
+        namespaces = {
+            'p': 'http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2'
+        }
+        
+        result = {
+            'filename': filename,
+            'xml_structure': [],
+            'extracted_data': {}
+        }
+        
+        # Show XML structure
+        def analyze_element(elem, level=0):
+            indent = "  " * level
+            tag_name = elem.tag.replace('{http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2}', 'p:')
+            text = elem.text.strip() if elem.text and elem.text.strip() else ''
+            result['xml_structure'].append(f"{indent}{tag_name}: {text}")
+            
+            for child in elem:
+                analyze_element(child, level + 1)
+        
+        analyze_element(root)
+        
+        # Extract specific data
+        header = root.find('.//FatturaElettronicaHeader', namespaces)
+        if header is not None:
+            result['extracted_data']['header_found'] = True
+            
+            # DatiTrasmissione
+            dati_trasmissione = header.find('DatiTrasmissione', namespaces)
+            if dati_trasmissione is not None:
+                result['extracted_data']['dati_trasmissione'] = {}
+                for elem in dati_trasmissione:
+                    tag = elem.tag.replace('{http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2}', '')
+                    result['extracted_data']['dati_trasmissione'][tag] = elem.text
+            
+            # CedentePrestatore
+            cedente = header.find('CedentePrestatore', namespaces)
+            if cedente is not None:
+                result['extracted_data']['cedente_prestatore'] = {}
+                # Recursively extract all sub-elements
+                def extract_all_children(elem, parent_dict):
+                    for child in elem:
+                        tag = child.tag.replace('{http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2}', '')
+                        if len(child) > 0:
+                            parent_dict[tag] = {}
+                            extract_all_children(child, parent_dict[tag])
+                        else:
+                            parent_dict[tag] = child.text
+                
+                extract_all_children(cedente, result['extracted_data']['cedente_prestatore'])
+            
+            # CessionarioCommittente
+            cessionario = header.find('CessionarioCommittente', namespaces)
+            if cessionario is not None:
+                result['extracted_data']['cessionario_committente'] = {}
+                extract_all_children(cessionario, result['extracted_data']['cessionario_committente'])
+        
+        # Body data
+        body = root.find('.//FatturaElettronicaBody', namespaces)
+        if body is not None:
+            result['extracted_data']['body_found'] = True
+            
+            # DatiGenerali
+            dati_generali = body.find('DatiGenerali', namespaces)
+            if dati_generali is not None:
+                result['extracted_data']['dati_generali'] = {}
+                extract_all_children(dati_generali, result['extracted_data']['dati_generali'])
+            
+            # DatiBeniServizi
+            dati_beni = body.find('DatiBeniServizi', namespaces)
+            if dati_beni is not None:
+                result['extracted_data']['dati_beni_servizi'] = {}
+                
+                # Count lines
+                linee = dati_beni.findall('DettaglioLinee', namespaces)
+                result['extracted_data']['dati_beni_servizi']['numero_linee'] = len(linee)
+                
+                # Extract first line as example
+                if linee:
+                    result['extracted_data']['dati_beni_servizi']['prima_linea'] = {}
+                    extract_all_children(linee[0], result['extracted_data']['dati_beni_servizi']['prima_linea'])
+                
+                # Count VAT summaries
+                riepiloghi = dati_beni.findall('DatiRiepilogo', namespaces)
+                result['extracted_data']['dati_beni_servizi']['numero_riepiloghi_iva'] = len(riepiloghi)
+            
+            # DatiPagamento
+            dati_pagamento = body.find('DatiPagamento', namespaces)
+            if dati_pagamento is not None:
+                result['extracted_data']['dati_pagamento'] = {}
+                extract_all_children(dati_pagamento, result['extracted_data']['dati_pagamento'])
+        
+        # Return JSON response for easy reading
+        import json
+        
+        # Prepare data for HTML template (avoid backslashes in f-strings)
+        json_data = json.dumps(result['extracted_data'], indent=2, ensure_ascii=False)
+        xml_structure_text = "\n".join(result['xml_structure'][:100])
+        more_lines_text = ""
+        if len(result['xml_structure']) > 100:
+            more_lines_text = f"<p>... and {len(result['xml_structure']) - 100} more lines</p>"
+        
+        return f"""
+        <html>
+        <head>
+            <title>Test Parsing XML - {filename}</title>
+            <style>
+                body {{ font-family: monospace; margin: 20px; }}
+                .section {{ margin: 20px 0; padding: 10px; border: 1px solid #ccc; }}
+                .json {{ background: #f5f5f5; padding: 10px; white-space: pre-wrap; }}
+                .xml {{ background: #e8f4f8; padding: 10px; white-space: pre; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <h1>Test Parsing XML: {filename}</h1>
+            
+            <div class="section">
+                <h2>Extracted Data (JSON)</h2>
+                <div class="json">{json_data}</div>
+            </div>
+            
+            <div class="section">
+                <h2>XML Structure</h2>
+                <div class="xml">{xml_structure_text}</div>
+                {more_lines_text}
+            </div>
+            
+            <a href="/fattura_pa/detail/{filename}">View Detail Page</a> |
+            <a href="/fattura_pa/list">Back to List</a>
+        </body>
+        </html>
+        """
+        
+    except Exception as e:
+        return f"Error parsing {filename}: {str(e)}", 500 

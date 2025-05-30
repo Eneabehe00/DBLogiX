@@ -429,6 +429,7 @@ def create():
     id_empresa = request.form.get('id_empresa', 1)
     tickets_data = request.form.get('tickets')
     manual_tickets_data = request.form.get('manual_tickets')  # Ticket manuali dal localStorage
+    ticket_discounts_data = request.form.get('ticket_discounts')  # Sconti dei ticket dal localStorage
     note = request.form.get('note')
     
     # Gestione task
@@ -445,6 +446,7 @@ def create():
     try:
         ticket_data = json.loads(tickets_data) if tickets_data else []
         manual_tickets = json.loads(manual_tickets_data) if manual_tickets_data else []
+        ticket_discounts = json.loads(ticket_discounts_data) if ticket_discounts_data else {}
     except json.JSONDecodeError:
         flash('Formato dati ticket non valido', 'danger')
         return redirect(url_for('ddt.select_tickets', cliente_id=cliente_id))
@@ -459,8 +461,23 @@ def create():
     current_app.logger.info(f"📥 DEBUG: Dati ricevuti dal form:")
     current_app.logger.info(f"    tickets_data (raw): {tickets_data}")
     current_app.logger.info(f"    manual_tickets_data (raw): {manual_tickets_data}")
+    current_app.logger.info(f"    ticket_discounts_data (raw): {ticket_discounts_data}")
     current_app.logger.info(f"    ticket_data (parsed): {ticket_data}")
     current_app.logger.info(f"    manual_tickets (parsed): {manual_tickets}")
+    current_app.logger.info(f"    ticket_discounts (parsed): {ticket_discounts}")
+    
+    # DEBUG: Test specifico per gli sconti
+    if ticket_discounts:
+        current_app.logger.info(f"🎯 DEBUG: Sconti specifici trovati:")
+        for ticket_id, discount in ticket_discounts.items():
+            current_app.logger.info(f"    Ticket {ticket_id}: {discount}% di sconto")
+    else:
+        current_app.logger.info(f"🎯 DEBUG: Nessuno sconto applicato (ticket_discounts vuoto)")
+    
+    # DEBUG: Verifica che il dizionario sconti non sia None
+    if ticket_discounts is None:
+        current_app.logger.error(f"❌ ERRORE: ticket_discounts è None - imposto dizionario vuoto")
+        ticket_discounts = {}
 
     # Get client and company info
     client = Client.query.get_or_404(int(cliente_id))
@@ -614,6 +631,16 @@ def create():
                 line_total = price_without_vat * peso_value
                 line_vat = line_total * vat_rate
                 
+                # Applica sconto del ticket se presente
+                ticket_id_str = str(ticket['id_ticket'])
+                ticket_discount = float(ticket_discounts.get(ticket_id_str, 0))
+                if ticket_discount > 0:
+                    discount_factor = 1 - (ticket_discount / 100)
+                    line_total = line_total * discount_factor
+                    line_vat = line_vat * discount_factor
+                    current_app.logger.info(f"💰 Applicato sconto {ticket_discount}% al ticket {ticket['id_ticket']}")
+                    current_app.logger.info(f"   Totale scontato: {line_total:.2f}, IVA scontata: {line_vat:.2f}")
+                
                 # Get product family, subfamily, class info
                 product_article = Article.query.get(product.IdArticulo)
                 
@@ -678,7 +705,7 @@ def create():
                 albaran_line.EntradaManual = 0
                 albaran_line.Tara = 0.0
                 albaran_line.PrecioPorCienGramos = 0
-                albaran_line.Descuento = 0.0
+                albaran_line.Descuento = ticket_discount if ticket_discount > 0 else 0.0
                 albaran_line.TipoDescuento = 1
                 albaran_line.Facturada = 0
                 albaran_line.CantidadFacturada = 0.0
@@ -690,9 +717,10 @@ def create():
                 
                 # Debug line info
                 current_app.logger.info(f"📝 DEBUG: Linea DDT {line_count} - Ticket {ticket['id_ticket']}")
-                current_app.logger.info(f"    IdArticulo: {albaran_line.IdArticulo}")
+                current_app.logger.info(f"    IdArticolo: {albaran_line.IdArticulo}")
                 current_app.logger.info(f"    Peso: {albaran_line.Peso}")
                 current_app.logger.info(f"    Prezzo senza IVA: {albaran_line.PrecioSinIVA}")
+                current_app.logger.info(f"    Sconto applicato: {albaran_line.Descuento}%")
                 current_app.logger.info(f"    Totale senza IVA: {albaran_line.ImporteSinIVASinDtoL}")
                 current_app.logger.info(f"    IVA: {albaran_line.ImporteDelIVAConDtoL}")
                 
@@ -735,6 +763,16 @@ def create():
                 peso_value = float(ticket_line['peso'])
                 line_total = price_without_vat * peso_value
                 line_vat = line_total * vat_rate
+                
+                # Applica sconto del ticket manuale se presente
+                manual_ticket_id_str = str(manual_ticket['id_ticket'])
+                ticket_discount = float(ticket_discounts.get(manual_ticket_id_str, 0))
+                if ticket_discount > 0:
+                    discount_factor = 1 - (ticket_discount / 100)
+                    line_total = line_total * discount_factor
+                    line_vat = line_vat * discount_factor
+                    current_app.logger.info(f"💰 Applicato sconto {ticket_discount}% al ticket manuale {manual_ticket['id_ticket']}")
+                    current_app.logger.info(f"   Totale scontato: {line_total:.2f}, IVA scontata: {line_vat:.2f}")
                 
                 # Crea riga DDT per ticket manuale
                 albaran_line = AlbaranLinea()
@@ -795,7 +833,7 @@ def create():
                 albaran_line.EntradaManual = 1  # Indica che è stato inserito manualmente
                 albaran_line.Tara = 0.0
                 albaran_line.PrecioPorCienGramos = 0
-                albaran_line.Descuento = 0.0
+                albaran_line.Descuento = ticket_discount if ticket_discount > 0 else 0.0
                 albaran_line.TipoDescuento = 1
                 albaran_line.Facturada = 0
                 albaran_line.CantidadFacturada = 0.0
@@ -810,6 +848,7 @@ def create():
                 current_app.logger.info(f"    Descrizione: {albaran_line.Descripcion}")
                 current_app.logger.info(f"    Peso: {albaran_line.Peso}")
                 current_app.logger.info(f"    Prezzo senza IVA: {albaran_line.PrecioSinIVA}")
+                current_app.logger.info(f"    Sconto applicato: {albaran_line.Descuento}%")
                 current_app.logger.info(f"    Totale senza IVA: {albaran_line.ImporteSinIVASinDtoL}")
                 current_app.logger.info(f"    IVA: {albaran_line.ImporteDelIVAConDtoL}")
                 
@@ -1068,6 +1107,34 @@ def client_search():
     print(f"Client search for '{term}' returned {len(results)} results")
     
     return jsonify(results)
+
+@ddt_bp.route('/api/clients/all')
+@login_required
+def get_all_clients():
+    """API endpoint for getting all clients"""
+    try:
+        # Get all clients ordered by name
+        clients = Client.query.order_by(Client.Nombre).all()
+        
+        # Format results for the client grid
+        results = [{
+            'id': client.IdCliente,
+            'nombre': client.Nombre or 'Nome non disponibile',
+            'direccion': client.Direccion or '',
+            'dni': client.DNI or '',
+            'telefono1': client.Telefono1 or '',
+            'email': client.Email or '',
+            'poblacion': client.Poblacion or '',
+            'cod_postal': client.CodPostal or ''
+        } for client in clients]
+        
+        print(f"Loaded {len(results)} clients for grid display")
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"Error loading clients: {str(e)}")
+        return jsonify([]), 500
 
 @ddt_bp.route('/<int:ddt_id>/export', methods=['POST', 'GET'])
 @login_required
@@ -1490,9 +1557,22 @@ def ticket_details(ticket_id, empresa_id):
             print(f"Ticket not found: ticket_id={ticket_id}, empresa_id={empresa_id}")
             return jsonify({"success": False, "error": "Ticket non trovato"})
         
-        # Get ticket lines
-        lines = TicketLine.query.filter_by(IdTicket=ticket_id).all()
-        print(f"Found {len(lines)} lines for ticket {ticket_id}")
+        # Get unique ticket lines to avoid duplicates
+        lines_query = """
+            SELECT DISTINCT 
+                tl.IdArticulo,
+                tl.Descripcion,
+                tl.Peso,
+                tl.comportamiento,
+                p.PrecioConIVA
+            FROM dat_ticket_linea tl
+            LEFT JOIN dat_articulo p ON tl.IdArticulo = p.IdArticulo
+            WHERE tl.IdTicket = :ticket_id
+            ORDER BY tl.IdArticulo
+        """
+        
+        lines_result = db.session.execute(text(lines_query), {'ticket_id': ticket_id})
+        print(f"Found ticket lines for ticket {ticket_id}")
         
         # Format response data
         ticket_data = {
@@ -1500,36 +1580,47 @@ def ticket_details(ticket_id, empresa_id):
             "ticket": {
                 "id": ticket.IdTicket,
                 "date": ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else 'N/A',
-                "num_lines": len(lines)
+                "num_lines": 0  # Will be calculated
             },
             "items": []
         }
         
-        # Add product details for each line
-        for line in lines:
+        # Add product details for each unique line
+        unique_products = {}
+        for row in lines_result:
             try:
-                product = Product.query.get(line.IdArticulo)
-                if not product:
-                    print(f"Product not found for line {line.IdLinea}, article ID: {line.IdArticulo}")
+                id_articulo = row[0]
+                descripcion = row[1]
+                peso = row[2]
+                comportamiento = row[3] or 0
+                precio = row[4]
+                
+                # Skip if we already processed this article
+                if id_articulo in unique_products:
+                    print(f"Skipping duplicate IdArticulo {id_articulo} in ticket {ticket_id}")
                     continue
-                    
+                
+                # Mark this article as processed
+                unique_products[id_articulo] = True
+                
                 ticket_data["items"].append({
-                    "id": product.IdArticulo,
-                    "description": product.Descripcion,
-                    "quantity": f"{line.Peso} {'unità' if line.comportamiento == 0 else 'Kg'}" if line.Peso is not None else "N/A",
-                    "price": f"€ {product.PrecioConIVA}" if product.PrecioConIVA is not None else "N/A"
+                    "id": id_articulo,
+                    "description": descripcion or 'Descrizione non disponibile',
+                    "quantity": f"{peso} {'unità' if comportamiento == 0 else 'Kg'}" if peso is not None else "N/A",
+                    "price": f"€ {precio}" if precio is not None else "N/A"
                 })
             except Exception as e:
-                print(f"Error processing line {line.IdLinea}: {str(e)}")
+                print(f"Error processing line with IdArticulo {id_articulo}: {str(e)}")
                 continue
         
-        print(f"Returning ticket data with {len(ticket_data['items'])} items")
+        # Update the actual number of unique lines
+        ticket_data["ticket"]["num_lines"] = len(ticket_data["items"])
+        
+        print(f"Returning ticket data with {len(ticket_data['items'])} unique items")
         return jsonify(ticket_data)
     
     except Exception as e:
-        # import traceback
         print(f"Error in ticket_details: {str(e)}")
-        # print(traceback.format_exc())
         return jsonify({"success": False, "error": f"Errore durante il caricamento del ticket: {str(e)}"})
 
 @ddt_bp.route('/search_tickets', methods=['POST'])
@@ -1650,28 +1741,52 @@ def api_add_ticket_to_preview():
     if ticket.Enviado != 0:
         return jsonify({'success': False, 'message': 'Ticket già processato'})
     
-    # Get ticket lines and calculate total
-    lines = TicketLine.query.filter_by(
-        IdTicket=ticket.IdTicket
-    ).all()
+    # Get unique ticket lines and calculate total - avoid duplicates
+    lines_query = """
+        SELECT DISTINCT 
+            tl.IdArticulo,
+            tl.Descripcion,
+            tl.Peso,
+            tl.FechaCaducidad,
+            p.PrecioConIVA
+        FROM dat_ticket_linea tl
+        LEFT JOIN dat_articulo p ON tl.IdArticulo = p.IdArticulo
+        WHERE tl.IdTicket = :ticket_id
+        ORDER BY tl.IdArticulo
+    """
+    
+    lines_result = db.session.execute(text(lines_query), {'ticket_id': ticket_id})
     
     ticket_total = 0
     ticket_lines_data = []
+    unique_products = {}
     
-    for line in lines:
-        product = Product.query.get(line.IdArticulo)
-        if product:
-            line_amount = float(line.Peso or 0) * float(product.PrecioConIVA or 0)
-            ticket_total += line_amount
-            
-            ticket_lines_data.append({
-                'id_articulo': line.IdArticulo,
-                'descripcion': line.Descripcion,
-                'peso': float(line.Peso or 0),
-                'precio': float(product.PrecioConIVA or 0),
-                'importe': line_amount,
-                'fecha_caducidad': line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad else None
-            })
+    for row in lines_result:
+        id_articulo = row[0]
+        descripcion = row[1]
+        peso = float(row[2] or 0)
+        fecha_caducidad = row[3]
+        precio = float(row[4] or 0)
+        
+        # Skip if we already processed this article
+        if id_articulo in unique_products:
+            current_app.logger.warning(f"⚠️ Skipping duplicate IdArticulo {id_articulo} in ticket {ticket_id}")
+            continue
+        
+        # Mark this article as processed
+        unique_products[id_articulo] = True
+        
+        line_amount = peso * precio
+        ticket_total += line_amount
+        
+        ticket_lines_data.append({
+            'id_articulo': id_articulo,
+            'descripcion': descripcion,
+            'peso': peso,
+            'precio': precio,
+            'importe': line_amount,
+            'fecha_caducidad': fecha_caducidad.strftime('%d/%m/%Y') if fecha_caducidad else None
+        })
     
     return jsonify({
         'success': True,
@@ -1992,3 +2107,296 @@ def debug_check_duplicates():
             'success': False,
             'error': str(e)
         })
+
+@ddt_bp.route('/debug/test_discounts', methods=['GET'])
+@login_required
+def debug_test_discounts():
+    """Debug function to test discount functionality"""
+    try:
+        # Simula dati di test per gli sconti
+        test_ticket_discounts = {
+            "123": 20.0,
+            "456": 15.5,
+            "789": 10.0
+        }
+        
+        # Test 1: Verifica conversione JSON
+        json_test = json.dumps(test_ticket_discounts)
+        parsed_test = json.loads(json_test)
+        
+        # Test 2: Verifica lookup degli sconti
+        test_results = []
+        for ticket_id_str, expected_discount in test_ticket_discounts.items():
+            ticket_discount = float(parsed_test.get(ticket_id_str, 0))
+            test_results.append({
+                'ticket_id': ticket_id_str,
+                'expected_discount': expected_discount,
+                'parsed_discount': ticket_discount,
+                'match': ticket_discount == expected_discount
+            })
+        
+        # Test 3: Verifica calcoli degli sconti
+        original_price = 100.0
+        for discount_percent in [10, 20, 30]:
+            discount_factor = 1 - (discount_percent / 100)
+            discounted_price = original_price * discount_factor
+            test_results.append({
+                'test_type': 'calculation',
+                'original_price': original_price,
+                'discount_percent': discount_percent,
+                'discount_factor': discount_factor,
+                'discounted_price': discounted_price
+            })
+        
+        # Test 4: Verifica DDT recenti con sconti
+        recent_ddts = AlbaranCabecera.query.order_by(AlbaranCabecera.Fecha.desc()).limit(5).all()
+        ddt_discount_data = []
+        
+        for ddt in recent_ddts:
+            lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
+            lines_with_discounts = [line for line in lines if line.Descuento and line.Descuento > 0]
+            
+            ddt_discount_data.append({
+                'ddt_id': ddt.IdAlbaran,
+                'total_lines': len(lines),
+                'lines_with_discounts': len(lines_with_discounts),
+                'discount_details': [
+                    {
+                        'line_id': line.IdLineaAlbaran,
+                        'ticket_id': line.IdTicket,
+                        'discount': float(line.Descuento or 0),
+                        'description': line.Descripcion,
+                        'total_original': float(line.ImporteSinIVASinDtoL or 0),
+                        'vat_original': float(line.ImporteDelIVAConDtoL or 0)
+                    } for line in lines_with_discounts
+                ]
+            })
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'json_test': {
+                'original': test_ticket_discounts,
+                'serialized': json_test,
+                'parsed': parsed_test
+            },
+            'discount_lookup_tests': test_results,
+            'recent_ddts_with_discounts': ddt_discount_data
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Errore nel test degli sconti: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+@ddt_bp.route('/debug/simulate_discount_ddt', methods=['POST'])
+@login_required
+def debug_simulate_discount_ddt():
+    """Debug function to simulate DDT creation with predefined discounts"""
+    try:
+        # Simula i dati che dovrebbero arrivare dal form
+        simulated_form_data = {
+            'cliente_id': '1',  # Usa il primo cliente disponibile
+            'id_empresa': '1',
+            'tickets': '[]',  # Nessun ticket normale
+            'manual_tickets': '[{"id_ticket": -9999, "lines": [{"descripcion": "Prodotto Test Sconto", "peso": 2.0, "precio": 50.0, "id_iva": 3, "comportamiento": 1}], "total": 100.0}]',
+            'ticket_discounts': '{"-9999": 20.0}',  # 20% di sconto sul ticket manuale
+            'note': 'Test DDT con sconto 20%'
+        }
+        
+        current_app.logger.info(f"🧪 DEBUG: Simulazione DDT con sconti")
+        current_app.logger.info(f"    Dati simulati: {simulated_form_data}")
+        
+        # Parse dei dati come nel vero endpoint
+        ticket_data = json.loads(simulated_form_data['tickets']) if simulated_form_data['tickets'] else []
+        manual_tickets = json.loads(simulated_form_data['manual_tickets']) if simulated_form_data['manual_tickets'] else []
+        ticket_discounts = json.loads(simulated_form_data['ticket_discounts']) if simulated_form_data['ticket_discounts'] else {}
+        
+        current_app.logger.info(f"🧪 DEBUG: Parsing completato")
+        current_app.logger.info(f"    ticket_discounts: {ticket_discounts}")
+        
+        # Verifica che il cliente esista
+        client = Client.query.first()
+        if not client:
+            return jsonify({'success': False, 'error': 'Nessun cliente trovato nel database'})
+        
+        empresa = Company.query.first()
+        if not empresa:
+            return jsonify({'success': False, 'error': 'Nessuna azienda trovata nel database'})
+        
+        # Simula il processo di creazione come nel vero endpoint
+        manual_ticket = manual_tickets[0]
+        ticket_line = manual_ticket['lines'][0]
+        
+        # Simula il calcolo degli sconti
+        manual_ticket_id_str = str(manual_ticket['id_ticket'])
+        ticket_discount = float(ticket_discounts.get(manual_ticket_id_str, 0))
+        
+        current_app.logger.info(f"🧪 DEBUG: Calcolo sconto")
+        current_app.logger.info(f"    manual_ticket_id_str: {manual_ticket_id_str}")
+        current_app.logger.info(f"    ticket_discount: {ticket_discount}")
+        
+        # Calcola prezzi
+        id_iva = ticket_line.get('id_iva', 3)  # Default 22%
+        vat_rate = 0.22 if id_iva == 3 else 0.10 if id_iva == 2 else 0.04
+        
+        price_with_vat = float(ticket_line['precio'])
+        price_without_vat = price_with_vat / (1 + vat_rate)
+        peso_value = float(ticket_line['peso'])
+        line_total = price_without_vat * peso_value
+        line_vat = line_total * vat_rate
+        
+        original_line_total = line_total
+        original_line_vat = line_vat
+        
+        # Applica sconto
+        if ticket_discount > 0:
+            discount_factor = 1 - (ticket_discount / 100)
+            line_total = line_total * discount_factor
+            line_vat = line_vat * discount_factor
+        
+        result = {
+            'success': True,
+            'simulation_data': {
+                'manual_ticket_id': manual_ticket_id_str,
+                'ticket_discount_percent': ticket_discount,
+                'original_totals': {
+                    'line_total': original_line_total,
+                    'line_vat': original_line_vat,
+                    'total_with_vat': original_line_total + original_line_vat
+                },
+                'discounted_totals': {
+                    'line_total': line_total,
+                    'line_vat': line_vat,
+                    'total_with_vat': line_total + line_vat
+                },
+                'savings': {
+                    'amount': (original_line_total + original_line_vat) - (line_total + line_vat),
+                    'percentage': ticket_discount
+                }
+            },
+            'parsing_results': {
+                'ticket_discounts_raw': simulated_form_data['ticket_discounts'],
+                'ticket_discounts_parsed': ticket_discounts,
+                'lookup_test': {
+                    'key_searched': manual_ticket_id_str,
+                    'value_found': ticket_discount,
+                    'keys_available': list(ticket_discounts.keys())
+                }
+            }
+        }
+        
+        current_app.logger.info(f"🧪 DEBUG: Simulazione completata con successo")
+        current_app.logger.info(f"    Risultato: {result}")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        current_app.logger.error(f"Errore nella simulazione DDT con sconti: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        })
+
+@ddt_bp.route('/api/tickets/all')
+@login_required
+def get_all_tickets():
+    """API endpoint for getting all available tickets with detailed information"""
+    try:
+        # Get all pending tickets
+        tickets = TicketHeader.query.filter(
+            TicketHeader.Enviado == 0
+        ).order_by(TicketHeader.Fecha.desc()).all()
+        
+        results = []
+        for ticket in tickets:
+            # Get ticket lines and calculate totals - GROUP BY to avoid duplicates
+            lines_query = """
+                SELECT DISTINCT 
+                    tl.IdArticulo,
+                    tl.Descripcion,
+                    tl.Peso,
+                    tl.comportamiento,
+                    p.PrecioConIVA
+                FROM dat_ticket_linea tl
+                LEFT JOIN dat_articulo p ON tl.IdArticulo = p.IdArticulo
+                WHERE tl.IdTicket = :ticket_id
+                ORDER BY tl.IdArticulo
+            """
+            
+            lines_result = db.session.execute(text(lines_query), {'ticket_id': ticket.IdTicket})
+            
+            total_amount = 0
+            total_weight = 0
+            products_preview = []
+            unique_products = {}  # Track unique products to avoid duplicates
+            
+            for row in lines_result:
+                id_articulo = row[0]
+                descripcion = row[1]
+                peso = float(row[2] or 0)
+                comportamiento = row[3] or 0
+                precio = float(row[4] or 0)
+                
+                # Skip if we already processed this article
+                if id_articulo in unique_products:
+                    current_app.logger.warning(f"⚠️ Duplicate IdArticulo {id_articulo} found in ticket {ticket.IdTicket}")
+                    continue
+                
+                # Mark this article as processed
+                unique_products[id_articulo] = True
+                
+                line_total = peso * precio
+                total_amount += line_total
+                total_weight += peso
+                
+                # Add to products preview (first 3 unique products)
+                if len(products_preview) < 3:
+                    products_preview.append({
+                        'descripcion': descripcion,
+                        'peso': peso,
+                        'precio': precio,
+                        'comportamiento': comportamiento
+                    })
+            
+            total_items = len(unique_products)  # Count unique products only
+            
+            # Get the last product as a sample
+            last_product = None
+            if products_preview:
+                last_product = products_preview[-1]['descripcion']
+            
+            results.append({
+                'id_ticket': ticket.IdTicket,
+                'num_ticket': ticket.NumTicket,
+                'fecha': ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else '',
+                'fecha_iso': ticket.Fecha.strftime('%Y-%m-%d') if ticket.Fecha else '',
+                'id_empresa': ticket.IdEmpresa,
+                'id_tienda': ticket.IdTienda or 1,
+                'id_balanza_maestra': ticket.IdBalanzaMaestra or 1,
+                'id_balanza_esclava': ticket.IdBalanzaEsclava or -1,
+                'tipo_venta': ticket.TipoVenta or 2,
+                'status': ticket.status_text,
+                'status_class': ticket.status_class,
+                'total_items': total_items,
+                'total_amount': round(total_amount, 2),
+                'total_weight': round(total_weight, 3),
+                'products_preview': products_preview,
+                'last_product': last_product,
+                'codigo_barras': ticket.CodigoBarras or ''
+            })
+        
+        print(f"Loaded {len(results)} tickets with detailed information (duplicates removed)")
+        
+        return jsonify(results)
+        
+    except Exception as e:
+        print(f"Error loading tickets: {str(e)}")
+        current_app.logger.error(f"Error in get_all_tickets: {str(e)}")
+        return jsonify([]), 500

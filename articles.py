@@ -1074,9 +1074,29 @@ def delete(id):
     # If it's a POST request, delete the article
     if request.method == 'POST':
         try:
+            # Prima eliminiamo i record correlati nelle tabelle di configurazione
+            # Eliminazione da dat_articulo_t_b
+            db.session.execute(text("""
+                DELETE FROM dat_articulo_t_b 
+                WHERE IdArticulo = :id_articulo
+            """), {"id_articulo": id})
+            
+            # Eliminazione da dat_articulo_t
+            db.session.execute(text("""
+                DELETE FROM dat_articulo_t 
+                WHERE IdArticulo = :id_articulo
+            """), {"id_articulo": id})
+            
+            # Eliminazione da dat_articulo_eanscanner
+            db.session.execute(text("""
+                DELETE FROM dat_articulo_eanscanner 
+                WHERE IdArticulo = :id_articulo
+            """), {"id_articulo": id})
+            
+            # Poi eliminiamo il record principale
             db.session.delete(article)
             db.session.commit()
-            flash('Articolo eliminato con successo', 'success')
+            flash('Articolo e tutti i record correlati eliminati con successo', 'success')
             return redirect(url_for('articles.index'))
         except Exception as e:
             db.session.rollback()

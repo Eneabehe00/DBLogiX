@@ -3,6 +3,199 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+<style>
+    .client-selector-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .search-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        color: white;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    .search-input {
+        border: none;
+        border-radius: 50px;
+        padding: 1rem 1.5rem;
+        font-size: 1.1rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .search-input:focus {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        border: none;
+        outline: none;
+    }
+    
+    .clients-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .client-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+        position: relative;
+    }
+    
+    .client-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        border-color: #667eea;
+    }
+    
+    .client-card.selected {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    }
+    
+    .client-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        margin: 0 auto 1rem;
+    }
+    
+    .client-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    
+    .client-details {
+        color: #6c757d;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .client-detail-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.25rem;
+    }
+    
+    .client-detail-item i {
+        margin-right: 0.5rem;
+        width: 16px;
+        color: #667eea;
+    }
+    
+    .selected-indicator {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: #28a745;
+        color: white;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.3s ease;
+    }
+    
+    .client-card.selected .selected-indicator {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    .no-clients-message {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+        font-size: 1.1rem;
+    }
+    
+    .clients-count {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    
+    .action-buttons {
+        position: sticky;
+        bottom: 2rem;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+        margin-top: 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+    
+    .btn-modern {
+        padding: 0.8rem 2rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        border: none;
+        min-width: 150px;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-continue {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .btn-continue:disabled {
+        background: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .spinner-border {
+        color: #667eea;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -33,44 +226,63 @@
     </div>
 </div>
 
-<div class="container-fluid">
-    <div class="form-card">
-        <div class="form-card-header">
-            <h5 class="form-card-title">
-                <i class="fas fa-user me-2"></i>Seleziona il Cliente
-            </h5>
+<div class="container-fluid client-selector-container">
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h3 class="mb-2">
+                    <i class="fas fa-search me-2"></i>Cerca e Seleziona Cliente
+                </h3>
+                <p class="mb-3">Digita il nome del cliente per filtrare la lista in tempo reale</p>
+                <input type="text" 
+                       id="clientSearchInput" 
+                       class="form-control search-input" 
+                       placeholder="Inizia a digitare il nome del cliente...">
+                <div class="clients-count mt-2">
+                    <span id="clientsCount">Caricamento clienti...</span>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="fas fa-users" style="font-size: 4rem; opacity: 0.3;"></i>
+            </div>
         </div>
-        <div class="form-card-body">
-            <form id="clientSelectForm" method="POST" action="{{ url_for('ddt.new') }}">
-                {{ form.hidden_tag() }}
-                
-                <div class="mb-3">
-                    <label for="clientSearch" class="form-label">Cerca Cliente</label>
-                    <select class="form-control" id="clientSearch" required>
-                        <option value="">Cerca cliente...</option>
-                    </select>
-                    {{ form.cliente_id(id="cliente_id", class="d-none") }}
-                    {{ form.cliente_nome(id="cliente_nome", class="d-none") }}
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Caricamento...</span>
+        </div>
+        <p class="mt-2">Caricamento clienti in corso...</p>
                 </div>
                 
-                <div id="clientDetails" class="card d-none mb-3">
-                    <div class="card-body">
-                        <h5 id="clientName" class="card-title"></h5>
-                        <p id="clientAddress" class="card-text"></p>
-                        <p id="clientVAT" class="card-text"></p>
+    <!-- Clients Grid -->
+    <div class="clients-grid" id="clientsGrid">
+        <!-- I clienti verranno caricati qui tramite JavaScript -->
                     </div>
+
+    <!-- No Results Message -->
+    <div class="no-clients-message d-none" id="noClientsMessage">
+        <i class="fas fa-search fa-3x mb-3" style="opacity: 0.3;"></i>
+        <p>Nessun cliente trovato con i criteri di ricerca specificati.</p>
+        <small>Prova a modificare il termine di ricerca o contatta l'amministratore se il cliente non è presente nel sistema.</small>
                 </div>
                 
-                <div class="form-card-footer">
-                    <a href="{{ url_for('ddt.index') }}" class="btn form-btn form-btn-cancel">
-                        <i class="fas fa-times"></i> Annulla
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <form id="clientSelectForm" method="POST" action="{{ url_for('ddt.new') }}">
+            {{ form.hidden_tag() }}
+            {{ form.cliente_id(id="cliente_id", class="d-none") }}
+            {{ form.cliente_nome(id="cliente_nome", class="d-none") }}
+            
+            <a href="{{ url_for('ddt.index') }}" class="btn btn-modern btn-cancel">
+                <i class="fas fa-times me-2"></i>Annulla
                     </a>
-                    <button type="submit" class="btn form-btn form-btn-save" id="submitBtn" disabled>
-                        <i class="fas fa-arrow-right"></i> Continua
+            <button type="submit" class="btn btn-modern btn-continue" id="submitBtn" disabled>
+                <i class="fas fa-arrow-right me-2"></i>Continua
                     </button>
-                </div>
             </form>
-        </div>
     </div>
 </div>
 {% endblock %}
@@ -78,57 +290,171 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(function() {
-        // Initialize select2
-        $('#clientSearch').select2({
-            placeholder: 'Cerca cliente per nome...',
-            allowClear: true,
-            minimumInputLength: 3,
-            width: '100%',
-            ajax: {
-                url: '{{ url_for("ddt.client_search") }}',
-                dataType: 'json',
-                delay: 250,
-                data: function(params) {
-                    return {
-                        term: params.term
-                    };
-                },
-                processResults: function(data) {
-                    return {
-                        results: data
-                    };
-                },
-                cache: true
-            }
+    let allClients = [];
+    let selectedClientId = null;
+    
+    const clientsGrid = document.getElementById('clientsGrid');
+    const searchInput = document.getElementById('clientSearchInput');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const noClientsMessage = document.getElementById('noClientsMessage');
+    const clientsCount = document.getElementById('clientsCount');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Load all clients on page load
+    loadAllClients();
+    
+    function loadAllClients() {
+        loadingSpinner.style.display = 'block';
+        clientsGrid.style.display = 'none';
+        
+        fetch('{{ url_for("ddt.get_all_clients") }}')
+            .then(response => response.json())
+            .then(data => {
+                allClients = data;
+                displayClients(allClients);
+                updateClientsCount(allClients.length, allClients.length);
+                loadingSpinner.style.display = 'none';
+                clientsGrid.style.display = 'grid';
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento dei clienti:', error);
+                loadingSpinner.style.display = 'none';
+                showNoClientsMessage();
+            });
+    }
+    
+    function displayClients(clients) {
+        clientsGrid.innerHTML = '';
+        
+        if (clients.length === 0) {
+            showNoClientsMessage();
+            return;
+        }
+        
+        hideNoClientsMessage();
+        
+        clients.forEach(client => {
+            const clientCard = createClientCard(client);
+            clientsGrid.appendChild(clientCard);
+        });
+    }
+    
+    function createClientCard(client) {
+        const card = document.createElement('div');
+        card.className = 'client-card';
+        card.dataset.clientId = client.id;
+        card.addEventListener('click', () => selectClient(client));
+        
+        const initials = getClientInitials(client.nombre);
+        const address = client.direccion || 'Indirizzo non disponibile';
+        const vat = client.dni || 'P.IVA/CF non disponibile';
+        const phone = client.telefono1 || 'Telefono non disponibile';
+        
+        card.innerHTML = `
+            <div class="selected-indicator">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="client-avatar">${initials}</div>
+            <div class="client-name">${client.nombre}</div>
+            <div class="client-details">
+                <div class="client-detail-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>${address}</span>
+                </div>
+                <div class="client-detail-item">
+                    <i class="fas fa-id-card"></i>
+                    <span>${vat}</span>
+                </div>
+                <div class="client-detail-item">
+                    <i class="fas fa-phone"></i>
+                    <span>${phone}</span>
+                </div>
+                <div class="client-detail-item">
+                    <i class="fas fa-hashtag"></i>
+                    <span>ID: ${client.id}</span>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+    
+    function getClientInitials(name) {
+        if (!name) return '?';
+        const words = name.trim().split(' ');
+        if (words.length === 1) {
+            return words[0].substring(0, 2).toUpperCase();
+        }
+        return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    
+    function selectClient(client) {
+        // Remove previous selection
+        document.querySelectorAll('.client-card').forEach(card => {
+            card.classList.remove('selected');
         });
         
-        // Update form fields when a client is selected
-        $('#clientSearch').on('select2:select', function(e) {
-            var data = e.params.data;
+        // Add selection to clicked card
+        const selectedCard = document.querySelector(`[data-client-id="${client.id}"]`);
+        selectedCard.classList.add('selected');
             
             // Update form fields
-            $('#cliente_id').val(data.id);
-            $('#cliente_nome').val(data.nombre);
+        document.getElementById('cliente_id').value = client.id;
+        document.getElementById('cliente_nome').value = client.nombre;
             
-            // Update client details card
-            $('#clientName').text(data.nombre);
-            $('#clientAddress').text(data.direccion || 'Indirizzo non disponibile');
-            $('#clientVAT').text('P.IVA/CF: ' + (data.dni || 'Non disponibile'));
-            
-            // Show client details and enable submit button
-            $('#clientDetails').removeClass('d-none');
-            $('#submitBtn').prop('disabled', false);
+        // Enable submit button
+        submitBtn.disabled = false;
+        
+        selectedClientId = client.id;
+        
+        // Scroll to action buttons
+        document.querySelector('.action-buttons').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
+    }
+    
+    function updateClientsCount(showing, total) {
+        if (showing === total) {
+            clientsCount.textContent = `Visualizzando tutti i ${total} clienti`;
+        } else {
+            clientsCount.textContent = `Visualizzando ${showing} di ${total} clienti`;
+        }
+    }
+    
+    function showNoClientsMessage() {
+        noClientsMessage.classList.remove('d-none');
+        clientsGrid.style.display = 'none';
+    }
+    
+    function hideNoClientsMessage() {
+        noClientsMessage.classList.add('d-none');
+        clientsGrid.style.display = 'grid';
+    }
+    
+    // Real-time search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            displayClients(allClients);
+            updateClientsCount(allClients.length, allClients.length);
+            return;
+        }
+        
+        const filteredClients = allClients.filter(client => {
+            return client.nombre.toLowerCase().includes(searchTerm) ||
+                   (client.direccion && client.direccion.toLowerCase().includes(searchTerm)) ||
+                   (client.dni && client.dni.toLowerCase().includes(searchTerm)) ||
+                   client.id.toString().includes(searchTerm);
         });
         
-        // Clear form fields when select is cleared
-        $('#clientSearch').on('select2:clear', function() {
-            $('#cliente_id').val('');
-            $('#cliente_nome').val('');
-            $('#clientDetails').addClass('d-none');
-            $('#submitBtn').prop('disabled', true);
-        });
-    }, 500); // Short delay to ensure jQuery and Select2 are fully loaded
+        displayClients(filteredClients);
+        updateClientsCount(filteredClients.length, allClients.length);
+    });
+    
+    // Focus on search input
+    searchInput.focus();
 });
 </script>
 {% endblock %} 

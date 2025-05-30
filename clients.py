@@ -356,9 +356,23 @@ def delete(id):
     client = Client.query.get_or_404(id)
     
     try:
+        # Prima eliminiamo i record correlati nelle tabelle di configurazione
+        # Eliminazione da dat_cliente_t_b
+        db.session.execute(text("""
+            DELETE FROM dat_cliente_t_b 
+            WHERE IdCliente = :id_cliente
+        """), {"id_cliente": id})
+        
+        # Eliminazione da dat_cliente_t
+        db.session.execute(text("""
+            DELETE FROM dat_cliente_t 
+            WHERE IdCliente = :id_cliente
+        """), {"id_cliente": id})
+        
+        # Poi eliminiamo il record principale
         db.session.delete(client)
         db.session.commit()
-        flash('Cliente eliminato con successo!', 'success')
+        flash('Cliente e tutti i record correlati eliminati con successo!', 'success')
     except SQLAlchemyError as e:
         db.session.rollback()
         flash(f'Errore nell\'eliminazione del cliente: {str(e)}', 'danger')

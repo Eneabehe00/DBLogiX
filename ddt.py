@@ -27,18 +27,38 @@ ddt_bp = Blueprint('ddt', __name__)
 @ddt_bp.route('/')
 @login_required
 def index():
-    """Display a list of all DDTs"""
+    """Display a list of all DDTs with enhanced search functionality"""
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = 15  # Aumentato da 10 a 15 per visualizzare più elementi
+    search_query = request.args.get('search', '', type=str).strip()
     
-    # Recuperare i DDT dalle tabelle AlbaranCabecera
-    ddts = AlbaranCabecera.query.order_by(AlbaranCabecera.Fecha.desc()).all()
+    # Base query
+    ddts_query = AlbaranCabecera.query
+    
+    # Apply search filter if provided
+    if search_query:
+        try:
+            # Try to convert search to integer for ID search
+            search_id = int(search_query)
+            ddts_query = ddts_query.filter(
+                db.or_(
+                    AlbaranCabecera.IdAlbaran == search_id,
+                    AlbaranCabecera.NombreCliente.ilike(f'%{search_query}%')
+                )
+            )
+        except ValueError:
+            # Search only by client name if not a valid ID
+            ddts_query = ddts_query.filter(
+                AlbaranCabecera.NombreCliente.ilike(f'%{search_query}%')
+            )
+    
+    # Order by date descending
+    ddts = ddts_query.order_by(AlbaranCabecera.Fecha.desc()).all()
     
     # Preparare i dati per la visualizzazione
     combined_ddts = []
     
     for ddt in ddts:
-        cliente = Client.query.get(ddt.IdCliente)
         combined_ddts.append({
             'id': ddt.IdAlbaran,
             'date': ddt.Fecha,
@@ -50,9 +70,6 @@ def index():
             'model_type': 'albaran',
             'created_by': ddt.Usuario  # Add the Usuario field to identify the creator
         })
-    
-    # Ordina la lista per data (decrescente)
-    combined_ddts.sort(key=lambda x: x['date'], reverse=True)
     
     # Paginazione manuale
     start = (page - 1) * per_page
@@ -105,7 +122,7 @@ def index():
         per_page=per_page
     )
     
-    return render_template('ddt/index.html', ddts=pagination)
+    return render_template('ddt/index.html', ddts=pagination, search_query=search_query)
 
 @ddt_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -623,9 +640,11 @@ def create():
                 elif product.IdIva == 3:
                     vat_rate = 0.22  # 22%
                 
-                # Calculate prices - Handle None value for PrecioConIVA
+                # Calculate prices - USE the pre-calculated PrecioSinIVA from the article
+                # DON'T recalculate it from PrecioConIVA as it's already correctly calculated
+                price_without_vat = float(product.PrecioSinIVA) if product.PrecioSinIVA is not None else 0.0
                 price_with_vat = float(product.PrecioConIVA) if product.PrecioConIVA is not None else 0.0
-                price_without_vat = price_with_vat / (1 + vat_rate)
+                
                 # Handle None value for Peso - use 1.0 as default if Peso is None
                 peso_value = float(ticket_line.Peso) if ticket_line.Peso is not None else 1.0
                 line_total = price_without_vat * peso_value
@@ -757,9 +776,10 @@ def create():
                 elif id_iva == 3:
                     vat_rate = 0.22  # 22%
                 
-                # Calcola prezzi
-                price_with_vat = float(ticket_line['precio'])
-                price_without_vat = price_with_vat / (1 + vat_rate)
+                # Calcola prezzi per ticket manuali
+                # Il prezzo inserito dall'utente viene considerato come prezzo SENZA IVA per coerenza
+                price_without_vat = float(ticket_line['precio'])
+                price_with_vat = price_without_vat * (1 + vat_rate)
                 peso_value = float(ticket_line['peso'])
                 line_total = price_without_vat * peso_value
                 line_vat = line_total * vat_rate

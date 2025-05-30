@@ -6,7 +6,7 @@
         <IdPaese>IT</IdPaese>
         <IdCodice>12195720011</IdCodice>
       </IdTrasmittente>
-      <ProgressivoInvio>f66da3</ProgressivoInvio>
+      <ProgressivoInvio>39a305</ProgressivoInvio>
       <FormatoTrasmissione>FPR12</FormatoTrasmissione>
       <CodiceDestinatario>0000000</CodiceDestinatario>
     </DatiTrasmissione>
@@ -22,9 +22,9 @@
         <RegimeFiscale>RF01</RegimeFiscale>
       </DatiAnagrafici>
       <Sede>
-        <Indirizzo>Via Catania, 9/A - 10153 </Indirizzo>
-        <CAP>Torino</CAP>
-        <Comune>TO</Comune>
+        <Indirizzo>Via Catania, 9/A </Indirizzo>
+        <CAP>10153</CAP>
+        <Comune>SETTIMO</Comune>
         <Provincia>TO</Provincia>
         <Nazione>IT</Nazione>
       </Sede>
@@ -51,11 +51,11 @@
         <TipoDocumento>TD24</TipoDocumento>
         <Divisa>EUR</Divisa>
         <Data>2025-05-30</Data>
-        <Numero>2505301130</Numero>
-        <Causale>Fattura differita da DDT n. 2 del 30/05/2025</Causale>
+        <Numero>2505301230</Numero>
+        <Causale>Fattura differita da DDT n. 3 del 30/05/2025</Causale>
       </DatiGeneraliDocumento>
       <DatiDDT>
-        <NumeroDDT>2</NumeroDDT>
+        <NumeroDDT>3</NumeroDDT>
         <DataDDT>2025-05-30</DataDDT>
       </DatiDDT>
     </DatiGenerali>
@@ -65,29 +65,14 @@
         <Descrizione>PARMIGIANA DI MELANZANE</Descrizione>
         <Quantita>20.00</Quantita>
         <UnitaMisura>un</UnitaMisura>
-        <PrezzoUnitario>0.009615</PrezzoUnitario>
-        <PrezzoTotale>0.00</PrezzoTotale>
+        <PrezzoUnitario>10.00000000</PrezzoUnitario>
+        <PrezzoTotale>200.00</PrezzoTotale>
         <AliquotaIVA>4.00</AliquotaIVA>
-      </DettaglioLinee>
-      <DettaglioLinee>
-        <NumeroLinea>2</NumeroLinea>
-        <Descrizione>spedizione</Descrizione>
-        <Quantita>1.00</Quantita>
-        <UnitaMisura>un</UnitaMisura>
-        <PrezzoUnitario>125.409836</PrezzoUnitario>
-        <PrezzoTotale>0.00</PrezzoTotale>
-        <AliquotaIVA>22.00</AliquotaIVA>
       </DettaglioLinee>
       <DatiRiepilogo>
         <AliquotaIVA>4.00</AliquotaIVA>
-        <ImponibileImporto>0.00</ImponibileImporto>
-        <Imposta>0.00</Imposta>
-        <EsigibilitaIVA>I</EsigibilitaIVA>
-      </DatiRiepilogo>
-      <DatiRiepilogo>
-        <AliquotaIVA>22.00</AliquotaIVA>
-        <ImponibileImporto>0.00</ImponibileImporto>
-        <Imposta>0.00</Imposta>
+        <ImponibileImporto>200.00</ImponibileImporto>
+        <Imposta>8.00</Imposta>
         <EsigibilitaIVA>I</EsigibilitaIVA>
       </DatiRiepilogo>
     </DatiBeniServizi>
@@ -96,7 +81,7 @@
       <DettaglioPagamento>
         <ModalitaPagamento>MP05</ModalitaPagamento>
         <DataScadenzaPagamento>2025-06-30</DataScadenzaPagamento>
-        <ImportoPagamento>153.16</ImportoPagamento>
+        <ImportoPagamento>208.00</ImportoPagamento>
       </DettaglioPagamento>
     </DatiPagamento>
   </FatturaElettronicaBody>

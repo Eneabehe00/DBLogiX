@@ -185,13 +185,21 @@ def create_fattura_pa_from_ddt(ddt_id):
             dati_linea = ET.SubElement(dati_beni_servizi, 'DettaglioLinee')
             ET.SubElement(dati_linea, 'NumeroLinea').text = str(i)
             ET.SubElement(dati_linea, 'Descrizione').text = line.Descripcion
-            ET.SubElement(dati_linea, 'Quantita').text = format_decimal(line.Peso, 2)
-            ET.SubElement(dati_linea, 'UnitaMisura').text = line.Medida2 or 'PZ'
-            ET.SubElement(dati_linea, 'PrezzoUnitario').text = format_decimal(line.PrecioSinIVA, 6)
             
-            # Calculate line amount without VAT
-            price_without_vat = float(line.ImporteSinIVAConDtoL or 0)
-            ET.SubElement(dati_linea, 'PrezzoTotale').text = format_decimal(price_without_vat, 2)
+            # Quantità (peso/quantità dell'articolo)
+            quantity = float(line.Peso or 1)
+            ET.SubElement(dati_linea, 'Quantita').text = format_decimal(quantity, 2)
+            ET.SubElement(dati_linea, 'UnitaMisura').text = line.Medida2 or 'PZ'
+            
+            # PrezzoUnitario (prezzo unitario senza IVA)
+            unit_price = float(line.PrecioSinIVA or 0)
+            ET.SubElement(dati_linea, 'PrezzoUnitario').text = format_decimal(unit_price, 8)
+            
+            # PrezzoTotale = Quantità × PrezzoUnitario (secondo specifiche PA)
+            line_total = quantity * unit_price
+            # Arrotonda a 2 decimali come richiesto dalle specifiche
+            line_total = round(line_total, 2)
+            ET.SubElement(dati_linea, 'PrezzoTotale').text = format_decimal(line_total, 2)
             
             # VAT rate for the line
             vat_rate = float(line.PorcentajeIVA or 0)
@@ -206,9 +214,10 @@ def create_fattura_pa_from_ddt(ddt_id):
                     'AliquotaIVA': vat_rate
                 }
             
-            # Add the line amount to the summary
-            vat_summary[vat_key]['ImponibileImporto'] += price_without_vat
-            vat_summary[vat_key]['Imposta'] += price_without_vat * (vat_rate / 100)
+            # Add the line amount to the summary (usa il PrezzoTotale calcolato)
+            vat_summary[vat_key]['ImponibileImporto'] += line_total
+            # Calcola l'imposta: ImponibileImporto × (AliquotaIVA/100)
+            vat_summary[vat_key]['Imposta'] = round(vat_summary[vat_key]['ImponibileImporto'] * (vat_rate / 100), 2)
         
         # 2.2.2 DatiRiepilogo (VAT Summary)
         for vat_rate, data in vat_summary.items():
@@ -232,10 +241,15 @@ def create_fattura_pa_from_ddt(ddt_id):
             payment_date = payment_date.replace(year=payment_date.year + 1)
             
         ET.SubElement(dettaglio_pagamento, 'DataScadenzaPagamento').text = payment_date.strftime('%Y-%m-%d')
-        ET.SubElement(dettaglio_pagamento, 'ImportoPagamento').text = format_decimal(ddt.ImporteTotal, 2)
         
-        # Add IBAN if available
-        # ET.SubElement(dettaglio_pagamento, 'IBAN').text = "IT00X0000000000000000000000"  # Example IBAN
+        # Calcola l'ImportoPagamento come somma di ImponibileImporto + Imposta
+        total_payment = 0.0
+        for vat_data in vat_summary.values():
+            total_payment += vat_data['ImponibileImporto'] + vat_data['Imposta']
+        
+        # Arrotonda il totale del pagamento a 2 decimali
+        total_payment = round(total_payment, 2)
+        ET.SubElement(dettaglio_pagamento, 'ImportoPagamento').text = format_decimal(total_payment, 2)
         
         # Generate the invoice XML
         xml_data = prettify_xml(root)

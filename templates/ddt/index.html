@@ -5,6 +5,188 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+    }
+
+    .ddt-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .ddt-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table th {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.bg-success {
+        background-color: #27ae60;
+    }
+    
+    .stats-card.bg-success:hover {
+        background-color: #229954;
+    }
+    
+    .stats-card.bg-warning {
+        background-color: #f39c12;
+    }
+    
+    .stats-card.bg-warning:hover {
+        background-color: #e67e22;
+    }
+    
+    .stats-card.bg-info {
+        background-color: var(--accent-blue);
+    }
+    
+    .stats-card.bg-info:hover {
+        background-color: #2980b9;
+    }
+    
+    .input-group .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px 0 0 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .input-group .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-info {
+        background-color: var(--accent-blue) !important;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--secondary-dark) !important;
+        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-success:hover {
+        background-color: #27ae60;
+        border-color: #27ae60;
+        transform: translateY(-1px);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        transform: translateY(-1px);
+        color: var(--primary-dark);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .text-success {
+        color: #27ae60 !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -38,37 +220,66 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Search Filters -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-transparent">
-            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
+    <!-- Enhanced Search and Filters -->
+    <div class="filter-section">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-4">
+                <label class="form-label fw-bold">🔍 Ricerca Avanzata</label>
+                <form method="GET" action="{{ url_for('ddt.index') }}" id="searchForm">
+                    <div class="input-group">
+                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                        <input type="text" name="search" id="searchInput" class="form-control" 
+                               placeholder="Cerca per cliente o ID DDT..." 
+                               value="{{ search_query or '' }}">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <small class="text-muted">Cerca per nome cliente o ID del DDT</small>
+            </div>
+            <div class="col-lg-3">
+                <label class="form-label fw-bold">📅 Data Inizio</label>
+                <input type="date" id="startDate" class="form-control">
+            </div>
+            <div class="col-lg-3">
+                <label class="form-label fw-bold">📅 Data Fine</label>
+                <input type="date" id="endDate" class="form-control">
+            </div>
+            <div class="col-lg-2">
+                <button id="applyDateFilter" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filtra
+                </button>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-lg-6">
-                    <div class="search-wrapper">
-                        <div class="position-relative">
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                <input type="text" id="searchInput" class="form-control" placeholder="Cerca DDT per cliente...">
-                            </div>
-                        </div>
-                    </div>
+        
+        <!-- Quick Stats -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-1">{{ ddts.total if ddts else 0 }}</h5>
+                    <small>Totale DDT</small>
                 </div>
-                <div class="col-lg-6">
-                    <div class="row g-2">
-                        <div class="col-5 col-md-5">
-                            <label for="startDate" class="form-label">Data inizio</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-                        <div class="col-5 col-md-5">
-                            <label for="endDate" class="form-label">Data fine</label>
-                            <input type="date" id="endDate" class="form-control">
-                        </div>
-                        <div class="col-2 col-md-2 d-flex align-items-end">
-                            <button id="applyDateFilter" class="btn btn-primary w-100">Filtra</button>
-                        </div>
-                    </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-success">
+                    <h5 class="mb-1" id="visibleCount">{{ ddts.items|length if ddts else 0 }}</h5>
+                    <small>DDT visualizzati</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-warning">
+                    <h5 class="mb-1">{{ ddts.page if ddts else 1 }}</h5>
+                    <small>Pagina corrente</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-info">
+                    <h5 class="mb-1">{{ ddts.pages if ddts else 1 }}</h5>
+                    <small>Totale pagine</small>
                 </div>
             </div>
         </div>
@@ -85,41 +296,114 @@
     {% endif %}
     {% endwith %}
 
-    <!-- DDT List -->
-    <div class="card shadow-sm">
+    <!-- Search Results Info -->
+    {% if search_query %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
+        <div>
+            <strong>Ricerca attiva:</strong> "{{ search_query }}"<br>
+            <small class="text-muted">
+                {% if ddts.total > 0 %}
+                    Trovati {{ ddts.total }} DDT corrispondenti in tutto il database
+                    {% if ddts.total > ddts.items|length %}
+                        • Visualizzando {{ ddts.items|length }} risultati (pagina {{ ddts.page }} di {{ ddts.pages }})
+                    {% endif %}
+                {% else %}
+                    Nessun DDT trovato per questa ricerca
+                {% endif %}
+            </small>
+        </div>
+        <a href="{{ url_for('ddt.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Cancella ricerca
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Enhanced DDT List -->
+    <div class="ddt-card card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Documenti</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportDDTs()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
             {% if ddts.items %}
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                <table class="table table-hover mb-0" id="ddtTable">
+                    <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Cliente</th>
-                            <th>Data</th>
-                            <th>Articoli</th>
-                            <th>Totale</th>
-                            <th>Origine</th>
+                            <th>
+                                <i class="fas fa-hashtag me-1"></i>ID
+                            </th>
+                            <th>
+                                <i class="fas fa-user me-1"></i>Cliente
+                            </th>
+                            <th>
+                                <i class="fas fa-calendar me-1"></i>Data
+                            </th>
+                            <th>
+                                <i class="fas fa-boxes me-1"></i>Articoli
+                            </th>
+                            <th>
+                                <i class="fas fa-euro-sign me-1"></i>Totale
+                            </th>
+                            <th>
+                                <i class="fas fa-tag me-1"></i>Origine
+                            </th>
+                            <th>
+                                <i class="fas fa-cogs me-1"></i>Azioni
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ddt in ddts.items %}
-                        <tr data-url="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" style="cursor: pointer;">
-                            <td data-label="ID">{{ ddt.id }}</td>
-                            <td data-label="Cliente">
-                                <div class="text-truncate" style="max-width: 160px;">{{ ddt.cliente_nome }}</div>
+                        <tr data-url="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" style="cursor: pointer;" class="table-row">
+                            <td data-label="ID">
+                                <span class="badge bg-primary">{{ ddt.id }}</span>
                             </td>
-                            <td data-label="Data">{{ ddt.formatted_date }}</td>
-                            <td data-label="Articoli">{{ ddt.num_linee }}</td>
-                            <td data-label="Totale">€ {{ "%.2f"|format(ddt.totale) }}</td>
+                            <td data-label="Cliente">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle text-muted me-2"></i>
+                                    <div class="text-truncate" style="max-width: 160px;" title="{{ ddt.cliente_nome }}">
+                                        {{ ddt.cliente_nome }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Data">
+                                <span class="text-muted">{{ ddt.formatted_date }}</span>
+                            </td>
+                            <td data-label="Articoli">
+                                <span class="badge bg-info">{{ ddt.num_linee }}</span>
+                            </td>
+                            <td data-label="Totale">
+                                <strong class="text-success">€ {{ "%.2f"|format(ddt.totale) }}</strong>
+                            </td>
                             <td data-label="Origine">
                                 {% if ddt.created_by == 'DBLogiX' %}
-                                <span class="badge-soft badge-soft-primary">DBLogiX</span>
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-desktop me-1"></i>DBLogiX
+                                </span>
                                 {% else %}
-                                <span class="badge-soft badge-soft-secondary">Bilancia</span>
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-weight me-1"></i>Bilancia
+                                </span>
                                 {% endif %}
+                            </td>
+                            <td data-label="Azioni">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary view-btn" data-url="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" title="Visualizza">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-success print-btn" data-id="{{ ddt.id }}" title="Stampa">
+                                        <i class="fas fa-print"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -127,14 +411,14 @@
                 </table>
             </div>
             
-            <!-- Pagination -->
+            <!-- Enhanced Pagination -->
             {% if ddts.pages > 1 %}
-            <div class="p-3 border-top">
+            <div class="p-3 border-top bg-light">
                 <nav aria-label="Page navigation">
                     <ul class="pagination pagination-sm justify-content-center mb-0">
                         {% if ddts.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('ddt.index', page=ddts.prev_num) }}" aria-label="Previous">
+                            <a class="page-link" href="{{ url_for('ddt.index', page=ddts.prev_num, search=search_query) }}" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -152,7 +436,7 @@
                                 </li>
                                 {% else %}
                                 <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('ddt.index', page=page_num) }}">{{ page_num }}</a>
+                                    <a class="page-link" href="{{ url_for('ddt.index', page=page_num, search=search_query) }}">{{ page_num }}</a>
                                 </li>
                                 {% endif %}
                             {% else %}
@@ -164,7 +448,7 @@
                         
                         {% if ddts.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('ddt.index', page=ddts.next_num) }}" aria-label="Next">
+                            <a class="page-link" href="{{ url_for('ddt.index', page=ddts.next_num, search=search_query) }}" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
@@ -175,15 +459,20 @@
                         {% endif %}
                     </ul>
                 </nav>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Pagina {{ ddts.page }} di {{ ddts.pages }} - {{ ddts.total }} elementi totali
+                    </small>
+                </div>
             </div>
             {% endif %}
             
             {% else %}
             <div class="p-5 text-center">
-                <i class="fas fa-file-invoice text-muted mb-3" style="font-size: 3rem;"></i>
+                <i class="fas fa-file-invoice text-muted mb-3" style="font-size: 4rem;"></i>
                 <h5>Nessun DDT trovato</h5>
                 <p class="text-muted">Non ci sono documenti di trasporto nel sistema. Clicca su "Nuovo DDT" per crearne uno.</p>
-                <a href="{{ url_for('ddt.new') }}" class="btn btn-primary mt-2">
+                <a href="{{ url_for('ddt.new') }}" class="btn btn-primary btn-lg mt-3">
                     <i class="fas fa-plus me-2"></i>Crea Nuovo DDT
                 </a>
             </div>
@@ -202,43 +491,134 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         
-        // Real-time search functionality
+        // Enhanced search functionality - prioritize server-side search
         let searchTimeout;
         const searchInput = document.getElementById('searchInput');
-        const tableRows = document.querySelectorAll('tbody tr');
+        const tableRows = document.querySelectorAll('.table-row');
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const searchForm = document.getElementById('searchForm');
         
+        // Check if we have an active server search
+        const hasActiveSearch = searchInput.value.trim().length > 0;
+        
+        function updateVisibleCount() {
+            const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+            visibleCountEl.textContent = visibleRows.length;
+        }
+        
+        // Server-side search with auto-submit
         if (searchInput) {
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
-                const searchTerm = this.value.toLowerCase();
+                const searchTerm = this.value.toLowerCase().trim();
                 
-                searchTimeout = setTimeout(function() {
-                    tableRows.forEach(function(row) {
-                        const clientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-                        if (clientName.includes(searchTerm)) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    });
-                }, 300);
+                // If search term is long enough, use server-side search
+                if (searchTerm.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit form for server-side search
+                        searchForm.submit();
+                    }, 800); // Longer delay for server search
+                } else if (searchTerm.length === 0) {
+                    // Clear search immediately if input is empty
+                    searchForm.submit();
+                } else {
+                    // For very short terms, use client-side search on current page only
+                    searchTimeout = setTimeout(function() {
+                        performClientSideSearch(searchTerm);
+                    }, 200);
+                }
+            });
+            
+            // Handle Enter key for immediate search
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    if (this.value.trim().length > 0) {
+                        searchForm.submit();
+                    }
+                }
             });
         }
         
-        // Date filter functionality
+        // Client-side search function (only for short terms or as fallback)
+        function performClientSideSearch(searchTerm) {
+            if (hasActiveSearch) {
+                // Don't perform client-side search if server search is active
+                return;
+            }
+            
+            tableRows.forEach(function(row) {
+                const clientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const ddtId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                
+                // Search both in client name and DDT ID
+                if (clientName.includes(searchTerm) || ddtId.includes(searchTerm)) {
+                    row.style.display = '';
+                    row.classList.add('animate__animated', 'animate__fadeIn');
+                } else {
+                    row.style.display = 'none';
+                    row.classList.remove('animate__animated', 'animate__fadeIn');
+                }
+            });
+            updateVisibleCount();
+        }
+        
+        // Clear search functionality
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                window.location.href = '{{ url_for("ddt.index") }}';
+            });
+        }
+        
+        // Add search hints
+        if (searchInput && !hasActiveSearch) {
+            const originalPlaceholder = searchInput.placeholder;
+            searchInput.addEventListener('focus', function() {
+                this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+            });
+            searchInput.addEventListener('blur', function() {
+                this.placeholder = originalPlaceholder;
+            });
+        }
+        
+        // Show search status
+        if (hasActiveSearch) {
+            // Add visual indicator that server search is active
+            const searchIcon = document.querySelector('#searchForm .input-group-text i');
+            if (searchIcon) {
+                searchIcon.className = 'fas fa-search text-success';
+                searchIcon.title = 'Ricerca attiva su tutti i DDT';
+            }
+            
+            // Add search status message
+            const searchStatus = document.createElement('div');
+            searchStatus.className = 'alert alert-info mt-2 mb-0';
+            searchStatus.innerHTML = '<i class="fas fa-info-circle me-2"></i>Ricerca attiva per: <strong>"{{ search_query }}"</strong> - Cercando in tutti i DDT del database';
+            searchForm.parentNode.insertBefore(searchStatus, searchForm.nextSibling);
+        }
+        
+        // Enhanced date filter functionality
         const applyDateFilter = document.getElementById('applyDateFilter');
         if (applyDateFilter) {
             applyDateFilter.addEventListener('click', function() {
                 const startDate = startDateInput.value ? new Date(startDateInput.value) : null;
                 const endDate = endDateInput.value ? new Date(endDateInput.value) : null;
                 
-                if (!startDate && !endDate) return;
+                if (!startDate && !endDate) {
+                    tableRows.forEach(function(row) {
+                        row.style.display = '';
+                    });
+                    updateVisibleCount();
+                    return;
+                }
                 
                 tableRows.forEach(function(row) {
-                    const dateText = row.querySelector('td:nth-child(3)').textContent;
-                    const dateParts = dateText.split('/');
+                    const dateText = row.querySelector('td:nth-child(3)').textContent.trim();
+                    const dateParts = dateText.split(' ')[0].split('/'); // Get only date part, ignore time
                     const rowDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
                     
                     let show = true;
@@ -247,8 +627,25 @@
                     
                     row.style.display = show ? '' : 'none';
                 });
+                updateVisibleCount();
             });
         }
+        
+        // Enhanced button handlers for actions
+        document.querySelectorAll('.view-btn').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                window.location.href = this.dataset.url;
+            });
+        });
+        
+        document.querySelectorAll('.print-btn').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const ddtId = this.dataset.id;
+                window.open('{{ url_for("ddt.export", ddt_id=0) }}'.replace('0', ddtId), '_blank');
+            });
+        });
         
         // Make rows clickable to view detail
         tableRows.forEach(function(row) {
@@ -259,12 +656,33 @@
             });
         });
         
-        // Print functionality
+        // Print functionality (legacy support)
         window.printDDT = function(id) {
-            // Prevent row click when print button is clicked
             event.stopPropagation();
             window.open('{{ url_for("ddt.export", ddt_id=0) }}'.replace('0', id), '_blank');
         };
+        
+        // Export functionality
+        window.exportDDTs = function() {
+            // Implement export functionality
+            alert('Funzionalità di esportazione in sviluppo');
+        };
+        
+        // Refresh table
+        window.refreshTable = function() {
+            window.location.reload();
+        };
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+        
+        // Initialize visible count
+        updateVisibleCount();
     });
 </script>
 {% endblock %} 

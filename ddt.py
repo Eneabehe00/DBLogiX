@@ -200,22 +200,96 @@ def preview():
     total_amount = 0
     total_weight = 0
     
+    # Debug: Log selected tickets
+    current_app.logger.info(f"🔍 DEBUG: Elaborazione {len(selected_tickets)} ticket selezionati")
+    
     for ticket_info in selected_tickets:
+        # Force session refresh to avoid caching issues
+        db.session.expire_all()
+        
         ticket = TicketHeader.query.filter_by(
             IdTicket=ticket_info['id_ticket'],
             IdEmpresa=ticket_info['id_empresa']
         ).first()
         
         if ticket:
-            # Get ticket lines
+            # DEBUG: Log ticket info
+            current_app.logger.info(f"🎫 DEBUG: Processando Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket})")
+            
+            # Get ticket lines with both ORM and raw SQL for comparison
             lines = TicketLine.query.filter_by(
                 IdTicket=ticket.IdTicket
             ).all()
             
+            # More robust query using explicit join to ensure data integrity
+            verified_query = db.session.query(TicketLine).join(
+                TicketHeader, TicketLine.IdTicket == TicketHeader.IdTicket
+            ).filter(
+                TicketHeader.IdTicket == ticket.IdTicket,
+                TicketLine.IdTicket == ticket.IdTicket
+            ).all()
+            
+            current_app.logger.info(f"🔍 DEBUG: Standard query: {len(lines)} lines, Join query: {len(verified_query)} lines")
+            
+            # Use the join query as it's more reliable
+            lines = verified_query
+            
+            # Alternative query using raw SQL to avoid potential ORM caching issues
+            raw_query = """
+            SELECT IdLineaTicket, IdTicket, IdArticulo, Descripcion, Peso, FechaCaducidad, comportamiento
+            FROM dat_ticket_linea 
+            WHERE IdTicket = :ticket_id
+            ORDER BY IdLineaTicket
+            """
+            raw_result = db.session.execute(text(raw_query), {'ticket_id': ticket.IdTicket})
+            raw_lines = []
+            for row in raw_result:
+                raw_lines.append({
+                    'IdLineaTicket': row[0],
+                    'IdTicket': row[1],
+                    'IdArticulo': row[2],
+                    'Descripcion': row[3],
+                    'Peso': row[4],
+                    'FechaCaducidad': row[5],
+                    'comportamiento': row[6]
+                })
+            
+            # Compare ORM vs raw results
+            current_app.logger.info(f"🔍 DEBUG: ORM query returned {len(lines)} lines, Raw SQL returned {len(raw_lines)} lines")
+            if len(lines) != len(raw_lines):
+                current_app.logger.error(f"🚨 DISCREPANZA: ORM e SQL raw hanno risultati diversi per ticket {ticket.IdTicket}")
+                # Use raw SQL results as they are more reliable
+                lines = []
+                for raw_line in raw_lines:
+                    # Create a mock TicketLine object for compatibility
+                    mock_line = type('MockTicketLine', (), raw_line)()
+                    lines.append(mock_line)
+            
+            # DEBUG: Log lines found
+            current_app.logger.info(f"📋 DEBUG: Trovate {len(lines)} linee per ticket {ticket.IdTicket}")
+            
+            # Additional verification: ensure all lines actually belong to this ticket
+            verified_lines = []
+            for line in lines:
+                if line.IdTicket == ticket.IdTicket:
+                    verified_lines.append(line)
+                else:
+                    current_app.logger.error(f"🚨 ERRORE: Linea {line.IdLineaTicket} ha IdTicket={line.IdTicket} ma dovrebbe essere {ticket.IdTicket}")
+            
+            current_app.logger.info(f"✅ DEBUG: Verificate {len(verified_lines)} linee valide per ticket {ticket.IdTicket}")
+            
             ticket_total = 0
             ticket_lines_data = []
             
-            for line in lines:
+            for line in verified_lines:
+                # DEBUG: Log each line
+                current_app.logger.info(f"   🔸 Linea {line.IdLineaTicket}: IdTicket={line.IdTicket}, IdArticulo={line.IdArticulo}, Desc={line.Descripcion}")
+                
+                # Additional verification: ensure line belongs to this ticket
+                if line.IdTicket != ticket.IdTicket:
+                    current_app.logger.error(f"🚨 ERRORE CRITICO: Linea {line.IdLineaTicket} non appartiene al ticket {ticket.IdTicket}")
+                    continue
+                
                 # Get product info
                 product = Product.query.get(line.IdArticulo)
                 if product:
@@ -223,6 +297,8 @@ def preview():
                     ticket_total += line_amount
                     
                     ticket_lines_data.append({
+                        'id_linea_ticket': line.IdLineaTicket,  # Added for better tracking
+                        'id_ticket': line.IdTicket,  # Added for verification
                         'id_articulo': line.IdArticulo,
                         'descripcion': line.Descripcion,
                         'peso': line.Peso,
@@ -230,6 +306,17 @@ def preview():
                         'importe': line_amount,
                         'fecha_caducidad': line.FechaCaducidad
                     })
+                else:
+                    current_app.logger.warning(f"   ⚠️  Prodotto non trovato per IdArticulo={line.IdArticolo}")
+            
+            # DEBUG: Final ticket data
+            current_app.logger.info(f"🎯 DEBUG: Ticket {ticket.IdTicket} completato con {len(ticket_lines_data)} linee valide")
+            
+            # Add detailed summary for this ticket
+            line_ids = [line_data['id_linea_ticket'] for line_data in ticket_lines_data]
+            article_ids = [line_data['id_articulo'] for line_data in ticket_lines_data]
+            current_app.logger.info(f"📝 DEBUG: Ticket {ticket.IdTicket} - Linee: {line_ids}")
+            current_app.logger.info(f"📝 DEBUG: Ticket {ticket.IdTicket} - Articoli: {article_ids}")
             
             preview_data.append({
                 'ticket': {
@@ -249,6 +336,11 @@ def preview():
             
             total_amount += ticket_total
             total_weight += sum(float(line.get('peso', 0)) for line in ticket_lines_data)
+        else:
+            current_app.logger.warning(f"⚠️  Ticket non trovato: ID={ticket_info['id_ticket']}, Empresa={ticket_info['id_empresa']}")
+    
+    # DEBUG: Final summary
+    current_app.logger.info(f"📊 DEBUG: Elaborazione completata - {len(preview_data)} ticket nel preview")
     
     # Get all available tickets for adding more
     available_tickets = TicketHeader.query.filter(
@@ -1692,3 +1784,169 @@ def api_search_products():
         })
     
     return jsonify({'success': True, 'products': results}) 
+
+@ddt_bp.route('/debug/verify_data', methods=['GET'])
+@login_required
+def debug_verify_data():
+    """Debug function to verify IdTicket-IdArticulo integrity"""
+    try:
+        # Get some recent tickets
+        recent_tickets = TicketHeader.query.order_by(TicketHeader.Fecha.desc()).limit(10).all()
+        
+        verification_results = []
+        
+        for ticket in recent_tickets:
+            # Get lines for this ticket
+            lines = TicketLine.query.filter_by(IdTicket=ticket.IdTicket).all()
+            
+            ticket_info = {
+                'ticket_id': ticket.IdTicket,
+                'num_ticket': ticket.NumTicket,
+                'fecha': ticket.Fecha.strftime('%Y-%m-%d %H:%M:%S') if ticket.Fecha else 'N/A',
+                'lines_count': len(lines),
+                'lines': []
+            }
+            
+            for line in lines:
+                product = Product.query.get(line.IdArticulo)
+                line_info = {
+                    'id_linea_ticket': line.IdLineaTicket,
+                    'id_ticket': line.IdTicket,
+                    'id_articulo': line.IdArticulo,
+                    'descripcion': line.Descripcion,
+                    'peso': float(line.Peso) if line.Peso else 0,
+                    'product_found': product is not None,
+                    'product_desc': product.Descripcion if product else 'N/A'
+                }
+                ticket_info['lines'].append(line_info)
+            
+            verification_results.append(ticket_info)
+        
+        return jsonify({
+            'success': True,
+            'verification_results': verification_results
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Errore nella verifica dati: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@ddt_bp.route('/debug/check_duplicates', methods=['GET'])
+@login_required
+def debug_check_duplicates():
+    """Debug function to check for duplicate or inconsistent data"""
+    try:
+        # Check for ticket lines with the same IdTicket and IdArticulo but different descriptions
+        query = """
+        SELECT 
+            t1.IdTicket,
+            t1.IdArticulo,
+            COUNT(*) as count_lines,
+            GROUP_CONCAT(DISTINCT t1.Descripcion) as descriptions,
+            GROUP_CONCAT(DISTINCT t1.IdLineaTicket) as line_ids
+        FROM dat_ticket_linea t1
+        GROUP BY t1.IdTicket, t1.IdArticulo
+        HAVING COUNT(*) > 1 OR COUNT(DISTINCT t1.Descripcion) > 1
+        ORDER BY t1.IdTicket DESC
+        LIMIT 20
+        """
+        
+        result = db.session.execute(text(query))
+        duplicates = []
+        
+        for row in result:
+            duplicates.append({
+                'id_ticket': row[0],
+                'id_articulo': row[1],
+                'count_lines': row[2],
+                'descriptions': row[3],
+                'line_ids': row[4]
+            })
+        
+        # Check for orphaned ticket lines (lines without valid ticket)
+        orphaned_query = """
+        SELECT tl.IdLineaTicket, tl.IdTicket, tl.IdArticulo, tl.Descripcion
+        FROM dat_ticket_linea tl
+        LEFT JOIN dat_ticket_cabecera tc ON tl.IdTicket = tc.IdTicket
+        WHERE tc.IdTicket IS NULL
+        LIMIT 10
+        """
+        
+        orphaned_result = db.session.execute(text(orphaned_query))
+        orphaned_lines = []
+        
+        for row in orphaned_result:
+            orphaned_lines.append({
+                'id_linea_ticket': row[0],
+                'id_ticket': row[1],
+                'id_articulo': row[2],
+                'descripcion': row[3]
+            })
+        
+        return jsonify({
+            'success': True,
+            'duplicates': duplicates,
+            'orphaned_lines': orphaned_lines
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Errore nel controllo duplicati: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@ddt_bp.route('/api/iva/list', methods=['GET'])
+@login_required
+def api_get_iva_rates():
+    """API to get available IVA rates"""
+    try:
+        from sqlalchemy import text
+        result = db.session.execute(text("SELECT IdIVA, PorcentajeIVA FROM dat_iva ORDER BY PorcentajeIVA"))
+        iva_rates = []
+        for row in result:
+            iva_rates.append({
+                'id': row[0],
+                'percentage': float(row[1]),
+                'label': f"{row[1]}%"
+            })
+        
+        return jsonify({'success': True, 'iva_rates': iva_rates})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@ddt_bp.route('/api/quick-add-999', methods=['POST'])
+@login_required
+def api_quick_add_article_999():
+    """API to quickly add article 999 to manual ticket with custom price and IVA"""
+    try:
+        data = request.get_json()
+        precio = float(data.get('precio', 0))
+        id_iva = int(data.get('id_iva', 3))
+        peso = float(data.get('peso', 1.0))
+        
+        if precio <= 0:
+            return jsonify({'success': False, 'message': 'Il prezzo deve essere maggiore di zero'})
+        
+        # Recupera l'articolo 999
+        article_999 = Product.query.filter_by(IdArticulo=999).first()
+        if not article_999:
+            return jsonify({'success': False, 'message': 'Articolo 999 non trovato'})
+        
+        # Crea il prodotto con prezzo personalizzato
+        product_data = {
+            'id': 999,
+            'descripcion': article_999.Descripcion,
+            'precio': precio,
+            'iva': id_iva,
+            'peso': peso,
+            'comportamiento': 1
+        }
+        
+        return jsonify({'success': True, 'product': product_data})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})

@@ -864,6 +864,13 @@ class Task(db.Model):
     def is_completed(self):
         return self.status == 'completed' and self.completed_tickets == self.total_tickets
     
+    @property
+    def is_overdue(self):
+        """Check if task is overdue (deadline passed and not completed)"""
+        if not self.deadline:
+            return False
+        return datetime.utcnow() > self.deadline and self.status != 'completed'
+    
     def update_progress(self):
         """Update the progress counters"""
         completed_count = self.task_tickets.filter_by(status='completed').count()

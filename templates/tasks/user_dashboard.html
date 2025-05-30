@@ -49,7 +49,7 @@
 <div class="container-fluid">
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
             <div class="stats-card primary">
                 <div class="stats-icon">
                     <i class="fas fa-list"></i>
@@ -58,7 +58,7 @@
                 <div class="stats-label">Task Assegnati</div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
             <div class="stats-card warning">
                 <div class="stats-icon">
                     <i class="fas fa-clock"></i>
@@ -67,7 +67,7 @@
                 <div class="stats-label">In Attesa</div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
             <div class="stats-card info">
                 <div class="stats-icon">
                     <i class="fas fa-play"></i>
@@ -76,13 +76,22 @@
                 <div class="stats-label">In Corso</div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
             <div class="stats-card success">
                 <div class="stats-icon">
                     <i class="fas fa-check"></i>
                 </div>
                 <div class="stats-number">{{ stats.completed }}</div>
                 <div class="stats-label">Completati</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="stats-card danger">
+                <div class="stats-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stats-number">{{ stats.overdue }}</div>
+                <div class="stats-label">Scaduti</div>
             </div>
         </div>
     </div>
@@ -143,7 +152,7 @@
             <div class="row">
                 {% for task in active_tasks %}
                 <div class="col-lg-6 col-xl-4 mb-3">
-                    <div class="task-card task-{{ task.status }}">
+                    <div class="task-card task-{{ task.status }} clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
                         <div class="task-card-header">
                             <h6 class="task-card-title">{{ task.task_number }}</h6>
                             <div>
@@ -198,29 +207,217 @@
                             {% endif %}
                         </div>
                         
+                        <!-- Rimuovo i tasti - la card è ora cliccabile -->
                         <div class="task-card-footer">
-                            <div class="btn-group">
-                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
-                                   class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> Visualizza
-                                </a>
-                                {% if task.status != 'completed' and task.task_tickets and task.task_tickets.first() and task.task_tickets.first().id %}
-                                <a href="{{ url_for('tasks.scan_ticket', task_ticket_id=task.task_tickets.first().id) }}" 
-                                   class="btn btn-sm btn-success">
-                                    <i class="fas fa-qrcode"></i> Scansiona
-                                </a>
-                                {% endif %}
+                            <div class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                </small>
                             </div>
                         </div>
+                        
+                        <!-- Delete button for admin -->
+                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                        <button type="button" class="btn-remove-task" data-task-id="{{ task.id_task }}" data-task-number="{{ task.task_number }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
+            
+            <!-- Pagination for Active Tasks -->
+            {% if active_total_pages > 1 %}
+            <nav aria-label="Paginazione Task Attivi" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    {% if active_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page - 1 }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}" aria-label="Precedente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Page Numbers -->
+                    {% for page_num in range(1, active_total_pages + 1) %}
+                        {% if page_num == active_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?active_page={{ page_num }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Next Page -->
+                    {% if active_page < active_total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page + 1 }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}" aria-label="Successiva">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
             {% else %}
             <div class="task-empty-state">
                 <i class="fas fa-tasks"></i>
                 <h5>Nessun task attivo</h5>
                 <p>Non hai task attualmente in lavorazione. Tutti i tuoi task sono stati completati.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Overdue Tasks Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Task Scaduti ({{ overdue_tasks|length }})
+            </h5>
+            <small class="text-muted">Task con scadenza superata</small>
+        </div>
+        <div class="card-body">
+            {% if overdue_tasks %}
+            <div class="row">
+                {% for task in overdue_tasks %}
+                <div class="col-lg-6 col-xl-4 mb-3">
+                    <div class="task-card task-overdue border-danger clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
+                        <div class="task-card-header">
+                            <h6 class="task-card-title">{{ task.task_number }}</h6>
+                            <div>
+                                <span class="task-status-badge bg-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> Scaduto
+                                </span>
+                                <span class="task-priority-badge task-priority-{{ task.priority }}">
+                                    {{ task.priority.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="task-card-body">
+                            <h6 class="mb-2">{{ task.title }}</h6>
+                            
+                            <!-- Progress -->
+                            <div class="task-progress">
+                                <div class="task-progress-label">
+                                    <span>Progresso</span>
+                                    <span>{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
+                                </div>
+                                <div class="task-progress-bar">
+                                    <div class="task-progress-fill bg-danger" 
+                                         style="width: {{ task.progress_percentage }}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Task Meta -->
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Assegnato</span>
+                                    <span class="task-meta-value">{{ task.assigned_at.strftime('%d/%m/%Y') if task.assigned_at else 'N/A' }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Creato da</span>
+                                    <span class="task-meta-value">{{ task.creator.username }}</span>
+                                </div>
+                            </div>
+
+                            {% if task.deadline %}
+                            <div class="mt-2">
+                                <span class="task-meta-label">Scadenza:</span>
+                                <span class="text-danger fw-bold">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                                    ({{ ((now() - task.deadline).days) }} giorni fa)
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="task-card-footer">
+                            <div class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Delete button for admin -->
+                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                        <button type="button" class="btn-remove-task" data-task-id="{{ task.id_task }}" data-task-number="{{ task.task_number }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination for Overdue Tasks -->
+            {% if overdue_total_pages > 1 %}
+            <nav aria-label="Paginazione Task Scaduti" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    {% if overdue_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page - 1 }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}" aria-label="Precedente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Page Numbers -->
+                    {% for page_num in range(1, overdue_total_pages + 1) %}
+                        {% if page_num == overdue_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ page_num }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Next Page -->
+                    {% if overdue_page < overdue_total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page + 1 }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}" aria-label="Successiva">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="task-empty-state">
+                <i class="fas fa-check-circle text-success"></i>
+                <h5>Nessun task scaduto</h5>
+                <p>Ottimo! Non hai task scaduti al momento.</p>
             </div>
             {% endif %}
         </div>
@@ -239,7 +436,7 @@
             <div class="row">
                 {% for task in completed_tasks %}
                 <div class="col-lg-6 col-xl-4 mb-3">
-                    <div class="task-card task-completed">
+                    <div class="task-card task-completed clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
                         <div class="task-card-header">
                             <h6 class="task-card-title">{{ task.task_number }}</h6>
                             <div>
@@ -289,23 +486,70 @@
                         </div>
                         
                         <div class="task-card-footer">
-                            <div class="btn-group">
-                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
-                                   class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> Visualizza
-                                </a>
-                                {% if task.ddt_generated and task.ddt_id %}
-                                <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" 
-                                   class="btn btn-sm btn-success">
-                                    <i class="fas fa-file-alt"></i> DDT #{{ task.ddt_id }}
-                                </a>
-                                {% endif %}
+                            <div class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                </small>
                             </div>
                         </div>
+                        
+                        <!-- Delete button for admin -->
+                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                        <button type="button" class="btn-remove-task" data-task-id="{{ task.id_task }}" data-task-number="{{ task.task_number }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
+            
+            <!-- Pagination for Completed Tasks -->
+            {% if completed_total_pages > 1 %}
+            <nav aria-label="Paginazione Task Completati" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    {% if completed_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page - 1 }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}" aria-label="Precedente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Page Numbers -->
+                    {% for page_num in range(1, completed_total_pages + 1) %}
+                        {% if page_num == completed_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ page_num }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Next Page -->
+                    {% if completed_page < completed_total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page + 1 }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}" aria-label="Successiva">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
             {% else %}
             <div class="task-empty-state">
                 <i class="fas fa-check-circle"></i>
@@ -344,7 +588,47 @@ waitForJQuery(function() {
 
         // Add tooltips
         $('[data-bs-toggle="tooltip"]').tooltip();
+        
+        // Handle clickable cards
+        $('.clickable-card').css('cursor', 'pointer');
+        $('.clickable-card').on('click', function(e) {
+            // Don't trigger if clicking on a button or modal trigger
+            if ($(e.target).is('button') || $(e.target).closest('button').length > 0) {
+                return;
+            }
+            
+            const href = $(this).data('href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+
+        // Add hover effect for clickable cards
+        $('.clickable-card').hover(
+            function() {
+                $(this).addClass('shadow-lg');
+            },
+            function() {
+                $(this).removeClass('shadow-lg');
+            }
+        );
     });
 });
 </script>
+
+<style>
+.clickable-card {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-2px);
+}
+
+.task-card-footer button {
+    z-index: 10;
+    position: relative;
+}
+</style>
+
 {% endblock %} 

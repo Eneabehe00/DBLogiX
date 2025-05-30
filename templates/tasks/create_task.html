@@ -124,6 +124,10 @@
                         <p class="mb-0">
                             <i class="fas fa-info-circle text-info"></i>
                             Seleziona i ticket da includere nel task. Sono disponibili <strong>{{ tickets|length }}</strong> ticket.
+                            <br><small class="text-muted">
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                I ticket con prodotti scaduti oltre la deadline del task saranno automaticamente disabilitati.
+                            </small>
                         </p>
                         <div class="btn-group">
                             <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">
@@ -140,92 +144,60 @@
                 <div class="ticket-grid">
                     {% for ticket in tickets %}
                     <div class="ticket-card-minimal" data-ticket-id="{{ ticket.IdTicket }}">
-                        <div class="ticket-card-header">
+                        <div class="ticket-card-header-compact">
                             <div class="ticket-selection">
                                 <input type="checkbox" 
                                        class="form-check-input ticket-checkbox" 
                                        name="tickets" 
                                        value="{{ ticket.IdTicket }}" 
                                        id="ticket_{{ ticket.IdTicket }}">
-                                <label class="form-check-label fw-bold" for="ticket_{{ ticket.IdTicket }}">
-                                    Ticket #{{ ticket.NumTicket }}
+                                <label class="form-check-label" for="ticket_{{ ticket.IdTicket }}">
+                                    <span class="ticket-number">#{{ ticket.NumTicket }}</span>
+                                    <span class="ticket-lines-count">{{ ticket.NumLineas }} prodotti</span>
                                 </label>
-                            </div>
-                            <div class="ticket-badges">
-                                <span class="badge bg-info">{{ ticket.NumLineas }} linee</span>
-                                <span class="badge bg-success">Disponibile</span>
                             </div>
                         </div>
                         
-                        <div class="ticket-card-body">
-                            <!-- Data e Ora Stampa -->
-                            <div class="ticket-info-row">
-                                <div class="ticket-info-item">
-                                    <i class="fas fa-calendar text-primary"></i>
-                                    <div>
-                                        <small class="text-muted">Data Stampa</small>
-                                        <div class="fw-medium">{{ ticket.Fecha.strftime('%d/%m/%Y') if ticket.Fecha else 'N/A' }}</div>
+                        <div class="ticket-card-body-compact">
+                            <!-- Prodotti compatti -->
+                            {% if ticket.lines %}
+                            <div class="products-compact">
+                                {% for line in ticket.lines[:2] %}
+                                <div class="product-row">
+                                    <div class="product-main">
+                                        <span class="product-name-compact">{{ line.Descripcion[:30] }}{{ '...' if line.Descripcion|length > 30 else '' }}</span>
+                                        <span class="product-code-compact">{{ line.IdArticulo }}</span>
+                                    </div>
+                                    <div class="product-meta">
+                                        {% if line.FechaCaducidad %}
+                                        {% set expiry_date = line.FechaCaducidad.date() if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad %}
+                                        {% set today = now().date() %}
+                                        <span class="product-expiry-compact {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}" 
+                                              data-expiry="{{ line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m/%Y') }}">
+                                            {{ line.FechaCaducidad.strftime('%d/%m') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m') }}
+                                        </span>
+                                        {% endif %}
+                                        <span class="product-weight-compact">{{ line.Peso }}kg</span>
                                     </div>
                                 </div>
-                                <div class="ticket-info-item">
-                                    <i class="fas fa-clock text-primary"></i>
-                                    <div>
-                                        <small class="text-muted">Ora</small>
-                                        <div class="fw-medium">{{ ticket.Fecha.strftime('%H:%M') if ticket.Fecha else 'N/A' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- QR Code -->
-                            {% if ticket.CodigoBarras %}
-                            <div class="ticket-info-row">
-                                <div class="ticket-info-item-full">
-                                    <i class="fas fa-qrcode text-success"></i>
-                                    <div>
-                                        <small class="text-muted">QR Code</small>
-                                        <div class="qr-code-display">{{ ticket.CodigoBarras[:20] }}{{ '...' if ticket.CodigoBarras|length > 20 else '' }}</div>
-                                    </div>
-                                </div>
+                                {% endfor %}
+                                {% if ticket.NumLineas > 2 %}
+                                <div class="more-products-compact">+{{ ticket.NumLineas - 2 }} altri</div>
+                                {% endif %}
                             </div>
                             {% endif %}
 
-                            <!-- Prodotti del Ticket -->
-                            <div class="ticket-products">
-                                <small class="text-muted mb-1 d-block">
-                                    <i class="fas fa-boxes"></i> Prodotti ({{ ticket.NumLineas }})
-                                </small>
-                                {% if ticket.lines %}
-                                <div class="products-list">
-                                    {% for line in ticket.lines[:3] %}
-                                    <div class="product-item">
-                                        <div class="product-info">
-                                            <div class="product-name">{{ line.Descripcion[:40] }}{{ '...' if line.Descripcion|length > 40 else '' }}</div>
-                                            <div class="product-details">
-                                                <span class="product-code">Cod: {{ line.IdArticulo }}</span>
-                                                <span class="product-weight">{{ line.Peso }}kg</span>
-                                                {% if line.FechaCaducidad %}
-                                                {% set expiry_date = line.FechaCaducidad.date() if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad %}
-                                                {% set today = now().date() %}
-                                                <span class="product-expiry {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}">
-                                                    <i class="fas fa-calendar-times"></i> {{ line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m/%Y') }}
-                                                </span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                    {% if ticket.NumLineas > 3 %}
-                                    <div class="product-item more-products">
-                                        <small class="text-muted">
-                                            <i class="fas fa-ellipsis-h"></i> e altri {{ ticket.NumLineas - 3 }} prodotti
-                                        </small>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                {% else %}
-                                <div class="text-muted">
-                                    <small>{{ ticket.NumLineas }} prodotti - Dettagli non disponibili</small>
-                                </div>
+                            <!-- Info footer compatto -->
+                            <div class="ticket-footer-compact">
+                                <span class="ticket-date-compact">
+                                    <i class="fas fa-clock"></i>
+                                    {{ ticket.Fecha.strftime('%d/%m %H:%M') if ticket.Fecha else 'N/A' }}
+                                </span>
+                                {% if ticket.CodigoBarras %}
+                                <span class="ticket-qr-compact">
+                                    <i class="fas fa-qrcode"></i>
+                                    {{ ticket.CodigoBarras[:8] }}...
+                                </span>
                                 {% endif %}
                             </div>
                         </div>
@@ -329,8 +301,258 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
-.border-danger { border-color: #dc3545 !important; }
-.border-warning { border-color: #ffc107 !important; }
-.border-secondary { border-color: #6c757d !important; }
+/* Improved minimal ticket card styles */
+.ticket-card-minimal {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background: white;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+    min-height: auto;
+}
+
+.ticket-card-minimal:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+    transform: translateY(-1px);
+}
+
+.ticket-card-minimal.selected {
+    border-color: #28a745;
+    background: #f8fff9;
+    box-shadow: 0 2px 8px rgba(40,167,69,0.15);
+}
+
+.ticket-card-minimal.disabled {
+    opacity: 0.6;
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+    position: relative;
+}
+
+.ticket-card-minimal.disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 0, 0, 0.1) 4px,
+        rgba(255, 0, 0, 0.1) 8px
+    );
+    z-index: 1;
+    border-radius: 8px;
+}
+
+.ticket-card-minimal.disabled .ticket-checkbox {
+    pointer-events: none;
+}
+
+.ticket-card-minimal.has-expiry-conflict {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+/* Compact header */
+.ticket-card-header-compact {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.ticket-selection {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ticket-selection .form-check-input {
+    margin: 0;
+}
+
+.ticket-selection label {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.ticket-number {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.ticket-lines-count {
+    font-size: 0.8rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 0.1rem 0.4rem;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+}
+
+/* Compact body */
+.ticket-card-body-compact {
+    padding: 0.5rem 0.75rem;
+}
+
+/* Products compact */
+.products-compact {
+    margin-bottom: 0.5rem;
+}
+
+.product-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid #f8f9fa;
+    font-size: 0.85rem;
+}
+
+.product-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.product-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-name-compact {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    margin-bottom: 0.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-code-compact {
+    font-size: 0.75rem;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.product-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.product-expiry-compact, .product-weight-compact {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    background: #f8f9fa;
+}
+
+.product-expiry-compact.text-danger {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.product-expiry-compact.text-warning {
+    background: #fff8e1;
+    color: #f57c00;
+}
+
+.more-products-compact {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-style: italic;
+    padding: 0.25rem 0;
+}
+
+/* Footer compact */
+.ticket-footer-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #6c757d;
+    border-top: 1px solid #f1f3f4;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.ticket-date-compact, .ticket-qr-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.ticket-qr-compact {
+    font-family: 'Courier New', monospace;
+}
+
+/* Grid layout più compatto */
+.ticket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* Disabled ticket overlay text */
+.ticket-card-minimal.disabled::after {
+    content: 'PRODOTTI SCADUTI';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    z-index: 2;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Remove old styles */
+.product-name-prominent,
+.product-details-grid,
+.product-detail-item,
+.product-code-prominent,
+.ticket-info-minimal,
+.qr-code-section,
+.qr-code-minimal,
+.qr-code-text,
+.products-list,
+.product-item,
+.more-products,
+.expiry-warning {
+    display: none;
+}
+
+/* Compact spacing */
+.ticket-card-body {
+    display: none;
+}
+
+.ticket-card-header {
+    display: none;
+}
 </style>
 {% endblock %} 

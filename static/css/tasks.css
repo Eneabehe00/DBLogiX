@@ -127,6 +127,26 @@
     border-left: 4px solid #28a745;
 }
 
+.task-card.task-overdue {
+    border-left: 4px solid #dc3545;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
+}
+
+.task-card.task-overdue .task-card-header {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+}
+
+.task-card.task-overdue .task-progress-fill.bg-danger {
+    background: linear-gradient(90deg, #dc3545, #c82333) !important;
+    animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
 .task-card-header {
     background: #f8f9fa;
     padding: 0.75rem 1rem;
@@ -225,6 +245,18 @@
     color: #28a745;
 }
 
+.task-status-badge.bg-danger {
+    background: #dc3545 !important;
+    color: white;
+    font-weight: 600;
+    animation: blink-danger 1.5s infinite;
+}
+
+@keyframes blink-danger {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.7; }
+}
+
 /* Priority badges */
 .task-priority-badge {
     font-size: 0.7rem;
@@ -249,6 +281,10 @@
 .task-priority-high {
     background: rgba(220, 53, 69, 0.1);
     color: #dc3545;
+}
+
+.task-card.task-overdue .task-priority-badge {
+    border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
 /* ======================
@@ -317,7 +353,7 @@
 }
 
 .stats-card.danger {
-    background: linear-gradient(135deg, #dc3545, #b02a37);
+    background: linear-gradient(135deg, #dc3545, #c82333);
     color: white;
 }
 
@@ -344,6 +380,15 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
+}
+
+.stats-card.danger .stats-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.stats-card.danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
 }
 
 /* ======================
@@ -1222,6 +1267,527 @@
     }
     
     .scan-product-details {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* Pagination Styles */
+.pagination .page-link {
+    color: #007bff;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    margin: 0 2px;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.pagination .page-link:hover {
+    color: #0056b3;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    font-weight: 600;
+}
+
+.pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    background-color: #fff;
+    border-color: #dee2e6;
+    cursor: not-allowed;
+}
+
+/* Responsive adjustments for 5-column layout */
+@media (max-width: 1200px) {
+    .col-lg-2 {
+        flex: 0 0 auto;
+        width: 20%;
+    }
+}
+
+@media (max-width: 992px) {
+    .col-lg-2.col-md-4 {
+        flex: 0 0 auto;
+        width: 25%;
+    }
+}
+
+@media (max-width: 768px) {
+    .col-lg-2.col-md-4.col-sm-6 {
+        flex: 0 0 auto;
+        width: 50%;
+    }
+}
+
+@media (max-width: 576px) {
+    .col-lg-2.col-md-4.col-sm-6 {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+}
+
+/* Enhanced Task Card Borders */
+.task-card.task-overdue {
+    border: 2px solid #dc3545;
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.02), rgba(255, 255, 255, 1));
+}
+
+.task-card.task-overdue .task-card-footer .btn-warning {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    border: none;
+    color: #212529;
+    font-weight: 600;
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Priority badges for overdue tasks */
+.task-card.task-overdue .task-priority-badge {
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* Clickable card styles */
+.clickable-card {
+    cursor: pointer !important;
+    user-select: none;
+}
+
+.clickable-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.clickable-card:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.clickable-card .task-card-footer {
+    border-top: 1px solid #f8f9fa;
+    padding: 0.75rem 1rem;
+    background: rgba(0,123,255,0.02);
+    text-align: center;
+}
+
+.clickable-card:hover .task-card-footer {
+    background: rgba(0,123,255,0.05);
+}
+
+/* ======================
+   TICKET DETAIL CARDS (for view_task.html)
+====================== */
+.ticket-detail-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.ticket-detail-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.ticket-detail-card.completed {
+    border-left: 4px solid #28a745;
+    background: rgba(40, 167, 69, 0.02);
+}
+
+.ticket-detail-card.in-progress {
+    border-left: 4px solid #ffc107;
+    background: rgba(255, 193, 7, 0.02);
+}
+
+.ticket-detail-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f3f4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+}
+
+.ticket-detail-number {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #495057;
+}
+
+.ticket-detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ticket-detail-main-product {
+    padding: 1rem;
+}
+
+.ticket-detail-main-product .product-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.product-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+}
+
+.product-code {
+    background: #f8f9fa;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    color: #6c757d;
+    font-family: 'Courier New', monospace;
+    border: 1px solid #dee2e6;
+}
+
+.product-expiry {
+    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.product-expiry.text-danger {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.product-expiry.text-warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+}
+
+.product-weight {
+    font-weight: 500;
+    color: #17a2b8;
+}
+
+.ticket-detail-meta {
+    padding: 0 1rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.meta-item i {
+    width: 14px;
+    text-align: center;
+}
+
+.ticket-detail-progress {
+    padding: 0 1rem 0.75rem;
+}
+
+.progress-bar-minimal {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-align: center;
+}
+
+.ticket-detail-footer {
+    padding: 0.5rem 1rem;
+    background: rgba(0,123,255,0.02);
+    border-top: 1px solid #f1f3f4;
+    text-align: center;
+}
+
+.ticket-detail-card:hover .ticket-detail-footer {
+    background: rgba(0,123,255,0.05);
+}
+
+/* ======================
+   TICKET EDIT CARDS (for edit_task.html)
+====================== */
+.ticket-edit-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.ticket-edit-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #007bff;
+}
+
+.ticket-edit-card.completed {
+    border-left: 4px solid #28a745;
+    background: rgba(40, 167, 69, 0.02);
+}
+
+.ticket-edit-card.in-progress {
+    border-left: 4px solid #ffc107;
+    background: rgba(255, 193, 7, 0.02);
+}
+
+.ticket-edit-header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.ticket-edit-main-info {
+    flex: 1;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.ticket-edit-number {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #495057;
+    white-space: nowrap;
+    margin-top: 0.125rem;
+}
+
+.ticket-edit-product {
+    flex: 1;
+}
+
+.ticket-edit-product .product-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.product-meta-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.ticket-edit-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.progress-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.progress-text-mini {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.progress-bar-tiny {
+    width: 60px;
+    height: 3px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill-tiny {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.ticket-edit-footer {
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-top: 1px solid #f1f3f4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.ticket-edit-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ticket-edit-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #6c757d;
+}
+
+.ticket-edit-meta i {
+    width: 14px;
+    text-align: center;
+}
+
+.ticket-edit-card:hover .ticket-edit-footer {
+    background: rgba(0,123,255,0.02);
+}
+
+/* ======================
+   REMOVE BUTTON STYLING (Unified for all cards)
+====================== */
+.btn-remove-ticket {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.75rem;
+    z-index: 10;
+}
+
+.btn-remove-ticket:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-remove-ticket:active {
+    transform: scale(0.95);
+}
+
+/* Task removal button styling */
+.btn-remove-task {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.75rem;
+    z-index: 10;
+}
+
+.btn-remove-task:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.btn-remove-task:active {
+    transform: scale(0.95);
+}
+
+/* Hide remove button when card is being clicked */
+.clickable-card .btn-remove-ticket,
+.clickable-card .btn-remove-task {
+    opacity: 0.7;
+}
+
+.clickable-card:hover .btn-remove-ticket,
+.clickable-card:hover .btn-remove-task {
+    opacity: 1;
+}
+
+/* ======================
+   RESPONSIVE DESIGN FOR TICKET CARDS
+====================== */
+@media (max-width: 768px) {
+    .ticket-edit-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .ticket-edit-main-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .ticket-edit-actions {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .progress-compact {
+        order: -1;
+    }
+    
+    .ticket-edit-meta {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .ticket-detail-meta {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .product-details {
         flex-direction: column;
         gap: 0.25rem;
     }

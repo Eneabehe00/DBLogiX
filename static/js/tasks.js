@@ -60,6 +60,100 @@ function initializeCommonTasks() {
     // Add tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
     
+    // Handle clickable cards
+    $('.clickable-card').click(function(e) {
+        // Prevent click if target is a button or link
+        if ($(e.target).is('button') || $(e.target).closest('button').length || 
+            $(e.target).is('a') || $(e.target).closest('a').length) {
+            return;
+        }
+        
+        const href = $(this).data('href');
+        if (href) {
+            window.location.href = href;
+        }
+    });
+    
+    // Add cursor pointer style to clickable cards
+    $('.clickable-card').css('cursor', 'pointer');
+    
+    // Handle ticket removal buttons
+    $('.btn-remove-ticket').click(function(e) {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent card click
+        
+        const taskTicketId = $(this).data('task-ticket-id');
+        const ticketNumber = $(this).data('ticket-number');
+        
+        if (confirm(`Sei sicuro di voler rimuovere il ticket #${ticketNumber} dal task?`)) {
+            // Create and submit form for ticket removal
+            const form = $('<form>', {
+                'method': 'POST',
+                'action': '/tasks/remove-ticket-from-task'
+            });
+            
+            // Add CSRF token
+            const csrfToken = getCSRFToken();
+            if (csrfToken) {
+                form.append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'csrf_token',
+                    'value': csrfToken
+                }));
+            }
+            
+            // Add task_ticket_id
+            form.append($('<input>', {
+                'type': 'hidden',
+                'name': 'task_ticket_id',
+                'value': taskTicketId
+            }));
+            
+            // Add task_id from current URL
+            const taskId = getTaskIdFromUrl();
+            if (taskId) {
+                form.append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'task_id',
+                    'value': taskId
+                }));
+            }
+            
+            // Append form to body and submit
+            form.appendTo('body').submit();
+        }
+    });
+    
+    // Handle task removal buttons
+    $('.btn-remove-task').click(function(e) {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent card click
+        
+        const taskId = $(this).data('task-id');
+        const taskNumber = $(this).data('task-number');
+        
+        if (confirm(`Sei sicuro di voler eliminare il task ${taskNumber}? Questa azione è irreversibile.`)) {
+            // Create and submit form for task deletion
+            const form = $('<form>', {
+                'method': 'POST',
+                'action': `/tasks/task/${taskId}/delete`
+            });
+            
+            // Add CSRF token
+            const csrfToken = getCSRFToken();
+            if (csrfToken) {
+                form.append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'csrf_token',
+                    'value': csrfToken
+                }));
+            }
+            
+            // Append form to body and submit
+            form.appendTo('body').submit();
+        }
+    });
+    
     // Auto-refresh functionality for dashboards
     if (window.location.pathname.includes('dashboard')) {
         // Refresh every 30 seconds
@@ -518,6 +612,9 @@ function showFeedback(message, type) {
 function initializeCreateTask() {
     console.log('Initializing create task page...');
     
+    // Initialize deadline validation
+    initializeDeadlineValidation();
+    
     // Ticket selection functionality
     $('.ticket-checkbox').on('change', function() {
         updateTicketSelection($(this));
@@ -531,21 +628,30 @@ function initializeCreateTask() {
             return;
         }
         
+        // Don't trigger if ticket is disabled
+        if ($(this).hasClass('disabled')) {
+            e.preventDefault();
+            return;
+        }
+        
         const checkbox = $(this).find('.ticket-checkbox');
-        checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
+        // Only toggle if checkbox is not disabled
+        if (!checkbox.prop('disabled')) {
+            checkbox.prop('checked', !checkbox.prop('checked')).trigger('change');
+        }
     });
     
     // Select all tickets
     $('#selectAllBtn').on('click', function() {
-        $('.ticket-checkbox').prop('checked', true);
-        $('.ticket-card-minimal').addClass('selected');
+        $('.ticket-checkbox:not(:disabled)').prop('checked', true);
+        $('.ticket-card-minimal:not(.disabled)').addClass('selected');
         updateSummary();
     });
     
     // Deselect all tickets
     $('#deselectAllBtn').on('click', function() {
-        $('.ticket-checkbox').prop('checked', false);
-        $('.ticket-card-minimal').removeClass('selected');
+        $('.ticket-checkbox:not(:disabled)').prop('checked', false);
+        $('.ticket-card-minimal:not(.disabled)').removeClass('selected');
         updateSummary();
     });
     
@@ -567,6 +673,12 @@ function initializeCreateTask() {
             return false;
         }
 
+        // Validate deadline
+        if (!validateDeadline()) {
+            e.preventDefault();
+            return false;
+        }
+
         // Show loading state
         showLoading('#createTaskBtn', 'Creazione in corso...');
         showLoading('#createButtonMain', 'Creazione in corso...');
@@ -577,7 +689,70 @@ function initializeCreateTask() {
 }
 
 /**
- * Update ticket selection visual state
+ * Initialize deadline validation with immediate ticket blocking
+ */
+function initializeDeadlineValidation() {
+    const deadlineInput = $('#deadline');
+    
+    // Set minimum date to today
+    const today = new Date();
+    const todayString = today.toISOString().slice(0, 16);
+    deadlineInput.attr('min', todayString);
+    
+    // Add validation on change
+    deadlineInput.on('change', function() {
+        validateDeadline();
+        // Validate and disable problematic tickets when deadline changes
+        validateAndDisableProblematicTickets();
+    });
+    
+    // Initial validation on page load if deadline is already set
+    if (deadlineInput.val()) {
+        validateAndDisableProblematicTickets();
+    }
+}
+
+/**
+ * Validate deadline is not in the past
+ */
+function validateDeadline() {
+    const deadlineInput = $('#deadline');
+    const deadlineValue = deadlineInput.val();
+    
+    if (!deadlineValue) {
+        // Deadline is optional
+        deadlineInput.removeClass('is-invalid');
+        $('#deadline-feedback').remove();
+        return true;
+    }
+    
+    const selectedDate = new Date(deadlineValue);
+    const now = new Date();
+    
+    // Fix: Compare only dates, not datetime, so today's date is allowed
+    const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Check if selected date is in the past
+    if (selectedDateOnly < todayOnly) {
+        deadlineInput.addClass('is-invalid');
+        
+        // Remove existing feedback
+        $('#deadline-feedback').remove();
+        
+        // Add error feedback
+        deadlineInput.after('<div id="deadline-feedback" class="invalid-feedback">La data di scadenza non può essere nel passato.</div>');
+        
+        return false;
+    } else {
+        deadlineInput.removeClass('is-invalid');
+        $('#deadline-feedback').remove();
+        return true;
+    }
+}
+
+/**
+ * Update ticket selection visual state and validate expiry dates
  */
 function updateTicketSelection(checkbox) {
     const ticketCard = checkbox.closest('.ticket-card-minimal');
@@ -591,19 +766,118 @@ function updateTicketSelection(checkbox) {
 }
 
 /**
+ * Validate and disable tickets with problematic expiry dates
+ */
+function validateAndDisableProblematicTickets() {
+    const deadlineInput = $('#deadline');
+    const deadlineValue = deadlineInput.val();
+    
+    // Reset all tickets to enabled state first and clean up tooltips
+    $('.ticket-card-minimal').each(function() {
+        const ticketCard = $(this);
+        
+        // Remove classes
+        ticketCard.removeClass('disabled has-expiry-conflict');
+        
+        // Enable checkbox
+        ticketCard.find('.ticket-checkbox').prop('disabled', false);
+        
+        // Clean up any existing tooltips
+        if (typeof bootstrap !== 'undefined') {
+            const existingTooltip = bootstrap.Tooltip.getInstance(ticketCard[0]);
+            if (existingTooltip) {
+                existingTooltip.dispose();
+            }
+        }
+        
+        // Remove tooltip attributes
+        ticketCard.removeAttr('title');
+        ticketCard.removeAttr('data-bs-toggle');
+        ticketCard.removeAttr('data-bs-placement');
+        ticketCard.removeAttr('data-bs-original-title');
+    });
+    
+    // If no deadline is set, all tickets are valid
+    if (!deadlineValue) {
+        updateSummary();
+        return;
+    }
+    
+    const taskDeadline = new Date(deadlineValue);
+    const taskDeadlineDate = new Date(taskDeadline.getFullYear(), taskDeadline.getMonth(), taskDeadline.getDate());
+    
+    // Check each ticket
+    $('.ticket-card-minimal').each(function() {
+        const ticketCard = $(this);
+        const checkbox = ticketCard.find('.ticket-checkbox');
+        
+        // Check all product expiry dates in this ticket
+        const expiryElements = ticketCard.find('.product-expiry-compact');
+        let hasConflict = false;
+        let conflictProducts = [];
+        
+        expiryElements.each(function() {
+            const expiryText = $(this).data('expiry');
+            
+            if (expiryText) {
+                const [day, month, year] = expiryText.split('/');
+                const expiryDate = new Date(year, month - 1, day); // month is 0-indexed
+                
+                if (expiryDate > taskDeadlineDate) {
+                    hasConflict = true;
+                    const productName = $(this).closest('.product-row').find('.product-name-compact').text().trim();
+                    conflictProducts.push({
+                        name: productName,
+                        expiry: expiryText
+                    });
+                }
+            }
+        });
+        
+        if (hasConflict) {
+            // Disable the ticket completely
+            ticketCard.addClass('disabled has-expiry-conflict');
+            checkbox.prop('disabled', true);
+            checkbox.prop('checked', false);
+            ticketCard.removeClass('selected');
+            
+            // Add tooltip to show why it's disabled
+            const tooltipText = `Ticket disabilitato: contiene prodotti con scadenza superiore alla deadline del task:\n${conflictProducts.slice(0, 3).map(p => `• ${p.name} (scade ${p.expiry})`).join('\n')}${conflictProducts.length > 3 ? `\n... e altri ${conflictProducts.length - 3} prodotti` : ''}`;
+            
+            ticketCard.attr('title', tooltipText);
+            ticketCard.attr('data-bs-toggle', 'tooltip');
+            ticketCard.attr('data-bs-placement', 'top');
+            
+            // Initialize new tooltip
+            if (typeof bootstrap !== 'undefined') {
+                new bootstrap.Tooltip(ticketCard[0]);
+            }
+        }
+        // Note: No need for else clause here since we already cleaned up everything at the start
+    });
+    
+    // Update summary after validation
+    updateSummary();
+}
+
+/**
  * Update selected tickets summary
  */
 function updateSummary() {
     const selectedTickets = $('.ticket-checkbox:checked');
     const selectedCount = selectedTickets.length;
+    const disabledCount = $('.ticket-card-minimal.disabled').length;
+    const totalTickets = $('.ticket-card-minimal').length;
+    const availableTickets = totalTickets - disabledCount;
+    
     let totalLines = 0;
     let totalProducts = 0;
 
     selectedTickets.each(function() {
         const ticketCard = $(this).closest('.ticket-card-minimal');
         
-        // Count lines from badge
-        const linesText = ticketCard.find('.badge.bg-info').text();
+        // Count lines from badge - look for the compact version
+        const linesText = ticketCard.find('.ticket-lines-count').text();
         const lines = parseInt(linesText.split(' ')[0]) || 0;
         totalLines += lines;
         
@@ -611,8 +885,9 @@ function updateSummary() {
         totalProducts += lines;
     });
 
-    // Update counters
-    $('#selectedCount').text(selectedCount + ' selezionati');
+    // Update counters with more detailed info
+    const counterText = `${selectedCount} selezionati${disabledCount > 0 ? ` (${disabledCount} disabilitati)` : ''}`;
+    $('#selectedCount').text(counterText);
     $('#summaryTicketCount').text(selectedCount);
     $('#summaryLineCount').text(totalLines);
     $('#summaryProductCount').text(totalProducts);

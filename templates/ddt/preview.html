@@ -206,6 +206,13 @@
                 </div>
                 <div id="search-results"></div>
                 
+                <!-- Pulsante Articolo 999 Veloce -->
+                <div class="text-center mt-3 pt-3" style="border-top: 1px solid #e3e6f0;">
+                    <button type="button" class="btn btn-warning mb-2" id="btn-quick-999" style="width: 100%;">
+                        <i class="fas fa-shipping-fast me-2"></i>Aggiungi Spedizione Veloce (999)
+                    </button>
+                </div>
+                
                 <!-- Pulsante Crea Ticket Manuale -->
                 <div class="text-center mt-3 pt-3" style="border-top: 1px solid #e3e6f0;">
                     <button type="button" class="btn btn-primary" id="btn-create-manual-ticket">
@@ -373,6 +380,83 @@
         </div>
     </div>
 </div>
+
+<!-- Modal per Articolo 999 Veloce -->
+<div class="modal fade" id="quick999Modal" tabindex="-1" aria-labelledby="quick999ModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="quick999ModalLabel">
+                    <i class="fas fa-shipping-fast me-2"></i>Aggiungi Spedizione Veloce (999)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quick-999-form">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="quick-999-price" class="form-label">
+                                <i class="fas fa-euro-sign me-1"></i>Prezzo (€/kg)
+                            </label>
+                            <input type="number" class="form-control" id="quick-999-price" 
+                                   value="153.00" step="0.01" min="0.01" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="quick-999-weight" class="form-label">
+                                <i class="fas fa-weight me-1"></i>Peso (kg)
+                            </label>
+                            <input type="number" class="form-control" id="quick-999-weight" 
+                                   value="1.000" step="0.001" min="0.001" required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="quick-999-iva" class="form-label">
+                                <i class="fas fa-percentage me-1"></i>Aliquota IVA
+                            </label>
+                            <select class="form-select" id="quick-999-iva" required>
+                                <option value="">Seleziona IVA...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Anteprima Calcolo -->
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <h6 class="text-muted mb-2">Anteprima Calcolo</h6>
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="text-primary">
+                                    <strong id="quick-999-subtotal">€ 0.00</strong>
+                                    <br><small>Imponibile</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-info">
+                                    <strong id="quick-999-vat">€ 0.00</strong>
+                                    <br><small>IVA</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-success">
+                                    <strong id="quick-999-total">€ 0.00</strong>
+                                    <br><small>Totale</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-warning" id="add-quick-999">
+                    <i class="fas fa-plus me-1"></i>Aggiungi al Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -385,6 +469,7 @@ const FROM_TASK = {{ from_task|tojson|safe }};
 // Variabili globali per mantenere i dati dei ticket
 let currentTickets = JSON.parse(INITIAL_TICKETS_DATA);
 let previewData = {};
+let manualTickets = []; // Array per ticket manuali dal localStorage
 
 // Inizializza i dati di preview
 function initializePreviewData() {
@@ -395,6 +480,47 @@ function initializePreviewData() {
             total: item.ticket_total
         };
     }
+    
+    // Carica ticket manuali dal localStorage
+    loadManualTicketsFromStorage();
+}
+
+// Gestione localStorage per ticket manuali
+function loadManualTicketsFromStorage() {
+    const stored = localStorage.getItem('ddt_manual_tickets');
+    if (stored) {
+        try {
+            manualTickets = JSON.parse(stored);
+            // Aggiungi i ticket manuali alla preview
+            manualTickets.forEach(ticket => {
+                addManualTicketToPreview(ticket);
+            });
+        } catch (e) {
+            console.error('Errore nel caricamento ticket manuali:', e);
+            manualTickets = [];
+        }
+    }
+}
+
+function saveManualTicketsToStorage() {
+    localStorage.setItem('ddt_manual_tickets', JSON.stringify(manualTickets));
+}
+
+function addManualTicketToPreview(ticket) {
+    console.log('✋ DEBUG addManualTicketToPreview:', ticket);
+    
+    // Aggiungi ai dati preview
+    previewData[ticket.id_ticket] = {
+        ticket: ticket,
+        lines: ticket.lines,
+        total: ticket.total
+    };
+    
+    // Aggiungi alla UI
+    addTicketToPreview(ticket);
+    updateSummary();
+    
+    console.log('✋ DEBUG manualTickets dopo aggiunta:', manualTickets);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -453,21 +579,21 @@ function displaySearchResults(tickets) {
     const resultsContainer = document.getElementById('search-results');
     
     if (tickets.length === 0) {
-        resultsContainer.innerHTML = '<div class="text-muted">Nessun ticket trovato</div>';
+        resultsContainer.innerHTML = '<div class="text-muted text-center">Nessun ticket trovato</div>';
         return;
     }
-    
+
     let html = '<div class="list-group">';
     tickets.forEach(ticket => {
         html += `
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
-                    <strong>Ticket #${ticket.num_ticket}</strong><br>
-                    <small class="text-muted">${ticket.fecha} | ${ticket.lines_count} linee</small>
+                    <strong>Ticket #${ticket.num_ticket}</strong>
+                    <br>
+                    <small class="text-muted">${ticket.fecha} - ${ticket.lines_count} articoli</small>
                 </div>
-                <button type="button" class="btn btn-sm btn-add-ticket" 
-                        onclick="addTicket(${ticket.id_ticket}, ${ticket.id_empresa})">
-                    <i class="fas fa-plus"></i>
+                <button class="btn btn-sm btn-add-ticket" onclick="addTicket(${ticket.id_ticket}, ${ticket.id_empresa}, event)">
+                    <i class="fas fa-plus"></i> Aggiungi
                 </button>
             </div>
         `;
@@ -477,9 +603,9 @@ function displaySearchResults(tickets) {
     resultsContainer.innerHTML = html;
 }
 
-function addTicket(ticketId, empresaId) {
-    // Verifica se il ticket è già presente
-    if (currentTickets.some(t => t.id_ticket === ticketId)) {
+function addTicket(ticketId, empresaId, event) {
+    // Verifica se già presente
+    if (currentTickets.find(t => t.id_ticket === ticketId)) {
         alert('Questo ticket è già incluso nel DDT');
         return;
     }
@@ -564,6 +690,11 @@ function addTicketToPreview(ticket) {
         `;
     });
     
+    // Distingui ticket manuali con badge diverso
+    const manualBadge = ticket.is_manual ? 
+        '<span class="badge bg-warning text-dark me-2"><i class="fas fa-hand-paper"></i> Manuale</span>' : 
+        '';
+    
     const ticketHTML = `
         <div class="ticket-item" data-ticket-id="${ticket.id_ticket}">
             <div class="ticket-header">
@@ -572,6 +703,7 @@ function addTicketToPreview(ticket) {
                     <span class="text-muted ms-2">${ticket.fecha}</span>
                 </div>
                 <div>
+                    ${manualBadge}
                     <span class="badge bg-primary me-2">${ticket.lines.length} articoli</span>
                     <span class="badge bg-success me-2">€ ${ticket.total.toFixed(2)}</span>
                     <button type="button" class="btn btn-sm btn-remove-ticket" 
@@ -591,55 +723,80 @@ function addTicketToPreview(ticket) {
 
 function removeTicket(ticketId) {
     if (confirm('Sei sicuro di voler rimuovere questo ticket dal DDT?')) {
-        // Chiama API per aggiornare lo stato del ticket nel database
-        fetch('{{ url_for("ddt.api_remove_ticket_from_preview") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                ticket_id: ticketId,
-                from_task: FROM_TASK
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Rimuovi dai dati correnti
-                currentTickets = currentTickets.filter(t => t.id_ticket !== ticketId);
-                delete previewData[ticketId];
-                
-                // Rimuovi dalla UI
-                const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-                if (ticketElement) {
-                    ticketElement.remove();
-                }
-                
-                // Aggiorna riepilogo e form
-                updateSummary();
-                updateFormData();
-                
-                // Pulisci i risultati di ricerca per permettere di ri-aggiungere il ticket
-                document.getElementById('search-results').innerHTML = '';
-                document.getElementById('search-tickets').value = '';
-                
-                console.log('Ticket rimosso dal preview e stato aggiornato nel database');
-            } else {
-                alert('Errore nella rimozione del ticket: ' + (data.message || 'Errore sconosciuto'));
+        // Verifica se è un ticket manuale
+        const isManual = ticketId < 0;
+        
+        if (isManual) {
+            // Rimuovi dai ticket manuali e localStorage
+            manualTickets = manualTickets.filter(t => t.id_ticket !== ticketId);
+            saveManualTicketsToStorage();
+            
+            // Rimuovi dai dati correnti
+            delete previewData[ticketId];
+            
+            // Rimuovi dalla UI
+            const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+            if (ticketElement) {
+                ticketElement.remove();
             }
-        })
-        .catch(error => {
-            console.error('Errore:', error);
-            alert('Errore di rete durante la rimozione del ticket');
-        });
+            
+            // Aggiorna riepilogo
+            updateSummary();
+            
+            console.log('Ticket manuale rimosso dal localStorage');
+        } else {
+            // Gestione ticket normale (come prima)
+            fetch('{{ url_for("ddt.api_remove_ticket_from_preview") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ticket_id: ticketId,
+                    from_task: FROM_TASK
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Rimuovi dai dati correnti
+                    currentTickets = currentTickets.filter(t => t.id_ticket !== ticketId);
+                    delete previewData[ticketId];
+                    
+                    // Rimuovi dalla UI
+                    const ticketElement = document.querySelector(`[data-ticket-id="${ticketId}"]`);
+                    if (ticketElement) {
+                        ticketElement.remove();
+                    }
+                    
+                    // Aggiorna riepilogo e form
+                    updateSummary();
+                    updateFormData();
+                    
+                    // Pulisci i risultati di ricerca per permettere di ri-aggiungere il ticket
+                    document.getElementById('search-results').innerHTML = '';
+                    document.getElementById('search-tickets').value = '';
+                    
+                    console.log('Ticket rimosso dal preview e stato aggiornato nel database');
+                } else {
+                    alert('Errore nella rimozione del ticket: ' + (data.message || 'Errore sconosciuto'));
+                }
+            })
+            .catch(error => {
+                console.error('Errore:', error);
+                alert('Errore di rete durante la rimozione del ticket');
+            });
+        }
     }
 }
 
 function updateSummary() {
-    const totalTickets = currentTickets.length;
+    // Conta tutti i ticket (normali + manuali)
+    const totalTickets = currentTickets.length + manualTickets.length;
     let totalWeight = 0;
     let totalAmount = 0;
     
+    // Calcola dai ticket normali
     currentTickets.forEach(ticket => {
         const data = previewData[ticket.id_ticket];
         if (data) {
@@ -650,35 +807,71 @@ function updateSummary() {
         }
     });
     
+    // Calcola dai ticket manuali
+    manualTickets.forEach(ticket => {
+        totalAmount += ticket.total;
+        ticket.lines.forEach(line => {
+            totalWeight += line.peso;
+        });
+    });
+    
     document.getElementById('total-tickets').textContent = totalTickets;
     document.getElementById('total-weight').textContent = totalWeight.toFixed(3) + ' kg';
     document.getElementById('total-amount').textContent = '€ ' + totalAmount.toFixed(2);
 }
 
 function updateFormData() {
+    // Include solo i ticket normali nel form (i manuali saranno gestiti separatamente)
     document.getElementById('final-tickets-data').value = JSON.stringify(currentTickets);
+    
+    // Trova il form attivo e aggiungi/aggiorna il campo manual_tickets
+    const form = document.getElementById('final-ddt-form');
+    let manualTicketsInput = form.querySelector('input[name="manual_tickets"]');
+    
+    if (!manualTicketsInput) {
+        // Crea il campo se non esiste
+        manualTicketsInput = document.createElement('input');
+        manualTicketsInput.type = 'hidden';
+        manualTicketsInput.name = 'manual_tickets';
+        form.appendChild(manualTicketsInput);
+    }
+    
+    // Aggiorna il valore con i ticket manuali
+    manualTicketsInput.value = JSON.stringify(manualTickets);
+    
+    console.log('📝 DEBUG updateFormData:', {
+        currentTickets: currentTickets.length,
+        manualTickets: manualTickets.length,
+        manualTicketsValue: manualTicketsInput.value
+    });
 }
 
 function resetPreview() {
     if (confirm('Sei sicuro di voler ricominciare? Tutte le modifiche andranno perse.')) {
+        // Pulisci anche i ticket manuali dal localStorage
+        localStorage.removeItem('ddt_manual_tickets');
         window.location.href = '{{ url_for("ddt.select_tickets", cliente_id=cliente.IdCliente) }}';
     }
 }
 
 // Valida il form prima dell'invio
 document.getElementById('final-ddt-form').addEventListener('submit', function(e) {
-    if (currentTickets.length === 0) {
+    const totalTickets = currentTickets.length + manualTickets.length;
+    
+    if (totalTickets === 0) {
         e.preventDefault();
         alert('Devi selezionare almeno un ticket per creare il DDT.');
         return false;
     }
     
     // Conferma creazione
-    const ticketsCount = currentTickets.length;
-    if (!confirm(`Sei sicuro di voler creare il DDT con ${ticketsCount} ticket selezionati?`)) {
+    if (!confirm(`Sei sicuro di voler creare il DDT con ${totalTickets} ticket selezionati?`)) {
         e.preventDefault();
         return false;
     }
+    
+    // Pulisci localStorage dopo conferma
+    localStorage.removeItem('ddt_manual_tickets');
     
     // Mostra loading
     const btn = document.getElementById('create-final-ddt');
@@ -695,15 +888,13 @@ let productSearchTimeout;
 document.getElementById('btn-create-manual-ticket').addEventListener('click', function() {
     selectedProducts = [];
     updateSelectedProductsList();
-    updateTicketTotals();
-    document.getElementById('product-search').value = '';
-    document.getElementById('product-search-results').innerHTML = '';
-    
+    updateTicketTotal();
+    // Usa Bootstrap modal API
     const modal = new bootstrap.Modal(document.getElementById('createTicketModal'));
     modal.show();
 });
 
-// Ricerca prodotti
+// Setup ricerca prodotti per ticket manuale
 document.getElementById('product-search').addEventListener('input', function() {
     clearTimeout(productSearchTimeout);
     const query = this.value.trim();
@@ -747,19 +938,13 @@ function displayProductResults(products) {
     
     let html = '<div class="list-group">';
     products.forEach(product => {
-        const isAlreadySelected = selectedProducts.some(p => p.id === product.id);
         html += `
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${isAlreadySelected ? 'disabled' : ''}">
+            <div class="list-group-item d-flex justify-content-between align-items-center">
                 <div>
                     <strong>${product.descripcion}</strong><br>
-                    <small class="text-muted">
-                        ID: ${product.id} | Prezzo: € ${product.precio.toFixed(2)}
-                        ${product.ean ? ` | EAN: ${product.ean}` : ''}
-                    </small>
+                    <small class="text-muted">Codice: ${product.id} - Prezzo: €${product.precio.toFixed(2)}</small>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-primary" 
-                        onclick="addProductToTicket(${product.id}, '${product.descripcion.replace(/'/g, "\\'")}', ${product.precio})"
-                        ${isAlreadySelected ? 'disabled' : ''}>
+                <button class="btn btn-sm btn-outline-primary" onclick="addProductToTicket(${product.id}, '${product.descripcion}', ${product.precio}, ${product.iva})">
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
@@ -770,153 +955,90 @@ function displayProductResults(products) {
     resultsContainer.innerHTML = html;
 }
 
-function addProductToTicket(productId, descripcion, precio) {
-    // Verifica se già presente
-    if (selectedProducts.some(p => p.id === productId)) {
-        alert('Prodotto già aggiunto al ticket');
-        return;
-    }
-    
-    // Aggiungi prodotto con ID 999 come riferimento
+function addProductToTicket(id, descripcion, precio, iva) {
     selectedProducts.push({
-        id: 999, // Usa sempre ID 999 come riferimento
-        original_id: productId, // Mantieni l'ID originale per riferimento
+        id: id,
         descripcion: descripcion,
         precio: precio,
+        iva: iva,
         peso: 1.0,
-        fecha_caducidad: '',
-        comportamiento: 1, // Default peso
-        id_iva: 3 // Default 22% IVA
+        comportamiento: 1
     });
     
     updateSelectedProductsList();
-    updateTicketTotals();
+    updateTicketTotal();
     
-    // Rimuovi dalla ricerca
-    const btn = event.target.closest('button');
-    btn.disabled = true;
-    btn.closest('.list-group-item').classList.add('disabled');
+    // Pulisci ricerca
+    document.getElementById('product-search').value = '';
+    document.getElementById('product-search-results').innerHTML = '';
 }
 
 function removeProductFromTicket(index) {
     selectedProducts.splice(index, 1);
     updateSelectedProductsList();
-    updateTicketTotals();
-    
-    // Aggiorna la ricerca se necessario
-    const searchQuery = document.getElementById('product-search').value.trim();
-    if (searchQuery.length >= 2) {
-        searchProducts(searchQuery);
-    }
+    updateTicketTotal();
 }
 
 function updateSelectedProductsList() {
     const container = document.getElementById('selected-products-list');
     
     if (selectedProducts.length === 0) {
-        container.innerHTML = '<p class="text-muted mb-0 text-center">Nessun prodotto selezionato</p>';
+        container.innerHTML = '<div class="text-muted">Nessun prodotto selezionato</div>';
         document.getElementById('save-manual-ticket').disabled = true;
         return;
     }
     
-    let html = '';
+    let html = '<div class="list-group">';
     selectedProducts.forEach((product, index) => {
+        const total = product.peso * product.precio;
         html += `
-            <div class="card mb-2">
-                <div class="card-body py-2">
-                    <div class="row align-items-center">
-                        <!-- Nome Prodotto -->
-                        <div class="col-md-12 mb-2">
-                            <label class="form-label small fw-bold">Nome Prodotto</label>
-                            <input type="text" class="form-control form-control-sm" 
-                                   value="${product.descripcion}" 
-                                   onchange="updateProductDescription(${index}, this.value)"
-                                   placeholder="Inserisci nome prodotto...">
-                        </div>
-                        
-                        <!-- Peso/Quantità -->
-                        <div class="col-md-3">
-                            <label class="form-label small">Peso/Qt</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   value="${product.peso}" step="0.001" min="0.001"
-                                   onchange="updateProductWeight(${index}, this.value)">
-                        </div>
-                        
-                        <!-- Prezzo Unitario -->
-                        <div class="col-md-3">
-                            <label class="form-label small">Prezzo €</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   value="${product.precio}" step="0.01" min="0.01"
-                                   onchange="updateProductPrice(${index}, this.value)">
-                        </div>
-                        
-                        <!-- IVA -->
-                        <div class="col-md-2">
-                            <label class="form-label small">IVA</label>
-                            <select class="form-control form-control-sm" 
-                                    onchange="updateProductIva(${index}, this.value)">
-                                <option value="1" ${product.id_iva === 1 ? 'selected' : ''}>4%</option>
-                                <option value="2" ${product.id_iva === 2 ? 'selected' : ''}>10%</option>
-                                <option value="3" ${product.id_iva === 3 ? 'selected' : ''}>22%</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Scadenza -->
-                        <div class="col-md-2">
-                            <label class="form-label small">Scadenza</label>
-                            <input type="date" class="form-control form-control-sm" 
-                                   value="${product.fecha_caducidad}"
-                                   onchange="updateProductExpiry(${index}, this.value)">
-                        </div>
-                        
-                        <!-- Totale e Rimuovi -->
-                        <div class="col-md-1 text-end">
-                            <label class="form-label small">Totale</label>
-                            <div class="fw-bold text-success">€ ${(product.peso * product.precio).toFixed(2)}</div>
-                        </div>
-                        <div class="col-md-1 text-end">
-                            <label class="form-label small">&nbsp;</label>
-                            <button type="button" class="btn btn-sm btn-outline-danger d-block" 
-                                    onclick="removeProductFromTicket(${index})"
-                                    title="Rimuovi prodotto">
-                                <i class="fas fa-times"></i>
-                            </button>
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <strong>${product.descripcion}</strong><br>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Peso (kg)</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       value="${product.peso}" step="0.001" min="0.001"
+                                       onchange="updateProductWeight(${index}, this.value)">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Prezzo (€/kg)</label>
+                                <input type="number" class="form-control form-control-sm" 
+                                       value="${product.precio}" step="0.01" min="0.01"
+                                       onchange="updateProductPrice(${index}, this.value)">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Totale</label>
+                                <div class="form-control form-control-sm bg-light">€ ${total.toFixed(2)}</div>
+                            </div>
                         </div>
                     </div>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="removeProductFromTicket(${index})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
     });
+    html += '</div>';
     
     container.innerHTML = html;
     document.getElementById('save-manual-ticket').disabled = false;
 }
 
-function updateProductDescription(index, newDescription) {
-    selectedProducts[index].descripcion = newDescription.trim();
+function updateProductWeight(index, weight) {
+    selectedProducts[index].peso = parseFloat(weight) || 1.0;
+    updateTicketTotal();
 }
 
-function updateProductPrice(index, newPrice) {
-    selectedProducts[index].precio = parseFloat(newPrice) || 0.01;
-    updateTicketTotals();
+function updateProductPrice(index, price) {
+    selectedProducts[index].precio = parseFloat(price) || 0.01;
+    updateTicketTotal();
 }
 
-function updateProductIva(index, newIvaId) {
-    selectedProducts[index].id_iva = parseInt(newIvaId);
-    // Aggiorna anche il display per mostrare il nuovo totale con IVA
-    updateTicketTotals();
-}
-
-function updateProductWeight(index, newWeight) {
-    selectedProducts[index].peso = parseFloat(newWeight) || 1.0;
-    updateTicketTotals();
-}
-
-function updateProductExpiry(index, newExpiry) {
-    selectedProducts[index].fecha_caducidad = newExpiry;
-}
-
-function updateTicketTotals() {
+function updateTicketTotal() {
     const totalProducts = selectedProducts.length;
     const totalAmount = selectedProducts.reduce((sum, product) => sum + (product.peso * product.precio), 0);
     
@@ -924,83 +1046,46 @@ function updateTicketTotals() {
     document.getElementById('ticket-total-amount').textContent = `€ ${totalAmount.toFixed(2)}`;
 }
 
-// Salva ticket manuale
+// Setup salvataggio ticket manuale
 document.getElementById('save-manual-ticket').addEventListener('click', function() {
-    if (selectedProducts.length === 0) {
-        alert('Aggiungi almeno un prodotto al ticket');
-        return;
-    }
-    
-    // Validazione: verifica che tutti i prodotti abbiano nome e prezzo
-    for (let i = 0; i < selectedProducts.length; i++) {
-        const product = selectedProducts[i];
-        if (!product.descripcion.trim()) {
-            alert(`Il prodotto ${i + 1} deve avere un nome`);
-            return;
-        }
-        if (product.precio <= 0) {
-            alert(`Il prodotto ${i + 1} deve avere un prezzo valido`);
-            return;
-        }
-    }
-    
-    // Mostra loading
     const btn = this;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creazione...';
     btn.disabled = true;
     
-    // Prepara dati - usa sempre ID 999 per tutti i prodotti
-    const ticketData = {
-        cliente_id: {{ cliente.IdCliente }},
-        empresa_id: {{ empresa.IdEmpresa }},
-        products: selectedProducts.map(product => ({
-            product_id: 999, // Usa sempre ID 999
-            peso: product.peso,
-            descripcion: product.descripcion,
-            precio: product.precio,
-            id_iva: product.id_iva,
-            fecha_caducidad: product.fecha_caducidad,
-            comportamiento: product.comportamiento
-        }))
-    };
+    const products = selectedProducts.map(product => ({
+        descripcion: product.descripcion,
+        peso: product.peso,
+        precio: product.precio,
+        id_iva: product.iva,
+        comportamiento: product.comportamiento
+    }));
     
-    // Invia richiesta
     fetch('{{ url_for("ddt.api_create_manual_ticket") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(ticketData)
+        body: JSON.stringify({
+            cliente_id: {{ cliente.IdCliente }},
+            empresa_id: {{ empresa.IdEmpresa }},
+            products: products
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Aggiungi il nuovo ticket al preview
-            const ticketInfo = {
-                id_ticket: data.ticket.id_ticket,
-                id_empresa: data.ticket.id_empresa,
-                id_tienda: data.ticket.id_tienda,
-                id_balanza_maestra: data.ticket.id_balanza_maestra,
-                id_balanza_esclava: data.ticket.id_balanza_esclava,
-                tipo_venta: data.ticket.tipo_venta
-            };
-            
-            currentTickets.push(ticketInfo);
-            previewData[data.ticket.id_ticket] = {
-                ticket: data.ticket,
-                lines: data.ticket.lines,
-                total: data.ticket.total
-            };
-            
-            // Aggiorna UI
-            addTicketToPreview(data.ticket);
-            updateSummary();
+            // Aggiungi il ticket manuale al localStorage e alla preview
+            manualTickets.push(data.ticket);
+            saveManualTicketsToStorage();
+            addManualTicketToPreview(data.ticket);
             updateFormData();
             
             // Chiudi modal
-            bootstrap.Modal.getInstance(document.getElementById('createTicketModal')).hide();
+            const modalElement = document.getElementById('createTicketModal');
+            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+            modal.hide();
             
-            alert('Ticket creato con successo!');
+            alert('Ticket manuale creato con successo!');
         } else {
             alert(data.message || 'Errore nella creazione del ticket');
         }
@@ -1014,5 +1099,145 @@ document.getElementById('save-manual-ticket').addEventListener('click', function
         btn.disabled = false;
     });
 });
+
+// ===== FUNZIONALITÀ ARTICOLO 999 VELOCE =====
+
+let quick999IvaRates = [];
+
+// Setup modal articolo 999 veloce
+document.getElementById('btn-quick-999').addEventListener('click', function() {
+    loadIvaRates().then(() => {
+        // Imposta valori di default
+        document.getElementById('quick-999-price').value = '153.00';
+        document.getElementById('quick-999-weight').value = '1.000';
+        document.getElementById('quick-999-iva').value = '3'; // Default 22%
+        
+        // Calcola anteprima iniziale
+        updateQuick999Preview();
+        
+        // Mostra modal
+        const modal = new bootstrap.Modal(document.getElementById('quick999Modal'));
+        modal.show();
+    });
+});
+
+// Carica le aliquote IVA
+function loadIvaRates() {
+    return fetch('{{ url_for("ddt.api_get_iva_rates") }}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            quick999IvaRates = data.iva_rates;
+            populateIvaSelect();
+        } else {
+            console.error('Errore nel caricamento aliquote IVA:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Errore di rete nel caricamento IVA:', error);
+    });
+}
+
+// Popola il select delle aliquote IVA
+function populateIvaSelect() {
+    const select = document.getElementById('quick-999-iva');
+    select.innerHTML = '<option value="">Seleziona IVA...</option>';
+    
+    quick999IvaRates.forEach(iva => {
+        const option = document.createElement('option');
+        option.value = iva.id;
+        option.textContent = iva.label;
+        if (iva.id === 3) option.selected = true; // Default 22%
+        select.appendChild(option);
+    });
+}
+
+// Aggiorna anteprima calcolo 999
+function updateQuick999Preview() {
+    const price = parseFloat(document.getElementById('quick-999-price').value) || 0;
+    const weight = parseFloat(document.getElementById('quick-999-weight').value) || 0;
+    const ivaId = parseInt(document.getElementById('quick-999-iva').value) || 0;
+    
+    // Trova l'aliquota IVA
+    const ivaRate = quick999IvaRates.find(iva => iva.id === ivaId);
+    const vatPercentage = ivaRate ? ivaRate.percentage / 100 : 0;
+    
+    // Calcola i totali
+    const subtotal = price * weight / (1 + vatPercentage); // Prezzo senza IVA
+    const vatAmount = subtotal * vatPercentage;
+    const total = subtotal + vatAmount;
+    
+    // Aggiorna l'anteprima
+    document.getElementById('quick-999-subtotal').textContent = `€ ${subtotal.toFixed(2)}`;
+    document.getElementById('quick-999-vat').textContent = `€ ${vatAmount.toFixed(2)}`;
+    document.getElementById('quick-999-total').textContent = `€ ${total.toFixed(2)}`;
+}
+
+// Event listeners per aggiornare l'anteprima
+document.getElementById('quick-999-price').addEventListener('input', updateQuick999Preview);
+document.getElementById('quick-999-weight').addEventListener('input', updateQuick999Preview);
+document.getElementById('quick-999-iva').addEventListener('change', updateQuick999Preview);
+
+// Aggiungi articolo 999 al ticket manuale corrente
+document.getElementById('add-quick-999').addEventListener('click', function() {
+    const price = parseFloat(document.getElementById('quick-999-price').value);
+    const weight = parseFloat(document.getElementById('quick-999-weight').value);
+    const ivaId = parseInt(document.getElementById('quick-999-iva').value);
+    
+    if (!price || price <= 0) {
+        alert('Inserisci un prezzo valido');
+        return;
+    }
+    
+    if (!weight || weight <= 0) {
+        alert('Inserisci un peso valido');
+        return;
+    }
+    
+    if (!ivaId) {
+        alert('Seleziona un\'aliquota IVA');
+        return;
+    }
+    
+    // Aggiungi l'articolo 999 alla lista prodotti del ticket manuale
+    const product = {
+        id: 999,
+        descripcion: 'spedizione',
+        precio: price,
+        iva: ivaId,
+        peso: weight,
+        comportamiento: 1
+    };
+    
+    // Se il modal ticket manuale non è aperto, aprilo
+    const manualModal = document.getElementById('createTicketModal');
+    const isManualModalOpen = manualModal.classList.contains('show');
+    
+    if (!isManualModalOpen) {
+        // Aggiungi direttamente ai prodotti selezionati e apri il modal
+        selectedProducts = [product];
+        updateSelectedProductsList();
+        updateTicketTotal();
+        
+        // Chiudi modal 999 e apri modal ticket manuale
+        const quick999Modal = bootstrap.Modal.getInstance(document.getElementById('quick999Modal'));
+        quick999Modal.hide();
+        
+        setTimeout(() => {
+            const modal = new bootstrap.Modal(manualModal);
+            modal.show();
+        }, 300);
+    } else {
+        // Aggiungi alla lista esistente
+        selectedProducts.push(product);
+        updateSelectedProductsList();
+        updateTicketTotal();
+        
+        // Chiudi solo il modal 999
+        const quick999Modal = bootstrap.Modal.getInstance(document.getElementById('quick999Modal'));
+        quick999Modal.hide();
+    }
+});
+
 </script>
 {% endblock %} 

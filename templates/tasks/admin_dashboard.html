@@ -49,7 +49,7 @@
 <div class="container-fluid">
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-md-2 col-sm-6 mb-3">
             <div class="stats-card primary">
                 <div class="stats-icon">
                     <i class="fas fa-list"></i>
@@ -58,7 +58,7 @@
                 <div class="stats-label">Task Totali</div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-md-2 col-sm-6 mb-3">
             <div class="stats-card warning">
                 <div class="stats-icon">
                     <i class="fas fa-clock"></i>
@@ -67,7 +67,7 @@
                 <div class="stats-label">In Attesa</div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-md-2 col-sm-6 mb-3">
             <div class="stats-card info">
                 <div class="stats-icon">
                     <i class="fas fa-play"></i>
@@ -76,13 +76,22 @@
                 <div class="stats-label">In Corso</div>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
+        <div class="col-md-2 col-sm-6 mb-3">
             <div class="stats-card success">
                 <div class="stats-icon">
                     <i class="fas fa-check"></i>
                 </div>
                 <div class="stats-number">{{ stats.completed_tasks }}</div>
                 <div class="stats-label">Completati</div>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="stats-card danger">
+                <div class="stats-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stats-number">{{ stats.overdue_tasks }}</div>
+                <div class="stats-label">Scaduti</div>
             </div>
         </div>
     </div>
@@ -94,8 +103,9 @@
         </div>
         <div class="card-body">
             <form method="GET" id="filterForm">
-                <div class="row g-3">
-                    <div class="col-md-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        <label for="title" class="form-label text-muted small">Titolo Task</label>
                         <input type="text" 
                                class="form-control" 
                                id="title" 
@@ -103,21 +113,24 @@
                                value="{{ current_filters.title }}"
                                placeholder="Cerca per titolo...">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-xl-2 col-lg-3 col-md-6">
+                        <label for="date_from" class="form-label text-muted small">Data Inizio</label>
                         <input type="date" 
                                class="form-control" 
                                id="date_from" 
                                name="date_from" 
                                value="{{ current_filters.date_from }}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-xl-2 col-lg-3 col-md-6">
+                        <label for="date_to" class="form-label text-muted small">Data Fine</label>
                         <input type="date" 
                                class="form-control" 
                                id="date_to" 
                                name="date_to" 
                                value="{{ current_filters.date_to }}">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-xl-2 col-lg-2 col-md-6">
+                        <label for="priority" class="form-label text-muted small">Priorità</label>
                         <select class="form-control" id="priority" name="priority">
                             <option value="">Tutte le priorità</option>
                             <option value="low" {% if current_filters.priority == 'low' %}selected{% endif %}>Bassa</option>
@@ -125,7 +138,8 @@
                             <option value="high" {% if current_filters.priority == 'high' %}selected{% endif %}>Alta</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-xl-2 col-lg-3 col-md-6">
+                        <label for="status" class="form-label text-muted small">Stato</label>
                         <select class="form-control" id="status" name="status">
                             <option value="">Tutti gli stati</option>
                             <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>In Attesa</option>
@@ -134,10 +148,15 @@
                             <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completato</option>
                         </select>
                     </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-search"></i>
-                        </button>
+                    <div class="col-xl-1 col-lg-3 col-md-6">
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -157,7 +176,7 @@
             <div class="row">
                 {% for task in active_tasks %}
                 <div class="col-lg-6 col-xl-4 mb-3">
-                    <div class="task-card task-{{ task.status }}">
+                    <div class="task-card task-{{ task.status }} clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
                         <div class="task-card-header">
                             <h6 class="task-card-title">{{ task.task_number }}</h6>
                             <div>
@@ -208,38 +227,71 @@
                         </div>
                         
                         <div class="task-card-footer">
-                            <div class="btn-group">
-                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
-                                   class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> Visualizza
-                                </a>
-                                {% if not task.assignee %}
-                                <button type="button" class="btn btn-sm btn-success" 
-                                        data-bs-toggle="modal" data-bs-target="#assignModal{{ task.id_task }}">
-                                    <i class="fas fa-user-plus"></i> Assegna
-                                </button>
-                                {% endif %}
-                                {% if task.is_completed and not task.ddt_generated %}
-                                <button type="button" class="btn btn-sm btn-warning" 
-                                        data-bs-toggle="modal" data-bs-target="#ddtModal{{ task.id_task }}">
-                                    <i class="fas fa-file-alt"></i> DDT
-                                </button>
-                                {% endif %}
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ task.id_task }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                </small>
                             </div>
                         </div>
+                        
+                        <!-- Delete button for admin -->
+                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                        <button type="button" class="btn-remove-task" data-task-id="{{ task.id_task }}" data-task-number="{{ task.task_number }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
             
             <!-- Modals for Active Tasks (outside the loop) -->
-            {% for task in active_tasks %}
-                {% include 'tasks/task_modals.html' %}
-            {% endfor %}
+            
+            <!-- Pagination for Active Tasks -->
+            {% if active_total_pages > 1 %}
+            <nav aria-label="Paginazione Task Attivi" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    {% if active_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page - 1 }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}" aria-label="Precedente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Page Numbers -->
+                    {% for page_num in range(1, active_total_pages + 1) %}
+                        {% if page_num == active_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?active_page={{ page_num }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Next Page -->
+                    {% if active_page < active_total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page + 1 }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}" aria-label="Successiva">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
             
             {% else %}
             <div class="task-empty-state">
@@ -253,12 +305,154 @@
             {% endif %}
             
             <!-- Delete All Tasks Button -->
-            {% if active_tasks or completed_tasks %}
+            {% if active_tasks or completed_tasks or overdue_tasks %}
             <div class="text-center mt-4">
                 <button type="button" class="btn btn-outline-danger" 
                         data-bs-toggle="modal" data-bs-target="#deleteAllModal">
                     <i class="fas fa-trash-alt"></i> Elimina Tutti i Task
                 </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Overdue Tasks Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Task Scaduti ({{ overdue_tasks|length }})
+            </h5>
+            <small class="text-muted">Task con scadenza superata</small>
+        </div>
+        <div class="card-body">
+            {% if overdue_tasks %}
+            <div class="row">
+                {% for task in overdue_tasks %}
+                <div class="col-lg-6 col-xl-4 mb-3">
+                    <div class="task-card task-overdue border-danger clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
+                        <div class="task-card-header">
+                            <h6 class="task-card-title">{{ task.task_number }}</h6>
+                            <div>
+                                <span class="task-status-badge bg-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> Scaduto
+                                </span>
+                                <span class="task-priority-badge task-priority-{{ task.priority }}">
+                                    {{ task.priority.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="task-card-body">
+                            <h6 class="mb-2">{{ task.title }}</h6>
+                            
+                            <!-- Progress -->
+                            <div class="task-progress">
+                                <div class="task-progress-label">
+                                    <span>Progresso</span>
+                                    <span>{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
+                                </div>
+                                <div class="task-progress-bar">
+                                    <div class="task-progress-fill bg-danger" 
+                                         style="width: {{ task.progress_percentage }}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Task Meta -->
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Creato</span>
+                                    <span class="task-meta-value">{{ task.created_at.strftime('%d/%m/%Y') }}</span>
+                                </div>
+                                <div class="task-meta-item">
+                                    <span class="task-meta-label">Assegnato a</span>
+                                    <span class="task-meta-value">{{ task.assignee.username if task.assignee else 'Non assegnato' }}</span>
+                                </div>
+                            </div>
+
+                            {% if task.deadline %}
+                            <div class="mt-2">
+                                <span class="task-meta-label">Scadenza:</span>
+                                <span class="text-danger fw-bold">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                                    ({{ ((now() - task.deadline).days) }} giorni fa)
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="task-card-footer">
+                            <div class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Delete button for admin -->
+                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                        <button type="button" class="btn-remove-task" data-task-id="{{ task.id_task }}" data-task-number="{{ task.task_number }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Modals for Overdue Tasks -->
+            
+            <!-- Pagination for Overdue Tasks -->
+            {% if overdue_total_pages > 1 %}
+            <nav aria-label="Paginazione Task Scaduti" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    {% if overdue_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page - 1 }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}" aria-label="Precedente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Page Numbers -->
+                    {% for page_num in range(1, overdue_total_pages + 1) %}
+                        {% if page_num == overdue_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ page_num }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Next Page -->
+                    {% if overdue_page < overdue_total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page + 1 }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}" aria-label="Successiva">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="task-empty-state">
+                <i class="fas fa-check-circle text-success"></i>
+                <h5>Nessun task scaduto</h5>
+                <p>Ottimo! Non ci sono task scaduti al momento.</p>
             </div>
             {% endif %}
         </div>
@@ -277,7 +471,7 @@
             <div class="row">
                 {% for task in completed_tasks %}
                 <div class="col-lg-6 col-xl-4 mb-3">
-                    <div class="task-card task-completed">
+                    <div class="task-card task-completed clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
                         <div class="task-card-header">
                             <h6 class="task-card-title">{{ task.task_number }}</h6>
                             <div>
@@ -327,32 +521,71 @@
                         </div>
                         
                         <div class="task-card-footer">
-                            <div class="btn-group">
-                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" 
-                                   class="btn btn-sm btn-primary">
-                                    <i class="fas fa-eye"></i> Visualizza
-                                </a>
-                                {% if task.ddt_generated and task.ddt_id %}
-                                <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" 
-                                   class="btn btn-sm btn-success">
-                                    <i class="fas fa-file-alt"></i> DDT #{{ task.ddt_id }}
-                                </a>
-                                {% endif %}
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ task.id_task }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="text-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                </small>
                             </div>
                         </div>
+                        
+                        <!-- Delete button for admin -->
+                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                        <button type="button" class="btn-remove-task" data-task-id="{{ task.id_task }}" data-task-number="{{ task.task_number }}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
                 {% endfor %}
             </div>
             
             <!-- Modals for Completed Tasks (outside the loop) -->
-            {% for task in completed_tasks %}
-                {% include 'tasks/task_modals.html' %}
-            {% endfor %}
+            
+            <!-- Pagination for Completed Tasks -->
+            {% if completed_total_pages > 1 %}
+            <nav aria-label="Paginazione Task Completati" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <!-- Previous Page -->
+                    {% if completed_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page - 1 }}&overdue_page={{ overdue_page }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}" aria-label="Precedente">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Page Numbers -->
+                    {% for page_num in range(1, completed_total_pages + 1) %}
+                        {% if page_num == completed_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ page_num }}&overdue_page={{ overdue_page }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Next Page -->
+                    {% if completed_page < completed_total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page + 1 }}&overdue_page={{ overdue_page }}{% for key, value in current_filters.items() if value %}&{{ key }}={{ value }}{% endfor %}" aria-label="Successiva">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
             
             {% else %}
             <div class="task-empty-state">
@@ -366,7 +599,7 @@
 </div>
 
 <!-- Delete All Tasks Modal -->
-{% if active_tasks or completed_tasks %}
+{% if active_tasks or completed_tasks or overdue_tasks %}
 <div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -386,17 +619,18 @@
                     <p><strong>Stai per eliminare:</strong></p>
                     <ul class="list-unstyled">
                         <li><i class="fas fa-tasks text-primary"></i> <strong>Task attivi:</strong> {{ active_tasks|length }}</li>
+                        <li><i class="fas fa-exclamation-triangle text-danger"></i> <strong>Task scaduti:</strong> {{ overdue_tasks|length }}</li>
                         <li><i class="fas fa-check-circle text-success"></i> <strong>Task completati:</strong> {{ completed_tasks|length }}</li>
-                        <li><i class="fas fa-list text-info"></i> <strong>Totale task:</strong> {{ (active_tasks|length) + (completed_tasks|length) }}</li>
+                        <li><i class="fas fa-list text-info"></i> <strong>Totale task:</strong> {{ (active_tasks|length) + (completed_tasks|length) + (overdue_tasks|length) }}</li>
                     </ul>
                     <div class="alert alert-warning">
                         <i class="fas fa-undo"></i>
                         <strong>Conseguenze:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code></li>
+                            <li>Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code> (solo se non hanno DDT generato)</li>
                             <li>Tutte le scansioni e i progressi saranno persi</li>
                             <li>Tutte le notifiche saranno eliminate</li>
-                            <li>I ticket saranno nuovamente disponibili per l'assegnazione</li>
+                            <li>I ticket senza DDT saranno nuovamente disponibili per l'assegnazione</li>
                         </ul>
                     </div>
                 </div>
@@ -414,6 +648,11 @@
 </div>
 {% endif %}
 
+<!-- Unified Task Modals Section -->
+{% for task in active_tasks + overdue_tasks + completed_tasks %}
+    {% include 'tasks/task_modals.html' %}
+{% endfor %}
+
 <script>
 $(document).ready(function() {
     // Auto-submit form on filter change
@@ -429,6 +668,30 @@ $(document).ready(function() {
 
     // Add tooltips
     $('[data-bs-toggle="tooltip"]').tooltip();
+
+    // Handle clickable cards
+    $('.clickable-card').css('cursor', 'pointer');
+    $('.clickable-card').on('click', function(e) {
+        // Don't trigger if clicking on a button or modal trigger
+        if ($(e.target).is('button') || $(e.target).closest('button').length > 0) {
+            return;
+        }
+        
+        const href = $(this).data('href');
+        if (href) {
+            window.location.href = href;
+        }
+    });
+
+    // Add hover effect for clickable cards
+    $('.clickable-card').hover(
+        function() {
+            $(this).addClass('shadow-lg');
+        },
+        function() {
+            $(this).removeClass('shadow-lg');
+        }
+    );
 
     // Modal debugging
     console.log('Task dashboard loaded');
@@ -447,5 +710,34 @@ $(document).ready(function() {
         }
     });
 });
+
+// Clear all filters function
+function clearFilters() {
+    // Reset all form inputs
+    $('#title').val('');
+    $('#date_from').val('');
+    $('#date_to').val('');
+    $('#priority').val('');
+    $('#status').val('');
+    
+    // Submit the form to clear filters
+    $('#filterForm').submit();
+}
 </script>
+
+<style>
+.clickable-card {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-2px);
+}
+
+.task-card-footer button {
+    z-index: 10;
+    position: relative;
+}
+</style>
+
 {% endblock %} 

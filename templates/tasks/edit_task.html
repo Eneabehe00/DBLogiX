@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Task - {{ task.task_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.admin_dashboard') }}" class="text-white">Task</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" class="text-white">{{ task.task_number }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Modifica</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Modifica Task {{ task.task_number }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ task.title }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" class="action-btn mb-2 mb-md-0">
+                        <i class="fas fa-arrow-left"></i> Torna al Task
+                    </a>
+                    {% if not (task.ddt_generated and task.ddt_id) %}
+                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteTaskModal">
+                        <i class="fas fa-trash"></i> Elimina Task
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Form di modifica -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2 text-warning"></i>Modifica Informazioni Task
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('tasks.edit_task', task_id=task.id_task) }}" id="editTaskForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- Task Details -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">
+                                        <i class="fas fa-heading text-primary"></i> Titolo Task *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="title" 
+                                           name="title" 
+                                           value="{{ task.title }}"
+                                           required 
+                                           maxlength="200"
+                                           placeholder="Inserisci un titolo descrittivo per il task">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">
+                                        <i class="fas fa-flag text-warning"></i> Priorità
+                                    </label>
+                                    <select class="form-control" id="priority" name="priority">
+                                        <option value="low" {% if task.priority == 'low' %}selected{% endif %}>Bassa</option>
+                                        <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>Media</option>
+                                        <option value="high" {% if task.priority == 'high' %}selected{% endif %}>Alta</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="deadline" class="form-label">
+                                        <i class="fas fa-clock text-danger"></i> Data di Scadenza (Opzionale)
+                                    </label>
+                                    <input type="datetime-local" 
+                                           class="form-control" 
+                                           id="deadline" 
+                                           name="deadline"
+                                           value="{{ task.deadline.strftime('%Y-%m-%dT%H:%M') if task.deadline }}">
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i> Se specificata, solo i ticket con prodotti non scaduti oltre questa data saranno utilizzabili.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="assignee" class="form-label">
+                                        <i class="fas fa-user text-success"></i> Assegnato a
+                                    </label>
+                                    <select class="form-control" id="assignee" name="assignee_id">
+                                        <option value="">Non assegnato</option>
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}" {% if task.assignee and task.assignee.id == user.id %}selected{% endif %}>
+                                            {{ user.username }} ({{ user.email }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">
+                                <i class="fas fa-align-left text-info"></i> Descrizione (Opzionale)
+                            </label>
+                            <textarea class="form-control" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="3" 
+                                      placeholder="Aggiungi una descrizione dettagliata del task...">{{ task.description or '' }}</textarea>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Salva Modifiche
+                                </button>
+                                <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Annulla
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informazioni Task e Ticket -->
+        <div class="col-lg-4">
+            <!-- Task Info Summary -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle text-info"></i> Informazioni Task
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Numero Task</span>
+                            <span class="task-meta-value">{{ task.task_number }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Status</span>
+                            <span class="task-status-badge task-status-{{ task.status }}">
+                                {{ task.status.replace('_', ' ').title() }}
+                            </span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Creato il</span>
+                            <span class="task-meta-value">{{ task.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Ticket Associati</span>
+                            <span class="task-meta-value">{{ task.total_tickets }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Progresso</span>
+                            <span class="task-meta-value">{{ task.completed_tickets }}/{{ task.total_tickets }} ({{ task.progress_percentage }}%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticket Associati -->
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-ticket-alt text-primary"></i> Ticket Associati ({{ task.total_tickets }})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if task.task_tickets %}
+                    <div class="row">
+                        {% for task_ticket in task.task_tickets %}
+                        <div class="col-lg-12 mb-3">
+                            <div class="ticket-edit-card {% if task_ticket.status == 'completed' %}completed{% elif task_ticket.status == 'in_progress' %}in-progress{% endif %} clickable-card" 
+                                 data-href="{{ url_for('warehouse.ticket_detail', ticket_id=task_ticket.ticket_id) }}">
+                                
+                                <!-- Header compatto -->
+                                <div class="ticket-edit-header">
+                                    <div class="ticket-edit-main-info">
+                                        <div class="ticket-edit-number">#{{ task_ticket.ticket.NumTicket }}</div>
+                                        <div class="ticket-edit-product">
+                                            {% if task_ticket.ticket.loaded_lines and task_ticket.ticket.loaded_lines|length > 0 %}
+                                                {% set main_line = task_ticket.ticket.loaded_lines[0] %}
+                                                <h6 class="product-name">{{ main_line.Descripcion }}</h6>
+                                                <div class="product-meta-inline">
+                                                    <span class="product-code">ID: {{ main_line.IdArticulo }}</span>
+                                                    {% if main_line.FechaCaducidad %}
+                                                    {% set expiry_date = main_line.FechaCaducidad.date() if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad %}
+                                                    {% set today = now().date() %}
+                                                    <span class="product-expiry {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}">
+                                                        {{ main_line.FechaCaducidad.strftime('%d/%m/%Y') if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad.strftime('%d/%m/%Y') }}
+                                                    </span>
+                                                    {% endif %}
+                                                    <span class="product-weight">{{ main_line.Peso }}kg</span>
+                                                </div>
+                                            {% else %}
+                                                <h6 class="product-name text-muted">Prodotti non disponibili</h6>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="ticket-edit-actions">
+                                        <span class="task-status-badge task-status-{{ task_ticket.status }}">
+                                            {{ task_ticket.status.replace('_', ' ').title() }}
+                                        </span>
+                                        
+                                        <!-- Progress compatto -->
+                                        <div class="progress-compact">
+                                            <span class="progress-text-mini">{{ task_ticket.scan_progress_percentage }}%</span>
+                                            <div class="progress-bar-tiny">
+                                                <div class="progress-fill-tiny {% if task_ticket.scan_progress_percentage == 100 %}bg-success{% elif task_ticket.scan_progress_percentage > 0 %}bg-warning{% else %}bg-light{% endif %}" 
+                                                     style="width: {{ task_ticket.scan_progress_percentage }}%"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                                        <button type="button" class="btn-remove-ticket" data-task-ticket-id="{{ task_ticket.id }}" data-ticket-number="{{ task_ticket.ticket.NumTicket }}">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Info aggiuntive -->
+                                <div class="ticket-edit-footer">
+                                    <div class="ticket-edit-meta">
+                                        <span><i class="fas fa-calendar"></i> {{ task_ticket.ticket.Fecha.strftime('%d/%m/%Y') if task_ticket.ticket.Fecha else 'N/A' }}</span>
+                                        <span><i class="fas fa-box"></i> {{ task_ticket.ticket.NumLineas }} prodotti</span>
+                                        <span><i class="fas fa-chart-pie"></i> {{ task_ticket.scanned_items }}/{{ task_ticket.ticket.NumLineas }} scansionati</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-ticket-alt fa-2x mb-2"></i>
+                        <p class="mb-0">Nessun ticket associato</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" class="btn btn-sm btn-primary w-100">
+                            <i class="fas fa-eye"></i> Visualizza Dettagli Completi
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Task Modal -->
+{% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+<div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteTaskModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Elimina Task: {{ task.task_number }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id_task) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Attenzione!</strong> Questa azione è irreversibile.
+                    </div>
+                    <p><strong>Stai per eliminare il task:</strong></p>
+                    <div class="task-meta">
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Numero</span>
+                            <span class="task-meta-value">{{ task.task_number }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Titolo</span>
+                            <span class="task-meta-value">{{ task.title }}</span>
+                        </div>
+                        <div class="task-meta-item">
+                            <span class="task-meta-label">Ticket associati</span>
+                            <span class="task-meta-value">{{ task.total_tickets }}</span>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code> e saranno di nuovo disponibili per altri task.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annulla
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Elimina Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.task-meta-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.task-meta-item:last-child {
+    border-bottom: none;
+}
+
+.task-meta-label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.task-meta-value {
+    font-weight: 600;
+    color: #343a40;
+}
+
+.ticket-item {
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+.tickets-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    // Initialize deadline validation
+    initializeDeadlineValidation();
+    
+    // Form validation
+    $('#editTaskForm').on('submit', function(e) {
+        const title = $('#title').val().trim();
+        
+        if (!title) {
+            e.preventDefault();
+            alert('Il titolo del task è obbligatorio.');
+            $('#title').focus();
+            return false;
+        }
+        
+        if (!validateDeadline()) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Show loading
+        $('button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvataggio...');
+    });
+});
+
+/**
+ * Validate deadline is not in the past
+ */
+function validateDeadline() {
+    const deadlineInput = $('#deadline');
+    const deadlineValue = deadlineInput.val();
+    
+    if (!deadlineValue) {
+        // Deadline is optional
+        deadlineInput.removeClass('is-invalid');
+        $('#deadline-feedback').remove();
+        return true;
+    }
+    
+    const selectedDate = new Date(deadlineValue);
+    const now = new Date();
+    
+    // Compare only dates, not datetime, so today's date is allowed
+    const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Check if selected date is in the past
+    if (selectedDateOnly < todayOnly) {
+        deadlineInput.addClass('is-invalid');
+        $('#deadline-feedback').remove();
+        deadlineInput.after('<div class="invalid-feedback" id="deadline-feedback">La data di scadenza non può essere nel passato.</div>');
+        return false;
+    } else {
+        deadlineInput.removeClass('is-invalid');
+        $('#deadline-feedback').remove();
+        return true;
+    }
+}
+
+/**
+ * Initialize deadline validation
+ */
+function initializeDeadlineValidation() {
+    const deadlineInput = $('#deadline');
+    
+    // Set minimum date to today
+    const today = new Date();
+    const todayString = today.toISOString().slice(0, 16);
+    deadlineInput.attr('min', todayString);
+    
+    // Add validation on change
+    deadlineInput.on('change', function() {
+        validateDeadline();
+    });
+}
+</script>
+{% endblock %}

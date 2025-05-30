@@ -35,6 +35,12 @@ def admin_dashboard():
     priority_filter = request.args.get('priority', '')
     status_filter = request.args.get('status', '')
     
+    # Pagination parameters
+    active_page = int(request.args.get('active_page', 1))
+    completed_page = int(request.args.get('completed_page', 1))
+    overdue_page = int(request.args.get('overdue_page', 1))
+    per_page = 6
+    
     # Base query
     query = Task.query
     
@@ -69,16 +75,42 @@ def admin_dashboard():
     for task in tasks:
         task.update_progress()
     
-    # Separate completed and non-completed tasks
-    completed_tasks = [task for task in tasks if task.status == 'completed']
-    active_tasks = [task for task in tasks if task.status != 'completed']
+    # Separate tasks into categories
+    active_tasks = []
+    completed_tasks = []
+    overdue_tasks = []
+    
+    for task in tasks:
+        if task.is_overdue:
+            overdue_tasks.append(task)
+        elif task.status == 'completed':
+            completed_tasks.append(task)
+        else:
+            active_tasks.append(task)
+    
+    # Apply pagination to each category
+    active_start = (active_page - 1) * per_page
+    active_end = active_start + per_page
+    active_tasks_paginated = active_tasks[active_start:active_end]
+    active_total_pages = (len(active_tasks) + per_page - 1) // per_page
+    
+    completed_start = (completed_page - 1) * per_page
+    completed_end = completed_start + per_page
+    completed_tasks_paginated = completed_tasks[completed_start:completed_end]
+    completed_total_pages = (len(completed_tasks) + per_page - 1) // per_page
+    
+    overdue_start = (overdue_page - 1) * per_page
+    overdue_end = overdue_start + per_page
+    overdue_tasks_paginated = overdue_tasks[overdue_start:overdue_end]
+    overdue_total_pages = (len(overdue_tasks) + per_page - 1) // per_page
     
     # Get task statistics
     stats = {
         'total_tasks': Task.query.count(),
         'pending_tasks': Task.query.filter_by(status='pending').count(),
         'in_progress_tasks': Task.query.filter_by(status='in_progress').count(),
-        'completed_tasks': Task.query.filter_by(status='completed').count()
+        'completed_tasks': Task.query.filter_by(status='completed').count(),
+        'overdue_tasks': len([t for t in Task.query.all() if t.is_overdue])
     }
     
     # Get users for assignment
@@ -88,8 +120,16 @@ def admin_dashboard():
     clients = Client.query.order_by(Client.Nombre).all()
     
     return render_template('tasks/admin_dashboard.html', 
-                         active_tasks=active_tasks,
-                         completed_tasks=completed_tasks,
+                         active_tasks=active_tasks_paginated,
+                         completed_tasks=completed_tasks_paginated,
+                         overdue_tasks=overdue_tasks_paginated,
+                         # Pagination info
+                         active_page=active_page,
+                         active_total_pages=active_total_pages,
+                         completed_page=completed_page,
+                         completed_total_pages=completed_total_pages,
+                         overdue_page=overdue_page,
+                         overdue_total_pages=overdue_total_pages,
                          stats=stats,
                          users=users,
                          clients=clients,
@@ -112,6 +152,12 @@ def user_dashboard():
     priority_filter = request.args.get('priority', '')
     status_filter = request.args.get('status', '')
     
+    # Pagination parameters
+    active_page = int(request.args.get('active_page', 1))
+    completed_page = int(request.args.get('completed_page', 1))
+    overdue_page = int(request.args.get('overdue_page', 1))
+    per_page = 6
+    
     # Base query for tasks assigned to current user
     query = Task.query.filter_by(assigned_to=current_user.id)
     
@@ -132,16 +178,42 @@ def user_dashboard():
     for task in assigned_tasks:
         task.update_progress()
     
-    # Separate completed and non-completed tasks
-    completed_tasks = [task for task in assigned_tasks if task.status == 'completed']
-    active_tasks = [task for task in assigned_tasks if task.status != 'completed']
+    # Separate tasks into categories
+    active_tasks = []
+    completed_tasks = []
+    overdue_tasks = []
+    
+    for task in assigned_tasks:
+        if task.is_overdue:
+            overdue_tasks.append(task)
+        elif task.status == 'completed':
+            completed_tasks.append(task)
+        else:
+            active_tasks.append(task)
+    
+    # Apply pagination to each category
+    active_start = (active_page - 1) * per_page
+    active_end = active_start + per_page
+    active_tasks_paginated = active_tasks[active_start:active_end]
+    active_total_pages = (len(active_tasks) + per_page - 1) // per_page
+    
+    completed_start = (completed_page - 1) * per_page
+    completed_end = completed_start + per_page
+    completed_tasks_paginated = completed_tasks[completed_start:completed_end]
+    completed_total_pages = (len(completed_tasks) + per_page - 1) // per_page
+    
+    overdue_start = (overdue_page - 1) * per_page
+    overdue_end = overdue_start + per_page
+    overdue_tasks_paginated = overdue_tasks[overdue_start:overdue_end]
+    overdue_total_pages = (len(overdue_tasks) + per_page - 1) // per_page
     
     # Get task statistics for user
     stats = {
         'total_assigned': len(assigned_tasks),
         'pending': len([t for t in assigned_tasks if t.status == 'pending']),
         'in_progress': len([t for t in assigned_tasks if t.status == 'in_progress']),
-        'completed': len([t for t in assigned_tasks if t.status == 'completed'])
+        'completed': len([t for t in assigned_tasks if t.status == 'completed']),
+        'overdue': len(overdue_tasks)
     }
     
     # Get unread notifications
@@ -151,8 +223,16 @@ def user_dashboard():
     ).order_by(desc(TaskNotification.created_at)).limit(5).all()
     
     return render_template('tasks/user_dashboard.html', 
-                         active_tasks=active_tasks,
-                         completed_tasks=completed_tasks,
+                         active_tasks=active_tasks_paginated,
+                         completed_tasks=completed_tasks_paginated,
+                         overdue_tasks=overdue_tasks_paginated,
+                         # Pagination info
+                         active_page=active_page,
+                         active_total_pages=active_total_pages,
+                         completed_page=completed_page,
+                         completed_total_pages=completed_total_pages,
+                         overdue_page=overdue_page,
+                         overdue_total_pages=overdue_total_pages,
                          stats=stats,
                          notifications=unread_notifications,
                          now=datetime.now)
@@ -164,13 +244,95 @@ def create_task():
     """Create a new task"""
     if request.method == 'POST':
         try:
+            # Validate deadline is not in the past
+            deadline = None
+            if request.form.get('deadline'):
+                deadline = datetime.strptime(request.form['deadline'], '%Y-%m-%dT%H:%M')
+                # Fix: Compare only dates, not datetime, so today's date is allowed
+                today = datetime.now().date()
+                deadline_date = deadline.date()
+                if deadline_date < today:
+                    flash('La data di scadenza non può essere nel passato.', 'error')
+                    # Get data for re-rendering the form
+                    available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
+                    for ticket in available_tickets:
+                        ticket_lines = db.session.query(TicketLine).join(
+                            Product, TicketLine.IdArticulo == Product.IdArticulo
+                        ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
+                        ticket.lines = ticket_lines
+                        actual_lines = len(ticket_lines)
+                        if ticket.NumLineas != actual_lines:
+                            ticket.NumLineas = actual_lines
+                    users = User.query.filter_by(is_admin=False).all()
+                    return render_template('tasks/create_task.html', tickets=available_tickets, users=users)
+            
+            # Get selected tickets for validation
+            selected_tickets = request.form.getlist('tickets')
+            if not selected_tickets:
+                flash('Seleziona almeno un ticket per creare il task.', 'error')
+                # Get data for re-rendering the form
+                available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
+                for ticket in available_tickets:
+                    ticket_lines = db.session.query(TicketLine).join(
+                        Product, TicketLine.IdArticulo == Product.IdArticulo
+                    ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
+                    ticket.lines = ticket_lines
+                    actual_lines = len(ticket_lines)
+                    if ticket.NumLineas != actual_lines:
+                        ticket.NumLineas = actual_lines
+                users = User.query.filter_by(is_admin=False).all()
+                return render_template('tasks/create_task.html', tickets=available_tickets, users=users)
+            
+            # Validate product expiry dates against task deadline
+            if deadline:
+                invalid_tickets = []
+                for ticket_id in selected_tickets:
+                    ticket = TicketHeader.query.get(int(ticket_id))
+                    if ticket:
+                        ticket_lines = TicketLine.query.filter_by(IdTicket=ticket.IdTicket).all()
+                        for line in ticket_lines:
+                            if line.FechaCaducidad:
+                                # Convert to date for comparison if it's a datetime
+                                expiry_date = line.FechaCaducidad.date() if hasattr(line.FechaCaducidad, 'date') else line.FechaCaducidad
+                                task_deadline_date = deadline.date()
+                                
+                                if expiry_date > task_deadline_date:
+                                    invalid_tickets.append({
+                                        'ticket_num': ticket.NumTicket,
+                                        'product_id': line.IdArticulo,
+                                        'product_name': line.Descripcion,
+                                        'expiry_date': expiry_date.strftime('%d/%m/%Y'),
+                                        'task_deadline': task_deadline_date.strftime('%d/%m/%Y')
+                                    })
+                
+                if invalid_tickets:
+                    error_message = "I seguenti ticket contengono prodotti con scadenza posteriore alla scadenza del task:\n"
+                    for invalid in invalid_tickets[:3]:  # Show only first 3 to avoid too long message
+                        error_message += f"- Ticket #{invalid['ticket_num']}: {invalid['product_name']} (scade {invalid['expiry_date']})\n"
+                    if len(invalid_tickets) > 3:
+                        error_message += f"... e altri {len(invalid_tickets) - 3} prodotti"
+                    
+                    flash(error_message, 'error')
+                    # Get data for re-rendering the form
+                    available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
+                    for ticket in available_tickets:
+                        ticket_lines = db.session.query(TicketLine).join(
+                            Product, TicketLine.IdArticulo == Product.IdArticulo
+                        ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
+                        ticket.lines = ticket_lines
+                        actual_lines = len(ticket_lines)
+                        if ticket.NumLineas != actual_lines:
+                            ticket.NumLineas = actual_lines
+                    users = User.query.filter_by(is_admin=False).all()
+                    return render_template('tasks/create_task.html', tickets=available_tickets, users=users)
+            
             # Create new task
             task = Task(
                 title=request.form['title'],
                 description=request.form.get('description', ''),
                 priority=request.form.get('priority', 'medium'),
                 created_by=current_user.id,
-                deadline=datetime.strptime(request.form['deadline'], '%Y-%m-%dT%H:%M') if request.form.get('deadline') else None
+                deadline=deadline
             )
             
             # Generate unique task number
@@ -187,7 +349,6 @@ def create_task():
             db.session.flush()  # Get the task ID
             
             # Add selected tickets to task
-            selected_tickets = request.form.getlist('tickets')
             for ticket_id in selected_tickets:
                 # Create task ticket relationship
                 task_ticket = TaskTicket(
@@ -253,34 +414,159 @@ def create_task():
 @tasks_bp.route('/task/<int:task_id>')
 @login_required
 def view_task(task_id):
-    """View task details"""
+    """View detailed task information"""
     task = Task.query.get_or_404(task_id)
     
     # Check permissions
     if not current_user.is_admin and task.assigned_to != current_user.id:
-        flash('Non hai il permesso di visualizzare questo task.', 'error')
+        flash('Non hai i permessi per visualizzare questo task.', 'error')
         return redirect(url_for('tasks.index'))
     
-    # Update progress
-    task.update_progress()
-    
-    # Get task tickets with scan progress
+    # Get all tickets associated with this task
     task_tickets = TaskTicket.query.filter_by(task_id=task_id).all()
-    for tt in task_tickets:
-        tt.update_scan_progress()
     
-    # Get users for assignment (admin only)
-    users = User.query.filter_by(is_admin=False).all() if current_user.is_admin else []
+    # Load product lines for each ticket
+    for task_ticket in task_tickets:
+        if task_ticket.ticket:
+            # Load ticket lines with product details
+            ticket_lines = db.session.query(TicketLine).join(
+                Product, TicketLine.IdArticulo == Product.IdArticulo
+            ).filter(TicketLine.IdTicket == task_ticket.ticket.IdTicket).all()
+            
+            # Attach lines to ticket object for template access using a different attribute name
+            task_ticket.ticket.loaded_lines = ticket_lines
     
-    # Get clients for DDT generation (admin only)
-    clients = Client.query.order_by(Client.Nombre).all() if current_user.is_admin else []
+    return render_template('tasks/view_task.html', task=task, task_tickets=task_tickets)
+
+
+@tasks_bp.route('/task/<int:task_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_task(task_id):
+    """Edit an existing task"""
+    from models import User
     
-    return render_template('tasks/view_task.html', 
+    task = Task.query.get_or_404(task_id)
+    
+    # Check if task can be edited
+    if task.status == 'completed':
+        flash('Non è possibile modificare un task completato.', 'error')
+        return redirect(url_for('tasks.view_task', task_id=task_id))
+    
+    if request.method == 'POST':
+        try:
+            # Get form data
+            title = request.form.get('title', '').strip()
+            description = request.form.get('description', '').strip()
+            priority = request.form.get('priority', 'medium')
+            assignee_id = request.form.get('assignee_id')
+            deadline_str = request.form.get('deadline')
+            
+            # Validate required fields
+            if not title:
+                flash('Il titolo del task è obbligatorio.', 'error')
+                raise ValueError("Title is required")
+            
+            # Validate deadline if provided
+            deadline = None
+            if deadline_str:
+                try:
+                    deadline = datetime.strptime(deadline_str, '%Y-%m-%dT%H:%M')
+                    # Validate deadline is not in the past (allow today)
+                    today = datetime.now().date()
+                    deadline_date = deadline.date()
+                    if deadline_date < today:
+                        flash('La data di scadenza non può essere nel passato.', 'error')
+                        raise ValueError("Deadline cannot be in the past")
+                except ValueError as e:
+                    if "Deadline cannot be in the past" in str(e):
+                        raise
+                    flash('Formato data di scadenza non valido.', 'error')
+                    raise ValueError("Invalid deadline format")
+            
+            # Validate assignee if provided
+            assignee = None
+            if assignee_id:
+                assignee = User.query.get(assignee_id)
+                if not assignee:
+                    flash('Utente selezionato non valido.', 'error')
+                    raise ValueError("Invalid assignee")
+            
+            # Update task fields
+            old_assignee = task.assignee
+            task.title = title
+            task.description = description if description else None
+            task.priority = priority
+            task.deadline = deadline
+            task.assigned_to = assignee.id if assignee else None
+            task.updated_at = datetime.utcnow()
+            
+            # If status was 'pending' and now assigned, change to 'assigned'
+            if task.status == 'pending' and assignee:
+                task.status = 'assigned'
+            # If status was 'assigned' and assignee removed, change to 'pending'
+            elif task.status == 'assigned' and not assignee:
+                task.status = 'pending'
+            
+            db.session.commit()
+            
+            # Create notification if assignee changed
+            if old_assignee != assignee:
+                if assignee:
+                    # Task assigned to new user
+                    notification = TaskNotification(
+                        task_id=task.id_task,
+                        user_id=assignee.id,
+                        notification_type='task_assigned',
+                        title=f'Task Assegnato: {task.task_number}',
+                        message=f'Ti è stato assegnato il task "{task.title}" (modificato).'
+                    )
+                    db.session.add(notification)
+                
+                if old_assignee:
+                    # Notify old assignee that task was reassigned
+                    notification = TaskNotification(
+                        task_id=task.id_task,
+                        user_id=old_assignee.id,
+                        notification_type='task_reassigned',
+                        title=f'Task Riassegnato: {task.task_number}',
+                        message=f'Il task "{task.title}" è stato riassegnato ad un altro utente.'
+                    )
+                    db.session.add(notification)
+                    
+                db.session.commit()
+            
+            flash(f'Task {task.task_number} modificato con successo!', 'success')
+            return redirect(url_for('tasks.view_task', task_id=task_id))
+            
+        except ValueError:
+            # Error messages already set via flash
+            pass
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error editing task {task_id}: {str(e)}")
+            flash('Errore durante la modifica del task. Riprova.', 'error')
+    
+    # GET request - show edit form
+    users = User.query.filter_by(is_active=True).all()
+    
+    # Get task tickets for display
+    task_tickets = TaskTicket.query.filter_by(task_id=task_id).all()
+    
+    # Load product lines for each ticket
+    for task_ticket in task_tickets:
+        if task_ticket.ticket:
+            # Load ticket lines with product details
+            ticket_lines = db.session.query(TicketLine).join(
+                Product, TicketLine.IdArticulo == Product.IdArticulo
+            ).filter(TicketLine.IdTicket == task_ticket.ticket.IdTicket).all()
+            
+            # Attach lines to ticket object for template access using a different attribute name
+            task_ticket.ticket.loaded_lines = ticket_lines
+    
+    return render_template('tasks/edit_task.html', 
                          task=task, 
-                         task_tickets=task_tickets,
                          users=users,
-                         clients=clients,
-                         now=datetime.now)
+                         task_tickets=task_tickets)
 
 
 @tasks_bp.route('/task/<int:task_id>/assign', methods=['POST'])

@@ -17,6 +17,64 @@
     margin-bottom: 10px;
 }
 
+/* Search and Filter Section */
+.search-filter-section {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.search-wrapper {
+    position: relative;
+}
+
+.search-wrapper i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    z-index: 5;
+}
+
+.search-wrapper .form-control {
+    padding-left: 40px;
+    height: 45px;
+}
+
+/* Statistics Cards */
+.stat-card {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 1rem;
+}
+
 .fattura-card {
     border-radius: 8px;
     overflow: hidden;
@@ -88,6 +146,65 @@
     border-radius: 4px;
 }
 
+/* Filter Badges */
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f0f2f5;
+    border-radius: 30px;
+    padding: 5px 10px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.filter-badge .close {
+    margin-left: 8px;
+    color: #777;
+    cursor: pointer;
+}
+
+.filter-badge .close:hover {
+    color: #dc3545;
+}
+
+/* Delete Modal */
+.delete-icon-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.delete-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #f8d7da;
+    color: #dc3545;
+}
+
+.delete-icon i {
+    font-size: 2.5rem;
+}
+
+.delete-warning {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.delete-warning-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.delete-warning-text {
+    color: #6c757d;
+}
+
 /* Responsive Styles */
 @media (max-width: 768px) {
     .fattura-header h1 {
@@ -105,6 +222,26 @@
     .fattura-table td, 
     .fattura-table th {
         padding: 10px 12px;
+    }
+    
+    .search-filter-section {
+        padding: 15px;
+    }
+    
+    .search-filter-section .row {
+        flex-direction: column;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .stat-icon {
+        font-size: 1.5rem;
     }
 }
 
@@ -125,5 +262,54 @@
     .fattura-info,
     .info-alert {
         padding: 12px;
+    }
+    
+    .search-filter-section {
+        padding: 10px;
+    }
+    
+    .filter-badge {
+        margin-bottom: 5px;
+    }
+}
+
+/* Table responsive styles for mobile */
+@media (max-width: 767.98px) {
+    .fattura-table thead {
+        display: none;
+    }
+    
+    .fattura-table tbody tr {
+        display: block;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        background-color: #fff;
+    }
+    
+    .fattura-table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .fattura-table tbody td:last-child {
+        border-bottom: none;
+    }
+    
+    .fattura-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: 1rem;
+        text-align: left;
+        flex: 1;
+    }
+    
+    .fattura-table tbody td span,
+    .fattura-table tbody td div {
+        flex: 2;
+        text-align: right;
     }
 } 

@@ -20,6 +20,7 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from sqlalchemy.sql import text
+import time
 
 ddt_bp = Blueprint('ddt', __name__)
 
@@ -307,7 +308,7 @@ def preview():
                         'fecha_caducidad': line.FechaCaducidad
                     })
                 else:
-                    current_app.logger.warning(f"   ⚠️  Prodotto non trovato per IdArticulo={line.IdArticolo}")
+                    current_app.logger.warning(f"   ⚠️  Prodotto non trovato per IdArticulo={line.IdArticulo}")
             
             # DEBUG: Final ticket data
             current_app.logger.info(f"🎯 DEBUG: Ticket {ticket.IdTicket} completato con {len(ticket_lines_data)} linee valide")
@@ -364,80 +365,117 @@ def preview():
                           from_warehouse=from_warehouse,
                           task_id=task_id)
 
+def ensure_custom_product_exists():
+    """Assicura che esista un prodotto con ID 999 per i prodotti personalizzati"""
+    try:
+        # Verifica se esiste già
+        product_999 = Product.query.get(999)
+        if not product_999:
+            # Crea il prodotto di riferimento con ID 999
+            product_999 = Product(
+                IdArticulo=999,
+                Descripcion="Prodotto Personalizzato",
+                PrecioConIVA=1.00,
+                IdFamilia=1,
+                IdSubFamilia=1,
+                IdIva=3,  # Default 22%
+                TeclaDirecta=0,
+                TaraFija=0
+            )
+            db.session.add(product_999)
+            current_app.logger.info("Creato prodotto personalizzato con ID 999")
+        
+        # Verifica/crea anche il record Article per ID 999
+        article_999 = Article.query.get(999)
+        if not article_999:
+            article_999 = Article(
+                IdArticulo=999,
+                Descripcion="Prodotto Personalizzato",
+                Descripcion1="Prodotto creato manualmente",
+                PrecioConIVA=1.00,
+                PrecioSinIVA=0.82,  # Prezzo senza IVA al 22%
+                IdFamilia=1,
+                IdSubFamilia=1,
+                IdIva=3,  # 22%
+                IdTipo=1,  # Pesato
+                IdDepartamento=1,
+                IdSeccion=1,
+                TeclaDirecta=0,
+                TaraFija=0,
+                Favorito=True,
+                EnVenta=True,
+                IncluirGestionStock=False,
+                IdClase=1,
+                IdEmpresa=1,
+                Usuario="DBLogiX",
+                Modificado=True,
+                Operacion="A",
+                Marca=1
+            )
+            db.session.add(article_999)
+            current_app.logger.info("Creato articolo personalizzato con ID 999")
+            
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Errore nella creazione del prodotto personalizzato: {str(e)}")
+
 @ddt_bp.route('/create', methods=['POST'])
 @login_required
 def create():
     """Step 3: Create the DDT with the selected client and tickets"""
-    # Debug request data
-    print("=" * 50)
-    print("CREATE DDT REQUEST")
-    print("=" * 50)
-    print(f"Request method: {request.method}")
-    print(f"Request form data: {request.form}")
-    print(f"Request headers: {request.headers}")
-    print("=" * 50)
-    
-    # Create form instance with request data
-    form = DDTCreateForm()
-    
-    # Debug form validation
-    print(f"Form data: {request.form}")
-    print(f"Form errors before validation: {form.errors}")
-    
-    # Check CSRF token first
-    csrf_token = request.form.get('csrf_token')
-    if not csrf_token:
-        print("Missing CSRF token in form data")
-        return jsonify({"success": False, "error": "Token CSRF mancante"})
-    
-    # Get client ID and empresa ID from form data
+    # Get form data
     cliente_id = request.form.get('cliente_id')
-    if not cliente_id or cliente_id == '':
-        print("Missing cliente_id in form data")
-        return jsonify({"success": False, "error": "ID cliente mancante", 
-                        "details": {"cliente_id": ["This field is required."]}})
-    
-    id_empresa = request.form.get('id_empresa')
-    if not id_empresa or id_empresa == '':
-        print("Missing id_empresa in form data")
-        id_empresa = 1  # Default to 1 if not provided
-        print(f"Using default id_empresa: {id_empresa}")
-    
-    # Check for tickets in either 'tickets' or 'selected_tickets' field
+    id_empresa = request.form.get('id_empresa', 1)
     tickets_data = request.form.get('tickets')
-    if not tickets_data or tickets_data == '':
-        tickets_data = request.form.get('selected_tickets')
-        if not tickets_data or tickets_data == '':
-            print("Missing tickets data in form")
-            return jsonify({"success": False, "error": "Dati dei ticket mancanti", 
-                           "details": {"tickets": ["This field is required."]}})
+    manual_tickets_data = request.form.get('manual_tickets')  # Ticket manuali dal localStorage
+    note = request.form.get('note')
     
-    # Manually set form data
-    form.cliente_id.data = int(cliente_id)
-    form.id_empresa.data = int(id_empresa)
-    form.tickets.data = tickets_data
+    # Gestione task
+    from_task = request.form.get('from_task') == 'true'
+    from_preview = request.form.get('from_preview') == 'true'
+    from_warehouse = request.form.get('from_warehouse') == 'true'
+    task_id = request.form.get('task_id')
     
-    # Verify client exists
-    client = Client.query.get(int(cliente_id))
-    if not client:
-        print(f"Client not found: {cliente_id}")
-        return jsonify({"success": False, "error": "Cliente non trovato"})
-    
-    # Verify empresa exists
-    empresa = Company.query.get(int(id_empresa))
-    if not empresa:
-        print(f"Company not found: {id_empresa}")
-        return jsonify({"success": False, "error": "Azienda non trovata"})
+    if not cliente_id:
+        flash('Cliente mancante', 'danger')
+        return redirect(url_for('ddt.new'))
     
     # Parse ticket data
     try:
-        ticket_data = json.loads(tickets_data)
-        print(f"Parsed ticket data: {ticket_data}")
-        if not ticket_data:
-            return jsonify({"success": False, "error": "Nessun ticket selezionato"})
-    except json.JSONDecodeError as e:
-        print(f"JSON parse error: {e}, data: {tickets_data}")
-        return jsonify({"success": False, "error": f"Formato JSON non valido: {str(e)}"})
+        ticket_data = json.loads(tickets_data) if tickets_data else []
+        manual_tickets = json.loads(manual_tickets_data) if manual_tickets_data else []
+    except json.JSONDecodeError:
+        flash('Formato dati ticket non valido', 'danger')
+        return redirect(url_for('ddt.select_tickets', cliente_id=cliente_id))
+    
+    # Verifica che ci sia almeno un ticket (normale o manuale)
+    if not ticket_data and not manual_tickets:
+        flash('Nessun ticket selezionato', 'danger')
+        current_app.logger.error("❌ ERRORE: Nessun ticket da processare - ticket_data e manual_tickets entrambi vuoti")
+        return redirect(url_for('ddt.select_tickets', cliente_id=cliente_id))
+    
+    # DEBUG: Verifica immediata dei dati ricevuti
+    current_app.logger.info(f"📥 DEBUG: Dati ricevuti dal form:")
+    current_app.logger.info(f"    tickets_data (raw): {tickets_data}")
+    current_app.logger.info(f"    manual_tickets_data (raw): {manual_tickets_data}")
+    current_app.logger.info(f"    ticket_data (parsed): {ticket_data}")
+    current_app.logger.info(f"    manual_tickets (parsed): {manual_tickets}")
+
+    # Get client and company info
+    client = Client.query.get_or_404(int(cliente_id))
+    empresa = Company.query.get_or_404(int(id_empresa))
+
+    current_app.logger.info(f"🔍 DEBUG: Creazione DDT per cliente {client.Nombre}")
+    current_app.logger.info(f"📋 DEBUG: {len(ticket_data)} ticket normali, {len(manual_tickets)} ticket manuali")
+    
+    # DEBUG: Log dati ticket per verifica
+    current_app.logger.info(f"📝 DEBUG: Dati ticket normali: {ticket_data}")
+    current_app.logger.info(f"✋ DEBUG: Dati ticket manuali: {manual_tickets}")
+
+    # Assicura che esista il prodotto personalizzato per i ticket manuali
+    if manual_tickets:
+        ensure_custom_product_exists()
     
     # Start a transaction
     try:
@@ -483,11 +521,11 @@ def create():
             EANCliente=client.EANScanner or "",
 
             # Informazioni DDT
-            Tipo="A",  # Albaran
+            Tipo="A",
             IdVendedor=1,  # Valore predefinito
             NombreVendedor="IL CAPO",  # Valore predefinito
             ReferenciaDocumento="",
-            ObservacionesDocumento="",
+            ObservacionesDocumento=note or "",
             TipoVenta=2,  # Valore predefinito
             
             # Date
@@ -509,7 +547,7 @@ def create():
             # Altri campi richiesti
             PreseleccionCliente=1,
             Enviado=0,
-            NumLineas=len(ticket_data),
+            NumLineas=len(ticket_data) + len(manual_tickets),
             CodigoBarras="",
             CodBarrasTalonCaja="",
             SerieLTicketErroneo=0,
@@ -523,43 +561,32 @@ def create():
         db.session.add(ddt)
         db.session.flush()  # Otteniamo l'ID del DDT
         
-        print(f"Created AlbaranCabecera with ID: {ddt.IdAlbaran}")
+        current_app.logger.info(f"✅ Created AlbaranCabecera with ID: {ddt.IdAlbaran}")
         
         # Create AlbaranLinea (DDT lines) for each ticket
         line_count = 0
-        for ticket_idx, ticket in enumerate(ticket_data, 1):
-            # Verify the ticket exists and is not already in another DDT
-            ticket_exists = TicketHeader.query.filter_by(
-                IdTicket=ticket['id_ticket'],
-                IdEmpresa=ticket['id_empresa']
+        total_ddt_amount = 0
+        total_without_vat = 0
+        total_vat = 0
+
+        # PROCESSO TICKET NORMALI
+        for ticket in ticket_data:
+            current_app.logger.info(f"🎫 DEBUG: Elaborazione ticket normale {ticket['id_ticket']}")
+            
+            # Get ticket lines from the database
+            ticket_header = TicketHeader.query.filter_by(
+                IdTicket=ticket['id_ticket']
             ).first()
             
-            if not ticket_exists:
-                db.session.rollback()
-                return jsonify({"success": False, "error": f"Ticket {ticket['id_ticket']} non trovato"})
+            if not ticket_header:
+                current_app.logger.warning(f"⚠️  Ticket header non trovato per ID {ticket['id_ticket']}")
+                continue
             
-            # Check if this ticket is already used in another DDT
-            ticket_in_ddt = AlbaranLinea.query.filter(
-                AlbaranLinea.IdEmpresa == ticket['id_empresa'],
-                AlbaranLinea.IdTicket == ticket['id_ticket']
-            ).first()
-            
-            if ticket_in_ddt:
-                db.session.rollback()
-                return jsonify({"success": False, "error": f"Ticket {ticket['id_ticket']} già incluso in un DDT"})
-            
-            # IMPORTANTE: Aggiungiamo log aggiuntivi per debuggare il problema
-            print(f"DEBUG: Elaborazione ticket {ticket['id_ticket']}")
-            
-            # Get ticket lines
             lines = TicketLine.query.filter_by(
                 IdTicket=ticket['id_ticket']
             ).all()
             
-            print(f"DEBUG: Trovate {len(lines)} linee per il ticket {ticket['id_ticket']}")
-            print(f"DEBUG: Dettaglio linee per il ticket {ticket['id_ticket']}:")
-            for tl in lines:
-                print(f"  - IdLineaTicket: {tl.IdLineaTicket}, IdArticulo: {tl.IdArticulo}, Descripcion: {tl.Descripcion}")
+            current_app.logger.info(f"📋 DEBUG: Trovate {len(lines)} linee per ticket {ticket['id_ticket']}")
             
             # Create an AlbaranLinea for each product in the ticket
             for ticket_line in lines:
@@ -567,7 +594,7 @@ def create():
                 product = Product.query.get(ticket_line.IdArticulo)
                 
                 if not product:
-                    print(f"DEBUG: Prodotto {ticket_line.IdArticulo} non trovato, riga saltata")
+                    current_app.logger.warning(f"⚠️  Prodotto {ticket_line.IdArticulo} non trovato, riga saltata")
                     continue
                 
                 # Determine VAT rate
@@ -632,109 +659,224 @@ def create():
                 albaran_line.IdFamilia = product.IdFamilia
                 albaran_line.NombreFamilia = ""  # Da popolare se disponibile
                 albaran_line.IdSeccion = getattr(product_article, 'IdSeccion', None)
-                albaran_line.NombreSeccion = ""  # Da popolare se disponibile
                 albaran_line.IdSubFamilia = product.IdSubFamilia
-                albaran_line.NombreSubFamilia = ""  # Da popolare se disponibile
                 albaran_line.IdDepartamento = getattr(product_article, 'IdDepartamento', None)
-                albaran_line.NombreDepartamento = ""  # Da popolare se disponibile
                 
-                # Informazioni ingredienti (da popolare se disponibili)
-                # Priorità: usa il testo dal ticket, altrimenti dal prodotto
-                albaran_line.Texto1 = getattr(ticket_line, 'Texto1', None) or getattr(product_article, 'Texto1', None)
+                # Gestisci il campo Texto1 in modo sicuro
+                texto1_value = ""
+                if hasattr(ticket_line, 'Texto1') and ticket_line.Texto1:
+                    texto1_value = ticket_line.Texto1
+                elif product_article and hasattr(product_article, 'Texto1') and product_article.Texto1:
+                    texto1_value = product_article.Texto1
+                albaran_line.Texto1 = texto1_value
                 
-                # Stampa informazioni di debug
-                print(f"DEBUG LOOP === Ticket from Form: {ticket}")
-                print(f"DEBUG LOOP === Current TicketLine from DB: IdTicketLinea={ticket_line.IdLineaTicket}, IdTicket={ticket_line.IdTicket}, IdArticulo={ticket_line.IdArticulo}, Descripcion='{ticket_line.Descripcion}', Comportamiento={getattr(ticket_line, 'comportamiento', 'N/A')}, Texto1='{getattr(ticket_line, 'Texto1', 'N/A')}'")
-                print(f"DEBUG LOOP === Product from DB (based on ticket_line.IdArticulo): IdArticulo={product.IdArticulo}, Descripcion='{product.Descripcion}', IdFamilia={product.IdFamilia}, IdSubFamilia={product.IdSubFamilia}, IdIva={product.IdIva}, PrecioConIVA={product.PrecioConIVA}")
-                if product_article:
-                    print(f"DEBUG LOOP === Article from DB (based on product.IdArticulo): IdArticulo={product_article.IdArticulo}, Descripcion1='{getattr(product_article, 'Descripcion1', 'N/A')}', IdClase='{getattr(product_article, 'IdClase', 'N/A')}', Texto1='{getattr(product_article, 'Texto1', 'N/A')}'")
-                else:
-                    print(f"DEBUG LOOP === Article (product_article) not found for product IdArticulo={product.IdArticulo}")
-
-                print(f"DEBUG ALBARAN_LINE --- Populating AlbaranLinea ---")
-                print(f"    IdTicket: {albaran_line.IdTicket} (from ticket['id_ticket'])")
-                print(f"    IdArticulo: {albaran_line.IdArticulo} (from ticket_line.IdArticulo)")
-                print(f"    Descripcion: '{albaran_line.Descripcion}' (from ticket_line.Descripcion or product.Descripcion)")
-                print(f"    Comportamiento: {albaran_line.Comportamiento} (from ticket_line.comportamiento)")
-                print(f"    Peso: {albaran_line.Peso} (from ticket_line.Peso)")
-                print(f"    PrecioSinIVA: {albaran_line.PrecioSinIVA}")
-                print(f"    PorcentajeIVA: {albaran_line.PorcentajeIVA}")
-                print(f"    ImporteSinIVASinDtoL: {albaran_line.ImporteSinIVASinDtoL}")
-                print(f"    ImporteDelIVAConDtoL: {albaran_line.ImporteDelIVAConDtoL}")
-                print(f"    IdClase: {albaran_line.IdClase} (from product_article)")
-                print(f"    IdFamilia: {albaran_line.IdFamilia} (from product)")
-                print(f"    IdSubFamilia: {albaran_line.IdSubFamilia} (from product)")
-                print(f"    Texto1: '{albaran_line.Texto1}' (from ticket_line.Texto1 or product_article.Texto1)")
-                print(f"DEBUG ALBARAN_LINE --- End Populating ---")
+                # Data di scadenza
+                albaran_line.FechaCaducidad = ticket_line.FechaCaducidad
+                
+                # Campi di default
+                albaran_line.EstadoLinea = 0
+                albaran_line.EntradaManual = 0
+                albaran_line.Tara = 0.0
+                albaran_line.PrecioPorCienGramos = 0
+                albaran_line.Descuento = 0.0
+                albaran_line.TipoDescuento = 1
+                albaran_line.Facturada = 0
+                albaran_line.CantidadFacturada = 0.0
+                albaran_line.CantidadFacturada2 = 0.0
+                albaran_line.HayTaraAplicada = 0
+                albaran_line.Modificado = 1
+                albaran_line.Operacion = "A"
+                albaran_line.Usuario = "DBLogiX"
+                
+                # Debug line info
+                current_app.logger.info(f"📝 DEBUG: Linea DDT {line_count} - Ticket {ticket['id_ticket']}")
+                current_app.logger.info(f"    IdArticulo: {albaran_line.IdArticulo}")
+                current_app.logger.info(f"    Peso: {albaran_line.Peso}")
+                current_app.logger.info(f"    Prezzo senza IVA: {albaran_line.PrecioSinIVA}")
+                current_app.logger.info(f"    Totale senza IVA: {albaran_line.ImporteSinIVASinDtoL}")
+                current_app.logger.info(f"    IVA: {albaran_line.ImporteDelIVAConDtoL}")
                 
                 db.session.add(albaran_line)
+                
+                # Accumula totali
+                total_without_vat += line_total
+                total_vat += line_vat
             
             # Aggiorna lo stato del ticket a 'processato'
             # Usiamo direttamente l'ID del ticket passato dal frontend
             ticket_header = TicketHeader.query.get(ticket['id_ticket'])
             if ticket_header:
                 ticket_header.Enviado = 1
-                print(f"DEBUG: Ticket {ticket['id_ticket']} impostato come elaborato")
+                current_app.logger.info(f"✅ Ticket {ticket['id_ticket']} impostato come elaborato")
             else:
-                print(f"DEBUG: Non è stato possibile trovare il ticket {ticket['id_ticket']} per aggiornarne lo stato")
+                current_app.logger.warning(f"⚠️  Non è stato possibile trovare il ticket {ticket['id_ticket']} per aggiornarne lo stato")
+
+        # PROCESSO TICKET MANUALI DAL LOCALSTORAGE
+        for manual_ticket in manual_tickets:
+            current_app.logger.info(f"✋ DEBUG: Elaborazione ticket manuale {manual_ticket['id_ticket']}")
             
-            print(f"Added AlbaranLinea for ticket {ticket['id_ticket']} and set status to processed")
-        
-        # Aggiorna il numero di linee nel DDT
+            # Crea direttamente le righe AlbaranLinea per i ticket manuali
+            for ticket_line in manual_ticket['lines']:
+                line_count += 1
+                
+                # Calcola aliquota IVA
+                id_iva = ticket_line.get('id_iva', 3)  # Default 22%
+                vat_rate = 0
+                if id_iva == 1:
+                    vat_rate = 0.04  # 4%
+                elif id_iva == 2:
+                    vat_rate = 0.10  # 10%
+                elif id_iva == 3:
+                    vat_rate = 0.22  # 22%
+                
+                # Calcola prezzi
+                price_with_vat = float(ticket_line['precio'])
+                price_without_vat = price_with_vat / (1 + vat_rate)
+                peso_value = float(ticket_line['peso'])
+                line_total = price_without_vat * peso_value
+                line_vat = line_total * vat_rate
+                
+                # Crea riga DDT per ticket manuale
+                albaran_line = AlbaranLinea()
+                albaran_line.IdLineaAlbaran = line_count
+                albaran_line.IdEmpresa = ddt.IdEmpresa
+                albaran_line.IdTienda = ddt.IdTienda
+                albaran_line.IdBalanzaMaestra = ddt.IdBalanzaMaestra
+                albaran_line.IdBalanzaEsclava = ddt.IdBalanzaEsclava
+                albaran_line.IdAlbaran = ddt.IdAlbaran
+                albaran_line.TipoVenta = ddt.TipoVenta
+                
+                # Per i ticket manuali, usiamo un ID ticket speciale o NULL
+                albaran_line.IdTicket = None  # Ticket manuale non ha ID ticket reale
+                
+                # Dati prodotto dal ticket manuale
+                albaran_line.IdArticulo = 999  # ID prodotto personalizzato
+                albaran_line.Descripcion = ticket_line['descripcion']
+                albaran_line.Descripcion1 = "Prodotto manuale"
+                albaran_line.Comportamiento = ticket_line.get('comportamiento', 1)
+                albaran_line.ComportamientoDevolucion = 0
+                
+                # Pesi e quantità
+                albaran_line.Peso = peso_value
+                albaran_line.Medida2 = "un"
+                
+                # Prezzi e IVA
+                albaran_line.Precio = 0.0
+                albaran_line.PrecioSinIVA = price_without_vat
+                albaran_line.IdIVA = id_iva
+                albaran_line.PorcentajeIVA = vat_rate * 100
+                albaran_line.RecargoEquivalencia = 0.0
+                
+                # Importi
+                albaran_line.Importe = 0.0
+                albaran_line.ImporteSinIVASinDtoL = line_total
+                albaran_line.ImporteDelIVAConDtoL = line_vat
+                
+                # Informazioni di default per prodotti manuali
+                albaran_line.IdClase = 1
+                albaran_line.NombreClase = "ARTICOLI"
+                albaran_line.IdFamilia = 1
+                albaran_line.NombreFamilia = "MANUALE"
+                albaran_line.IdSubFamilia = 1
+                albaran_line.NombreSubFamilia = "MANUALE"
+                albaran_line.IdDepartamento = 1
+                albaran_line.NombreDepartamento = "MANUALE"
+                albaran_line.Texto1 = "Prodotto aggiunto manualmente"
+                
+                # Data di scadenza se presente
+                if ticket_line.get('fecha_caducidad'):
+                    try:
+                        albaran_line.FechaCaducidad = datetime.strptime(ticket_line['fecha_caducidad'], '%Y-%m-%d')
+                    except:
+                        albaran_line.FechaCaducidad = None
+                
+                # Campi di default
+                albaran_line.EstadoLinea = 0
+                albaran_line.EntradaManual = 1  # Indica che è stato inserito manualmente
+                albaran_line.Tara = 0.0
+                albaran_line.PrecioPorCienGramos = 0
+                albaran_line.Descuento = 0.0
+                albaran_line.TipoDescuento = 1
+                albaran_line.Facturada = 0
+                albaran_line.CantidadFacturada = 0.0
+                albaran_line.CantidadFacturada2 = 0.0
+                albaran_line.HayTaraAplicada = 0
+                albaran_line.Modificado = 1
+                albaran_line.Operacion = "A"
+                albaran_line.Usuario = "DBLogiX"
+                
+                # Debug line info
+                current_app.logger.info(f"✋ DEBUG: Linea DDT manuale {line_count}")
+                current_app.logger.info(f"    Descrizione: {albaran_line.Descripcion}")
+                current_app.logger.info(f"    Peso: {albaran_line.Peso}")
+                current_app.logger.info(f"    Prezzo senza IVA: {albaran_line.PrecioSinIVA}")
+                current_app.logger.info(f"    Totale senza IVA: {albaran_line.ImporteSinIVASinDtoL}")
+                current_app.logger.info(f"    IVA: {albaran_line.ImporteDelIVAConDtoL}")
+                
+                db.session.add(albaran_line)
+                
+                # Accumula totali
+                total_without_vat += line_total
+                total_vat += line_vat
+
+        # Aggiorna i totali del DDT
+        total_ddt_amount = total_without_vat + total_vat
         ddt.NumLineas = line_count
+        ddt.ImporteLineas = total_ddt_amount
+        ddt.ImporteTotal = total_ddt_amount
+        ddt.ImporteTotalSinIVAConDtoL = total_without_vat
+        ddt.ImporteTotalDelIVAConDtoLConDtoTotal = total_vat
+        ddt.ImporteTotalSinIVAConDtoLConDtoTotal = total_without_vat
         
-        # Calcola i totali
-        total_senza_iva = 0
-        total_iva = 0
+        current_app.logger.info(f"💰 DEBUG: Totali DDT - Senza IVA: €{total_without_vat:.2f}, IVA: €{total_vat:.2f}, Totale: €{total_ddt_amount:.2f}")
         
-        for line in db.session.query(AlbaranLinea).filter_by(IdAlbaran=ddt.IdAlbaran).all():
-            total_senza_iva += float(line.ImporteSinIVASinDtoL or 0)
-            total_iva += float(line.ImporteDelIVAConDtoL or 0)
+        # DEBUG: Verifica che le righe siano state aggiunte alla sessione
+        pending_albaran_lines = [obj for obj in db.session.new if isinstance(obj, AlbaranLinea)]
+        current_app.logger.info(f"🔍 DEBUG: {len(pending_albaran_lines)} righe AlbaranLinea in attesa di commit")
         
-        # Update totals
-        ddt.ImporteTotalSinIVAConDtoL = total_senza_iva
-        ddt.ImporteTotalDelIVAConDtoLConDtoTotal = total_iva
-        ddt.ImporteTotalSinIVAConDtoLConDtoTotal = total_senza_iva
-        ddt.ImporteTotal = total_senza_iva + total_iva
+        if len(pending_albaran_lines) == 0:
+            current_app.logger.error("❌ ERRORE CRITICO: Nessuna riga AlbaranLinea in attesa di commit!")
+            current_app.logger.error(f"📊 DEBUG: ticket_data={len(ticket_data)}, manual_tickets={len(manual_tickets)}")
+            current_app.logger.error(f"📊 DEBUG: line_count={line_count}")
+            raise Exception("Nessuna riga DDT creata - verifica i dati di input")
         
-        # Commit the transaction
+        # Commit della transazione
         db.session.commit()
-        print(f"Transaction committed successfully")
         
-        # Forzare l'aggiornamento dell'IdTicket con SQL diretto
-        try:
-            for ticket_data_item in ticket_data:
-                # Query SQL diretta per aggiornare IdTicket
-                sql_update = """
-                UPDATE dat_albaran_linea 
-                SET IdTicket = :id_ticket 
-                WHERE IdAlbaran = :id_albaran AND IdTicket IS NULL
-                """
-                db.session.execute(text(sql_update), {
-                    'id_ticket': int(ticket_data_item['id_ticket']),
-                    'id_albaran': ddt.IdAlbaran
-                })
-            db.session.commit()
-            print("Aggiornamento IdTicket completato con SQL diretto")
-        except Exception as e:
-            print(f"Errore nell'aggiornamento diretto IdTicket: {str(e)}")
+        current_app.logger.info(f"🎉 DDT #{ddt.IdAlbaran} creato con successo!")
+        current_app.logger.info(f"📊 Riepilogo: {len(ticket_data)} ticket normali + {len(manual_tickets)} ticket manuali = {line_count} righe totali")
         
-        # Verifica che le righe siano state salvate correttamente
-        saved_lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
-        print(f"DEBUG: Numero di righe salvate: {len(saved_lines)}")
-        for line in saved_lines:
-            print(f"DEBUG: Riga salvata - IdLineaAlbaran={line.IdLineaAlbaran}, IdTicket={line.IdTicket}, IdArticulo={line.IdArticulo}")
+        # Se il DDT è stato creato da un task, aggiorna il task con l'ID del DDT
+        if from_task and task_id:
+            from models import Task
+            task = Task.query.get(task_id)
+            if task:
+                task.ddt_generated = True
+                task.ddt_id = ddt.IdAlbaran
+                db.session.commit()
+                current_app.logger.info(f"📝 Task #{task.task_number} aggiornato con DDT #{ddt.IdAlbaran}")
+            else:
+                current_app.logger.warning(f"⚠️  Task {task_id} non trovato per l'associazione con DDT #{ddt.IdAlbaran}")
         
-        # Return success with redirect to detail page
-        return redirect(url_for('ddt.detail', ddt_id=ddt.IdAlbaran))
+        flash(f'DDT #{ddt.IdAlbaran} creato con successo con {line_count} righe!', 'success')
+        
+        # Redirect based on source
+        if from_task and task_id:
+            flash(f'DDT #{ddt.IdAlbaran} generato dal task #{task_id}', 'success')
+            return redirect(url_for('tasks.view_task', task_id=task_id))
+        elif from_warehouse:
+            flash(f'DDT #{ddt.IdAlbaran} generato dal warehouse', 'success')
+            return redirect(url_for('warehouse.scanner'))
+        else:
+            return redirect(url_for('ddt.detail', ddt_id=ddt.IdAlbaran))
         
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating DDT: {str(e)}")
-        print(f"Exception type: {type(e)}")
-        # import traceback # Temporaneamente commentato per il linter
-        # print(f"Traceback: {traceback.format_exc()}")
-        return jsonify({"success": False, "error": f"Errore durante la creazione del DDT: {str(e)}"})
+        current_app.logger.error(f"❌ Errore nella creazione del DDT: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        flash(f'Errore nella creazione del DDT: {str(e)}', 'danger')
+        return redirect(url_for('ddt.select_tickets', cliente_id=cliente_id))
 
 @ddt_bp.route('/<int:ddt_id>', methods=['GET'])
 @login_required
@@ -810,36 +952,95 @@ def delete(ddt_id):
     
     try:
         # Start transaction
+        current_app.logger.info(f"🗑️  Eliminazione DDT #{ddt_id} iniziata")
+        
+        # Verifica se questo DDT era stato generato da un task
+        from models import Task
+        task_with_ddt = Task.query.filter_by(ddt_id=ddt_id).first()
+        
+        # Recupera tutte le linee del DDT
         albaran_lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
         
+        # Identifica i ticket associati (escludendo quelli manuali che hanno IdTicket = NULL)
         unique_ticket_ids = set()
+        manual_lines_count = 0
+        
         if albaran_lines:
             for line in albaran_lines:
                 if line.IdTicket is not None:
+                    # Ticket normale con ID valido
                     unique_ticket_ids.add(line.IdTicket)
+                else:
+                    # Ticket manuale (IdTicket = NULL)
+                    manual_lines_count += 1
         
+        current_app.logger.info(f"📋 DDT #{ddt_id}: {len(unique_ticket_ids)} ticket normali, {manual_lines_count} righe manuali")
+        
+        # Reset stato dei ticket normali (NON quelli manuali)
+        reset_tickets_count = 0
         if unique_ticket_ids:
             tickets_to_reset = TicketHeader.query.filter(TicketHeader.IdTicket.in_(list(unique_ticket_ids))).all()
             if tickets_to_reset:
                 for ticket_header in tickets_to_reset:
-                    ticket_header.Enviado = 0
+                    if task_with_ddt:
+                        # Se il DDT era da task, verifica se il ticket apparteneva al task
+                        from models import TaskTicket
+                        task_ticket = TaskTicket.query.filter_by(
+                            task_id=task_with_ddt.id_task, 
+                            ticket_id=ticket_header.IdTicket
+                        ).first()
+                        
+                        if task_ticket:
+                            # Reset ticket a Enviado = 10 (assegnato al task) invece di 0
+                            ticket_header.Enviado = 10
+                            current_app.logger.info(f"🔄 Ticket {ticket_header.IdTicket} (Task #{task_with_ddt.task_number}) reimpostato a Enviado = 10 (assegnato)")
+                        else:
+                            # Ticket non nel task, reset normale
+                            ticket_header.Enviado = 0
+                            current_app.logger.info(f"🔄 Ticket {ticket_header.IdTicket} (non-task) reimpostato a Enviado = 0 (pendente)")
+                    else:
+                        # DDT normale, reset a pendente
+                        ticket_header.Enviado = 0
+                        current_app.logger.info(f"🔄 Ticket {ticket_header.IdTicket} reimpostato a Enviado = 0 (pendente)")
+                    
+                    reset_tickets_count += 1
                     db.session.add(ticket_header)
-                    print(f"Ticket {ticket_header.IdTicket} reimpostato come pendente (Enviado=0).")
             else:
-                print(f"Nessun TicketHeader trovato per gli IdTicket: {list(unique_ticket_ids)}")
-        else:
-            print(f"Nessun ticket associato a questo DDT (IdAlbaran: {ddt.IdAlbaran}) trovato nelle AlbaranLinea.")
+                current_app.logger.warning(f"⚠️  Nessun TicketHeader trovato per gli IdTicket: {list(unique_ticket_ids)}")
         
+        # Se il DDT era generato da un task, aggiorna lo stato del task
+        if task_with_ddt:
+            current_app.logger.info(f"📝 DDT #{ddt_id} era associato al Task #{task_with_ddt.task_number}")
+            
+            # Reset dello stato del task
+            task_with_ddt.ddt_generated = False
+            task_with_ddt.ddt_id = None
+            task_with_ddt.status = 'completed'  # Mantiene completed ma senza DDT
+            
+            # Aggiorna il progresso del task
+            task_with_ddt.update_progress()
+            
+            current_app.logger.info(f"✅ Task #{task_with_ddt.task_number} aggiornato: DDT rimosso, stato reset")
+            
+            flash_message = f'DDT #{ddt_id} eliminato. Task #{task_with_ddt.task_number} aggiornato e {reset_tickets_count} ticket reimpostati.'
+        else:
+            flash_message = f'DDT #{ddt_id} eliminato e {reset_tickets_count} ticket reimpostati come pendenti.'
+        
+        # Elimina il DDT (le linee verranno eliminate automaticamente per cascade)
         db.session.delete(ddt)
         db.session.commit()
         
-        flash('DDT eliminato con successo e ticket reimpostati come pendenti.', 'success')
+        current_app.logger.info(f"🎉 DDT #{ddt_id} eliminato con successo")
+        
+        flash(flash_message, 'success')
         return redirect(url_for('ddt.index'))
     
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"❌ Errore nell'eliminazione DDT #{ddt_id}: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
         flash(f'Errore durante eliminazione: {str(e)}', 'danger')
-        print(f"ECCEZIONE in delete DDT: {str(e)}")
         return redirect(url_for('ddt.detail', ddt_id=ddt_id))
 
 @ddt_bp.route('/api/clients/search')
@@ -1567,7 +1768,7 @@ def api_search_tickets_for_preview():
 @ddt_bp.route('/api/preview/create_ticket', methods=['POST'])
 @login_required
 def api_create_manual_ticket():
-    """API to create a manual ticket from DDT preview"""
+    """API to create a manual ticket data for localStorage (no DB write)"""
     data = request.get_json()
     
     # Validazione dati richiesti
@@ -1584,80 +1785,12 @@ def api_create_manual_ticket():
         return jsonify({'success': False, 'message': 'Almeno un prodotto è richiesto'})
     
     try:
-        # Verifica/crea il prodotto con ID 999
-        product_999 = Product.query.get(999)
-        if not product_999:
-            # Crea il prodotto di riferimento con ID 999
-            product_999 = Product(
-                IdArticulo=999,
-                Descripcion="Prodotto Personalizzato",
-                PrecioConIVA=1.00,
-                IdFamilia=1,
-                IdSubFamilia=1,
-                IdIva=3,  # Default 22%
-                TeclaDirecta=0,
-                TaraFija=0
-            )
-            db.session.add(product_999)
-            db.session.flush()
+        # Genera un ID ticket temporaneo unico (negativo per distinguerlo dai ticket reali)
+        import time
+        temp_ticket_id = -int(time.time())  # ID negativo basato su timestamp
+        temp_num_ticket = f"MAN{abs(temp_ticket_id)}"  # Numero ticket manuale
         
-        # Verifica/crea anche il record Article per ID 999
-        article_999 = Article.query.get(999)
-        if not article_999:
-            # Crea il record Article per ID 999
-            article_999 = Article(
-                IdArticulo=999,
-                Descripcion="Prodotto Personalizzato",
-                Descripcion1="Prodotto creato manualmente",
-                PrecioConIVA=1.00,
-                PrecioSinIVA=0.82,  # Prezzo senza IVA al 22%
-                IdFamilia=1,
-                IdSubFamilia=1,
-                IdIva=3,  # 22%
-                IdTipo=1,  # Pesato
-                IdDepartamento=1,
-                IdSeccion=1,
-                TeclaDirecta=0,
-                TaraFija=0,
-                Favorito=True,
-                EnVenta=True,
-                IncluirGestionStock=False,
-                IdClase=1,
-                IdEmpresa=1,
-                Usuario="DBLogiX",
-                Modificado=True,
-                Operacion="A",
-                Marca=1
-            )
-            db.session.add(article_999)
-            db.session.flush()
-        
-        # Genera nuovo ID ticket
-        max_ticket_id = db.session.query(db.func.max(TicketHeader.IdTicket)).scalar() or 0
-        new_ticket_id = max_ticket_id + 1
-        
-        # Genera numero ticket
-        max_num_ticket = db.session.query(db.func.max(TicketHeader.NumTicket)).scalar() or 0
-        new_num_ticket = max_num_ticket + 1
-        
-        # Crea nuovo TicketHeader
-        ticket_header = TicketHeader(
-            IdTicket=new_ticket_id,
-            IdEmpresa=empresa_id,
-            IdTienda=1,  # Default
-            IdBalanzaMaestra=1,  # Default
-            IdBalanzaEsclava=-1,  # Default
-            TipoVenta=2,  # Default
-            NumTicket=new_num_ticket,
-            Fecha=datetime.now(),
-            NumLineas=len(products),
-            Enviado=0  # Ticket pendente
-        )
-        
-        db.session.add(ticket_header)
-        db.session.flush()  # Per ottenere l'ID
-        
-        # Crea le righe del ticket
+        # Prepara le righe del ticket per localStorage
         ticket_lines_data = []
         total_ticket = 0
         
@@ -1668,85 +1801,46 @@ def api_create_manual_ticket():
             id_iva = int(product_data.get('id_iva', 3))  # Default 22%
             fecha_caducidad = product_data.get('fecha_caducidad')
             
-            # Aggiorna il prodotto 999 con i nuovi dati (ultimo prodotto aggiunto)
-            if idx == len(products):  # Solo per l'ultimo prodotto
-                product_999.Descripcion = descripcion
-                product_999.PrecioConIVA = precio
-                product_999.IdIva = id_iva
-                
-                # Aggiorna anche l'Article se esiste
-                if article_999:
-                    article_999.Descripcion = descripcion
-                    article_999.PrecioConIVA = precio
-                    article_999.IdIva = id_iva
-                    
-                    # Calcola prezzo senza IVA
-                    vat_rate = 0
-                    if id_iva == 1:
-                        vat_rate = 0.04  # 4%
-                    elif id_iva == 2:
-                        vat_rate = 0.10  # 10%
-                    elif id_iva == 3:
-                        vat_rate = 0.22  # 22%
-                    
-                    precio_sin_iva = precio / (1 + vat_rate)
-                    article_999.PrecioSinIVA = precio_sin_iva
-            
-            # Genera ID univoco per IdLineaTicket
-            max_line_id = db.session.query(db.func.max(TicketLine.IdLineaTicket)).scalar() or 0
-            new_line_id = max_line_id + 1
-            
-            # Crea TicketLine
-            ticket_line = TicketLine(
-                IdLineaTicket=new_line_id,  # Aggiungi ID esplicito
-                IdTicket=new_ticket_id,
-                IdArticulo=999,  # Usa sempre ID 999
-                Descripcion=descripcion,
-                Peso=peso,
-                FechaCaducidad=datetime.strptime(fecha_caducidad, '%Y-%m-%d') if fecha_caducidad else None,
-                comportamiento=product_data.get('comportamiento', 1)  # Default peso
-            )
-            
-            db.session.add(ticket_line)
-            
             # Calcola importo linea
             importe = peso * precio
             total_ticket += importe
             
-            # Prepara dati per risposta
+            # Prepara dati per localStorage (simula una TicketLine)
             ticket_lines_data.append({
-                'id_articulo': 999,
+                'id_linea_ticket': f"temp_{temp_ticket_id}_{idx}",  # ID temporaneo
+                'id_ticket': temp_ticket_id,
+                'id_articulo': 999,  # Usa sempre ID 999 per prodotti personalizzati
                 'descripcion': descripcion,
                 'peso': float(peso),
                 'precio': precio,
                 'importe': importe,
-                'fecha_caducidad': fecha_caducidad
+                'fecha_caducidad': fecha_caducidad,
+                'id_iva': id_iva,
+                'comportamiento': product_data.get('comportamiento', 1),
+                'is_manual': True  # Flag per identificare ticket manuali
             })
         
-        # Commit della transazione
-        db.session.commit()
-        
-        # Prepara risposta con i dati del ticket creato
+        # Prepara risposta con i dati del ticket per localStorage
         return jsonify({
             'success': True,
-            'message': 'Ticket creato con successo',
+            'message': 'Ticket manuale creato (solo localStorage)',
             'ticket': {
-                'id_ticket': new_ticket_id,
-                'num_ticket': new_num_ticket,
-                'fecha': ticket_header.Fecha.strftime('%d/%m/%Y %H:%M'),
+                'id_ticket': temp_ticket_id,
+                'num_ticket': temp_num_ticket,
+                'fecha': datetime.now().strftime('%d/%m/%Y %H:%M'),
                 'lines': ticket_lines_data,
                 'total': total_ticket,
                 'id_empresa': empresa_id,
                 'id_tienda': 1,
                 'id_balanza_maestra': 1,
                 'id_balanza_esclava': -1,
-                'tipo_venta': 2
+                'tipo_venta': 2,
+                'is_manual': True  # Flag per identificare ticket manuali
             }
         })
         
     except Exception as e:
-        db.session.rollback()
-        print(f"Errore nella creazione del ticket manuale: {str(e)}")
+        current_app.logger.error(f"Errore nella creazione dei dati ticket manuale: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore durante la creazione: {str(e)}'}) 
 
 @ddt_bp.route('/api/products/search', methods=['GET'])
@@ -1898,55 +1992,3 @@ def debug_check_duplicates():
             'success': False,
             'error': str(e)
         })
-
-@ddt_bp.route('/api/iva/list', methods=['GET'])
-@login_required
-def api_get_iva_rates():
-    """API to get available IVA rates"""
-    try:
-        from sqlalchemy import text
-        result = db.session.execute(text("SELECT IdIVA, PorcentajeIVA FROM dat_iva ORDER BY PorcentajeIVA"))
-        iva_rates = []
-        for row in result:
-            iva_rates.append({
-                'id': row[0],
-                'percentage': float(row[1]),
-                'label': f"{row[1]}%"
-            })
-        
-        return jsonify({'success': True, 'iva_rates': iva_rates})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@ddt_bp.route('/api/quick-add-999', methods=['POST'])
-@login_required
-def api_quick_add_article_999():
-    """API to quickly add article 999 to manual ticket with custom price and IVA"""
-    try:
-        data = request.get_json()
-        precio = float(data.get('precio', 0))
-        id_iva = int(data.get('id_iva', 3))
-        peso = float(data.get('peso', 1.0))
-        
-        if precio <= 0:
-            return jsonify({'success': False, 'message': 'Il prezzo deve essere maggiore di zero'})
-        
-        # Recupera l'articolo 999
-        article_999 = Product.query.filter_by(IdArticulo=999).first()
-        if not article_999:
-            return jsonify({'success': False, 'message': 'Articolo 999 non trovato'})
-        
-        # Crea il prodotto con prezzo personalizzato
-        product_data = {
-            'id': 999,
-            'descripcion': article_999.Descripcion,
-            'precio': precio,
-            'iva': id_iva,
-            'peso': peso,
-            'comportamiento': 1
-        }
-        
-        return jsonify({'success': True, 'product': product_data})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})

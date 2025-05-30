@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Dettaglio Fattura - DBLogiX{% endblock %}
+
+{% block header_title %}Dettaglio Fattura{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fattura_pa.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('fattura_pa.list_invoices') }}" class="text-white">Fatture PA</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Dettaglio Fattura</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-file-alt me-2"></i>Dettaglio Fattura
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ invoice_details.filename if invoice_details else 'N/A' }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-light me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
+                </a>
+                {% if invoice_details %}
+                <a href="{{ url_for('fattura_pa.download_invoice', filename=invoice_details.filename) }}" class="btn btn-success me-2">
+                    <i class="fas fa-download me-2"></i>Scarica XML
+                </a>
+                {% if current_user.is_admin %}
+                <button type="button" class="btn btn-danger" onclick="deleteInvoice('{{ invoice_details.filename }}')">
+                    <i class="fas fa-trash me-2"></i>Elimina
+                </button>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% if invoice_details %}
+    <!-- Invoice Information Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="fattura-card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-file-alt me-2"></i>Informazioni Fattura
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Numero Fattura:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-primary">{{ invoice_details.invoice_number or 'N/A' }}</span>
+                        </dd>
+                        
+                        {% if invoice_details.invoice_date %}
+                        <dt class="col-sm-5">Data Fattura:</dt>
+                        <dd class="col-sm-7">{{ invoice_details.invoice_date }}</dd>
+                        {% endif %}
+                        
+                        <dt class="col-sm-5">Data Creazione:</dt>
+                        <dd class="col-sm-7">{{ invoice_details.created_at }}</dd>
+                        
+                        <dt class="col-sm-5">Nome File:</dt>
+                        <dd class="col-sm-7"><code>{{ invoice_details.filename }}</code></dd>
+                        
+                        <dt class="col-sm-5">Dimensione:</dt>
+                        <dd class="col-sm-7">{{ invoice_details.size }}</dd>
+                        
+                        {% if invoice_details.currency %}
+                        <dt class="col-sm-5">Valuta:</dt>
+                        <dd class="col-sm-7">{{ invoice_details.currency }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.total_amount %}
+                        <dt class="col-sm-5">Importo Totale:</dt>
+                        <dd class="col-sm-7">
+                            <span class="fw-bold text-success">€ {{ invoice_details.total_amount }}</span>
+                        </dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.transmission_id %}
+                        <dt class="col-sm-5">ID Trasmissione:</dt>
+                        <dd class="col-sm-7"><small class="text-muted">{{ invoice_details.transmission_id }}</small></dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="fattura-card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-building me-2"></i>Informazioni Emittente
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if invoice_details.company_name %}
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Denominazione:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.company_name }}</dd>
+                        
+                        {% if invoice_details.company_vat %}
+                        <dt class="col-sm-4">Partita IVA:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.company_vat }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.company_address %}
+                        <dt class="col-sm-4">Indirizzo:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.company_address }}</dd>
+                        {% endif %}
+                    </dl>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Le informazioni dell'emittente sono incluse nel file XML della fattura.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="fattura-card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user me-2"></i>Informazioni Cliente
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if invoice_details.client_name %}
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Denominazione:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.client_name }}</dd>
+                        
+                        {% if invoice_details.client_address %}
+                        <dt class="col-sm-4">Indirizzo:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.client_address }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.client_vat %}
+                        <dt class="col-sm-4">Partita IVA:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.client_vat }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.client_fiscal_code %}
+                        <dt class="col-sm-4">Codice Fiscale:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.client_fiscal_code }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.client_email %}
+                        <dt class="col-sm-4">Email:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.client_email }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.client_phone %}
+                        <dt class="col-sm-4">Telefono:</dt>
+                        <dd class="col-sm-8">{{ invoice_details.client_phone }}</dd>
+                        {% endif %}
+                    </dl>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Le informazioni del cliente sono incluse nel file XML della fattura.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DDT and Payment Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="fattura-card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-truck me-2"></i>DDT Associato
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if invoice_details.ddt_reference %}
+                    <div class="alert alert-success">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>DDT N. {{ invoice_details.ddt_reference }}</strong>
+                                {% if invoice_details.ddt_date %}
+                                <span class="text-muted ms-2">del {{ invoice_details.ddt_date }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if invoice_details.ddt_id %}
+                                <a href="{{ url_for('ddt.detail', ddt_id=invoice_details.ddt_id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Visualizza DDT
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0">
+                        Questa fattura è stata generata dal DDT numero {{ invoice_details.ddt_reference }}. 
+                        Tutti i dettagli delle righe e delle quantità sono inclusi nella fattura.
+                    </p>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Le informazioni del DDT associato sono incluse nel file XML della fattura.
+                    </div>
+                    <p class="text-muted mb-0">
+                        Per visualizzare i dettagli completi del DDT e delle righe fatturate, 
+                        consultare l'anteprima della fattura qui sotto.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="fattura-card h-100">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Informazioni Pagamento
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if invoice_details.payment_terms or invoice_details.payment_method %}
+                    <dl class="row mb-0">
+                        {% if invoice_details.payment_terms %}
+                        <dt class="col-sm-5">Condizioni:</dt>
+                        <dd class="col-sm-7">{{ invoice_details.payment_terms }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.payment_method %}
+                        <dt class="col-sm-5">Modalità:</dt>
+                        <dd class="col-sm-7">{{ invoice_details.payment_method }}</dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.payment_due_date %}
+                        <dt class="col-sm-5">Scadenza:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-warning text-dark">{{ invoice_details.payment_due_date }}</span>
+                        </dd>
+                        {% endif %}
+                        
+                        {% if invoice_details.total_amount %}
+                        <dt class="col-sm-5">Importo:</dt>
+                        <dd class="col-sm-7">
+                            <span class="fw-bold text-success">€ {{ invoice_details.total_amount }}</span>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Le informazioni di pagamento sono incluse nel file XML della fattura.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Invoice Preview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="fattura-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-eye me-2"></i>Anteprima Fattura
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="viewXmlContent('{{ invoice_details.filename }}')">
+                        <i class="fas fa-code me-1"></i>Visualizza XML
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if invoice_details.invoice_lines %}
+                    <!-- Invoice Lines Table -->
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 5%">#</th>
+                                    <th style="width: 40%">Descrizione</th>
+                                    <th style="width: 10%" class="text-center">Quantità</th>
+                                    <th style="width: 8%" class="text-center">U.M.</th>
+                                    <th style="width: 12%" class="text-end">Prezzo Unit.</th>
+                                    <th style="width: 12%" class="text-end">Totale</th>
+                                    <th style="width: 8%" class="text-center">IVA %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for line in invoice_details.invoice_lines %}
+                                <tr>
+                                    <td class="text-center">{{ line.numero }}</td>
+                                    <td>{{ line.descrizione }}</td>
+                                    <td class="text-center">{{ line.quantita }}</td>
+                                    <td class="text-center">{{ line.unita }}</td>
+                                    <td class="text-end">€ {{ line.prezzo_unitario }}</td>
+                                    <td class="text-end fw-bold">€ {{ line.prezzo_totale }}</td>
+                                    <td class="text-center">{{ line.aliquota_iva }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- VAT Summary -->
+                    {% if invoice_details.vat_summary %}
+                    <div class="row">
+                        <div class="col-md-6 offset-md-6">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th class="text-center">Aliquota IVA</th>
+                                            <th class="text-end">Imponibile</th>
+                                            <th class="text-end">Imposta</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for vat in invoice_details.vat_summary %}
+                                        <tr>
+                                            <td class="text-center">{{ vat.aliquota }}%</td>
+                                            <td class="text-end">€ {{ vat.imponibile }}</td>
+                                            <td class="text-end">€ {{ vat.imposta }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                        {% if invoice_details.total_amount %}
+                                        <tr class="table-success">
+                                            <td class="text-center fw-bold">TOTALE</td>
+                                            <td class="text-end fw-bold" colspan="2">€ {{ invoice_details.total_amount }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        I dettagli della fattura sono disponibili scaricando il file XML.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- XML Preview Card (hidden by default) -->
+    <div class="row mb-4" id="xmlPreviewCard" style="display: none;">
+        <div class="col-12">
+            <div class="fattura-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-code me-2"></i>Contenuto XML
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="hideXmlPreview()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <pre id="xmlContent" class="bg-light p-3" style="max-height: 400px; overflow-y: auto; font-size: 0.85em;"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <!-- Error State -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                    <h4>Fattura Non Trovata</h4>
+                    <p class="mb-0">La fattura richiesta non è stata trovata o non esiste.</p>
+                    <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco Fatture
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Conferma Eliminazione
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="delete-icon-container">
+                        <div class="delete-icon">
+                            <i class="fas fa-trash-alt"></i>
+                        </div>
+                    </div>
+                    <div class="delete-warning">
+                        <div class="delete-warning-title">Sei sicuro di voler eliminare questa fattura?</div>
+                        <div class="delete-warning-text">
+                            Stai per eliminare la fattura <strong id="deleteInvoiceName"></strong>. 
+                            Questa azione è irreversibile.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-2"></i>Elimina Fattura
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// JavaScript functions for the detail page
+function viewXmlContent(filename) {
+    const xmlCard = document.getElementById('xmlPreviewCard');
+    const xmlContent = document.getElementById('xmlContent');
+    
+    // Show loading
+    xmlContent.textContent = 'Caricamento contenuto XML...';
+    xmlCard.style.display = 'block';
+    
+    // Smooth scroll to XML preview
+    xmlCard.scrollIntoView({ behavior: 'smooth' });
+    
+    // Fetch XML content
+    fetch(`/fattura_pa/xml/${filename}`)
+        .then(response => response.text())
+        .then(data => {
+            xmlContent.textContent = data;
+        })
+        .catch(error => {
+            xmlContent.textContent = 'Errore nel caricamento del contenuto XML';
+        });
+}
+
+function hideXmlPreview() {
+    document.getElementById('xmlPreviewCard').style.display = 'none';
+}
+
+function deleteInvoice(filename) {
+    document.getElementById('deleteInvoiceName').textContent = filename;
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+    
+    // Handle delete confirmation
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        fetch(`/fattura_pa/delete/${filename}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': window.csrfToken || '',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("fattura_pa.list_invoices") }}';
+            } else {
+                alert('Errore: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Errore durante l\'eliminazione della fattura');
+        });
+    };
+}
+</script>
+{% endblock %} 

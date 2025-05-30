@@ -26,6 +26,8 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     {% elif request.endpoint and request.endpoint.startswith('articles.') %}
         <link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+    {% elif request.endpoint and request.endpoint.startswith('fattura_pa.') %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/fattura_pa.css') }}">
     {% endif %}
     
     {% block extra_css %}{% endblock %}
@@ -153,6 +155,14 @@
                     
                     <!-- Admin Section -->
                     {% if current_user.is_admin %}
+                    <!-- Fatture PA -->
+                    <li class="sidebar-item {% if request.endpoint and request.endpoint.startswith('fattura_pa.') %}active{% endif %}">
+                        <a href="{{ url_for('fattura_pa.list_invoices') }}" class="sidebar-link">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Fatture PA</span>
+                        </a>
+                    </li>
+                    
                     <li class="sidebar-item has-submenu {% if request.endpoint and 'admin.' in request.endpoint %}active open{% endif %}">
                         <a href="javascript:void(0)" class="sidebar-link submenu-toggle">
                             <i class="fas fa-cog"></i>

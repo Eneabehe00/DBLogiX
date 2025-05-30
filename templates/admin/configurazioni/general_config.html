@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazioni Generali - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+.nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #495057;
+    background-color: #f8f9fa;
+    border-color: #e9ecef #e9ecef #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+    color: #495057;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+
+.tab-content > .tab-pane {
+    display: none;
+}
+
+.tab-content > .active {
+    display: block;
+}
+
+.alert-config {
+    border-radius: 0.5rem;
+    border: none;
+    padding: 1rem 1.25rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom: none;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Configurazioni Generali</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Configurazioni Generali
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Gestisci tutte le impostazioni di sistema, database e azienda</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i>Torna alla Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-11 mx-auto">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sliders-h me-2"></i>Pannello di Configurazione
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Navigation Tabs -->
+                    <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="database-tab" data-bs-toggle="tab" data-bs-target="#database" 
+                                    type="button" role="tab" aria-controls="database" aria-selected="true">
+                                <i class="fas fa-database me-2"></i>Database e Connessione
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="company-tab" data-bs-toggle="tab" data-bs-target="#company" 
+                                    type="button" role="tab" aria-controls="company" aria-selected="false">
+                                <i class="fas fa-building me-2"></i>Configurazione Azienda
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" 
+                                    type="button" role="tab" aria-controls="system" aria-selected="false">
+                                <i class="fas fa-cog me-2"></i>Impostazioni Sistema
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content mt-4" id="configTabContent">
+                        
+                        <!-- Database Configuration Tab -->
+                        <div class="tab-pane fade show active" id="database" role="tabpanel" aria-labelledby="database-tab">
+                            <div class="alert alert-info alert-config">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Configurazione Database:</strong> Configura i parametri di connessione al database remoto contenente i dati di prodotti e ticket.
+                            </div>
+                            
+                            <form method="post" novalidate>
+                                {{ db_form.hidden_tag() }}
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ db_form.host.label(class="form-label") }}
+                                        {{ db_form.host(class="form-control" + (" is-invalid" if db_form.host.errors else "")) }}
+                                        {% for error in db_form.host.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ db_form.port.label(class="form-label") }}
+                                        {{ db_form.port(class="form-control" + (" is-invalid" if db_form.port.errors else "")) }}
+                                        {% for error in db_form.port.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ db_form.user.label(class="form-label") }}
+                                        {{ db_form.user(class="form-control" + (" is-invalid" if db_form.user.errors else "")) }}
+                                        {% for error in db_form.user.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ db_form.password.label(class="form-label") }}
+                                        {{ db_form.password(class="form-control" + (" is-invalid" if db_form.password.errors else "")) }}
+                                        {% for error in db_form.password.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ db_form.database.label(class="form-label") }}
+                                    {{ db_form.database(class="form-control" + (" is-invalid" if db_form.database.errors else "")) }}
+                                    {% for error in db_form.database.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    <button type="submit" name="test_connection" value="1" class="btn btn-info me-2">
+                                        <i class="fas fa-plug me-1"></i>Test Connessione
+                                    </button>
+                                    <button type="submit" name="submit_db" value="1" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Salva Configurazione DB
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Company Configuration Tab -->
+                        <div class="tab-pane fade" id="company" role="tabpanel" aria-labelledby="company-tab">
+                            <div class="alert alert-warning alert-config">
+                                <i class="fas fa-building me-2"></i>
+                                <strong>Configurazione Azienda:</strong> Configura i dati dell'azienda che verranno utilizzati nei documenti e nelle stampe DDT.
+                            </div>
+                            
+                            <form method="post" novalidate>
+                                {{ company_form.hidden_tag() }}
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ company_form.nombre_empresa.label(class="form-label") }}
+                                        {{ company_form.nombre_empresa(class="form-control" + (" is-invalid" if company_form.nombre_empresa.errors else "")) }}
+                                        {% for error in company_form.nombre_empresa.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ company_form.cif_vat.label(class="form-label") }}
+                                        {{ company_form.cif_vat(class="form-control" + (" is-invalid" if company_form.cif_vat.errors else "")) }}
+                                        {% for error in company_form.cif_vat.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        {{ company_form.telefono.label(class="form-label") }}
+                                        {{ company_form.telefono(class="form-control" + (" is-invalid" if company_form.telefono.errors else "")) }}
+                                        {% for error in company_form.telefono.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ company_form.direccion.label(class="form-label") }}
+                                        {{ company_form.direccion(class="form-control" + (" is-invalid" if company_form.direccion.errors else "")) }}
+                                        {% for error in company_form.direccion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        {{ company_form.cod_postal.label(class="form-label") }}
+                                        {{ company_form.cod_postal(class="form-control" + (" is-invalid" if company_form.cod_postal.errors else "")) }}
+                                        {% for error in company_form.cod_postal.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        {{ company_form.poblacion.label(class="form-label") }}
+                                        {{ company_form.poblacion(class="form-control" + (" is-invalid" if company_form.poblacion.errors else "")) }}
+                                        {% for error in company_form.poblacion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        {{ company_form.provincia.label(class="form-label") }}
+                                        {{ company_form.provincia(class="form-control" + (" is-invalid" if company_form.provincia.errors else "")) }}
+                                        {% for error in company_form.provincia.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    <button type="submit" name="submit_company" value="1" class="btn btn-success">
+                                        <i class="fas fa-save me-1"></i>Salva Configurazione Azienda
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- System Configuration Tab -->
+                        <div class="tab-pane fade" id="system" role="tabpanel" aria-labelledby="system-tab">
+                            <div class="alert alert-success alert-config">
+                                <i class="fas fa-cog me-2"></i>
+                                <strong>Impostazioni Sistema:</strong> Configura i parametri operativi del sistema come scadenze e gestione articoli.
+                            </div>
+                            
+                            <form method="post" novalidate>
+                                {{ system_form.hidden_tag() }}
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        {{ system_form.expiry_warning_days.label(class="form-label") }}
+                                        {{ system_form.expiry_warning_days(class="form-control" + (" is-invalid" if system_form.expiry_warning_days.errors else "")) }}
+                                        <div class="form-text">{{ system_form.expiry_warning_days.description }}</div>
+                                        {% for error in system_form.expiry_warning_days.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ system_form.articles_per_package.label(class="form-label") }}
+                                        {{ system_form.articles_per_package(class="form-control" + (" is-invalid" if system_form.articles_per_package.errors else "")) }}
+                                        <div class="form-text">{{ system_form.articles_per_package.description }}</div>
+                                        {% for error in system_form.articles_per_package.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Informational section -->
+                                <div class="bg-light p-3 rounded mb-4">
+                                    <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Come funziona:</h6>
+                                    <ul class="mb-0 small">
+                                        <li><strong>Giacenza:</strong> Ticket appena creati, pronti per essere processati</li>
+                                        <li><strong>In Scadenza:</strong> Ticket con prodotti che scadranno entro i giorni configurati</li>
+                                        <li><strong>Scaduti:</strong> Ticket con prodotti già scaduti (vengono automaticamente contrassegnati)</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                    <button type="submit" name="submit_system" value="1" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Salva Configurazioni Sistema
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Technical Information -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-transparent">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>Informazioni Tecniche
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6>Stati Ticket:</h6>
+                            <ul class="list-unstyled small">
+                                <li><span class="badge bg-warning me-2">0</span>Giacenza</li>
+                                <li><span class="badge bg-success me-2">1</span>Processato</li>
+                                <li><span class="badge bg-info me-2">2</span>DDT1</li>
+                                <li><span class="badge bg-secondary me-2">3</span>DDT2</li>
+                                <li><span class="badge bg-danger me-2">4</span>Scaduto</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Calcolo Scadenze:</h6>
+                            <p class="small mb-0">
+                                Il sistema controlla automaticamente la data di scadenza dei prodotti 
+                                nei ticket e li contrassegna come "In Scadenza" o "Scaduti" in base 
+                                alla configurazione impostata.
+                            </p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6>Database:</h6>
+                            <p class="small mb-0">
+                                La connessione al database remoto permette di sincronizzare i dati 
+                                con il sistema della bilancia e gestire prodotti, clienti e ticket.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tab functionality
+    const tabList = [].slice.call(document.querySelectorAll('#configTabs button'));
+    tabList.forEach(function(tabTrigger) {
+        const tabInstance = new bootstrap.Tab(tabTrigger);
+        
+        tabTrigger.addEventListener('click', function(event) {
+            event.preventDefault();
+            tabInstance.show();
+        });
+    });
+    
+    // Auto-focus on first input when tab is shown
+    const tabs = document.querySelectorAll('#configTabs button[data-bs-toggle="tab"]');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            const targetTab = event.target.getAttribute('data-bs-target');
+            const firstInput = document.querySelector(targetTab + ' input:first-of-type');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

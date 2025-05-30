@@ -288,9 +288,9 @@
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
                     <span class="text-white-50">{{ tickets.total if tickets.total else 0 }} tickets nel database</span>
-                    {% if current_status == 'giacenza' %}
+                    {% if current_status == 'in_task' %}
                     <span class="status-badge warning ms-2">
-                        <i class="fas fa-warehouse me-1"></i>Giacenza
+                        <i class="fas fa-tasks me-1"></i>Dentro Task
                     </span>
                     {% elif current_status == 'processed' %}
                     <span class="status-badge success ms-2">
@@ -408,8 +408,11 @@
                 <a href="{{ url_for('warehouse.tickets', query=search or '') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
                     <i class="fas fa-list-ul me-1"></i> Tutti
                 </a>
-                <a href="{{ url_for('warehouse.tickets', status='giacenza', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-warning {% if current_status == 'giacenza' %}active{% endif %}">
-                    <i class="fas fa-warehouse me-1"></i> Giacenza
+                <a href="{{ url_for('warehouse.tickets', status='in_task', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-primary {% if current_status == 'in_task' %}active{% endif %}">
+                    <i class="fas fa-tasks me-1"></i> Dentro Task
+                    {% if task_count > 0 %}
+                        <span class="badge bg-primary ms-1">{{ task_count }}</span>
+                    {% endif %}
                 </a>
                 <a href="{{ url_for('warehouse.tickets', status='processed', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
                     <i class="fas fa-check-circle me-1"></i> Processati

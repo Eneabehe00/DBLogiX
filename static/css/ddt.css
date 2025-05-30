@@ -1211,4 +1211,295 @@
 .filter-input:focus-visible {
     outline: 2px solid #667eea;
     outline-offset: 2px;
+}
+
+/* ========================================
+   DDT Traditional Print Layout Styles
+   ======================================== */
+
+/* Traditional DDT Print Preview */
+.ddt-print-preview {
+    background: white;
+    max-width: 210mm; /* A4 width */
+    margin: 0 auto;
+    padding: 15mm 20mm;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    font-family: 'Helvetica', Arial, sans-serif;
+    color: #000;
+    line-height: 1.4;
+}
+
+.ddt-traditional-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8mm;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5mm;
+}
+
+.ddt-traditional-header .company-logo {
+    max-width: 35mm;
+    max-height: 15mm;
+}
+
+.ddt-traditional-header .ddt-title {
+    text-align: right;
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
+}
+
+.ddt-traditional-header .ddt-title h1 {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+/* Company and Client Information - Traditional Layout */
+.ddt-company-client-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    margin-bottom: 8mm;
+}
+
+.ddt-info-box {
+    border: 1px solid #ccc;
+    padding: 5mm;
+    background: #fff;
+}
+
+.ddt-info-box h3 {
+    font-size: 10px;
+    font-weight: bold;
+    margin: 0 0 3mm 0;
+    color: #000;
+    text-transform: uppercase;
+}
+
+.ddt-info-box p {
+    font-size: 9px;
+    margin: 1mm 0;
+    color: #000;
+}
+
+/* DDT Details - Horizontal Layout */
+.ddt-details-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2mm;
+    margin-bottom: 5mm;
+    border: 1px solid #ccc;
+}
+
+.ddt-detail-cell {
+    padding: 3mm;
+    font-size: 9px;
+    border-right: 1px solid #ccc;
+}
+
+.ddt-detail-cell:last-child {
+    border-right: none;
+}
+
+.ddt-detail-cell strong {
+    font-weight: bold;
+    display: block;
+    color: #000;
+}
+
+.ddt-detail-cell.header {
+    background-color: #f5f5f5;
+}
+
+/* Traditional Products Table */
+.ddt-traditional-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8mm;
+    font-size: 8px;
+}
+
+.ddt-traditional-table th,
+.ddt-traditional-table td {
+    border: 1px solid #ccc;
+    padding: 4px 3px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.ddt-traditional-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #000;
+    font-size: 8px;
+    text-transform: uppercase;
+}
+
+.ddt-traditional-table .description-col {
+    text-align: left;
+    max-width: 85mm;
+    word-wrap: break-word;
+}
+
+.ddt-traditional-table .code-col {
+    width: 18mm;
+}
+
+.ddt-traditional-table .unit-col {
+    width: 12mm;
+}
+
+.ddt-traditional-table .qty-col {
+    width: 18mm;
+}
+
+.ddt-traditional-table .price-col {
+    width: 20mm;
+}
+
+.ddt-traditional-table .vat-col {
+    width: 15mm;
+}
+
+.ddt-traditional-table .total-col {
+    width: 22mm;
+}
+
+.ddt-traditional-table .totals-row {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.ddt-traditional-table .totals-row td.total-label {
+    text-align: right;
+    font-weight: bold;
+}
+
+/* Transport Conditions */
+.ddt-transport-conditions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 10mm;
+    border: 1px solid #ccc;
+}
+
+.ddt-transport-cell {
+    padding: 3mm;
+    font-size: 9px;
+    border-right: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+}
+
+.ddt-transport-cell:nth-child(4n) {
+    border-right: none;
+}
+
+.ddt-transport-cell.header {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+/* Signatures Section */
+.ddt-signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    border: 1px solid #ccc;
+}
+
+.ddt-signature-box {
+    padding: 8mm 5mm;
+    text-align: center;
+    border-right: 1px solid #ccc;
+    min-height: 60mm;
+}
+
+.ddt-signature-box:last-child {
+    border-right: none;
+}
+
+.ddt-signature-box h4 {
+    font-size: 9px;
+    font-weight: bold;
+    margin: 0 0 15mm 0;
+    color: #000;
+}
+
+.ddt-signature-box .signature-line {
+    border-bottom: 1px solid #000;
+    width: 80%;
+    margin: 15mm auto 0;
+    height: 1px;
+}
+
+/* Footer for Print */
+.ddt-traditional-footer {
+    margin-top: 10mm;
+    padding-top: 5mm;
+    border-top: 1px solid #ccc;
+    font-size: 7px;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Media queries for print */
+@media print {
+    .ddt-print-preview {
+        box-shadow: none;
+        margin: 0;
+        padding: 15mm 20mm;
+        page-break-inside: avoid;
+    }
+    
+    .ddt-traditional-table {
+        page-break-inside: auto;
+    }
+    
+    .ddt-traditional-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+    
+    .ddt-traditional-header,
+    .ddt-company-client-info,
+    .ddt-details-row {
+        page-break-after: avoid;
+    }
+    
+    .ddt-signatures {
+        page-break-before: avoid;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .ddt-print-preview {
+        max-width: 100%;
+        padding: 10mm 15mm;
+    }
+    
+    .ddt-company-client-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .ddt-details-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .ddt-transport-conditions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .ddt-traditional-table {
+        font-size: 7px;
+    }
+    
+    .ddt-traditional-table th,
+    .ddt-traditional-table td {
+        padding: 2px;
+    }
 } 

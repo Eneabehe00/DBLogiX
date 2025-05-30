@@ -21,6 +21,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from sqlalchemy.sql import text
 import time
+from models import SystemConfig
 
 ddt_bp = Blueprint('ddt', __name__)
 
@@ -1189,359 +1190,527 @@ def export(ddt_id):
     return redirect(url_for('ddt.detail', ddt_id=ddt_id))
 
 def generate_ddt_pdf(ddt, cliente, empresa):
-    """Generate a PDF document for the DDT"""
+    """Generate a stunning, professional PDF document for the DDT with exceptional layout"""
     buffer = io.BytesIO()
     
-    # Create the PDF document using ReportLab
+    # Create the PDF document with optimized margins
     doc = SimpleDocTemplate(
         buffer, 
         pagesize=A4,
-        rightMargin=25*mm,
-        leftMargin=25*mm,
-        topMargin=20*mm,
-        bottomMargin=20*mm,
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=80*mm,  # Slightly increased for better header
+        bottomMargin=40*mm,  # Optimized for footer with signatures
         title=f"DDT #{ddt.IdAlbaran}",
-        author=empresa.NombreEmpresa
+        author=empresa.NombreEmpresa if empresa else "DBLogiX"
     )
     
-    # Define colors for a more professional look - using more subtle colors
-    primary_color = colors.HexColor('#2980b9')  # Soft blue
-    accent_color = colors.HexColor('#f39c12')   # Soft orange
-    text_color = colors.HexColor('#34495e')     # Dark blue-gray
-    light_gray = colors.HexColor('#ecf0f1')     # Very light gray
-    medium_gray = colors.HexColor('#bdc3c7')    # Medium gray
+    # Original sophisticated color palette - restored
+    primary_color = colors.HexColor('#1a365d')      # Deep professional blue
+    secondary_color = colors.HexColor('#2d5a7b')    # Lighter blue
+    accent_color = colors.HexColor('#e53e3e')       # Elegant red accent
+    success_color = colors.HexColor('#38a169')      # Success green
+    text_primary = colors.HexColor('#2d3748')       # Primary text
+    text_secondary = colors.HexColor('#4a5568')     # Secondary text
+    text_muted = colors.HexColor('#718096')         # Muted text
+    border_light = colors.HexColor('#e2e8f0')       # Light borders
+    background_light = colors.HexColor('#f7fafc')   # Light background
+    background_accent = colors.HexColor('#ebf8ff')  # Accent background
+    white = colors.white
     
-    # Define styles
+    # Premium typography system with improved sizes
     styles = getSampleStyleSheet()
+    
+    # Document Title - More prominent
     styles.add(ParagraphStyle(
-        name='DDTTitle',
-        parent=styles['Heading1'],
-        fontSize=20,
-        alignment=1,  # centered
-        textColor=primary_color,
-        spaceAfter=8*mm,
-        fontName='Helvetica-Bold'
+        name='DocumentTitle',
+        parent=styles['Normal'],
+        fontSize=22,
+        alignment=1,  # center aligned
+        textColor=white,
+        spaceAfter=2*mm,
+        fontName='Helvetica-Bold',
+        leading=24
     ))
+    
+    # Document Subtitle - Refined
     styles.add(ParagraphStyle(
-        name='DDTHeader',
-        parent=styles['Heading2'],
-        fontSize=14,
-        textColor=primary_color,
-        spaceAfter=5*mm,
-        fontName='Helvetica-Bold'
+        name='DocumentSubtitle',
+        parent=styles['Normal'],
+        fontSize=11,
+        alignment=1,  # center aligned
+        textColor=white,
+        spaceAfter=1*mm,
+        fontName='Helvetica',
+        leading=13
     ))
+    
+    # Section Headers - Premium styling
     styles.add(ParagraphStyle(
-        name='DDTSectionHeader',
+        name='SectionHeader',
         parent=styles['Normal'],
         fontSize=10,
-        textColor=colors.white,
-        alignment=0,  # left
-        spaceAfter=3*mm,
+        textColor=primary_color,
         fontName='Helvetica-Bold',
-        backColor=primary_color,
-        borderPadding=(4, 4, 4, 4)
+        spaceAfter=2*mm,
+        spaceBefore=1*mm,
+        leading=12
     ))
+    
+    # Company Information - Professional
     styles.add(ParagraphStyle(
-        name='DDTNormal',
-        parent=styles['Normal'],
-        fontSize=9,
-        textColor=text_color,
-        spaceAfter=2*mm
-    ))
-    styles.add(ParagraphStyle(
-        name='DDTSmall',
+        name='CompanyInfo',
         parent=styles['Normal'],
         fontSize=8,
-        textColor=text_color
+        textColor=text_primary,
+        fontName='Helvetica',
+        leading=12,  # Increased line spacing
+        spaceAfter=1*mm  # More space between lines
     ))
+    
+    # Company Name - Distinguished
     styles.add(ParagraphStyle(
-        name='DDTTableHeader',
+        name='CompanyName',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=primary_color,
+        fontName='Helvetica-Bold',
+        spaceAfter=2*mm,  # More space after company name
+        leading=12
+    ))
+    
+    # Table Headers - Premium design
+    styles.add(ParagraphStyle(
+        name='TableHeader',
+        parent=styles['Normal'],
+        fontSize=8,
+        alignment=1,
+        textColor=white,
+        fontName='Helvetica-Bold',
+        leading=10
+    ))
+    
+    # Table Cells - Clean and readable
+    styles.add(ParagraphStyle(
+        name='TableCell',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=text_primary,
+        fontName='Helvetica',
+        alignment=1,
+        leading=10
+    ))
+    
+    styles.add(ParagraphStyle(
+        name='TableCellLeft',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=text_primary,
+        fontName='Helvetica',
+        alignment=0,
+        leading=10
+    ))
+    
+    styles.add(ParagraphStyle(
+        name='TableCellRight',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=text_primary,
+        fontName='Helvetica',
+        alignment=2,
+        leading=10
+    ))
+    
+    # Transport Information - Elegant
+    styles.add(ParagraphStyle(
+        name='TransportInfo',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=text_primary,
+        fontName='Helvetica',
+        leading=10
+    ))
+    
+    # Summary Style - More prominent
+    styles.add(ParagraphStyle(
+        name='SummaryLabel',
         parent=styles['Normal'],
         fontSize=9,
-        alignment=1,  # Centered
-        textColor=primary_color,
-        fontName='Helvetica-Bold'
+        textColor=text_primary,
+        fontName='Helvetica-Bold',
+        alignment=2,
+        leading=11
     ))
     
-    # Collect all elements that will be added to the PDF
+    styles.add(ParagraphStyle(
+        name='SummaryValue',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=primary_color,
+        fontName='Helvetica-Bold',
+        alignment=2,
+        leading=12
+    ))
+    
+    # Collect all elements
     elements = []
     
-    # Add logo and header in a table for better layout control
-    logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'static', 'img', 'logo.png')
-    
-    # Check if logo exists, otherwise use a placeholder
-    if os.path.exists(logo_path):
-        logo = Image(logo_path)
-        logo.drawHeight = 18*mm
-        logo.drawWidth = 40*mm
-    else:
-        # If no logo found, create a placeholder text
-        logo = Paragraph(f"<b>{empresa.NombreEmpresa}</b>", styles['DDTHeader'])
-    
-    # Create header with logo and title
-    header_data = [
-        [logo, Paragraph(f"<font size='16'><b>DOCUMENTO DI TRASPORTO</b></font><br/><font color='#7f8c8d'>D.D.T. n° {ddt.IdAlbaran} del {ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}</font>", styles['DDTTitle'])]
-    ]
-    
-    header_table = Table(header_data, colWidths=[50*mm, doc.width-50*mm])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-    ]))
-    
-    elements.append(header_table)
-    
-    # Add a horizontal line with accent color
-    elements.append(Spacer(1, 6*mm))
-    elements.append(Table([['']], colWidths=[doc.width], rowHeights=[1], style=TableStyle([
-        ('LINEBELOW', (0, 0), (-1, 0), 1, accent_color),
-    ])))
-    elements.append(Spacer(1, 10*mm))
-    
-    # Company and client information - create a 2-column layout with improved styling
-    elements.append(Paragraph("<b>INFORMAZIONI TRASPORTO</b>", styles['DDTSectionHeader']))
-    elements.append(Spacer(1, 2*mm))
-    
-    # Prepara i dati del mittente e destinatario
-    sender_address = f"{ddt.DireccionEmpresa or 'N/A'}<br/>{ddt.PoblacionEmpresa or 'N/A'}<br/>P.IVA: {ddt.CIF_VAT_Empresa or 'N/A'}<br/>Tel: {ddt.TelefonoEmpresa or 'N/A'}"
-    recipient_address = f"{ddt.DireccionCliente or 'N/A'}<br/>{ddt.PoblacionCliente or 'N/A'}<br/>P.IVA/CF: {ddt.DNICliente or 'N/A'}<br/>Tel: {ddt.TelefonoCliente or 'N/A'}"
-    sender_name = ddt.NombreEmpresa
-    recipient_name = ddt.NombreCliente
-    
-    company_data = [
-        [
-            # Mittente (a sinistra)
-            Table([
-                [Paragraph("<b>MITTENTE</b>", styles['DDTTableHeader'])],
-                [Paragraph(f"<b>{sender_name}</b><br/>" + sender_address, styles['DDTNormal'])],
-            ], colWidths=[doc.width/2.0 - 10*mm], style=TableStyle([
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-                ('TOPPADDING', (0, 0), (-1, -1), 5),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-                ('LINEBELOW', (0, 0), (0, 0), 0.5, primary_color),
-            ])),
-            
-            # Destinatario (a destra)
-            Table([
-                [Paragraph("<b>DESTINATARIO</b>", styles['DDTTableHeader'])],
-                [Paragraph(f"<b>{recipient_name}</b><br/>" + recipient_address, styles['DDTNormal'])],
-            ], colWidths=[doc.width/2.0 - 10*mm], style=TableStyle([
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-                ('TOPPADDING', (0, 0), (-1, -1), 5),
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
-                ('LINEBELOW', (0, 0), (0, 0), 0.5, primary_color),
-            ])),
-        ]
-    ]
-    
-    company_table = Table(company_data, colWidths=[doc.width/2.0, doc.width/2.0])
-    company_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-    ]))
-    
-    elements.append(company_table)
-    elements.append(Spacer(1, 10*mm))
-    
-    # DDT Information with improved styling
-    elements.append(Paragraph("<b>DETTAGLI DOCUMENTO</b>", styles['DDTSectionHeader']))
-    elements.append(Spacer(1, 2*mm))
-    
-    # Imposta le informazioni del DDT
-    ddt_info_data = [
-        [
-            Paragraph("<b>Data Emissione:</b>", styles['DDTNormal']), 
-            Paragraph(f"{ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}", styles['DDTNormal']),
-            Paragraph("<b>Numero DDT:</b>", styles['DDTNormal']), 
-            Paragraph(f"{ddt.IdAlbaran}", styles['DDTNormal']),
-            Paragraph("<b>Tipo:</b>", styles['DDTNormal']),
-            Paragraph(f"{ddt.Tipo}", styles['DDTNormal'])
-        ],
-        [
-            Paragraph("<b>Totale Articoli:</b>", styles['DDTNormal']), 
-            Paragraph(f"{ddt.NumLineas or 0}", styles['DDTNormal']),
-            Paragraph("<b>Totale Imponibile:</b>", styles['DDTNormal']),
-            Paragraph(f"€ {float(ddt.ImporteTotalSinIVAConDtoL or 0):.2f}", styles['DDTNormal']),
-            Paragraph("<b>Totale IVA:</b>", styles['DDTNormal']),
-            Paragraph(f"€ {float(ddt.ImporteTotalDelIVAConDtoLConDtoTotal or 0):.2f}", styles['DDTNormal'])
-        ]
-    ]
-    
-    ddt_info_table = Table(ddt_info_data, colWidths=[30*mm, 30*mm, 30*mm, 30*mm, 30*mm, 30*mm])
-    ddt_info_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('BACKGROUND', (0, 0), (0, -1), light_gray),
-        ('BACKGROUND', (2, 0), (2, -1), light_gray),
-        ('BACKGROUND', (4, 0), (4, -1), light_gray),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-        ('TOPPADDING', (0, 0), (-1, -1), 7),
-    ]))
-    
-    elements.append(ddt_info_table)
-    elements.append(Spacer(1, 10*mm))
-    
-    # Get all product details for this DDT
+    # === PREMIUM PRODUCTS TABLE ===
     products_data = []
     
-    # Product table header
-    products_data.append([
-        Paragraph("<b>Codice</b>", styles['DDTTableHeader']),
-        Paragraph("<b>Descrizione</b>", styles['DDTTableHeader']),
-        Paragraph("<b>Quantità</b>", styles['DDTTableHeader']),
-        Paragraph("<b>Prezzo Unit.</b>", styles['DDTTableHeader']),
-        Paragraph("<b>IVA %</b>", styles['DDTTableHeader']),
-        Paragraph("<b>Subtotale</b>", styles['DDTTableHeader']),
-        Paragraph("<b>Totale</b>", styles['DDTTableHeader']),
-    ])
+    # Sophisticated table header
+    header_style = [
+        Paragraph("<b>COD.</b>", styles['TableHeader']),
+        Paragraph("<b>DESCRIZIONE ARTICOLO</b>", styles['TableHeader']),
+        Paragraph("<b>U.M.</b>", styles['TableHeader']),
+        Paragraph("<b>QUANTITÀ</b>", styles['TableHeader']),
+        Paragraph("<b>PREZZO</b>", styles['TableHeader']),
+        Paragraph("<b>IVA</b>", styles['TableHeader']),
+        Paragraph("<b>IMPORTO</b>", styles['TableHeader']),
+    ]
+    products_data.append(header_style)
     
-    # Add product rows
-    # Get product data from AlbaranLinea
+    # Get product lines
     lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
     
+    total_amount = 0
+    total_quantity = 0
+    subtotal_without_vat = 0
+    total_vat = 0
+    
     for line in lines:
-        # Calcola aliquota IVA
-        vat_rate = float(line.PorcentajeIVA or 0) / 100
-        vat_display = f"{float(line.PorcentajeIVA or 0):.0f}%"
-        
-        # Calcola prezzi
+        # Extract data with safe defaults
+        code = str(line.IdArticulo or '')
+        description = line.Descripcion or 'N/A'
+        unit = line.Medida2 or 'un'
+        quantity = float(line.Peso or 0)
         price = float(line.PrecioSinIVA or 0)
-        subtotal = float(line.ImporteSinIVASinDtoL or 0)
-        vat_amount = float(line.ImporteDelIVAConDtoL or 0)
-        total = subtotal + vat_amount
+        vat_rate = float(line.PorcentajeIVA or 0)
+        line_total_without_vat = float(line.ImporteSinIVASinDtoL or 0)
+        line_vat = float(line.ImporteDelIVAConDtoL or 0)
+        line_total = line_total_without_vat + line_vat
         
-        # Aggiungi riga prodotto
+        total_amount += line_total
+        total_quantity += quantity
+        subtotal_without_vat += line_total_without_vat
+        total_vat += line_vat
+        
+        # Create elegant table rows
         products_data.append([
-            Paragraph(f"{line.IdArticulo}", styles['DDTNormal']),
-            Paragraph(f"{line.Descripcion}", styles['DDTNormal']),
-            Paragraph(f"{float(line.Peso or 1):.3f} {line.Medida2 or 'kg'}", styles['DDTNormal']),
-            Paragraph(f"€ {price:.2f}", styles['DDTNormal']),
-            Paragraph(f"{vat_display}", styles['DDTNormal']),
-            Paragraph(f"€ {subtotal:.2f}", styles['DDTNormal']),
-            Paragraph(f"€ {total:.2f}", styles['DDTNormal']),
+            Paragraph(code if code != '999' else '', styles['TableCell']),
+            Paragraph(description, styles['TableCellLeft']),
+            Paragraph(unit, styles['TableCell']),
+            Paragraph(f"{quantity:.2f}", styles['TableCellRight']),
+            Paragraph(f"€ {price:.2f}", styles['TableCellRight']),
+            Paragraph(f"{vat_rate:.0f}%", styles['TableCell']),
+            Paragraph(f"<b>€ {line_total:.2f}</b>", styles['TableCellRight']),
         ])
     
-    # Add totals row
-    total_without_vat = float(ddt.ImporteTotalSinIVAConDtoL or 0)
-    total_vat = float(ddt.ImporteTotalDelIVAConDtoLConDtoTotal or 0)
-    total = float(ddt.ImporteTotal or 0)
-    
-    products_data.append([
-        Paragraph("", styles['DDTNormal']),
-        Paragraph("", styles['DDTNormal']),
-        Paragraph("", styles['DDTNormal']),
-        Paragraph("", styles['DDTNormal']),
-        Paragraph("<b>TOTALI:</b>", styles['DDTTableHeader']),
-        Paragraph(f"<b>€ {total_without_vat:.2f}</b>", styles['DDTTableHeader']),
-        Paragraph(f"<b>€ {total:.2f}</b>", styles['DDTTableHeader']),
-    ])
-    
-    # Create products table with improved styling
-    col_widths = [20*mm, 70*mm, 25*mm, 25*mm, 15*mm, 25*mm, 25*mm]
+    # Create sophisticated products table
+    col_widths = [18*mm, 88*mm, 12*mm, 20*mm, 20*mm, 12*mm, 22*mm]
     products_table = Table(products_data, colWidths=col_widths, repeatRows=1)
     
-    products_table.setStyle(TableStyle([
+    # Apply modern table styling
+    table_style = [
+        # Header styling - elegant gradient
         ('BACKGROUND', (0, 0), (-1, 0), primary_color),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), white),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 7),
-        ('TOPPADDING', (0, 0), (-1, 0), 7),
-        ('GRID', (0, 0), (-1, -1), 0.25, medium_gray),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, 0), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        
+        # Data rows - clean styling
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('ALIGN', (0, 1), (0, -1), 'CENTER'),   # Code column
+        ('ALIGN', (1, 1), (1, -1), 'LEFT'),     # Description column
+        ('ALIGN', (2, 1), (2, -1), 'CENTER'),   # Unit column
+        ('ALIGN', (3, 1), (3, -1), 'RIGHT'),    # Quantity column
+        ('ALIGN', (4, 1), (4, -1), 'RIGHT'),    # Price column
+        ('ALIGN', (5, 1), (5, -1), 'CENTER'),   # VAT column
+        ('ALIGN', (6, 1), (6, -1), 'RIGHT'),    # Total column
+        ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 1), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
+        ('LEFTPADDING', (0, 1), (-1, -1), 4),
+        ('RIGHTPADDING', (0, 1), (-1, -1), 4),
+        
+        # Modern borders
+        ('LINEBELOW', (0, 0), (-1, 0), 1, primary_color),
+        ('GRID', (0, 1), (-1, -1), 0.5, border_light),
+        ('LINEBEFORE', (0, 0), (0, -1), 1, primary_color),
+        ('LINEAFTER', (-1, 0), (-1, -1), 1, primary_color),
+        ('LINEBELOW', (0, -1), (-1, -1), 1, primary_color),
+    ]
+    
+    # Add subtle alternating row colors
+    for i in range(1, len(products_data)):
+        if i % 2 == 0:
+            table_style.append(('BACKGROUND', (0, i), (-1, i), background_light))
+    
+    products_table.setStyle(TableStyle(table_style))
+    elements.append(products_table)
+    elements.append(Spacer(1, 8*mm))
+    
+    # === IMPROVED FINANCIAL SUMMARY ===
+    # Create a more prominent summary box
+    summary_data = [
+        [
+            Paragraph("<b>Subtotale (esclusa IVA)</b>", styles['SummaryLabel']),
+            Paragraph(f"<b>€ {subtotal_without_vat:.2f}</b>", styles['SummaryValue'])
+        ],
+        [
+            Paragraph("<b>Totale IVA</b>", styles['SummaryLabel']),
+            Paragraph(f"<b>€ {total_vat:.2f}</b>", styles['SummaryValue'])
+        ],
+        [
+            Paragraph("<b>TOTALE GENERALE</b>", styles['SummaryLabel']),
+            Paragraph(f"<b>€ {total_amount:.2f}</b>", styles['SummaryValue'])
+        ]
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[40*mm, 30*mm])
+    summary_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (2, 1), (6, -1), 'RIGHT'),
-        ('ALIGN', (0, 1), (0, -1), 'CENTER'),
-        ('BACKGROUND', (0, -1), (-1, -1), light_gray),
-        ('FONTNAME', (4, -1), (-1, -1), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('BACKGROUND', (0, 0), (-1, 1), background_light),
+        ('BACKGROUND', (0, 2), (-1, 2), background_accent),
+        ('LINEABOVE', (0, 2), (-1, 2), 1, success_color),
+        ('LINEBELOW', (0, 2), (-1, 2), 1, success_color),
+        ('GRID', (0, 0), (-1, -1), 0.5, border_light),
+        ('ROUNDEDCORNERS', [3, 3, 3, 3]),
     ]))
     
-    # Add product table to document
-    elements.append(Paragraph("<b>DETTAGLIO PRODOTTI</b>", styles['DDTSectionHeader']))
-    elements.append(Spacer(1, 3*mm))
-    elements.append(products_table)
+    # Right align the summary
+    summary_container = Table([[summary_table]], colWidths=[doc.width])
+    summary_container.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
+        ('VALIGN', (0, 0), (0, 0), 'TOP'),
+    ]))
+    
+    elements.append(summary_container)
     elements.append(Spacer(1, 10*mm))
     
-    # Notes section
-    elements.append(Paragraph("<b>NOTE E CONDIZIONI DI TRASPORTO</b>", styles['DDTSectionHeader']))
-    elements.append(Spacer(1, 3*mm))
+    # === COMPACT TRANSPORT CONDITIONS ===
+    # Calculate number of packages (colli) based on system configuration
+    articles_per_package = SystemConfig.get_config('articles_per_package', 5)
     
-    notes_data = [
+    # Count articles excluding "trasporto" items
+    total_articles = 0
+    for line in lines:
+        description = (line.Descripcion or '').lower()
+        if 'trasporto' not in description:
+            total_articles += 1
+    
+    # Calculate number of packages
+    num_packages = max(1, (total_articles + articles_per_package - 1) // articles_per_package)  # Round up division
+    
+    transport_data = [
         [
-            Paragraph("<b>Causale trasporto:</b>", styles['DDTNormal']),
-            Paragraph("Vendita", styles['DDTNormal']),
-            Paragraph("<b>Trasporto a cura di:</b>", styles['DDTNormal']),
-            Paragraph("Mittente", styles['DDTNormal'])
+            Paragraph("<b>Causale trasporto:</b> Vendita", styles['TransportInfo']),
+            Paragraph("<b>Trasporto a cura:</b> Mittente", styles['TransportInfo'])
         ],
         [
-            Paragraph("<b>Aspetto dei beni:</b>", styles['DDTNormal']),
-            Paragraph("Scatole/Confezioni", styles['DDTNormal']),
-            Paragraph("<b>Porto:</b>", styles['DDTNormal']),
-            Paragraph("Franco", styles['DDTNormal'])
+            Paragraph("<b>Aspetto esteriore beni:</b> Confezioni integre", styles['TransportInfo']),
+            Paragraph(f"<b>Numero colli:</b> {num_packages}", styles['TransportInfo'])
+        ],
+        [
+            Paragraph("<b>Data e ora partenza:</b> _______________", styles['TransportInfo']),
+            Paragraph("<b>Data e ora arrivo:</b> _______________", styles['TransportInfo'])
         ]
     ]
     
-    notes_table = Table(notes_data, colWidths=[35*mm, 50*mm, 35*mm, 50*mm])
-    notes_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.25, medium_gray),
-        ('BACKGROUND', (0, 0), (0, -1), light_gray),
-        ('BACKGROUND', (2, 0), (2, -1), light_gray),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
-        ('TOPPADDING', (0, 0), (-1, -1), 7),
+    transport_table = Table(transport_data, colWidths=[doc.width/2 - 5*mm, doc.width/2 - 5*mm])
+    transport_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('BACKGROUND', (0, 0), (-1, -1), background_light),
+        ('GRID', (0, 0), (-1, -1), 0.5, border_light),
+        ('ROUNDEDCORNERS', [2, 2, 2, 2]),
     ]))
     
-    elements.append(notes_table)
-    elements.append(Spacer(1, 15*mm))
+    elements.append(transport_table)
     
-    # Signatures section
-    signature_data = [
-        [
-            Paragraph("<b>Firma del conducente:</b>", styles['DDTNormal']),
-            Paragraph("<b>Firma del destinatario:</b>", styles['DDTNormal'])
-        ],
-        [
-            Paragraph("_____________________________", styles['DDTNormal']),
-            Paragraph("_____________________________", styles['DDTNormal'])
-        ]
-    ]
-    
-    signature_table = Table(signature_data, colWidths=[doc.width/2.0 - 5*mm, doc.width/2.0 - 5*mm])
-    signature_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 25),
-        ('TOPPADDING', (0, 0), (-1, -1), 7),
-    ]))
-    
-    elements.append(signature_table)
-    
-    # Define dynamic footer
-    def footer(canvas, doc):
+    # === PREMIUM HEADER AND FOOTER FUNCTIONS ===
+    def draw_premium_header_footer(canvas, doc):
         canvas.saveState()
-        footer_text = f"DDT #{ddt.IdAlbaran} - Generato il {datetime.now().strftime('%d/%m/%Y %H:%M')}"
-        canvas.setFont('Helvetica', 8)
-        canvas.drawString(doc.leftMargin, 15*mm, footer_text)
         
-        # Add page number
+        # === CLEAN HEADER WITH WHITE BACKGROUND ===
+        header_height = 80*mm
+        
+        # White background for entire document
+        canvas.setFillColor(white)
+        canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
+        
+        # === LOGO AND TITLE SECTION ===
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'LogoDDT.png')
+        logo_width = 50*mm
+        logo_height = 25*mm
+        
+        if os.path.exists(logo_path):
+            try:
+                canvas.drawImage(logo_path, doc.leftMargin, A4[1] - 30*mm, 
+                               width=logo_width, height=logo_height, mask='auto')
+            except:
+                # Fallback elegant company name
+                canvas.setFont('Helvetica-Bold', 20)
+                canvas.setFillColor(primary_color)
+                canvas.drawString(doc.leftMargin, A4[1] - 20*mm, 
+                                empresa.NombreEmpresa if empresa else "DBLogiX")
+        else:
+            # Elegant company name design
+            canvas.setFont('Helvetica-Bold', 20)
+            canvas.setFillColor(primary_color)
+            canvas.drawString(doc.leftMargin, A4[1] - 20*mm, 
+                            empresa.NombreEmpresa if empresa else "DBLogiX")
+        
+        # Document title section
+        title_width = 95*mm  # Slightly increased width
+        title_height = 25*mm
+        title_x = A4[0] - doc.rightMargin - title_width
+        title_y = A4[1] - 30*mm
+        
+        # Create background for title
+        canvas.setFillColor(primary_color)
+        canvas.roundRect(title_x, title_y, title_width, title_height, 4*mm, fill=1, stroke=0)
+        
+        # Document title with smaller font to fit better
+        canvas.setFont('Helvetica-Bold', 16)  # Reduced from 18 to 16
+        canvas.setFillColor(white)
+        title_text = "DOCUMENTO DI TRASPORTO"
+        text_width = canvas.stringWidth(title_text, 'Helvetica-Bold', 16)
+        canvas.drawString(title_x + (title_width - text_width)/2, title_y + 12*mm, title_text)
+        
+        # Document number and date
+        canvas.setFont('Helvetica', 10)
+        subtitle_text = f"N° {ddt.IdAlbaran} del {ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}"
+        subtitle_width = canvas.stringWidth(subtitle_text, 'Helvetica', 10)
+        canvas.drawString(title_x + (title_width - subtitle_width)/2, title_y + 6*mm, subtitle_text)
+        
+        # === CLEAN COMPANY AND CLIENT BOXES (NO BORDERS) ===
+        box_y = A4[1] - 75*mm
+        box_height = 38*mm  # Increased height for more space
+        
+        # Company information (left) - no borders, more spacing
+        if empresa:
+            company_box_width = 80*mm
+            company_x = doc.leftMargin
+            
+            # Company header
+            canvas.setFont('Helvetica-Bold', 10)
+            canvas.setFillColor(primary_color)
+            canvas.drawString(company_x, box_y + box_height - 8*mm, "MITTENTE")
+            
+            # Company details with more spacing
+            canvas.setFont('Helvetica-Bold', 9)
+            canvas.setFillColor(text_primary)
+            y_offset = box_y + box_height - 16*mm
+            canvas.drawString(company_x, y_offset, empresa.NombreEmpresa)
+            
+            canvas.setFont('Helvetica', 8)
+            y_offset -= 10  # Increased spacing between lines
+            if empresa.Direccion:
+                canvas.drawString(company_x, y_offset, empresa.Direccion)
+                y_offset -= 10
+            city_postal = f"{empresa.CodPostal or ''} {empresa.Poblacion or ''}".strip()
+            if city_postal:
+                canvas.drawString(company_x, y_offset, city_postal)
+                y_offset -= 10
+            if empresa.CIF_VAT:
+                canvas.drawString(company_x, y_offset, f"P.IVA: {empresa.CIF_VAT}")
+                y_offset -= 10
+            if empresa.Telefono1:
+                canvas.drawString(company_x, y_offset, f"Tel: {empresa.Telefono1}")
+        
+        # Client information (right) - no borders, more spacing
+        if cliente:
+            client_box_width = 80*mm
+            client_x = A4[0] - doc.rightMargin - client_box_width
+            
+            # Client header
+            canvas.setFont('Helvetica-Bold', 10)
+            canvas.setFillColor(primary_color)
+            canvas.drawString(client_x, box_y + box_height - 8*mm, "DESTINATARIO")
+            
+            # Client details with more spacing
+            canvas.setFont('Helvetica-Bold', 9)
+            canvas.setFillColor(text_primary)
+            y_offset = box_y + box_height - 16*mm
+            canvas.drawString(client_x, y_offset, cliente.Nombre)
+            
+            canvas.setFont('Helvetica', 8)
+            y_offset -= 10  # Increased spacing between lines
+            if cliente.Direccion:
+                canvas.drawString(client_x, y_offset, cliente.Direccion)
+                y_offset -= 10
+            city_postal = f"{cliente.CodPostal or ''} {cliente.Poblacion or ''}".strip()
+            if city_postal:
+                canvas.drawString(client_x, y_offset, city_postal)
+                y_offset -= 10
+            if cliente.DNI:
+                canvas.drawString(client_x, y_offset, f"P.IVA/CF: {cliente.DNI}")
+                y_offset -= 10
+            if cliente.Telefono1:
+                canvas.drawString(client_x, y_offset, f"Tel: {cliente.Telefono1}")
+        
+        # === CLEAN FOOTER WITH SIGNATURES (NO SEPARATOR LINES) ===
+        footer_height = 40*mm
+        
+        # === ELEGANT SIGNATURE FIELDS ===
+        signature_y = 25*mm
+        signature_width = 70*mm
+        
+        # Left signature (VETTORE)
+        left_sig_x = doc.leftMargin + 10*mm
+        canvas.setFont('Helvetica-Bold', 9)
+        canvas.setFillColor(primary_color)
+        canvas.drawString(left_sig_x, signature_y + 8*mm, "FIRMA DEL VETTORE")
+        
+        # Elegant signature box for vettore
+        canvas.setStrokeColor(border_light)
+        canvas.setLineWidth(1)
+        canvas.rect(left_sig_x, signature_y, signature_width, 6*mm, fill=0, stroke=1)
+        
+        # Right signature (DESTINATARIO)
+        right_sig_x = A4[0] - doc.rightMargin - signature_width - 10*mm
+        canvas.setFont('Helvetica-Bold', 9)
+        canvas.setFillColor(primary_color)
+        canvas.drawString(right_sig_x, signature_y + 8*mm, "FIRMA DEL DESTINATARIO")
+        
+        # Elegant signature box for destinatario
+        canvas.setStrokeColor(border_light)
+        canvas.setLineWidth(1)
+        canvas.rect(right_sig_x, signature_y, signature_width, 6*mm, fill=0, stroke=1)
+        
+        # Document info footer
+        canvas.setFont('Helvetica', 7)
+        canvas.setFillColor(text_muted)
+        footer_text = f"DDT #{ddt.IdAlbaran} • Generato il {datetime.now().strftime('%d/%m/%Y alle ore %H:%M')} • DBLogiX Professional"
+        canvas.drawString(doc.leftMargin, 8*mm, footer_text)
+        
+        # Page number
         page_num = canvas.getPageNumber()
-        canvas.drawRightString(doc.width + doc.leftMargin, 15*mm, f"Pagina {page_num}")
-        
-        # Add horizontal line
-        canvas.setStrokeColor(accent_color)
-        canvas.line(doc.leftMargin, 20*mm, doc.width + doc.leftMargin, 20*mm)
+        canvas.setFont('Helvetica-Bold', 8)
+        canvas.setFillColor(primary_color)
+        page_text = f"Pagina {page_num}"
+        page_width = canvas.stringWidth(page_text, 'Helvetica-Bold', 8)
+        canvas.drawString(A4[0] - doc.rightMargin - page_width, 8*mm, page_text)
         
         canvas.restoreState()
     
-    # Build the document with footer
-    doc.build(elements, onFirstPage=footer, onLaterPages=footer)
+    # Build the premium document
+    doc.build(elements, onFirstPage=draw_premium_header_footer, onLaterPages=draw_premium_header_footer)
     
     # Get the PDF content
     pdf_content = buffer.getvalue()

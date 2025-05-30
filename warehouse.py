@@ -126,24 +126,30 @@ def index():
         else:
             enhanced_ticket.formatted_date = 'N/D'
         
-        # Add status information
-        if ticket.Enviado == 0:
-            enhanced_ticket.status_text = 'Giacenza'
-            enhanced_ticket.status_class = 'warning'
+        # Add status information - Updated with new logic
+        if ticket.Enviado == 10:
+            enhanced_ticket.status_text = 'Dentro Task'
+            enhanced_ticket.status_class = 'primary'
         elif ticket.Enviado == 1:
             enhanced_ticket.status_text = 'Processato'
             enhanced_ticket.status_class = 'success'
         elif ticket.Enviado == 4:
             enhanced_ticket.status_text = 'Scaduto'
             enhanced_ticket.status_class = 'danger'
+        elif ticket.Enviado == 2:
+            enhanced_ticket.status_text = 'DDT1'
+            enhanced_ticket.status_class = 'info'
+        elif ticket.Enviado == 3:
+            enhanced_ticket.status_text = 'DDT2'
+            enhanced_ticket.status_class = 'secondary'
         else:
             enhanced_ticket.status_text = 'Altro'
             enhanced_ticket.status_class = 'secondary'
         
         enhanced_tickets.append(enhanced_ticket)
     
-    # Get pending tickets (not processed)
-    giacenza_tickets = TicketHeader.query.filter_by(Enviado=0).count()
+    # Get tickets in task (Enviado=10) - new counter
+    task_tickets = TicketHeader.query.filter_by(Enviado=10).count()
     
     # Get recent scans with user information (limit to 5)
     recent_scans_query = db.session.query(
@@ -174,7 +180,7 @@ def index():
     return render_template('warehouse/index.html', 
                           products_count=products_count,
                           recent_tickets=enhanced_tickets,
-                          giacenza_tickets=giacenza_tickets,
+                          task_tickets=task_tickets,  # Changed from giacenza_tickets
                           recent_scans=enhanced_scans)
 
 # Product catalog and inventory
@@ -252,48 +258,26 @@ def tickets():
                 query = query.filter(TicketHeader.NumTicket == int(ticket_number))
                 current_app.logger.info(f"🔍 Searching by ticket number: {ticket_number}")
         else:
-            try:
-                # Try to convert search to integer for ID search
-                search_id = int(search_query)
-                # Search by ticket ID, number or other text fields
-                product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
-                    join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
-                    filter(
-                        or_(
-                            Product.Descripcion.ilike(f'%{search_query}%'),
-                            TicketLine.Descripcion.ilike(f'%{search_query}%')
-                        )
-                    ).subquery()
-                
-                query = query.filter(
+            # Ricerca multipla: barcode, descrizione prodotto o descrizione linea
+            # Crea una subquery per i ticket che contengono prodotti con la descrizione cercata
+            product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
+                join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
+                filter(
                     or_(
-                        TicketHeader.IdTicket == search_id,
-                        TicketHeader.NumTicket == search_id,
-                        TicketHeader.CodigoBarras.like(f'%{search_query}%'),
-                        TicketHeader.IdTicket.in_(
-                            db.session.query(product_search_subquery.c.IdTicket)
-                        )
+                        Product.Descripcion.ilike(f'%{search_query}%'),
+                        TicketLine.Descripcion.ilike(f'%{search_query}%')
+                    )
+                ).subquery()
+            
+            # Applica filtro combinato: barcode O descrizione prodotto
+            query = query.filter(
+                or_(
+                    TicketHeader.CodigoBarras.like(f'%{search_query}%'),
+                    TicketHeader.IdTicket.in_(
+                        db.session.query(product_search_subquery.c.IdTicket)
                     )
                 )
-            except ValueError:
-                # Search only by text fields if not a number
-                product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
-                    join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
-                    filter(
-                        or_(
-                            Product.Descripcion.ilike(f'%{search_query}%'),
-                            TicketLine.Descripcion.ilike(f'%{search_query}%')
-                        )
-                    ).subquery()
-                
-                query = query.filter(
-                    or_(
-                        TicketHeader.CodigoBarras.like(f'%{search_query}%'),
-                        TicketHeader.IdTicket.in_(
-                            db.session.query(product_search_subquery.c.IdTicket)
-                        )
-                    )
-                )
+            )
         
         current_app.logger.info(f"🔍 Search query applied for '{search_query}'")
     
@@ -312,13 +296,13 @@ def tickets():
     # Seleziona solo la prima riga per ogni ticket (quella con la data di scadenza più vicina)
     first_expiring_line = db.session.query(subquery).filter(subquery.c.row_num == 1).subquery()
     
-    # Applica filtro di stato
+    # Applica filtro di stato - Updated with new logic
     status = request.args.get('status')
-    if status == 'giacenza':  # Cambiato da 'pending' a 'giacenza'
-        query = query.filter_by(Enviado=0)
+    if status == 'in_task':  # New filter for tickets in task
+        query = query.filter_by(Enviado=10)
     elif status == 'processed':
         query = query.filter_by(Enviado=1)
-    elif status == 'expired':  # Nuovo filtro per ticket scaduti
+    elif status == 'expired':  # Filter for expired tickets
         query = query.filter_by(Enviado=4)
     elif status == 'expiring':
         today = datetime.now().date()  # Usa solo la data, non l'ora
@@ -328,12 +312,12 @@ def tickets():
         warning_date = today + timedelta(days=expiry_warning_days)
         
         # Correggo il filtro scadenza per mostrare SOLO prodotti con data di scadenza
-        # E SOLO ticket non ancora processati (Enviado = 0)
+        # E SOLO ticket nei task (Enviado = 10)
         # Usiamo una subquery per trovare solo i ticket con almeno un prodotto in scadenza
         ticket_ids_with_expiry = db.session.query(TicketLine.IdTicket).join(
             TicketHeader, TicketLine.IdTicket == TicketHeader.IdTicket
         ).filter(
-            TicketHeader.Enviado == 0,  # Solo ticket in giacenza
+            TicketHeader.Enviado == 10,  # Solo ticket nei task
             TicketLine.FechaCaducidad.isnot(None),
             func.date(TicketLine.FechaCaducidad) <= warning_date,
             func.date(TicketLine.FechaCaducidad) >= today
@@ -433,7 +417,7 @@ def tickets():
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
         filter(
-            TicketHeader.Enviado == 0,  # Solo ticket in giacenza
+            TicketHeader.Enviado == 10,  # Solo ticket nei task
             TicketLine.FechaCaducidad.isnot(None),
             func.date(TicketLine.FechaCaducidad) <= warning_date,
             func.date(TicketLine.FechaCaducidad) >= today
@@ -441,6 +425,9 @@ def tickets():
     
     # Count expired tickets for the badge
     expired_count = TicketHeader.query.filter_by(Enviado=4).count()
+    
+    # Count tickets in task
+    task_count = TicketHeader.query.filter_by(Enviado=10).count()
     
     return render_template('warehouse/tickets.html', 
                           tickets=tickets,
@@ -452,7 +439,8 @@ def tickets():
                           search=search_query,  # Aggiungo search_query come search per il template
                           current_status=status,
                           expiring_count=expiring_count,
-                          expired_count=expired_count)
+                          expired_count=expired_count,
+                          task_count=task_count)  # New counter
 
 def update_expired_tickets():
     """
@@ -464,12 +452,12 @@ def update_expired_tickets():
         from models import SystemConfig
         today = datetime.now().date()  # Usa solo la data, non l'ora
         
-        # Trova tutti i ticket in giacenza (Enviado = 0) che hanno prodotti scaduti
+        # Trova tutti i ticket nei task (Enviado = 10) che hanno prodotti scaduti
         # Un prodotto è considerato scaduto solo DOPO la sua data di scadenza
         expired_ticket_ids = db.session.query(TicketHeader.IdTicket).distinct().\
             join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
             filter(
-                TicketHeader.Enviado == 0,  # Solo ticket in giacenza
+                TicketHeader.Enviado == 10,  # Solo ticket nei task
                 TicketLine.FechaCaducidad.isnot(None),
                 func.date(TicketLine.FechaCaducidad) < today  # Data di scadenza passata (confronto solo date)
             ).all()
@@ -681,7 +669,7 @@ def ticket_detail(ticket_id):
     expiring_count = db.session.query(TicketHeader.IdTicket).distinct().\
         join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
         filter(
-            TicketHeader.Enviado == 0,  # Solo ticket in giacenza
+            TicketHeader.Enviado == 10,  # Solo ticket nei task
             TicketLine.FechaCaducidad.isnot(None),
             func.date(TicketLine.FechaCaducidad) <= warning_date,
             func.date(TicketLine.FechaCaducidad) >= today
@@ -722,8 +710,8 @@ def ticket_checkout(ticket_id):
         flash('Questo ticket è già assegnato a DDT1.', 'info')
     elif ticket.Enviado == 3:
         flash('Questo ticket è già assegnato a DDT2.', 'info')
-    elif ticket.Enviado == 0:
-        # Mark the ticket as processed (only if it's in giacenza)
+    elif ticket.Enviado == 10:
+        # Mark the ticket as processed (from task to processed)
         ticket.Enviado = 1
         
         # Log this checkout
@@ -901,7 +889,7 @@ def api_checkout():
     return jsonify({'success': False, 'error': 'Missing scan_log_id or ticket_id'}), 400
 
 # Process QR code scan
-@warehouse_bp.route('process_qr', methods=['POST'])
+@warehouse_bp.route('/process_qr', methods=['POST'])
 @login_required
 def process_qr():
     """Process the QR code and return its contents in JSON format"""
@@ -1001,7 +989,7 @@ def process_qr():
                         'ticket_date': matching_ticket.formatted_date, # Assuming formatted_date exists on model
                         'scan_date': f"{formatted_scan_date} {formatted_scan_time}",
                         'is_processed': matching_ticket.Enviado == 1, 
-                        'enviado': str(matching_ticket.Enviado) if matching_ticket.Enviado is not None else "0",
+                        'enviado': str(matching_ticket.Enviado) if matching_ticket.Enviado is not None else "10",  # Changed default from "0" to "10"
                         'product': {
                             'id': product.IdArticulo,
                             'name': product.Descripcion,
@@ -1127,7 +1115,7 @@ def assign_ddt():
         return jsonify({'success': False, 'message': 'Errore database durante l\'assegnazione DDT.'}), 500
 
 # Process checkout from QR scanner
-@warehouse_bp.route('checkout', methods=['POST'])
+@warehouse_bp.route('/checkout', methods=['POST'])
 @login_required
 def checkout():
     """Checkout a ticket/product from QR scanner"""
@@ -1227,7 +1215,7 @@ def remove_from_ddt():
         return jsonify({'success': False, 'message': f'Ticket {ticket_id} non trovato'}), 404
 
     original_enviado_status = ticket.Enviado
-    ticket.Enviado = 0 
+    ticket.Enviado = 10  # Changed from 0 to 10 (reset to task status)
     try:
         db.session.add(ticket) # Add ticket to session
         
@@ -1249,7 +1237,7 @@ def remove_from_ddt():
         db.session.commit() # Single commit
         return jsonify({
             'success': True, 
-            'message': f'Ticket {ticket_id} rimosso da DDT e reimpostato.',
+            'message': f'Ticket {ticket_id} rimosso da DDT e reimpostato nel task.',
             'ticket_id_removed': ticket_id # Add ticket_id to response
             })
     except Exception as e:

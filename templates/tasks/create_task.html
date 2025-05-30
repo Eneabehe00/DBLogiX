@@ -2,33 +2,401 @@
 
 {% block title %}Crea Nuovo Task{% endblock %}
 
+{% block header_title %}Crea Nuovo Task{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
-{% endblock %}
+<style>
+    /* Elegant Dark Theme - DDT Style */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+    }
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+    .task-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .task-form-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .task-form-section-header {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 10px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .task-form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .task-form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+        margin-bottom: 15px;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.bg-success {
+        background-color: var(--success-green);
+    }
+    
+    .stats-card.bg-success:hover {
+        background-color: #229954;
+    }
+    
+    .stats-card.bg-warning {
+        background-color: var(--warning-orange);
+    }
+    
+    .stats-card.bg-warning:hover {
+        background-color: #e67e22;
+    }
+    
+    .stats-card.bg-info {
+        background-color: var(--accent-blue);
+    }
+    
+    .stats-card.bg-info:hover {
+        background-color: #2980b9;
+    }
+    
+    .ticket-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 15px;
+        max-height: 600px;
+        overflow-y: auto;
+        padding: 10px;
+    }
+    
+    .ticket-card-enhanced {
+        border: 2px solid var(--border-light);
+        border-radius: 12px;
+        background: var(--white);
+        transition: all 0.3s ease;
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .ticket-card-enhanced:hover {
+        border-color: var(--accent-blue);
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .ticket-card-enhanced.selected {
+        border-color: var(--success-green);
+        background: #f8fff9;
+        box-shadow: 0 4px 15px rgba(39, 174, 96, 0.2);
+    }
+    
+    .ticket-card-enhanced.disabled {
+        opacity: 0.6;
+        background: #f8f9fa;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
+    
+    .ticket-header {
+        background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+        color: var(--white);
+        padding: 15px 20px;
+        border-radius: 10px 10px 0 0;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+    }
+    
+    .ticket-selection {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .ticket-number {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .ticket-lines-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+    }
+    
+    .ticket-body {
+        padding: 15px 20px;
+    }
+    
+    .product-row {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .product-row:last-child {
+        border-bottom: none;
+    }
+    
+    .product-info {
+        flex: 1;
+    }
+    
+    .product-name {
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 2px;
+    }
+    
+    .product-code {
+        font-size: 0.85rem;
+        color: var(--medium-gray);
+        font-family: monospace;
+    }
+    
+    .product-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: end;
+        gap: 4px;
+    }
+    
+    .product-expiry {
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    .product-weight {
+        font-size: 0.8rem;
+        color: var(--medium-gray);
+        background: var(--light-gray);
+        padding: 2px 6px;
+        border-radius: 8px;
+    }
+    
+    .ticket-footer {
+        background: #f8f9fa;
+        padding: 10px 20px;
+        border-radius: 0 0 10px 10px;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--medium-gray);
+    }
+    
+    .more-products {
+        text-align: center;
+        padding: 10px;
+        color: var(--accent-blue);
+        font-weight: 600;
+        border-top: 1px solid #f1f3f4;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+    }
+    
+    .btn-success {
+        background-color: var(--success-green);
+        border-color: var(--success-green);
+        border-radius: 10px;
+        padding: 12px 25px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-success:hover {
+        background-color: #229954;
+        border-color: #229954;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(39, 174, 96, 0.3);
+    }
+    
+    .btn-outline-primary {
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(44, 62, 80, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .loading-spinner {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    
+    .task-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--medium-gray);
+    }
+    
+    .task-empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: var(--border-light);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+        border-radius: 10px;
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .text-success {
+        color: var(--success-green) !important;
+    }
+    
+    .text-warning {
+        color: var(--warning-orange) !important;
+    }
+    
+    .text-danger {
+        color: #e74c3c !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="task-form-container">
     <!-- Page Header -->
-    <div class="task-page-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1 class="task-page-title">
-                    <i class="fas fa-plus-circle"></i>
-                    Crea Nuovo Task
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.admin_dashboard') }}" class="text-white">Tasks</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo Task</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Crea Nuovo Task
                 </h1>
-                <p class="task-page-subtitle">Configura un nuovo task di gestione magazzino</p>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Configura un nuovo task di gestione magazzino</span>
+                </p>
             </div>
-            <div>
-                <a href="{{ url_for('tasks.admin_dashboard') }}" class="task-btn task-btn-outline-primary">
-                    <i class="fas fa-arrow-left"></i> Torna al Dashboard
-                </a>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('tasks.admin_dashboard') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Torna al Dashboard
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
 
     <form method="POST" id="createTaskForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -39,12 +407,10 @@
                 <i class="fas fa-info-circle"></i>
                 Informazioni Task
             </div>
-            <div class="task-form-section-body">
-                <div class="row">
+            <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="task-form-group">
-                            <label for="title" class="task-form-label">
-                                <i class="fas fa-heading"></i> Titolo Task *
+                    <label for="title" class="form-label fw-bold">
+                        <i class="fas fa-heading me-1"></i>Titolo Task *
                             </label>
                             <input type="text" 
                                    class="form-control task-form-control" 
@@ -52,50 +418,39 @@
                                    name="title" 
                                    required
                                    placeholder="Es: Verifica Stock Gennaio 2024">
-                        </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="task-form-group">
-                            <label for="priority" class="task-form-label">
-                                <i class="fas fa-exclamation-triangle"></i> Priorità
+                    <label for="priority" class="form-label fw-bold">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Priorità
                             </label>
                             <select class="form-control task-form-control" id="priority" name="priority">
-                                <option value="low">Bassa</option>
-                                <option value="medium" selected>Media</option>
-                                <option value="high">Alta</option>
+                        <option value="low">🟢 Bassa</option>
+                        <option value="medium" selected>🟡 Media</option>
+                        <option value="high">🔴 Alta</option>
                             </select>
-                        </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="task-form-group">
-                            <label for="deadline" class="task-form-label">
-                                <i class="fas fa-calendar-alt"></i> Scadenza
+                    <label for="deadline" class="form-label fw-bold">
+                        <i class="fas fa-calendar-alt me-1"></i>Scadenza
                             </label>
                             <input type="datetime-local" 
                                    class="form-control task-form-control" 
                                    id="deadline" 
                                    name="deadline">
                         </div>
-                    </div>
-                </div>
-                
-                <div class="row">
                     <div class="col-md-8">
-                        <div class="task-form-group">
-                            <label for="description" class="task-form-label">
-                                <i class="fas fa-align-left"></i> Descrizione
+                    <label for="description" class="form-label fw-bold">
+                        <i class="fas fa-align-left me-1"></i>Descrizione
                             </label>
                             <textarea class="form-control task-form-control" 
                                       id="description" 
                                       name="description" 
                                       rows="3"
                                       placeholder="Descrizione dettagliata del task..."></textarea>
-                        </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="task-form-group">
-                            <label for="assigned_user_id" class="task-form-label">
-                                <i class="fas fa-user"></i> Assegna a Utente
+                    <label for="assigned_user_id" class="form-label fw-bold">
+                        <i class="fas fa-user me-1"></i>Assegna a Utente
                             </label>
                             <select class="form-control task-form-control" id="assigned_user_id" name="assigned_user_id">
                                 <option value="">-- Assegna dopo la creazione --</option>
@@ -106,6 +461,32 @@
                             <small class="text-muted">Opzionale: puoi assegnare il task durante la creazione</small>
                         </div>
                     </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-1">{{ tickets|length if tickets else 0 }}</h5>
+                    <small>Ticket Disponibili</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-success">
+                    <h5 class="mb-1" id="selectedTicketCount">0</h5>
+                    <small>Ticket Selezionati</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-warning">
+                    <h5 class="mb-1" id="selectedLineCount">0</h5>
+                    <small>Linee Prodotti</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-info">
+                    <h5 class="mb-1" id="selectedProductCount">0</h5>
+                    <small>Articoli Totali</small>
                 </div>
             </div>
         </div>
@@ -115,91 +496,107 @@
             <div class="task-form-section-header">
                 <i class="fas fa-ticket-alt"></i>
                 Selezione Ticket
-                <span class="badge bg-primary ms-2" id="selectedCount">0 selezionati</span>
+                <span class="badge bg-light text-dark ms-2" id="selectedBadge">0 selezionati</span>
             </div>
-            <div class="task-form-section-body">
+            
                 {% if tickets %}
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <p class="mb-0">
+                    <div>
+                        <p class="mb-1">
                             <i class="fas fa-info-circle text-info"></i>
-                            Seleziona i ticket da includere nel task. Sono disponibili <strong>{{ tickets|length }}</strong> ticket.
-                            <br><small class="text-muted">
+                            <strong>{{ tickets|length }}</strong> ticket disponibili per la creazione del task.
+                        </p>
+                        <small class="text-muted">
                                 <i class="fas fa-exclamation-triangle text-warning"></i>
                                 I ticket con prodotti scaduti oltre la deadline del task saranno automaticamente disabilitati.
                             </small>
-                        </p>
+                    </div>
                         <div class="btn-group">
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                        <button type="button" class="btn btn-outline-primary" id="selectAllBtn">
                                 <i class="fas fa-check-square"></i> Seleziona Tutti
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">
+                        <button type="button" class="btn btn-outline-secondary" id="deselectAllBtn">
                                 <i class="fas fa-square"></i> Deseleziona Tutti
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Ticket Grid -->
+            <!-- Enhanced Ticket Grid -->
                 <div class="ticket-grid">
                     {% for ticket in tickets %}
-                    <div class="ticket-card-minimal" data-ticket-id="{{ ticket.IdTicket }}">
-                        <div class="ticket-card-header-compact">
+                <div class="ticket-card-enhanced" data-ticket-id="{{ ticket.IdTicket }}">
+                    <div class="ticket-header">
                             <div class="ticket-selection">
                                 <input type="checkbox" 
                                        class="form-check-input ticket-checkbox" 
                                        name="tickets" 
                                        value="{{ ticket.IdTicket }}" 
-                                       id="ticket_{{ ticket.IdTicket }}">
+                                   id="ticket_{{ ticket.IdTicket }}"
+                                   data-lines="{{ ticket.loaded_lines|length if ticket.loaded_lines else 0 }}">
                                 <label class="form-check-label" for="ticket_{{ ticket.IdTicket }}">
-                                    <span class="ticket-number">#{{ ticket.NumTicket }}</span>
-                                    <span class="ticket-lines-count">{{ ticket.NumLineas }} prodotti</span>
+                                <span class="ticket-number">#{{ ticket.IdTicket }}</span>
                                 </label>
                             </div>
+                        <div class="ticket-lines-badge">
+                            {{ ticket.loaded_lines|length if ticket.loaded_lines else 0 }} prodotti
+                        </div>
                         </div>
                         
-                        <div class="ticket-card-body-compact">
-                            <!-- Prodotti compatti -->
-                            {% if ticket.lines %}
-                            <div class="products-compact">
-                                {% for line in ticket.lines[:2] %}
+                    <div class="ticket-body">
+                        {% if ticket.loaded_lines %}
+                            {% for line in ticket.loaded_lines[:3] %}
                                 <div class="product-row">
-                                    <div class="product-main">
-                                        <span class="product-name-compact">{{ line.Descripcion[:30] }}{{ '...' if line.Descripcion|length > 30 else '' }}</span>
-                                        <span class="product-code-compact">{{ line.IdArticulo }}</span>
+                                <div class="product-info">
+                                    <div class="product-name">
+                                        {{ line.Descripcion[:35] }}{{ '...' if line.Descripcion|length > 35 else '' }}
+                                    </div>
+                                    <div class="product-code">
+                                        ID: {{ line.IdArticulo }}
+                                    </div>
                                     </div>
                                     <div class="product-meta">
                                         {% if line.FechaCaducidad %}
                                         {% set expiry_date = line.FechaCaducidad.date() if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad %}
                                         {% set today = now().date() %}
-                                        <span class="product-expiry-compact {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}" 
+                                    <div class="product-expiry 
+                                        {% if expiry_date < today %}bg-danger text-white
+                                        {% elif (expiry_date - today).days < 7 %}bg-warning text-dark
+                                        {% else %}bg-success text-white
+                                        {% endif %}" 
                                               data-expiry="{{ line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m/%Y') }}">
-                                            {{ line.FechaCaducidad.strftime('%d/%m') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m') }}
-                                        </span>
+                                        {{ line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m/%Y') }}
+                                    </div>
                                         {% endif %}
-                                        <span class="product-weight-compact">{{ line.Peso }}kg</span>
+                                    <div class="product-weight">{{ line.Peso }}kg</div>
                                     </div>
                                 </div>
                                 {% endfor %}
-                                {% if ticket.NumLineas > 2 %}
-                                <div class="more-products-compact">+{{ ticket.NumLineas - 2 }} altri</div>
-                                {% endif %}
+                            {% if ticket.loaded_lines|length > 3 %}
+                            <div class="more-products">
+                                +{{ ticket.loaded_lines|length - 3 }} altri prodotti
                             </div>
                             {% endif %}
+                        {% else %}
+                            <div class="text-muted text-center py-3">
+                                <i class="fas fa-box-open"></i>
+                                Nessun prodotto trovato
+                            </div>
+                        {% endif %}
+                    </div>
 
-                            <!-- Info footer compatto -->
-                            <div class="ticket-footer-compact">
-                                <span class="ticket-date-compact">
+                    <div class="ticket-footer">
+                        <span>
                                     <i class="fas fa-clock"></i>
-                                    {{ ticket.Fecha.strftime('%d/%m %H:%M') if ticket.Fecha else 'N/A' }}
+                            {{ ticket.Fecha.strftime('%d/%m/%Y %H:%M') if ticket.Fecha else 'N/A' }}
                                 </span>
                                 {% if ticket.CodigoBarras %}
-                                <span class="ticket-qr-compact">
+                        <span>
                                     <i class="fas fa-qrcode"></i>
-                                    {{ ticket.CodigoBarras[:8] }}...
+                            {{ ticket.CodigoBarras[:10] }}...
                                 </span>
                                 {% endif %}
-                            </div>
                         </div>
                     </div>
                     {% endfor %}
@@ -208,61 +605,22 @@
                 <div class="task-empty-state">
                     <i class="fas fa-ticket-alt"></i>
                     <h5>Nessun ticket disponibile</h5>
-                    <p>Non ci sono ticket disponibili per la creazione di un task. I ticket devono avere Enviado = 0.</p>
+                <p>Non ci sono ticket disponibili per la creazione di un task.<br>
+                   I ticket devono avere Enviado = 0.</p>
                     <a href="{{ url_for('tasks.admin_dashboard') }}" class="btn btn-primary">
                         <i class="fas fa-arrow-left"></i> Torna al Dashboard
                     </a>
                 </div>
                 {% endif %}
-            </div>
         </div>
 
-        <!-- Selected Summary -->
-        <div id="selectedSummary" class="selected-summary card shadow-sm" style="display: none;">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0">
-                    <i class="fas fa-check-circle"></i>
-                    Riepilogo Selezione
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <h4 class="text-success mb-1" id="summaryTicketCount">0</h4>
-                            <small class="text-muted">Ticket Selezionati</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <h4 class="text-info mb-1" id="summaryLineCount">0</h4>
-                            <small class="text-muted">Linee Totali</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <h4 class="text-warning mb-1" id="summaryProductCount">0</h4>
-                            <small class="text-muted">Prodotti</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="summary-stat">
-                            <button type="submit" class="btn btn-success btn-lg" id="createTaskBtn">
-                                <i class="fas fa-plus-circle"></i> Crea Task
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Create Button (fallback) -->
+        <!-- Create Button -->
         {% if tickets %}
-        <div class="text-center mt-4" id="createButtonContainer">
-            <button type="submit" class="btn btn-success btn-lg" id="createButtonMain" disabled>
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg" id="createTaskBtn" disabled>
                 <i class="fas fa-plus-circle"></i> Crea Task
             </button>
-            <p class="text-muted mt-2">Seleziona almeno un ticket per creare il task</p>
+            <p class="text-muted mt-2" id="createBtnHelpText">Seleziona almeno un ticket per creare il task</p>
         </div>
         {% endif %}
     </form>
@@ -271,7 +629,7 @@
 <!-- Loading Overlay -->
 <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner">
-        <div class="spinner-border text-primary" role="status">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
             <span class="sr-only">Caricamento...</span>
         </div>
         <h5 class="mt-3">Creazione Task in corso...</h5>
@@ -279,280 +637,132 @@
     </div>
 </div>
 
-<style>
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.ticket-checkbox');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const createTaskBtn = document.getElementById('createTaskBtn');
+    const selectedTicketCount = document.getElementById('selectedTicketCount');
+    const selectedLineCount = document.getElementById('selectedLineCount');
+    const selectedProductCount = document.getElementById('selectedProductCount');
+    const selectedBadge = document.getElementById('selectedBadge');
+    const createBtnHelpText = document.getElementById('createBtnHelpText');
+    const createTaskForm = document.getElementById('createTaskForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
 
-.loading-spinner {
-    background: white;
-    padding: 2rem;
-    border-radius: 0.5rem;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
+    function updateStats() {
+        let selectedCount = 0;
+        let totalLines = 0;
+        let uniqueProducts = new Set();
 
-/* Improved minimal ticket card styles */
-.ticket-card-minimal {
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    background: white;
-    transition: all 0.2s ease;
-    position: relative;
-    cursor: pointer;
-    min-height: auto;
-}
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                selectedCount++;
+                const lines = parseInt(checkbox.dataset.lines) || 0;
+                totalLines += lines;
+                
+                // Get unique products from this ticket
+                const ticketCard = checkbox.closest('.ticket-card-enhanced');
+                const productRows = ticketCard.querySelectorAll('.product-row');
+                productRows.forEach(function(row) {
+                    const productCode = row.querySelector('.product-code');
+                    if (productCode) {
+                        const code = productCode.textContent.replace('ID: ', '').trim();
+                        if (code) uniqueProducts.add(code);
+                    }
+                });
+            }
+        });
 
-.ticket-card-minimal:hover {
-    border-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0,123,255,0.1);
-    transform: translateY(-1px);
-}
+        // Update stats
+        selectedTicketCount.textContent = selectedCount;
+        selectedLineCount.textContent = totalLines;
+        selectedProductCount.textContent = uniqueProducts.size;
+        selectedBadge.textContent = selectedCount + ' selezionati';
 
-.ticket-card-minimal.selected {
-    border-color: #28a745;
-    background: #f8fff9;
-    box-shadow: 0 2px 8px rgba(40,167,69,0.15);
-}
+        // Update create button state
+        if (selectedCount > 0) {
+            createTaskBtn.disabled = false;
+            createTaskBtn.classList.remove('btn-secondary');
+            createTaskBtn.classList.add('btn-success');
+            createBtnHelpText.textContent = `Procedi con la creazione del task con ${selectedCount} ticket selezionati`;
+            createBtnHelpText.classList.remove('text-muted');
+            createBtnHelpText.classList.add('text-success');
+        } else {
+            createTaskBtn.disabled = true;
+            createTaskBtn.classList.remove('btn-success');
+            createTaskBtn.classList.add('btn-secondary');
+            createBtnHelpText.textContent = 'Seleziona almeno un ticket per creare il task';
+            createBtnHelpText.classList.remove('text-success');
+            createBtnHelpText.classList.add('text-muted');
+        }
+    }
 
-.ticket-card-minimal.disabled {
-    opacity: 0.6;
-    background: #f8f9fa;
-    border-color: #dee2e6;
-    cursor: not-allowed;
-    position: relative;
-}
+    // Event listeners for checkboxes
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const ticketCard = this.closest('.ticket-card-enhanced');
+            if (this.checked) {
+                ticketCard.classList.add('selected');
+            } else {
+                ticketCard.classList.remove('selected');
+            }
+            updateStats();
+        });
+    });
 
-.ticket-card-minimal.disabled::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 4px,
-        rgba(255, 0, 0, 0.1) 4px,
-        rgba(255, 0, 0, 0.1) 8px
-    );
-    z-index: 1;
-    border-radius: 8px;
-}
+    // Event listeners for select all/deselect all buttons
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            checkboxes.forEach(function(checkbox) {
+                if (!checkbox.disabled) {
+                    checkbox.checked = true;
+                    checkbox.closest('.ticket-card-enhanced').classList.add('selected');
+                }
+            });
+            updateStats();
+        });
+    }
 
-.ticket-card-minimal.disabled .ticket-checkbox {
-    pointer-events: none;
-}
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = false;
+                checkbox.closest('.ticket-card-enhanced').classList.remove('selected');
+            });
+            updateStats();
+        });
+    }
 
-.ticket-card-minimal.has-expiry-conflict {
-    border-color: #dc3545;
-    background: #fff5f5;
-}
+    // Form submission with loading overlay
+    if (createTaskForm) {
+        createTaskForm.addEventListener('submit', function() {
+            loadingOverlay.style.display = 'flex';
+        });
+    }
 
-/* Compact header */
-.ticket-card-header-compact {
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid #f1f3f4;
-}
+    // Click on ticket card to toggle selection
+    document.querySelectorAll('.ticket-card-enhanced').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Don't toggle if clicking on checkbox directly
+            if (e.target.type === 'checkbox') return;
+            
+            const checkbox = card.querySelector('.ticket-checkbox');
+            if (checkbox && !checkbox.disabled) {
+                checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+                updateStats();
+            }
+        });
+    });
 
-.ticket-selection {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ticket-selection .form-check-input {
-    margin: 0;
-}
-
-.ticket-selection label {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    flex: 1;
-}
-
-.ticket-number {
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.9rem;
-}
-
-.ticket-lines-count {
-    font-size: 0.8rem;
-    color: #6c757d;
-    background: #f8f9fa;
-    padding: 0.1rem 0.4rem;
-    border-radius: 12px;
-    border: 1px solid #dee2e6;
-}
-
-/* Compact body */
-.ticket-card-body-compact {
-    padding: 0.5rem 0.75rem;
-}
-
-/* Products compact */
-.products-compact {
-    margin-bottom: 0.5rem;
-}
-
-.product-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.25rem 0;
-    border-bottom: 1px solid #f8f9fa;
-    font-size: 0.85rem;
-}
-
-.product-row:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.product-main {
-    flex: 1;
-    min-width: 0;
-}
-
-.product-name-compact {
-    display: block;
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.85rem;
-    line-height: 1.2;
-    margin-bottom: 0.1rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.product-code-compact {
-    font-size: 0.75rem;
-    color: #6c757d;
-    background: #f8f9fa;
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    font-family: 'Courier New', monospace;
-}
-
-.product-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
-
-.product-expiry-compact, .product-weight-compact {
-    font-size: 0.75rem;
-    padding: 0.1rem 0.3rem;
-    border-radius: 3px;
-    background: #f8f9fa;
-}
-
-.product-expiry-compact.text-danger {
-    background: #ffebee;
-    color: #c62828;
-}
-
-.product-expiry-compact.text-warning {
-    background: #fff8e1;
-    color: #f57c00;
-}
-
-.more-products-compact {
-    text-align: center;
-    font-size: 0.75rem;
-    color: #6c757d;
-    font-style: italic;
-    padding: 0.25rem 0;
-}
-
-/* Footer compact */
-.ticket-footer-compact {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.75rem;
-    color: #6c757d;
-    border-top: 1px solid #f1f3f4;
-    padding-top: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.ticket-date-compact, .ticket-qr-compact {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-}
-
-.ticket-qr-compact {
-    font-family: 'Courier New', monospace;
-}
-
-/* Grid layout più compatto */
-.ticket-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 0.75rem;
-    margin-top: 1rem;
-}
-
-/* Disabled ticket overlay text */
-.ticket-card-minimal.disabled::after {
-    content: 'PRODOTTI SCADUTI';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(220, 53, 69, 0.9);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    z-index: 2;
-    text-align: center;
-    white-space: nowrap;
-}
-
-/* Remove old styles */
-.product-name-prominent,
-.product-details-grid,
-.product-detail-item,
-.product-code-prominent,
-.ticket-info-minimal,
-.qr-code-section,
-.qr-code-minimal,
-.qr-code-text,
-.products-list,
-.product-item,
-.more-products,
-.expiry-warning {
-    display: none;
-}
-
-/* Compact spacing */
-.ticket-card-body {
-    display: none;
-}
-
-.ticket-card-header {
-    display: none;
-}
-</style>
+    // Initial stats update
+    updateStats();
+});
+</script>
 {% endblock %} 

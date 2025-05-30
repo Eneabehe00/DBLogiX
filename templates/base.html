@@ -194,7 +194,7 @@
                             </li>
                             
                             <!-- Configurazioni -->
-                            <li class="has-submenu {% if request.endpoint and (request.endpoint == 'admin.manage_users' or request.endpoint == 'admin.db_config') %}active open{% endif %}">
+                            <li class="has-submenu {% if request.endpoint and (request.endpoint == 'admin.manage_users' or request.endpoint == 'admin.general_config' or request.endpoint == 'admin.db_config' or request.endpoint == 'admin.system_config') %}active open{% endif %}">
                                 <a href="javascript:void(0)" class="submenu-toggle">
                                     <i class="fas fa-cogs"></i>
                                     <span>Configurazioni</span>
@@ -207,10 +207,10 @@
                                             <span>Gestione Utenti</span>
                                         </a>
                                     </li>
-                                    <li class="{% if request.endpoint and request.endpoint == 'admin.db_config' %}active{% endif %}">
-                                        <a href="{{ url_for('admin.db_config') }}">
-                                            <i class="fas fa-database"></i>
-                                            <span>Configurazioni DB</span>
+                                    <li class="{% if request.endpoint and (request.endpoint == 'admin.general_config' or request.endpoint == 'admin.db_config' or request.endpoint == 'admin.system_config') %}active{% endif %}">
+                                        <a href="{{ url_for('admin.general_config') }}">
+                                            <i class="fas fa-sliders-h"></i>
+                                            <span>Configurazioni Generali</span>
                                         </a>
                                     </li>
                                 </ul>

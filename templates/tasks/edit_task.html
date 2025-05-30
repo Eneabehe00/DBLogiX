@@ -204,50 +204,16 @@
                             <div class="ticket-edit-card {% if task_ticket.status == 'completed' %}completed{% elif task_ticket.status == 'in_progress' %}in-progress{% endif %} clickable-card" 
                                  data-href="{{ url_for('warehouse.ticket_detail', ticket_id=task_ticket.ticket_id) }}">
                                 
-                                <!-- Header compatto -->
+                                <!-- Header con numero e status -->
                                 <div class="ticket-edit-header">
-                                    <div class="ticket-edit-main-info">
-                                        <div class="ticket-edit-number">#{{ task_ticket.ticket.NumTicket }}</div>
-                                        <div class="ticket-edit-product">
-                                            {% if task_ticket.ticket.loaded_lines and task_ticket.ticket.loaded_lines|length > 0 %}
-                                                {% set main_line = task_ticket.ticket.loaded_lines[0] %}
-                                                <h6 class="product-name">{{ main_line.Descripcion }}</h6>
-                                                <div class="product-meta-inline">
-                                                    <span class="product-code">ID: {{ main_line.IdArticulo }}</span>
-                                                    {% if main_line.FechaCaducidad %}
-                                                    {% set expiry_date = main_line.FechaCaducidad.date() if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad %}
-                                                    {% set today = now().date() %}
-                                                    <span class="product-expiry {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}">
-                                                        {{ main_line.FechaCaducidad.strftime('%d/%m/%Y') if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad.strftime('%d/%m/%Y') }}
-                                                    </span>
-                                                    {% endif %}
-                                                    <span class="product-weight">{{ main_line.Peso }}kg</span>
-                                                </div>
-                                            {% else %}
-                                                <h6 class="product-name text-muted">Prodotti non disponibili</h6>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    
+                                    <div class="ticket-edit-number">#{{ task_ticket.ticket.IdTicket }}</div>
                                     <div class="ticket-edit-actions">
-                                        <span class="task-status-badge task-status-{{ task_ticket.status }}">
+                                        <span class="ticket-status-badge ticket-status-{{ task_ticket.status }}">
                                             {{ task_ticket.status.replace('_', ' ').title() }}
                                         </span>
-                                        
-                                        <!-- Progress compatto -->
-                                        <div class="progress-compact">
-                                            <span class="progress-text-mini">{{ task_ticket.scan_progress_percentage }}%</span>
-                                            <div class="progress-bar-tiny">
-                                                <div class="progress-fill-tiny {% if task_ticket.scan_progress_percentage == 100 %}bg-success{% elif task_ticket.scan_progress_percentage > 0 %}bg-warning{% else %}bg-light{% endif %}" 
-                                                     style="width: {{ task_ticket.scan_progress_percentage }}%"></div>
-                                            </div>
-                                        </div>
-                                        
-                                        {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
-                                        <button type="button" class="btn-remove-ticket" data-task-ticket-id="{{ task_ticket.id }}" data-ticket-number="{{ task_ticket.ticket.NumTicket }}">
+                                        <button type="button" class="btn-remove-ticket" data-task-ticket-id="{{ task_ticket.id }}" data-ticket-number="{{ task_ticket.ticket.IdTicket }}">
                                             <i class="fas fa-times"></i>
                                         </button>
-                                        {% endif %}
                                     </div>
                                 </div>
 

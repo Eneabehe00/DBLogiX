@@ -191,22 +191,24 @@ def reset_password(user_id):
     
     return render_template('admin/configurazioni/reset_password.html', user=user, form=form)
 
-@admin_bp.route('/configurazioni/db-config', methods=['GET', 'POST'])
+@admin_bp.route('/configurazioni/general-config', methods=['GET', 'POST'])
 @admin_required
-def db_config():
-    """Configure remote database connection and company settings"""
+def general_config():
+    """Unified configuration page with tabs for DB, Company, and System settings"""
     db_form = DbConfigForm(prefix="db")
     company_form = CompanyConfigForm(prefix="company")
+    system_form = SystemConfigForm(prefix="system")
     
-    # Pre-fill db form with current config
+    # Pre-fill forms with current config
     if request.method == 'GET':
+        # DB form
         db_form.host.data = REMOTE_DB_CONFIG['host']
         db_form.user.data = REMOTE_DB_CONFIG['user']
         db_form.password.data = REMOTE_DB_CONFIG['password']
         db_form.database.data = REMOTE_DB_CONFIG['database']
         db_form.port.data = str(REMOTE_DB_CONFIG['port'])
         
-        # Get company data if it exists
+        # Company form
         company = Company.query.first()
         if company:
             company_form.nombre_empresa.data = company.NombreEmpresa
@@ -216,6 +218,12 @@ def db_config():
             company_form.cod_postal.data = company.CodPostal
             company_form.poblacion.data = company.Poblacion
             company_form.provincia.data = company.Provincia
+        
+        # System form
+        expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
+        articles_per_package = SystemConfig.get_config('articles_per_package', 5)
+        system_form.expiry_warning_days.data = expiry_warning_days
+        system_form.articles_per_package.data = articles_per_package
     
     # Handle DB config form submit
     if 'submit_db' in request.form and db_form.validate():
@@ -231,11 +239,9 @@ def db_config():
                     connect_timeout=10
                 )
                 conn.close()
-                flash('Database connection successful!', 'success')
+                flash('Connessione al database riuscita!', 'success')
             except Exception as e:
-                flash(f'Connection failed: {str(e)}', 'danger')
-            
-            return render_template('admin/configurazioni/db_config.html', db_form=db_form, company_form=company_form)
+                flash(f'Connessione fallita: {str(e)}', 'danger')
         else:
             # Save the configuration
             try:
@@ -283,9 +289,9 @@ def db_config():
                 with open('config.py', 'w') as f:
                     f.write(updated_content)
                 
-                flash('Database configuration saved successfully! Please restart the application for changes to take effect.', 'success')
+                flash('Configurazione database salvata con successo! Riavvia l\'applicazione per applicare le modifiche.', 'success')
             except Exception as e:
-                flash(f'Failed to save configuration: {str(e)}', 'danger')
+                flash(f'Errore nel salvataggio della configurazione: {str(e)}', 'danger')
     
     # Handle Company config form submit
     if 'submit_company' in request.form and company_form.validate():
@@ -306,11 +312,37 @@ def db_config():
             company.Provincia = company_form.provincia.data
             
             db.session.commit()
-            flash('Company configuration saved successfully!', 'success')
+            flash('Configurazione azienda salvata con successo!', 'success')
         except Exception as e:
-            flash(f'Failed to save company configuration: {str(e)}', 'danger')
+            flash(f'Errore nel salvataggio della configurazione azienda: {str(e)}', 'danger')
     
-    return render_template('admin/configurazioni/db_config.html', db_form=db_form, company_form=company_form)
+    # Handle System config form submit
+    if 'submit_system' in request.form and system_form.validate():
+        try:
+            # Save expiry warning days configuration
+            SystemConfig.set_config(
+                'expiry_warning_days', 
+                system_form.expiry_warning_days.data,
+                'Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"',
+                'integer'
+            )
+            
+            # Save articles per package configuration
+            SystemConfig.set_config(
+                'articles_per_package',
+                system_form.articles_per_package.data,
+                'Numero di articoli necessari per determinare un collo nei DDT (escluso l\'articolo "trasporto")',
+                'integer'
+            )
+            
+            flash('Configurazioni sistema salvate con successo!', 'success')
+        except Exception as e:
+            flash(f'Errore nel salvataggio delle configurazioni sistema: {str(e)}', 'danger')
+    
+    return render_template('admin/configurazioni/general_config.html', 
+                         db_form=db_form, 
+                         company_form=company_form, 
+                         system_form=system_form)
 
 @admin_bp.route('/configurazioni/create-tables', methods=['POST'])
 @admin_required
@@ -324,32 +356,16 @@ def create_tables():
     except Exception as e:
         flash(f'Failed to create tables: {str(e)}', 'danger')
     
-    return redirect(url_for('admin.db_config'))
+    return redirect(url_for('admin.general_config'))
 
 @admin_bp.route('/configurazioni/system-config', methods=['GET', 'POST'])
 @admin_required
 def system_config():
-    """Configure system settings"""
-    form = SystemConfigForm()
-    
-    # Pre-fill form with current config
-    if request.method == 'GET':
-        expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
-        form.expiry_warning_days.data = expiry_warning_days
-    
-    # Handle form submit
-    if form.validate_on_submit():
-        try:
-            # Save configuration
-            SystemConfig.set_config(
-                'expiry_warning_days', 
-                form.expiry_warning_days.data,
-                'Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"',
-                'integer'
-            )
-            
-            flash('Configurazioni salvate con successo!', 'success')
-        except Exception as e:
-            flash(f'Errore nel salvataggio delle configurazioni: {str(e)}', 'danger')
-    
-    return render_template('admin/configurazioni/system_config.html', form=form) 
+    """Redirect to general config for backward compatibility"""
+    return redirect(url_for('admin.general_config'))
+
+@admin_bp.route('/configurazioni/db-config', methods=['GET', 'POST'])
+@admin_required
+def db_config():
+    """Redirect to general config for backward compatibility"""
+    return redirect(url_for('admin.general_config')) 

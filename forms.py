@@ -155,4 +155,12 @@ class SystemConfigForm(FlaskForm):
         validators=[DataRequired(), NumberRange(min=0, max=30)],
         description='Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"'
     )
+    
+    articles_per_package = IntegerField(
+        'Articoli per Collo',
+        validators=[DataRequired(), NumberRange(min=1, max=100)],
+        description='Numero di articoli necessari per determinare un collo nei DDT (escluso l\'articolo "trasporto")',
+        default=5
+    )
+    
     submit = SubmitField('Salva Configurazioni') 

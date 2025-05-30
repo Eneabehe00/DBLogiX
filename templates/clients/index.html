@@ -6,6 +6,188 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+    }
+
+    .client-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .client-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table th {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.bg-success {
+        background-color: #27ae60;
+    }
+    
+    .stats-card.bg-success:hover {
+        background-color: #229954;
+    }
+    
+    .stats-card.bg-warning {
+        background-color: #f39c12;
+    }
+    
+    .stats-card.bg-warning:hover {
+        background-color: #e67e22;
+    }
+    
+    .stats-card.bg-info {
+        background-color: var(--accent-blue);
+    }
+    
+    .stats-card.bg-info:hover {
+        background-color: #2980b9;
+    }
+    
+    .input-group .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px 0 0 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .input-group .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-info {
+        background-color: var(--accent-blue) !important;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--secondary-dark) !important;
+        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-success:hover {
+        background-color: #27ae60;
+        border-color: #27ae60;
+        transform: translateY(-1px);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        transform: translateY(-1px);
+        color: var(--primary-dark);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .text-success {
+        color: #27ae60 !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -24,7 +206,7 @@
                     <i class="fas fa-address-book me-2"></i>Gestione Clienti
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
-                    <span class="text-white-50">{{ clients|length if clients else 0 }} clienti nel database</span>
+                    <span class="text-white-50">{{ pagination.total if pagination else clients|length }} clienti nel database</span>
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -50,23 +232,70 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Search Filters -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-transparent">
-            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-10">
+    <!-- Enhanced Search and Filters -->
+    <div class="filter-section">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-4">
+                <label class="form-label fw-bold">🔍 Ricerca Avanzata</label>
+                <form method="GET" action="{{ url_for('clients.index') }}" id="searchForm">
                     <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" id="searchInput" class="form-control" placeholder="Cerca cliente per ID, nome o indirizzo...">
+                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                        <input type="text" name="search" id="searchInput" class="form-control" 
+                               placeholder="Cerca per nome, ID, indirizzo, email..." 
+                               value="{{ search or '' }}">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
                     </div>
+                </form>
+                <small class="text-muted">Cerca per nome, ID cliente, indirizzo o email</small>
+            </div>
+            <div class="col-lg-3">
+                <label class="form-label fw-bold">🏙️ Città</label>
+                <input type="text" id="cityFilter" class="form-control" placeholder="Filtra per città...">
+            </div>
+            <div class="col-lg-3">
+                <label class="form-label fw-bold">📧 Email</label>
+                <select id="emailFilter" class="form-select">
+                    <option value="">Tutti</option>
+                    <option value="has_email">Con email</option>
+                    <option value="no_email">Senza email</option>
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <button id="applyFilters" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filtra
+                </button>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-1">{{ pagination.total if pagination else clients|length }}</h5>
+                    <small>Totale Clienti</small>
                 </div>
-                <div class="col-md-2">
-                    <button id="searchButton" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-1"></i> Cerca
-                    </button>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-success">
+                    <h5 class="mb-1" id="visibleCount">{{ clients|length }}</h5>
+                    <small>Clienti visualizzati</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-warning">
+                    <h5 class="mb-1">{{ pagination.page if pagination else 1 }}</h5>
+                    <small>Pagina corrente</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-info">
+                    <h5 class="mb-1">{{ pagination.pages if pagination else 1 }}</h5>
+                    <small>Totale pagine</small>
                 </div>
             </div>
         </div>
@@ -83,109 +312,199 @@
     {% endif %}
     {% endwith %}
 
-    <!-- Client List -->
-    <div class="card shadow-sm">
+    <!-- Search Results Info -->
+    {% if search %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
+        <div>
+            <strong>Ricerca attiva:</strong> "{{ search }}"<br>
+            <small class="text-muted">
+                {% if pagination and pagination.total > 0 %}
+                    Trovati {{ pagination.total }} clienti corrispondenti in tutto il database
+                    {% if pagination.total > clients|length %}
+                        • Visualizzando {{ clients|length }} risultati (pagina {{ pagination.page }} di {{ pagination.pages }})
+                    {% endif %}
+                {% else %}
+                    Nessun cliente trovato per questa ricerca
+                {% endif %}
+            </small>
+        </div>
+        <a href="{{ url_for('clients.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Cancella ricerca
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Enhanced Client List -->
+    <div class="client-card card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Clienti</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportClients()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
+            {% if clients %}
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                <table class="table table-hover mb-0" id="clientTable">
+                    <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nome</th>
-                            <th>Indirizzo</th>
-                            <th>Città</th>
-                            <th>Telefono</th>
-                            <th>Email</th>
-                            <th>Ultimo Agg.</th>
+                            <th>
+                                <i class="fas fa-hashtag me-1"></i>ID
+                            </th>
+                            <th>
+                                <i class="fas fa-user me-1"></i>Nome
+                            </th>
+                            <th>
+                                <i class="fas fa-map-marker-alt me-1"></i>Indirizzo
+                            </th>
+                            <th>
+                                <i class="fas fa-city me-1"></i>Città
+                            </th>
+                            <th>
+                                <i class="fas fa-phone me-1"></i>Telefono
+                            </th>
+                            <th>
+                                <i class="fas fa-envelope me-1"></i>Email
+                            </th>
+                            <th>
+                                <i class="fas fa-clock me-1"></i>Ultimo Agg.
+                            </th>
+                            <th>
+                                <i class="fas fa-cogs me-1"></i>Azioni
+                            </th>
                         </tr>
                     </thead>
-                    <tbody id="clientTable">
+                    <tbody>
                         {% for client in clients %}
-                        <tr data-url="{{ url_for('clients.view', id=client.IdCliente) }}" style="cursor: pointer;">
-                            <td data-label="ID">{{ client.IdCliente }}</td>
+                        <tr data-url="{{ url_for('clients.view', id=client.IdCliente) }}" style="cursor: pointer;" class="table-row">
+                            <td data-label="ID">
+                                <span class="badge bg-primary">{{ client.IdCliente }}</span>
+                            </td>
                             <td data-label="Nome">
-                                <div class="text-truncate" style="max-width: 150px;">{{ client.Nombre }}</div>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle text-muted me-2"></i>
+                                    <div class="text-truncate" style="max-width: 160px;" title="{{ client.Nombre }}">
+                                        {{ client.Nombre }}
+                                    </div>
+                                </div>
                             </td>
                             <td data-label="Indirizzo">
-                                <div class="text-truncate" style="max-width: 150px;">{{ client.Direccion }}</div>
+                                <div class="text-truncate" style="max-width: 150px;" title="{{ client.Direccion or 'N/A' }}">
+                                    {{ client.Direccion or 'N/A' }}
+                                </div>
                             </td>
-                            <td data-label="Città">{{ client.Poblacion }}</td>
-                            <td data-label="Telefono">{{ client.Telefono1 }}</td>
+                            <td data-label="Città">
+                                <span class="text-muted">{{ client.Poblacion or 'N/A' }}</span>
+                            </td>
+                            <td data-label="Telefono">
+                                {% if client.Telefono1 %}
+                                    <a href="tel:{{ client.Telefono1 }}" class="text-decoration-none">{{ client.Telefono1 }}</a>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
                             <td data-label="Email">
-                                <div class="text-truncate" style="max-width: 150px;">{{ client.Email }}</div>
+                                {% if client.Email %}
+                                    <a href="mailto:{{ client.Email }}" class="text-decoration-none">
+                                        <div class="text-truncate" style="max-width: 150px;" title="{{ client.Email }}">
+                                            {{ client.Email }}
+                                        </div>
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
                             </td>
-                            <td data-label="Ultimo Agg.">{{ client.TimeStamp.strftime('%d/%m/%Y') if client.TimeStamp else 'N/A' }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="7" class="text-center py-4">
-                                <i class="fas fa-users text-muted mb-3" style="font-size: 3rem;"></i>
-                                <h5>Nessun cliente trovato</h5>
-                                <p class="text-muted">Non ci sono clienti nel sistema. Clicca su "Nuovo Cliente" per aggiungerne uno.</p>
-                                <a href="{{ url_for('clients.new') }}" class="btn btn-primary mt-2">
-                                    <i class="fas fa-plus me-2"></i>Aggiungi Cliente
-                                </a>
+                            <td data-label="Ultimo Agg.">
+                                <small class="text-muted">{{ client.TimeStamp.strftime('%d/%m/%Y') if client.TimeStamp else 'N/A' }}</small>
+                            </td>
+                            <td data-label="Azioni">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary view-btn" data-url="{{ url_for('clients.view', id=client.IdCliente) }}" title="Visualizza">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if current_user.is_admin %}
+                                    <button class="btn btn-outline-warning edit-btn" data-url="{{ url_for('clients.edit', id=client.IdCliente) }}" title="Modifica">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
+            
+            <!-- Enhanced Pagination -->
             {% if pagination and pagination.pages > 1 %}
-            <div class="p-3 border-top">
+            <div class="p-3 border-top bg-light">
                 <nav aria-label="Page navigation">
                     <ul class="pagination pagination-sm justify-content-center mb-0">
                         {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('clients.index', page=pagination.prev_num) }}" aria-label="Previous">
+                            <a class="page-link" href="{{ url_for('clients.index', page=pagination.prev_num, search=search) }}" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
                         {% else %}
                         <li class="page-item disabled">
-                            <a class="page-link" href="#" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
+                            <span class="page-link">&laquo;</span>
                         </li>
                         {% endif %}
-
+                        
                         {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
                             {% if page_num %}
-                                {% if page_num != pagination.page %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('clients.index', page=page_num) }}">{{ page_num }}</a>
-                                </li>
-                                {% else %}
+                                {% if page_num == pagination.page %}
                                 <li class="page-item active">
                                     <a class="page-link" href="#">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('clients.index', page=page_num, search=search) }}">{{ page_num }}</a>
                                 </li>
                                 {% endif %}
                             {% else %}
                             <li class="page-item disabled">
-                                <a class="page-link" href="#">...</a>
+                                <span class="page-link">...</span>
                             </li>
                             {% endif %}
                         {% endfor %}
-
+                        
                         {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('clients.index', page=pagination.next_num) }}" aria-label="Next">
+                            <a class="page-link" href="{{ url_for('clients.index', page=pagination.next_num, search=search) }}" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
                         {% else %}
                         <li class="page-item disabled">
-                            <a class="page-link" href="#" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
+                            <span class="page-link">&raquo;</span>
                         </li>
                         {% endif %}
                     </ul>
                 </nav>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Pagina {{ pagination.page }} di {{ pagination.pages }} - {{ pagination.total }} elementi totali
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-users text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessun cliente trovato</h5>
+                <p class="text-muted">Non ci sono clienti nel sistema. Clicca su "Nuovo Cliente" per aggiungerne uno.</p>
+                <a href="{{ url_for('clients.new') }}" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-plus me-2"></i>Crea Nuovo Cliente
+                </a>
             </div>
             {% endif %}
         </div>
@@ -196,33 +515,196 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Search functionality
-        const searchButton = document.getElementById('searchButton');
-        const searchInput = document.getElementById('searchInput');
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
         
-        if (searchButton && searchInput) {
-            searchButton.addEventListener('click', function() {
-                const searchTerm = searchInput.value.trim();
-                if (searchTerm) {
-                    window.location.href = "{{ url_for('clients.index') }}?search=" + encodeURIComponent(searchTerm);
+        // Enhanced search functionality - prioritize server-side search
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('.table-row');
+        const cityFilter = document.getElementById('cityFilter');
+        const emailFilter = document.getElementById('emailFilter');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const searchForm = document.getElementById('searchForm');
+        
+        // Check if we have an active server search
+        const hasActiveSearch = searchInput.value.trim().length > 0;
+        
+        function updateVisibleCount() {
+            const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+            visibleCountEl.textContent = visibleRows.length;
+        }
+        
+        // Server-side search with auto-submit
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                // If search term is long enough, use server-side search
+                if (searchTerm.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit form for server-side search
+                        searchForm.submit();
+                    }, 800); // Longer delay for server search
+                } else if (searchTerm.length === 0) {
+                    // Clear search immediately if input is empty
+                    searchForm.submit();
+                } else {
+                    // For very short terms, use client-side search on current page only
+                    searchTimeout = setTimeout(function() {
+                        performClientSideSearch(searchTerm);
+                    }, 200);
                 }
             });
             
-            searchInput.addEventListener('keypress', function(e) {
+            // Handle Enter key for immediate search
+            searchInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    searchButton.click();
+                    clearTimeout(searchTimeout);
+                    if (this.value.trim().length > 0) {
+                        searchForm.submit();
+                    }
                 }
             });
         }
         
-        // Make rows clickable to view detail
-        const clientRows = document.querySelectorAll('tbody tr[data-url]');
-        clientRows.forEach(function(row) {
-            row.addEventListener('click', function() {
-                window.location.href = this.getAttribute('data-url');
+        // Client-side search function (only for short terms or as fallback)
+        function performClientSideSearch(searchTerm) {
+            if (hasActiveSearch) {
+                // Don't perform client-side search if server search is active
+                return;
+            }
+            
+            tableRows.forEach(function(row) {
+                const clientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const clientId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const clientAddress = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                const clientEmail = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                
+                // Search in multiple fields
+                if (clientName.includes(searchTerm) || 
+                    clientId.includes(searchTerm) || 
+                    clientAddress.includes(searchTerm) || 
+                    clientEmail.includes(searchTerm)) {
+                    row.style.display = '';
+                    row.classList.add('animate__animated', 'animate__fadeIn');
+                } else {
+                    row.style.display = 'none';
+                    row.classList.remove('animate__animated', 'animate__fadeIn');
+                }
+            });
+            updateVisibleCount();
+        }
+        
+        // Clear search functionality
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                window.location.href = '{{ url_for("clients.index") }}';
+            });
+        }
+        
+        // Add search hints
+        if (searchInput && !hasActiveSearch) {
+            const originalPlaceholder = searchInput.placeholder;
+            searchInput.addEventListener('focus', function() {
+                this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+            });
+            searchInput.addEventListener('blur', function() {
+                this.placeholder = originalPlaceholder;
+            });
+        }
+        
+        // Show search status
+        if (hasActiveSearch) {
+            // Add visual indicator that server search is active
+            const searchIcon = document.querySelector('#searchForm .input-group-text i');
+            if (searchIcon) {
+                searchIcon.className = 'fas fa-search text-success';
+                searchIcon.title = 'Ricerca attiva su tutti i clienti';
+            }
+        }
+        
+        // Enhanced filter functionality
+        const applyFilters = document.getElementById('applyFilters');
+        if (applyFilters) {
+            applyFilters.addEventListener('click', function() {
+                const cityTerm = cityFilter.value.toLowerCase().trim();
+                const emailFilterValue = emailFilter.value;
+                
+                tableRows.forEach(function(row) {
+                    const cityText = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                    const emailText = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                    
+                    let show = true;
+                    
+                    // City filter
+                    if (cityTerm && !cityText.includes(cityTerm)) {
+                        show = false;
+                    }
+                    
+                    // Email filter
+                    if (emailFilterValue === 'has_email' && (emailText === 'n/a' || emailText.trim() === '')) {
+                        show = false;
+                    } else if (emailFilterValue === 'no_email' && emailText !== 'n/a' && emailText.trim() !== '') {
+                        show = false;
+                    }
+                    
+                    row.style.display = show ? '' : 'none';
+                });
+                updateVisibleCount();
+            });
+        }
+        
+        // Enhanced button handlers for actions
+        document.querySelectorAll('.view-btn').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                window.location.href = this.dataset.url;
             });
         });
+        
+        document.querySelectorAll('.edit-btn').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                window.location.href = this.dataset.url;
+            });
+        });
+        
+        // Make rows clickable to view detail
+        tableRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                if (this.dataset.url) {
+                    window.location.href = this.dataset.url;
+                }
+            });
+        });
+        
+        // Export functionality
+        window.exportClients = function() {
+            window.location.href = '{{ url_for("clients.export_csv") }}';
+        };
+        
+        // Refresh table
+        window.refreshTable = function() {
+            window.location.reload();
+        };
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+        
+        // Initialize visible count
+        updateVisibleCount();
     });
 </script>
 {% endblock %} 

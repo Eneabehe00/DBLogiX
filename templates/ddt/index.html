@@ -226,7 +226,7 @@
             <div class="col-lg-4">
                 <label class="form-label fw-bold">🔍 Ricerca Avanzata</label>
                 <form method="GET" action="{{ url_for('ddt.index') }}" id="searchForm">
-                    <div class="input-group">
+                            <div class="input-group">
                         <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
                         <input type="text" name="search" id="searchInput" class="form-control" 
                                placeholder="Cerca per cliente o ID DDT..." 
@@ -240,15 +240,15 @@
                     </div>
                 </form>
                 <small class="text-muted">Cerca per nome cliente o ID del DDT</small>
-            </div>
+                </div>
             <div class="col-lg-3">
                 <label class="form-label fw-bold">📅 Data Inizio</label>
-                <input type="date" id="startDate" class="form-control">
-            </div>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
             <div class="col-lg-3">
                 <label class="form-label fw-bold">📅 Data Fine</label>
-                <input type="date" id="endDate" class="form-control">
-            </div>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
             <div class="col-lg-2">
                 <button id="applyDateFilter" class="btn btn-primary w-100">
                     <i class="fas fa-filter me-2"></i>Filtra
@@ -274,8 +274,8 @@
                 <div class="stats-card bg-warning">
                     <h5 class="mb-1">{{ ddts.page if ddts else 1 }}</h5>
                     <small>Pagina corrente</small>
-                </div>
-            </div>
+                        </div>
+                    </div>
             <div class="col-md-3">
                 <div class="stats-card bg-info">
                     <h5 class="mb-1">{{ ddts.pages if ddts else 1 }}</h5>
@@ -526,7 +526,7 @@
                     searchForm.submit();
                 } else {
                     // For very short terms, use client-side search on current page only
-                    searchTimeout = setTimeout(function() {
+                searchTimeout = setTimeout(function() {
                         performClientSideSearch(searchTerm);
                     }, 200);
                 }
@@ -551,19 +551,19 @@
                 return;
             }
             
-            tableRows.forEach(function(row) {
-                const clientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                    tableRows.forEach(function(row) {
+                        const clientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
                 const ddtId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
                 
                 // Search both in client name and DDT ID
                 if (clientName.includes(searchTerm) || ddtId.includes(searchTerm)) {
-                    row.style.display = '';
+                            row.style.display = '';
                     row.classList.add('animate__animated', 'animate__fadeIn');
-                } else {
-                    row.style.display = 'none';
+                        } else {
+                            row.style.display = 'none';
                     row.classList.remove('animate__animated', 'animate__fadeIn');
-                }
-            });
+                        }
+                    });
             updateVisibleCount();
         }
         

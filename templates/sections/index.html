@@ -1,11 +1,302 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Elenco Sezioni - DBLogiX{% endblock %}
-
-{% block header_title %}Gestione Sezioni{% endblock %}
+{% block title %}Gestione Sezioni - DBLogiX{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/sections.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+    }
+
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group .form-control {
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        border-color: var(--secondary-dark);
+        color: var(--secondary-dark);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+        border-radius: 12px;
+        border-left: 4px solid var(--accent-blue);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        opacity: 0.9;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .section-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        background-color: var(--white);
+        cursor: pointer;
+    }
+    
+    .section-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+        cursor: pointer;
+    }
+    
+    .pagination .page-link {
+        color: var(--primary-dark);
+        border: 1px solid var(--border-light);
+        padding: 10px 15px;
+        margin: 0 2px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: var(--white);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced search functionality - prioritize server-side search
+    let searchTimeout;
+    const searchInput = document.getElementById('liveSearch');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    
+    // Check if we have an active server search
+    const hasActiveSearch = searchInput && searchInput.value.trim().length > 0;
+    
+    // Server-side search with auto-submit
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            // If search term is long enough, use server-side search
+            if (searchTerm.length >= 2) {
+                searchTimeout = setTimeout(function() {
+                    // Auto-redirect for server-side search
+                    window.location.href = '{{ url_for("sections.index") }}?query=' + encodeURIComponent(searchTerm);
+                }, 800); // Longer delay for server search
+            } else if (searchTerm.length === 0) {
+                // Clear search immediately if input is empty
+                window.location.href = '{{ url_for("sections.index") }}';
+            }
+        });
+        
+        // Handle Enter key for immediate search
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                if (this.value.trim().length > 0) {
+                    window.location.href = '{{ url_for("sections.index") }}?query=' + encodeURIComponent(this.value.trim());
+                }
+            }
+        });
+    }
+    
+    // Clear search functionality
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            window.location.href = '{{ url_for("sections.index") }}';
+        });
+    }
+    
+    // Add search hints
+    if (searchInput && !hasActiveSearch) {
+        const originalPlaceholder = searchInput.placeholder;
+        searchInput.addEventListener('focus', function() {
+            this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+        });
+        searchInput.addEventListener('blur', function() {
+            this.placeholder = originalPlaceholder;
+        });
+    }
+    
+    // Show search status
+    if (hasActiveSearch) {
+        // Add visual indicator that server search is active
+        const searchIcon = document.querySelector('.search-input-group i');
+        if (searchIcon) {
+            searchIcon.className = 'fas fa-search text-success';
+            searchIcon.title = 'Ricerca attiva su tutte le sezioni';
+        }
+    }
+    
+    // Make table rows clickable
+    const sectionRows = document.querySelectorAll('.section-row');
+    sectionRows.forEach(function(row) {
+        const url = row.dataset.url;
+        if (url) {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                // Don't navigate if clicking on buttons or form elements
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                    e.target.tagName === 'INPUT') {
+                    return;
+                }
+                window.location.href = url;
+            });
+        }
+    });
+    
+    // Make mobile cards clickable
+    const sectionCards = document.querySelectorAll('.section-card[data-section-url]');
+    sectionCards.forEach(function(card) {
+        const url = card.dataset.sectionUrl;
+        if (url) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function(e) {
+                // Don't navigate if clicking on buttons or form elements
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                    e.target.tagName === 'INPUT') {
+                    return;
+                }
+                window.location.href = url;
+            });
+        }
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) searchInput.focus();
+        }
+    });
+
+    // Console debugging
+    console.log('Sections page loaded with enhanced features');
+    console.log('Total sections on page:', sectionRows.length);
+    console.log('Active search:', hasActiveSearch);
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -14,17 +305,22 @@
     <div class="container-fluid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
-                <li class="breadcrumb-item active text-white-50" aria-current="page">Sezioni</li>
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Gestione Sezioni</li>
             </ol>
         </nav>
         <div class="row align-items-center mt-3">
             <div class="col-md-8">
                 <h1 class="page-title mb-0">
-                    <i class="fas fa-tag me-2"></i>Gestione Sezioni
+                    <i class="fas fa-tags me-2"></i>Gestione Sezioni
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
-                    <span class="text-white-50">{{ sections|length if sections else 0 }} sezioni nel database</span>
+                    <span class="text-white-50">{{ sections.total if sections else 0 }} sezioni nel database</span>
+                    {% if query %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -41,6 +337,34 @@
 </div>
 
 <div class="container-fluid">
+    <!-- Enhanced Search Section -->
+    <div class="filter-section">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-8">
+                <label class="form-label fw-bold">🔍 Ricerca Avanzata Sezioni</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                    <input type="text" id="liveSearch" class="form-control" 
+                           placeholder="Cerca per nome sezione o ID..." 
+                           value="{{ query or '' }}">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <small class="text-muted">Ricerca in tempo reale attraverso nome e ID sezione</small>
+            </div>
+            <div class="col-lg-4">
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stats-number">{{ sections.total if sections else 0 }}</div>
+                    <div class="stats-label">Sezioni Totali</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
@@ -52,55 +376,199 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Search Results Info -->
+    {% if query %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
+        <div>
+            <strong>Ricerca attiva:</strong> "{{ query }}"<br>
+            <small class="text-muted">
+                {% if sections and sections.items %}
+                    Trovate {{ sections.total }} sezioni corrispondenti
+                {% else %}
+                    Nessuna sezione trovata per questa ricerca
+                {% endif %}
+            </small>
+        </div>
+        <a href="{{ url_for('sections.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Cancella ricerca
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Sections List -->
     <div class="card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Sezioni</h5>
+            {% if sections and sections.items %}
+            <small class="text-muted">Pagina {{ sections.page }} di {{ sections.pages }}</small>
+            {% endif %}
         </div>
         <div class="card-body p-0">
-            {% if sections %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Nome</th>
-                            <th>Ultima Modifica</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for section in sections %}
-                        <tr data-url="{{ url_for('sections.view', id=section.IdSeccion) }}" style="cursor: pointer;">
-                            <td data-label="ID">{{ section.IdSeccion }}</td>
-                            <td data-label="Nome">{{ section.NombreSeccion }}</td>
-                            <td data-label="Ultima Modifica">{{ section.TimeStamp|date if section.TimeStamp else 'N/A' }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            {% if error is defined and error %}
+            <div class="alert alert-danger m-3">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Si è verificato un errore</h5>
+                <p>{{ error }}</p>
+                <p>Si prega di riprovare o contattare l'amministratore del sistema.</p>
+            </div>
+            {% endif %}
+            
+            {% if sections is none %}
+            <div class="alert alert-warning m-3">
+                <h5><i class="fas fa-exclamation-circle me-2"></i>Ricerca non disponibile</h5>
+                <p>Si è verificato un problema durante la ricerca. Visualizzazione delle sezioni non disponibile.</p>
+                <p>Per riprovare, <a href="{{ url_for('sections.index') }}">clicca qui</a> per tornare alla lista completa.</p>
             </div>
             {% else %}
+            {% if sections.items|length == 0 and query %}
+            <div class="alert alert-info m-3">
+                <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
+                <p>La ricerca per "{{ query }}" non ha prodotto risultati. Prova con un termine diverso o consulta la lista completa.</p>
+                <a href="{{ url_for('sections.index') }}" class="btn btn-primary mt-2">Mostra tutte le sezioni</a>
+            </div>
+            {% endif %}
+            
+            {% if sections.items|length > 0 %}
+            <div class="d-none d-md-block">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="sectionsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome Sezione</th>
+                                <th>Articoli</th>
+                                <th>Ultima Modifica</th>
+                                <th>Utente</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for section in sections.items %}
+                            <tr class="section-row" data-url="{{ url_for('sections.view', id=section.IdSeccion) }}">
+                                <td data-label="ID">
+                                    <span class="fw-bold text-primary">#{{ section.IdSeccion }}</span>
+                                </td>
+                                <td data-label="Nome">
+                                    <div class="fw-semibold">{{ section.NombreSeccion }}</div>
+                                </td>
+                                <td data-label="Articoli">
+                                    {% set count = section_counts.get(section.IdSeccion, 0) %}
+                                    {% if count > 0 %}
+                                    <span class="badge bg-primary">{{ count }} articoli</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Nessun articolo</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Ultima Modifica">
+                                    {{ section.TimeStamp.strftime('%d/%m/%Y %H:%M') if section.TimeStamp else 'N/A' }}
+                                </td>
+                                <td data-label="Utente">
+                                    {{ section.Usuario if section.Usuario else 'N/A' }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Mobile Grid View -->
+            <div class="d-block d-md-none">
+                <div class="row g-3 p-3">
+                    {% for section in sections.items %}
+                    <div class="col-12">
+                        <div class="section-card p-3" data-section-url="{{ url_for('sections.view', id=section.IdSeccion) }}">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0 me-3">
+                                    <div class="bg-primary rounded d-flex align-items-center justify-content-center text-white" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-tag fa-2x"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0 fw-bold text-primary">#{{ section.IdSeccion }}</h6>
+                                        {% set count = section_counts.get(section.IdSeccion, 0) %}
+                                        {% if count > 0 %}
+                                        <span class="badge bg-primary">{{ count }} articoli</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Vuota</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="fw-semibold mb-1">{{ section.NombreSeccion }}</div>
+                                    <div class="text-muted small">
+                                        Modificata: {{ section.TimeStamp.strftime('%d/%m/%Y') if section.TimeStamp else 'N/A' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if sections.pages > 1 %}
+            <div class="p-3 border-top">
+                <nav aria-label="Page navigation" class="d-flex justify-content-center">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if sections.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('sections.index', page=sections.prev_num, query=query) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in sections.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != sections.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('sections.index', page=page_num, query=query) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if sections.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('sections.index', page=sections.next_num, query=query) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% else %}
             <div class="p-5 text-center">
-                <i class="fas fa-layer-group text-muted mb-3" style="font-size: 3rem;"></i>
+                <i class="fas fa-tags text-muted mb-3" style="font-size: 4rem;"></i>
                 <h5>Nessuna sezione trovata</h5>
                 <p class="text-muted">Non ci sono sezioni nel sistema. Clicca su "Nuova Sezione" per aggiungerne una.</p>
+                {% if current_user.is_admin %}
                 <a href="{{ url_for('sections.new') }}" class="btn btn-primary mt-2">
                     <i class="fas fa-plus me-2"></i>Aggiungi Sezione
                 </a>
+                {% endif %}
             </div>
+            {% endif %}
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    $(document).ready(function() {
-        // Make rows clickable to view detail
-        $('tbody tr').on('click', function() {
-            window.location.href = $(this).data('url');
-        });
-    });
-</script>
 {% endblock %} 

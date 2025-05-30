@@ -1,11 +1,285 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Gestione Prodotti{% endblock %}
-
-{% block header_title %}Gestione Prodotti{% endblock %}
+{% block title %}Gestione Articoli - DBLogiX{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+    }
+
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group .form-control {
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        border-color: var(--secondary-dark);
+        color: var(--secondary-dark);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+        border-radius: 12px;
+        border-left: 4px solid var(--accent-blue);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        opacity: 0.9;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .article-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        background-color: var(--white);
+        cursor: pointer;
+    }
+    
+    .article-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+        cursor: pointer;
+    }
+    
+    .pagination .page-link {
+        color: var(--primary-dark);
+        border: 1px solid var(--border-light);
+        padding: 10px 15px;
+        margin: 0 2px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: var(--white);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced search functionality - prioritize server-side search
+    let searchTimeout;
+    const searchInput = document.getElementById('liveSearch');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    
+    // Check if we have an active server search
+    const hasActiveSearch = searchInput && searchInput.value.trim().length > 0;
+    
+    // Server-side search with auto-submit
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            // If search term is long enough, use server-side search
+            if (searchTerm.length >= 2) {
+                searchTimeout = setTimeout(function() {
+                    // Auto-redirect for server-side search
+                    window.location.href = '{{ url_for("articles.index") }}?query=' + encodeURIComponent(searchTerm);
+                }, 800); // Longer delay for server search
+            } else if (searchTerm.length === 0) {
+                // Clear search immediately if input is empty
+                window.location.href = '{{ url_for("articles.index") }}';
+            }
+        });
+        
+        // Handle Enter key for immediate search
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                if (this.value.trim().length > 0) {
+                    window.location.href = '{{ url_for("articles.index") }}?query=' + encodeURIComponent(this.value.trim());
+                }
+            }
+        });
+    }
+    
+    // Clear search functionality
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            window.location.href = '{{ url_for("articles.index") }}';
+        });
+    }
+    
+    // Add search hints
+    if (searchInput && !hasActiveSearch) {
+        const originalPlaceholder = searchInput.placeholder;
+        searchInput.addEventListener('focus', function() {
+            this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+        });
+        searchInput.addEventListener('blur', function() {
+            this.placeholder = originalPlaceholder;
+        });
+    }
+    
+    // Show search status
+    if (hasActiveSearch) {
+        // Add visual indicator that server search is active
+        const searchIcon = document.querySelector('.search-input-group i');
+        if (searchIcon) {
+            searchIcon.className = 'fas fa-search text-success';
+            searchIcon.title = 'Ricerca attiva su tutti gli articoli';
+        }
+    }
+    
+    // Make table rows clickable
+    const productRows = document.querySelectorAll('.product-row');
+    productRows.forEach(function(row) {
+        const url = row.dataset.url;
+        if (url) {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                // Don't navigate if clicking on buttons or form elements
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                    e.target.tagName === 'INPUT') {
+                    return;
+                }
+                window.location.href = url;
+            });
+        }
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) searchInput.focus();
+        }
+    });
+
+    // Console debugging
+    console.log('Articles page loaded with enhanced features');
+    console.log('Total articles on page:', productRows.length);
+    console.log('Active search:', hasActiveSearch);
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -14,27 +288,32 @@
     <div class="container-fluid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
-                <li class="breadcrumb-item active text-white-50" aria-current="page">Prodotti</li>
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Gestione Articoli</li>
             </ol>
         </nav>
         <div class="row align-items-center mt-3">
             <div class="col-md-8">
                 <h1 class="page-title mb-0">
-                    <i class="fas fa-boxes me-2"></i>Gestione Prodotti
+                    <i class="fas fa-boxes me-2"></i>Gestione Articoli
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
-                    <span class="text-white-50">{{ articles.total if articles else 0 }} prodotti nel database</span>
+                    <span class="text-white-50">{{ articles.total if articles else 0 }} articoli nel database</span>
+                    {% if query %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 {% if current_user.is_admin %}
                 <div class="d-grid d-md-block gap-2">
                     <a href="{{ url_for('articles.create') }}" class="btn btn-light action-btn mb-2 mb-md-0">
-                        <i class="fas fa-plus me-1"></i>Nuovo
+                        <i class="fas fa-plus me-1"></i>Nuovo Articolo
                     </a>
-                    <a href="{{ url_for('articles.import_from_csv') }}" class="btn btn-outline-light action-btn">
-                        <i class="fas fa-file-import me-1"></i>Importa
+                    <a href="{{ url_for('articles.import_from_csv') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-file-import me-1"></i>Importa CSV
                     </a>
                 </div>
                 {% endif %}
@@ -44,23 +323,29 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Search Filters -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-transparent">
-            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-2">
-                <div class="col-md-10 col-sm-8">
-                    <div class="search-input-group">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="liveSearch" class="form-control" placeholder="Cerca per descrizione o codice..." value="{{ query }}">
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4">
-                    <button id="clearSearch" class="btn btn-secondary w-100">
-                        <i class="fas fa-times me-1"></i>Cancella
+    <!-- Enhanced Search Section -->
+    <div class="filter-section">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-8">
+                <label class="form-label fw-bold">🔍 Ricerca Avanzata Articoli</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                    <input type="text" id="liveSearch" class="form-control" 
+                           placeholder="Cerca per descrizione, codice articolo o EAN..." 
+                           value="{{ query or '' }}">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                        <i class="fas fa-times"></i>
                     </button>
+                </div>
+                <small class="text-muted">Ricerca in tempo reale attraverso descrizione, ID articolo e codici EAN</small>
+            </div>
+            <div class="col-lg-4">
+                <div class="stats-card">
+                    <div class="stats-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stats-number">{{ articles.total if articles else 0 }}</div>
+                    <div class="stats-label">Articoli Totali</div>
                 </div>
             </div>
         </div>
@@ -77,10 +362,33 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Search Results Info -->
+    {% if query %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
+        <div>
+            <strong>Ricerca attiva:</strong> "{{ query }}"<br>
+            <small class="text-muted">
+                {% if articles and articles.items %}
+                    Trovati {{ articles.total }} articoli corrispondenti
+                {% else %}
+                    Nessun articolo trovato per questa ricerca
+                {% endif %}
+            </small>
+        </div>
+        <a href="{{ url_for('articles.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Cancella ricerca
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Product List -->
     <div class="card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Prodotti</h5>
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Articoli</h5>
+            {% if articles and articles.items %}
+            <small class="text-muted">Pagina {{ articles.page }} di {{ articles.pages }}</small>
+            {% endif %}
         </div>
         <div class="card-body p-0">
             {% if error is defined and error %}
@@ -94,7 +402,7 @@
             {% if articles is none %}
             <div class="alert alert-warning m-3">
                 <h5><i class="fas fa-exclamation-circle me-2"></i>Ricerca non disponibile</h5>
-                <p>Si è verificato un problema durante la ricerca. Visualizzazione dei prodotti non disponibile.</p>
+                <p>Si è verificato un problema durante la ricerca. Visualizzazione degli articoli non disponibile.</p>
                 <p>Per riprovare, <a href="{{ url_for('articles.index') }}">clicca qui</a> per tornare alla lista completa.</p>
             </div>
             {% else %}
@@ -102,14 +410,14 @@
             <div class="alert alert-info m-3">
                 <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
                 <p>La ricerca per "{{ query }}" non ha prodotto risultati. Prova con un termine diverso o consulta la lista completa.</p>
-                <a href="{{ url_for('articles.index') }}" class="btn btn-primary mt-2">Mostra tutti i prodotti</a>
+                <a href="{{ url_for('articles.index') }}" class="btn btn-primary mt-2">Mostra tutti gli articoli</a>
             </div>
             {% endif %}
             
             {% if articles.items|length > 0 %}
             <div class="d-none d-md-block">
                 <div class="table-responsive">
-                    <table class="table table-hover" id="productsTable">
+                    <table class="table table-hover" id="articlesTable">
                         <thead class="table-light">
                             <tr>
                                 <th>ID</th>
@@ -123,27 +431,36 @@
                         </thead>
                         <tbody>
                             {% for article in articles.items %}
-                            <tr class="product-row" data-url="{{ url_for('articles.view', id=article.IdArticulo) }}" style="cursor: pointer;">
-                                <td data-label="ID">{{ article.IdArticulo }}</td>
-                                <td data-label="Descrizione">{{ article.Descripcion }}</td>
-                                <td data-label="Prezzo">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
-                                <td data-label="IVA">{{ iva_rates.get(article.IdIVA, 'N/A') }}</td>
-                                <td data-label="Sezione">{{ section_info.get(article.IdSeccion, 'N/A') }}</td>
+                            <tr class="product-row" data-url="{{ url_for('articles.view', id=article.IdArticulo) }}">
+                                <td data-label="ID">
+                                    <span class="fw-bold text-primary">#{{ article.IdArticulo }}</span>
+                                </td>
+                                <td data-label="Descrizione">
+                                    <div class="fw-semibold">{{ article.Descripcion }}</div>
+                                    {% if article.Descripcion1 %}
+                                    <small class="text-muted">{{ article.Descripcion1 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Prezzo">
+                                    <span class="fw-bold text-success">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</span>
+                                </td>
+                                <td data-label="IVA">{{ iva_rates.get(article.IdArticulo, 'N/A') }}</td>
+                                <td data-label="Sezione">{{ section_info.get(article.IdArticulo, 'N/A') }}</td>
                                 <td data-label="Status">
                                     {% if article.EnVenta %}
-                                    <span class="badge-soft badge-soft-success">Attivo</span>
+                                    <span class="badge bg-success">Attivo</span>
                                     {% else %}
-                                    <span class="badge-soft badge-soft-secondary">Inattivo</span>
+                                    <span class="badge bg-secondary">Inattivo</span>
                                     {% endif %}
                                 </td>
                                 <td data-label="Quantità">
                                     {% set quantity = article_quantities.get(article.IdArticulo, 0) %}
                                     {% if quantity > 0 %}
-                                    <span class="badge-soft badge-soft-primary">{{ quantity }} PZ</span>
+                                    <span class="badge bg-primary">{{ quantity }} PZ</span>
                                     {% elif quantity < 0 %}
-                                    <span class="badge-soft badge-soft-danger">{{ quantity }} PZ</span>
+                                    <span class="badge bg-danger">{{ quantity }} PZ</span>
                                     {% else %}
-                                    <span class="badge-soft badge-soft-secondary">0 PZ</span>
+                                    <span class="badge bg-secondary">0 PZ</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -155,36 +472,45 @@
             
             <!-- Mobile Grid View -->
             <div class="d-block d-md-none">
-                <div class="product-grid-container">
+                <div class="row g-3 p-3">
                     {% for article in articles.items %}
-                    <div class="product-grid-item">
-                        <div class="product-card" onclick="window.location.href='{{ url_for('articles.view', id=article.IdArticulo) }}'">
-                            <div class="product-image">
-                                {% if article.LogoPantalla %}
-                                <img src="{{ article.LogoPantalla }}" alt="{{ article.Descripcion }}">
-                                {% else %}
-                                <i class="fas fa-box fa-2x text-muted"></i>
-                                {% endif %}
-                            </div>
-                            <div class="product-details">
-                                <div class="product-id">#{{ article.IdArticulo }}</div>
-                                <div class="product-title">{{ article.Descripcion }}</div>
-                                <div class="product-price">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</div>
-                                <div class="product-status">
-                                    {% if article.EnVenta %}
-                                    <span class="badge-soft badge-soft-success">Attivo</span>
+                    <div class="col-12">
+                        <div class="article-card p-3" onclick="window.location.href='{{ url_for('articles.view', id=article.IdArticulo) }}'">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0 me-3">
+                                    {% if article.LogoPantalla %}
+                                    <img src="{{ article.LogoPantalla }}" alt="{{ article.Descripcion }}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
                                     {% else %}
-                                    <span class="badge-soft badge-soft-secondary">Inattivo</span>
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-box fa-2x text-muted"></i>
+                                    </div>
                                     {% endif %}
-                                    
-                                    {% set quantity = article_quantities.get(article.IdArticulo, 0) %}
-                                    {% if quantity > 0 %}
-                                    <span class="badge-soft badge-soft-primary">{{ quantity }} PZ</span>
-                                    {% elif quantity < 0 %}
-                                    <span class="badge-soft badge-soft-danger">{{ quantity }} PZ</span>
-                                    {% else %}
-                                    <span class="badge-soft badge-soft-secondary">0 PZ</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0 fw-bold text-primary">#{{ article.IdArticulo }}</h6>
+                                        <span class="fw-bold text-success">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</span>
+                                    </div>
+                                    <div class="fw-semibold mb-1">{{ article.Descripcion }}</div>
+                                    {% if article.Descripcion1 %}
+                                    <div class="text-muted small mb-2">{{ article.Descripcion1 }}</div>
                                     {% endif %}
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% if article.EnVenta %}
+                                        <span class="badge bg-success">Attivo</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inattivo</span>
+                                        {% endif %}
+                                        
+                                        {% set quantity = article_quantities.get(article.IdArticulo, 0) %}
+                                        {% if quantity > 0 %}
+                                        <span class="badge bg-primary">{{ quantity }} PZ</span>
+                                        {% elif quantity < 0 %}
+                                        <span class="badge bg-danger">{{ quantity }} PZ</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">0 PZ</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -245,28 +571,18 @@
             {% endif %}
             {% else %}
             <div class="p-5 text-center">
-                <i class="fas fa-box text-muted mb-3" style="font-size: 3rem;"></i>
-                <h5>Nessun prodotto trovato</h5>
-                <p class="text-muted">Non ci sono prodotti nel sistema. Clicca su "Nuovo" per aggiungerne uno.</p>
+                <i class="fas fa-boxes text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessun articolo trovato</h5>
+                <p class="text-muted">Non ci sono articoli nel sistema. Clicca su "Nuovo Articolo" per aggiungerne uno.</p>
+                {% if current_user.is_admin %}
                 <a href="{{ url_for('articles.create') }}" class="btn btn-primary mt-2">
-                    <i class="fas fa-plus me-2"></i>Aggiungi Prodotto
+                    <i class="fas fa-plus me-2"></i>Aggiungi Articolo
                 </a>
+                {% endif %}
             </div>
             {% endif %}
             {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/articles/index.js') }}"></script>
-<script>
-    $(document).ready(function() {
-        // Make rows clickable to view detail
-        $('.product-row').on('click', function() {
-            window.location.href = $(this).data('url');
-        });
-    });
-</script>
 {% endblock %} 

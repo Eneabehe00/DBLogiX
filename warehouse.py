@@ -196,10 +196,21 @@ def product_detail(product_id):
 @warehouse_bp.route('/tickets')
 @login_required
 def tickets():
-    """List of all tickets with search and filter functionality"""
+    """List of all tickets with enhanced search functionality"""
     page = request.args.get('page', 1, type=int)
-    per_page = 20
+    per_page = 15  # Cambiato da 20 a 15 per uniformità con DDT e Clients
     search_form = SearchForm()
+    search_query = request.args.get('query', '').strip()
+    
+    # Reset page to 1 when performing a new search
+    if search_query and page > 1:
+        # If there's a search query and we're not on page 1, redirect to page 1
+        return redirect(url_for('warehouse.tickets', 
+                               query=search_query, 
+                               page=1,
+                               status=request.args.get('status'),
+                               start_date=request.args.get('start_date'),
+                               end_date=request.args.get('end_date')))
     
     # Prima di tutto, aggiorna i ticket scaduti
     update_expired_tickets()
@@ -229,37 +240,62 @@ def tickets():
         except (ValueError, TypeError):
             flash('Formato data di fine non valido', 'danger')
     
-    # Applica ricerca se presente
-    if request.args.get('query'):
-        search_term = request.args.get('query').strip()
-        search_form.query.data = search_term
+    # Enhanced search functionality
+    if search_query:
+        current_app.logger.info(f"🔍 Ticket Search: cercando '{search_query}' in tutti i tickets")
+        search_form.query.data = search_query
         
         # Check if it's a ticket number search (starts with #)
-        if search_term.startswith('#'):
-            ticket_number = search_term[1:].strip()
+        if search_query.startswith('#'):
+            ticket_number = search_query[1:].strip()
             if ticket_number.isdigit():
                 query = query.filter(TicketHeader.NumTicket == int(ticket_number))
+                current_app.logger.info(f"🔍 Searching by ticket number: {ticket_number}")
         else:
-            # Ricerca multipla: barcode, descrizione prodotto o descrizione linea
-            # Crea una subquery per i ticket che contengono prodotti con la descrizione cercata
-            product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
-                join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
-                filter(
+            try:
+                # Try to convert search to integer for ID search
+                search_id = int(search_query)
+                # Search by ticket ID, number or other text fields
+                product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
+                    join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
+                    filter(
+                        or_(
+                            Product.Descripcion.ilike(f'%{search_query}%'),
+                            TicketLine.Descripcion.ilike(f'%{search_query}%')
+                        )
+                    ).subquery()
+                
+                query = query.filter(
                     or_(
-                        Product.Descripcion.ilike(f'%{search_term}%'),
-                        TicketLine.Descripcion.ilike(f'%{search_term}%')
-                    )
-                ).subquery()
-            
-            # Applica filtro combinato: barcode O descrizione prodotto
-            query = query.filter(
-                or_(
-                    TicketHeader.CodigoBarras.like(f'%{search_term}%'),
-                    TicketHeader.IdTicket.in_(
-                        db.session.query(product_search_subquery.c.IdTicket)
+                        TicketHeader.IdTicket == search_id,
+                        TicketHeader.NumTicket == search_id,
+                        TicketHeader.CodigoBarras.like(f'%{search_query}%'),
+                        TicketHeader.IdTicket.in_(
+                            db.session.query(product_search_subquery.c.IdTicket)
+                        )
                     )
                 )
-            )
+            except ValueError:
+                # Search only by text fields if not a number
+                product_search_subquery = db.session.query(TicketLine.IdTicket).distinct().\
+                    join(Product, TicketLine.IdArticulo == Product.IdArticulo).\
+                    filter(
+                        or_(
+                            Product.Descripcion.ilike(f'%{search_query}%'),
+                            TicketLine.Descripcion.ilike(f'%{search_query}%')
+                        )
+                    ).subquery()
+                
+                query = query.filter(
+                    or_(
+                        TicketHeader.CodigoBarras.like(f'%{search_query}%'),
+                        TicketHeader.IdTicket.in_(
+                            db.session.query(product_search_subquery.c.IdTicket)
+                        )
+                    )
+                )
+        
+        current_app.logger.info(f"🔍 Search query applied for '{search_query}'")
     
     # Crea subquery per trovare la linea con la data di scadenza più vicina per ogni ticket
     # Questa è la chiave: usiamo lo stesso approccio JOIN per tutti i filtri
@@ -413,6 +449,7 @@ def tickets():
                           ticket_line_counts=ticket_lines_count,  # Alias per compatibilità template
                           ticket_expiry=ticket_expiry,
                           search_form=search_form,
+                          search=search_query,  # Aggiungo search_query come search per il template
                           current_status=status,
                           expiring_count=expiring_count,
                           expired_count=expired_count)

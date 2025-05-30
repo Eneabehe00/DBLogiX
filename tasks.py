@@ -7,12 +7,16 @@ import json
 import qrcode
 import io
 import base64
+import logging
 
 from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea, Company, Product
 from utils import admin_required
 from forms import DDTCreateForm
 
 tasks_bp = Blueprint('tasks', __name__)
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 @tasks_bp.route('/')
 @login_required
@@ -27,9 +31,10 @@ def index():
 @tasks_bp.route('/admin')
 @admin_required
 def admin_dashboard():
-    """Admin dashboard for task management"""
+    """Admin dashboard for task management with enhanced search functionality"""
     # Get filter parameters
-    title_filter = request.args.get('title', '').strip()
+    search_query = request.args.get('query', '').strip()  # Parametro search unificato
+    title_filter = request.args.get('title', '').strip()  # Mantengo per compatibilità
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
     priority_filter = request.args.get('priority', '')
@@ -41,13 +46,52 @@ def admin_dashboard():
     overdue_page = int(request.args.get('overdue_page', 1))
     per_page = 6
     
+    # Reset page to 1 when performing a new search
+    if search_query and (active_page > 1 or completed_page > 1 or overdue_page > 1):
+        # If there's a search query and we're not on page 1, redirect to page 1
+        return redirect(url_for('tasks.admin_dashboard', 
+                               query=search_query,
+                               active_page=1,
+                               completed_page=1, 
+                               overdue_page=1,
+                               date_from=date_from,
+                               date_to=date_to,
+                               priority=priority_filter,
+                               status=status_filter))
+    
     # Base query
     query = Task.query
     
-    # Apply filters
-    if title_filter:
+    # Enhanced search functionality - prioritize search_query over title_filter
+    if search_query:
+        logger.info(f"🔍 Task Search: cercando '{search_query}' in tutti i tasks")
+        try:
+            # Try to convert search to integer for task number search
+            search_id = int(search_query)
+            # Search by task ID or task number
+            query = query.filter(
+                or_(
+                    Task.id_task == search_id,
+                    Task.task_number.ilike(f'%{search_query}%'),
+                    Task.title.ilike(f'%{search_query}%'),
+                    Task.description.ilike(f'%{search_query}%')
+                )
+            )
+        except ValueError:
+            # Search only by text fields if not a number
+            query = query.filter(
+                or_(
+                    Task.task_number.ilike(f'%{search_query}%'),
+                    Task.title.ilike(f'%{search_query}%'),
+                    Task.description.ilike(f'%{search_query}%')
+                )
+            )
+        logger.info(f"🔍 Search query applied for '{search_query}'")
+    elif title_filter:
+        # Fallback to old title filter for compatibility
         query = query.filter(Task.title.ilike(f'%{title_filter}%'))
     
+    # Apply date filters
     if date_from:
         try:
             date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
@@ -62,6 +106,7 @@ def admin_dashboard():
         except ValueError:
             pass
     
+    # Apply other filters
     if priority_filter:
         query = query.filter(Task.priority == priority_filter)
     
@@ -133,6 +178,7 @@ def admin_dashboard():
                          stats=stats,
                          users=users,
                          clients=clients,
+                         search=search_query,  # Aggiungo search_query come search per il template
                          current_filters={
                              'title': title_filter,
                              'date_from': date_from,

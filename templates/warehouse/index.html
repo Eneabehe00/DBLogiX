@@ -4,99 +4,484 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+        --info-blue: #3498db;
+    }
+    
+    .dashboard-header {
+        background-color: var(--primary-dark);
+        border-radius: 1rem;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0.5rem 1rem rgba(44, 62, 80, 0.15);
+        border: none;
+    }
+    
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .dashboard-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .stats-overview {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .stat-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stat-card.success {
+        background-color: var(--success-green);
+    }
+    
+    .stat-card.warning {
+        background-color: var(--warning-orange);
+    }
+    
+    .stat-card.info {
+        background-color: var(--info-blue);
+    }
+    
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        opacity: 0.9;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .quick-action-item {
+        display: block;
+        background-color: var(--white);
+        border-radius: 15px;
+        padding: 2rem;
+        text-decoration: none;
+        color: var(--text-dark);
+        height: 100%;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-light);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .quick-action-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        color: var(--text-dark);
+        text-decoration: none;
+    }
+    
+    .quick-action-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        color: var(--white);
+    }
+    
+    .quick-action-icon.bg-success-soft {
+        background-color: var(--success-green);
+    }
+    
+    .quick-action-icon.bg-warning-soft {
+        background-color: var(--warning-orange);
+    }
+    
+    .quick-action-icon.bg-primary-soft {
+        background-color: var(--primary-dark);
+    }
+    
+    .quick-action-icon.bg-info-soft {
+        background-color: var(--info-blue);
+    }
+    
+    .quick-action-icon.bg-dark-soft {
+        background-color: var(--secondary-dark);
+    }
+    
+    .quick-action-item h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+    
+    .quick-action-item p {
+        margin-bottom: 0;
+        color: var(--medium-gray);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .activity-card {
+        background-color: var(--white);
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .activity-card:hover {
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .activity-card .card-header {
+        background-color: var(--light-gray);
+        border-bottom: 1px solid var(--border-light);
+        padding: 20px 25px;
+    }
+    
+    .activity-card .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+        cursor: pointer;
+    }
+    
+    .table th {
+        font-weight: 600;
+        color: var(--text-dark);
+        border-bottom: 2px solid var(--border-light);
+        background-color: var(--light-gray);
+    }
+    
+    .table td {
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: var(--white);
+        transform: translateY(-1px);
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-success {
+        background-color: var(--success-green) !important;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--warning-orange) !important;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+        color: var(--white) !important;
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--danger-red) !important;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--secondary-dark) !important;
+        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    }
+    
+    .mobile-tabs .nav-link {
+        color: var(--text-dark);
+        border: none;
+        border-radius: 0;
+        padding: 15px 20px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-tabs .nav-link.active {
+        background-color: var(--primary-dark);
+        color: var(--white);
+    }
+    
+    .mobile-table-row {
+        padding: 20px;
+        border-bottom: 1px solid var(--border-light);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-table-row:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+    
+    .mobile-cell {
+        margin-bottom: 10px;
+    }
+    
+    .mobile-label {
+        font-size: 0.8rem;
+        color: var(--medium-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    
+    .mobile-value {
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+    
+    .ticket-number,
+    .activity-number {
+        color: var(--primary-dark);
+        font-weight: 600;
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        background-color: var(--light-gray);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--medium-gray);
+    }
+    
+    .badge-soft {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-soft-primary {
+        background-color: rgba(44, 62, 80, 0.15);
+        color: var(--primary-dark);
+    }
+    
+    .badge-soft-success {
+        background-color: rgba(39, 174, 96, 0.15);
+        color: var(--success-green);
+    }
+    
+    .badge-soft-info {
+        background-color: rgba(52, 152, 219, 0.15);
+        color: var(--info-blue);
+    }
+    
+    .badge-soft-warning {
+        background-color: rgba(243, 156, 18, 0.15);
+        color: var(--warning-orange);
+    }
+    
+    .badge-soft-danger {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: var(--danger-red);
+    }
+    
+    .badge-soft-secondary {
+        background-color: rgba(52, 73, 94, 0.15);
+        color: var(--secondary-dark);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Welcome Section -->
 <div class="container-fluid">
-    <!-- Minimal Header -->
-    <div class="home-header-minimal">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
         <div class="row align-items-center">
             <div class="col-md-8">
-                <h1 class="welcome-title-small">
-                    <i class="fas fa-warehouse text-primary me-2"></i>
-                    DBLogiX Dashboard
+                <h1 class="dashboard-title">
+                    <i class="fas fa-warehouse me-3"></i>DBLogiX Dashboard
                 </h1>
+                <p class="dashboard-subtitle mb-0">
+                    Benvenuto nella piattaforma di gestione magazzino
+                </p>
             </div>
-            <div class="col-md-4">
-                <div class="stats-compact">
-                    <div class="row g-2">
-                        <div class="col-4">
-                            <div class="stat-compact">
-                                <div class="stat-number">{{ products_count }}</div>
-                                <div class="stat-text">Prodotti</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-compact">
-                                <div class="stat-number">{{ giacenza_tickets }}</div>
-                                <div class="stat-text">Giacenza</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-compact">
-                                <div class="stat-number"><i class="fas fa-qrcode"></i></div>
-                                <div class="stat-text">Scanner</div>
-                            </div>
-                        </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-qrcode me-1"></i>Scanner QR
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Statistics Overview -->
+    <div class="stats-overview">
+        <div class="row g-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-boxes"></i>
                     </div>
+                    <div class="stat-number">{{ products_count }}</div>
+                    <div class="stat-label">Prodotti</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <div class="stat-number">{{ giacenza_tickets }}</div>
+                    <div class="stat-label">In Giacenza</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-number">{{ recent_tickets|length }}</div>
+                    <div class="stat-label">Ticket Recenti</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card info">
+                    <div class="stat-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <div class="stat-number">{{ recent_scans|length }}</div>
+                    <div class="stat-label">Scansioni</div>
                 </div>
             </div>
         </div>
     </div>
     
     <!-- Quick Actions -->
-    <div class="quick-actions mb-4">
-        <div class="row g-3">
-            <div class="col-6 col-lg-3">
-                <a href="{{ url_for('warehouse.scanner') }}" class="quick-action-item">
-                    <div class="quick-action-icon bg-success-soft">
-                        <i class="fas fa-qrcode"></i>
-                    </div>
-                    <h3>Scanner QR</h3>
-                    <p>Scansiona i codici QR dei prodotti</p>
-                </a>
-            </div>
-            
-            <div class="col-6 col-lg-3">
-                <a href="{{ url_for('warehouse.tickets', status='giacenza') }}" class="quick-action-item">
-                    <div class="quick-action-icon bg-warning-soft">
-                        <i class="fas fa-warehouse"></i>
-                    </div>
-                    <h3>Giacenza</h3>
-                    <p>Visualizza e gestisci i ticket in giacenza</p>
-                </a>
-            </div>
-            
-            <div class="col-6 col-lg-3">
-                <a href="{{ url_for('articles.index') }}" class="quick-action-item">
-                    <div class="quick-action-icon bg-primary-soft">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <h3>Prodotti</h3>
-                    <p>Gestisci il catalogo prodotti</p>
-                </a>
-            </div>
-            
-            <div class="col-6 col-lg-3">
-                {% if current_user.is_admin %}
-                <a href="{{ url_for('admin.dashboard') }}" class="quick-action-item">
-                    <div class="quick-action-icon bg-dark-soft">
-                        <i class="fas fa-tachometer-alt"></i>
-                    </div>
-                    <h3>Admin</h3>
-                    <p>Accedi alle funzioni di amministrazione</p>
-                </a>
-                {% else %}
-                <a href="{{ url_for('warehouse.tickets') }}" class="quick-action-item">
-                    <div class="quick-action-icon bg-info-soft">
-                        <i class="fas fa-list"></i>
-                    </div>
-                    <h3>Tutti i Ticket</h3>
-                    <p>Visualizza tutti i ticket nel sistema</p>
-                </a>
-                {% endif %}
-            </div>
+    <div class="row g-4 mb-4">
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('warehouse.scanner') }}" class="quick-action-item">
+                <div class="quick-action-icon bg-success-soft">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <h3>Scanner QR</h3>
+                <p>Scansiona i codici QR dei prodotti per gestire i ticket di magazzino</p>
+            </a>
+        </div>
+        
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('warehouse.tickets', status='giacenza') }}" class="quick-action-item">
+                <div class="quick-action-icon bg-warning-soft">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <h3>Giacenza</h3>
+                <p>Visualizza e gestisci tutti i ticket attualmente in giacenza</p>
+            </a>
+        </div>
+        
+        <div class="col-6 col-lg-3">
+            <a href="{{ url_for('articles.index') }}" class="quick-action-item">
+                <div class="quick-action-icon bg-primary-soft">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <h3>Prodotti</h3>
+                <p>Gestisci il catalogo completo dei prodotti del magazzino</p>
+            </a>
+        </div>
+        
+        <div class="col-6 col-lg-3">
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.dashboard') }}" class="quick-action-item">
+                <div class="quick-action-icon bg-dark-soft">
+                    <i class="fas fa-tachometer-alt"></i>
+                </div>
+                <h3>Amministrazione</h3>
+                <p>Accedi alle funzioni avanzate di amministrazione del sistema</p>
+            </a>
+            {% else %}
+            <a href="{{ url_for('warehouse.tickets') }}" class="quick-action-item">
+                <div class="quick-action-icon bg-info-soft">
+                    <i class="fas fa-list"></i>
+                </div>
+                <h3>Tutti i Ticket</h3>
+                <p>Visualizza l'elenco completo di tutti i ticket nel sistema</p>
+            </a>
+            {% endif %}
         </div>
     </div>
     
@@ -105,9 +490,9 @@
     <div class="row g-4 d-none d-md-flex">
         <!-- Recent tickets -->
         <div class="col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
+            <div class="activity-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">
                         <i class="fas fa-clock text-primary me-2"></i>Ticket Recenti
                     </h5>
                     <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-primary">
@@ -118,7 +503,7 @@
                     {% if recent_tickets %}
                     <div class="table-responsive">
                         <table class="table table-hover mb-0" id="recentTicketsTable">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>Numero</th>
                                     <th>Articolo</th>
@@ -129,7 +514,7 @@
                             </thead>
                             <tbody>
                                 {% for ticket in recent_tickets %}
-                                <tr class="ticket-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;">
+                                <tr class="ticket-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}">
                                     <td data-label="Numero">
                                         <span class="ticket-number">#{{ ticket.NumTicket }}</span>
                                     </td>
@@ -169,9 +554,9 @@
         
         <!-- Recent Activities -->
         <div class="col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
+            <div class="activity-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">
                         <i class="fas fa-history text-primary me-2"></i>Attività Recenti
                     </h5>
                     {% if current_user.is_admin %}
@@ -184,7 +569,7 @@
                     {% if recent_scans %}
                     <div class="table-responsive">
                         <table class="table table-hover mb-0" id="recentActivitiesTable">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>Ticket</th>
                                     <th>Utente</th>
@@ -194,7 +579,7 @@
                             </thead>
                             <tbody>
                                 {% for scan in recent_scans %}
-                                <tr class="activity-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}" style="cursor: pointer;">
+                                <tr class="activity-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}">
                                     <td data-label="Ticket">
                                         <span class="activity-number">#{{ scan.ticket_id or 'N/D' }}</span>
                                     </td>
@@ -243,9 +628,9 @@
     
     <!-- Mobile View (Tabs) -->
     <div class="d-block d-md-none">
-        <div class="card shadow-sm">
+        <div class="activity-card">
             <!-- Tab Navigation -->
-            <div class="card-header bg-transparent p-0">
+            <div class="card-header p-0">
                 <ul class="nav nav-tabs mobile-tabs" id="mobileTabs" role="tablist">
                     <li class="nav-item flex-fill" role="presentation">
                         <button class="nav-link active w-100" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-pane" type="button" role="tab">
@@ -384,24 +769,45 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/home.js') }}"></script>
 <script>
-    $(document).ready(function() {
-        // Make rows clickable to view detail
-        $('.ticket-row, .activity-row').on('click', function() {
-            const url = $(this).data('url');
-            if (url && url !== '#') {
+document.addEventListener('DOMContentLoaded', function() {
+    // Make rows clickable to view detail
+    const ticketRows = document.querySelectorAll('.ticket-row, .activity-row');
+    ticketRows.forEach(function(row) {
+        const url = row.dataset.url;
+        if (url && url !== '#') {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                // Don't navigate if clicking on buttons or form elements
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                    e.target.tagName === 'INPUT') {
+                    return;
+                }
                 window.location.href = url;
-            }
-        });
-        
-        // Make mobile rows clickable
-        $('.mobile-table-row').on('click', function() {
-            const url = $(this).data('url');
-            if (url && url !== '#') {
-                window.location.href = url;
-            }
-        });
+            });
+        }
     });
+    
+    // Make mobile rows clickable
+    const mobileRows = document.querySelectorAll('.mobile-table-row');
+    mobileRows.forEach(function(row) {
+        const url = row.dataset.url;
+        if (url && url !== '#') {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                // Don't navigate if clicking on buttons or form elements
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                    e.target.tagName === 'INPUT') {
+                    return;
+                }
+                window.location.href = url;
+            });
+        }
+    });
+
+    // Console debugging
+    console.log('Warehouse dashboard loaded with enhanced features');
+    console.log('Recent tickets:', ticketRows.length);
+});
 </script>
 {% endblock %} 

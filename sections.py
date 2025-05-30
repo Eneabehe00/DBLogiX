@@ -2,21 +2,98 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from models import db, Section, Article
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import text
+from sqlalchemy import text, or_
 from datetime import datetime
 import base64
 from werkzeug.utils import secure_filename
 import os
 from utils import admin_required, is_admin
+import logging
+
+# Setup logging
+logger = logging.getLogger(__name__)
 
 sections_bp = Blueprint('sections', __name__, template_folder='templates')
 
 @sections_bp.route('/')
 @login_required
 def index():
-    """Display list of all sections"""
-    sections = Section.query.all()
-    return render_template('sections/index.html', sections=sections)
+    """Display list of all sections with enhanced search functionality"""
+    page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('query', '', type=str).strip()
+    
+    try:
+        # Base query
+        sections_query = Section.query.filter_by(IdEmpresa=1)
+        
+        # Apply search filter if provided
+        if search_query:
+            logger.info(f"User {current_user.username} searching sections with query: '{search_query}'")
+            
+            # Check if search query is numeric (for ID search)
+            if search_query.isdigit():
+                # Search by ID or name
+                sections_query = sections_query.filter(
+                    or_(
+                        Section.IdSeccion == int(search_query),
+                        Section.NombreSeccion.ilike(f'%{search_query}%')
+                    )
+                )
+            else:
+                # Text search in name
+                sections_query = sections_query.filter(
+                    Section.NombreSeccion.ilike(f'%{search_query}%')
+                )
+        
+        # Order by ID
+        sections_query = sections_query.order_by(Section.IdSeccion)
+        
+        # Paginate the results
+        sections_paged = sections_query.paginate(
+            page=page, 
+            per_page=20, 
+            error_out=False
+        )
+        
+        # Get article counts for each section
+        section_counts = {}
+        if sections_paged.items:
+            section_ids = [section.IdSeccion for section in sections_paged.items]
+            if section_ids:
+                try:
+                    # Get article counts for each section
+                    if len(section_ids) == 1:
+                        query_params = {"ids": (section_ids[0],)}
+                    else:
+                        query_params = {"ids": tuple(section_ids)}
+                    
+                    counts_result = db.session.execute(text("""
+                        SELECT IdSeccion, COUNT(*) as count
+                        FROM dat_articulo 
+                        WHERE IdSeccion IN :ids
+                        GROUP BY IdSeccion
+                    """), query_params).fetchall()
+                    
+                    for row in counts_result:
+                        section_counts[row[0]] = row[1]
+                except Exception as e:
+                    logger.warning(f"Error getting section article counts: {str(e)}")
+                    section_counts = {}
+        
+        return render_template('sections/index.html', 
+                             sections=sections_paged,
+                             query=search_query,
+                             section_counts=section_counts)
+        
+    except Exception as e:
+        logger.error(f"Error in sections index: {str(e)}")
+        flash(f'Errore durante il caricamento delle sezioni: {str(e)}', 'danger')
+        
+        # Return empty results in case of error
+        return render_template('sections/index.html', 
+                             sections=None,
+                             query=search_query,
+                             section_counts={})
 
 @sections_bp.route('/new', methods=['GET', 'POST'])
 @login_required

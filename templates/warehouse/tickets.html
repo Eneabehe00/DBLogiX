@@ -1,25 +1,272 @@
 {% extends "base.html" %}
 
-{% block title %}Tickets - DBLogiX{% endblock %}
+{% block title %}Gestione Tickets{% endblock %}
 
 {% block header_title %}Gestione Tickets{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
 <style>
-    @media (max-width: 768px) {
-        .data-table th, .data-table td {
-            font-size: 0.85rem;
-            padding: 0.5rem 0.5rem;
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
         }
         
-        .mobile-truncate {
-            max-width: 100px;
-            white-space: nowrap;
+    .ticket-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
             overflow: hidden;
-            text-overflow: ellipsis;
-            display: inline-block;
+    }
+    
+    .ticket-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table th {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.bg-success {
+        background-color: var(--success-green);
+    }
+    
+    .stats-card.bg-success:hover {
+        background-color: #229954;
+    }
+    
+    .stats-card.bg-warning {
+        background-color: var(--warning-orange);
+    }
+    
+    .stats-card.bg-warning:hover {
+        background-color: #e67e22;
+    }
+    
+    .stats-card.bg-info {
+        background-color: var(--accent-blue);
         }
+    
+    .stats-card.bg-info:hover {
+        background-color: #2980b9;
+    }
+    
+    .stats-card.bg-danger {
+        background-color: var(--danger-red);
+    }
+    
+    .stats-card.bg-danger:hover {
+        background-color: #c0392b;
+    }
+    
+    .input-group .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px 0 0 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .input-group .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-info {
+        background-color: var(--accent-blue) !important;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    .badge.bg-success {
+        background-color: var(--success-green) !important;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--warning-orange) !important;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--danger-red) !important;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--secondary-dark) !important;
+        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-success:hover {
+        background-color: var(--success-green);
+        border-color: var(--success-green);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-warning:hover {
+        background-color: var(--warning-orange);
+        border-color: var(--warning-orange);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: var(--danger-red);
+        border-color: var(--danger-red);
+        transform: translateY(-1px);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        transform: translateY(-1px);
+        color: var(--primary-dark);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .text-success {
+        color: var(--success-green) !important;
+    }
+    
+    .status-filters .btn-group .btn {
+        transition: all 0.3s ease;
+        margin: 2px;
+        border-radius: 8px;
+    }
+    
+    .status-filters .btn.active {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .badge-soft {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.75rem;
+    }
+    
+    .badge-soft-primary {
+        background-color: rgba(44, 62, 80, 0.15);
+        color: var(--primary-dark);
+    }
+    
+    .badge-soft-success {
+        background-color: rgba(39, 174, 96, 0.15);
+        color: var(--success-green);
+    }
+    
+    .badge-soft-warning {
+        background-color: rgba(243, 156, 18, 0.15);
+        color: var(--warning-orange);
+    }
+    
+    .badge-soft-danger {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: var(--danger-red);
+    }
+    
+    .badge-soft-secondary {
+        background-color: rgba(52, 73, 94, 0.15);
+        color: var(--secondary-dark);
     }
 </style>
 {% endblock %}
@@ -72,29 +319,108 @@
 </div>
 
 <div class="container-fluid">
+    <!-- Enhanced Search and Filters -->
+    <div class="filter-section">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-5">
+                <label class="form-label fw-bold">🔍 Ricerca Avanzata Tickets</label>
+                <form method="GET" action="{{ url_for('warehouse.tickets') }}" id="searchForm">
+                    <input type="hidden" name="status" value="{{ current_status or '' }}">
+                    <input type="hidden" name="start_date" value="{{ request.args.get('start_date', '') }}">
+                    <input type="hidden" name="end_date" value="{{ request.args.get('end_date', '') }}">
+                    <div class="input-group">
+                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                        <input type="text" name="query" id="searchInput" class="form-control" 
+                               placeholder="Cerca per #numero, ID, codice a barre, prodotto..." 
+                               value="{{ search or '' }}">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <small class="text-muted">Usa #123 per ticket numero 123, oppure cerca per prodotto</small>
+            </div>
+            <div class="col-lg-3">
+                <label class="form-label fw-bold">📅 Data inizio</label>
+                <input type="date" id="startDate" class="form-control" value="{{ request.args.get('start_date', '') }}">
+            </div>
+            <div class="col-lg-3">
+                <label class="form-label fw-bold">📅 Data fine</label>
+                <input type="date" id="endDate" class="form-control" value="{{ request.args.get('end_date', '') }}">
+            </div>
+            <div class="col-lg-1">
+                <button id="applyDateFilter" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-1"></i>Filtra
+                </button>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5 class="mb-1">{{ tickets.total if tickets.total else 0 }}</h5>
+                    <small>Totale Tickets</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-success">
+                    <h5 class="mb-1" id="visibleCount">{{ tickets.items|length }}</h5>
+                    <small>Tickets visualizzati</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-warning">
+                    <h5 class="mb-1">{{ expiring_count or 0 }}</h5>
+                    <small>In Scadenza</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card bg-danger">
+                    <h5 class="mb-1">{{ expired_count or 0 }}</h5>
+                    <small>Scaduti</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
     <!-- Status Filter -->
-    <div class="card shadow-sm mb-4">
+    <div class="card shadow-sm mb-4 status-filters">
         <div class="card-header bg-transparent">
             <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Stato Tickets</h5>
         </div>
         <div class="card-body">
-            <div class="btn-group w-100 overflow-auto">
-                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
+            <div class="btn-group w-100 overflow-auto" role="group">
+                <a href="{{ url_for('warehouse.tickets', query=search or '') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
                     <i class="fas fa-list-ul me-1"></i> Tutti
                 </a>
-                <a href="{{ url_for('warehouse.tickets', status='giacenza', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-warning {% if current_status == 'giacenza' %}active{% endif %}">
+                <a href="{{ url_for('warehouse.tickets', status='giacenza', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-warning {% if current_status == 'giacenza' %}active{% endif %}">
                     <i class="fas fa-warehouse me-1"></i> Giacenza
                 </a>
-                <a href="{{ url_for('warehouse.tickets', status='processed', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
+                <a href="{{ url_for('warehouse.tickets', status='processed', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
                     <i class="fas fa-check-circle me-1"></i> Processati
                 </a>
-                <a href="{{ url_for('warehouse.tickets', status='expired', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expired' %}active{% endif %}">
+                <a href="{{ url_for('warehouse.tickets', status='expired', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expired' %}active{% endif %}">
                     <i class="fas fa-times-circle me-1"></i> Scaduti
                     {% if expired_count > 0 %}
                     <span class="badge bg-danger ms-1">{{ expired_count }}</span>
                     {% endif %}
                 </a>
-                <a href="{{ url_for('warehouse.tickets', status='expiring', query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expiring' %}active{% endif %}">
+                <a href="{{ url_for('warehouse.tickets', status='expiring', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expiring' %}active{% endif %}">
                     <i class="fas fa-exclamation-circle me-1"></i> Scadenza
                     {% if expiring_count > 0 %}
                     <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
@@ -104,58 +430,34 @@
         </div>
     </div>
 
-    <!-- Search Filters -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-transparent">
-            <h5 class="mb-0"><i class="fas fa-search me-2 text-primary"></i>Cerca Tickets</h5>
+    <!-- Search Results Info -->
+    {% if search %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
+        <div>
+            <strong>Ricerca attiva:</strong> "{{ search }}"<br>
+            <small class="text-muted">
+                {% if tickets and tickets.total > 0 %}
+                    Trovati {{ tickets.total }} tickets corrispondenti in tutto il database
+                    {% if tickets.total > tickets.items|length %}
+                        • Visualizzando {{ tickets.items|length }} risultati (pagina {{ tickets.page }} di {{ tickets.pages }})
+                    {% endif %}
+                {% else %}
+                    Nessun ticket trovato per questa ricerca
+                {% endif %}
+            </small>
         </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-lg-7">
-                    <!-- Search form -->
-                    <div class="search-wrapper">
-                        <div class="position-relative">
-                            <input type="text" id="ticketSearch" class="form-control" placeholder="Cerca per #numero ticket, codice a barre o nome prodotto..." value="{{ request.args.get('query', '') }}">
-                            <div id="searchResults" class="search-results-dropdown"></div>
-                        </div>
-                        <div class="form-text text-muted mt-1">
-                            <i class="fas fa-info-circle"></i> Usa <code>#123</code> per cercare il ticket numero 123, oppure cerca per codice a barre o nome prodotto
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-5">
-                    <!-- Date filter -->
-                    <div class="row g-2">
-                        <div class="col-md-5 col-6">
-                            <label for="startDate" class="form-label">Data inizio</label>
-                            <input type="date" id="startDate" class="form-control" value="{{ request.args.get('start_date', '') }}">
-                        </div>
-                        <div class="col-md-5 col-6">
-                            <label for="endDate" class="form-label">Data fine</label>
-                            <input type="date" id="endDate" class="form-control" value="{{ request.args.get('end_date', '') }}">
-                        </div>
-                        <div class="col-md-2 col-12 d-flex align-items-end mt-md-0 mt-2">
-                            <button id="applyDateFilter" class="btn btn-primary w-100">Filtra</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <a href="{{ url_for('warehouse.tickets', status=current_status, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-primary btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Cancella ricerca
+        </a>
     </div>
+    {% endif %}
 
-    {% if request.args.get('query') or request.args.get('start_date') or request.args.get('end_date') %}
+    <!-- Active Filters Info -->
+    {% if request.args.get('start_date') or request.args.get('end_date') %}
     <div class="alert alert-info mb-4">
         <div class="d-flex flex-wrap align-items-center">
-            <span class="me-2 mb-2">Filtri attivi:</span>
-            
-            {% if request.args.get('query') %}
-            <span class="badge-soft badge-soft-primary me-2 mb-2 py-2 px-3">
-                <i class="fas fa-search me-1"></i> {{ request.args.get('query') }}
-                <a href="{{ url_for('warehouse.tickets', status=current_status, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="ms-2 text-primary">
-                    <i class="fas fa-times"></i>
-                </a>
-            </span>
-            {% endif %}
+            <span class="me-2 mb-2">Filtri data attivi:</span>
             
             {% if request.args.get('start_date') or request.args.get('end_date') %}
             <span class="badge-soft badge-soft-primary me-2 mb-2 py-2 px-3">
@@ -167,7 +469,7 @@
                 {% else %}
                     Fino al {{ request.args.get('end_date') }}
                 {% endif %}
-                <a href="{{ url_for('warehouse.tickets', status=current_status, query=request.args.get('query', '')) }}" class="ms-2 text-primary">
+                <a href="{{ url_for('warehouse.tickets', status=current_status, query=search or '') }}" class="ms-2 text-primary">
                     <i class="fas fa-times"></i>
                 </a>
             </span>
@@ -180,40 +482,70 @@
     </div>
     {% endif %}
 
-    <!-- Tickets List -->
-    <div class="card shadow-sm">
+    <!-- Enhanced Tickets List -->
+    <div class="ticket-card card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Tickets</h5>
-            {% if tickets.total > 0 %}
-            <span class="badge-soft badge-soft-primary">{{ tickets.total }} risultati</span>
-            {% endif %}
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportTickets()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
         </div>
         <div class="card-body p-0">
             {% if tickets.items %}
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                <table class="table table-hover mb-0" id="ticketTable">
+                    <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Numero</th>
-                            <th>Data</th>
-                            <th>Prodotto</th>
-                            <th>Scadenza</th>
-                            <th>Codice</th>
-                            <th>Linee</th>
-                            <th>Stato</th>
+                            <th>
+                                <i class="fas fa-hashtag me-1"></i>ID
+                            </th>
+                            <th>
+                                <i class="fas fa-receipt me-1"></i>Numero
+                            </th>
+                            <th>
+                                <i class="fas fa-calendar me-1"></i>Data
+                            </th>
+                            <th>
+                                <i class="fas fa-box me-1"></i>Prodotto
+                            </th>
+                            <th>
+                                <i class="fas fa-clock me-1"></i>Scadenza
+                            </th>
+                            <th>
+                                <i class="fas fa-barcode me-1"></i>Codice
+                            </th>
+                            <th>
+                                <i class="fas fa-list-ol me-1"></i>Linee
+                            </th>
+                            <th>
+                                <i class="fas fa-flag me-1"></i>Stato
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ticket in tickets.items %}
-                        <tr data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;">
-                            <td data-label="ID">{{ ticket.IdTicket }}</td>
-                            <td data-label="Numero">#{{ ticket.NumTicket }}</td>
-                            <td data-label="Data">{{ ticket.formatted_date }}</td>
+                        <tr data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;" class="table-row">
+                            <td data-label="ID">
+                                <span class="badge bg-primary">{{ ticket.IdTicket }}</span>
+                            </td>
+                            <td data-label="Numero">
+                                <strong>#{{ ticket.NumTicket }}</strong>
+                            </td>
+                            <td data-label="Data">
+                                <small class="text-muted">{{ ticket.formatted_date }}</small>
+                            </td>
                             <td data-label="Prodotto">
                                 {% if ticket.IdTicket in ticket_products %}
                                 <div>
+                                    <div class="text-truncate" style="max-width: 160px;" title="{{ ticket_products[ticket.IdTicket]['product_name'] }}">
+                                        <i class="fas fa-cube text-muted me-1"></i>
                                     <strong>{{ ticket_products[ticket.IdTicket]['product_name'] }}</strong> 
+                                    </div>
                                     {% if ticket_products[ticket.IdTicket]['product_id'] %}
                                     <div class="text-muted small">
                                         ID: {{ ticket_products[ticket.IdTicket]['product_id'] }}
@@ -228,16 +560,15 @@
                                 {% if ticket.IdTicket in ticket_expiry %}
                                 {% set expiry_data = ticket_expiry[ticket.IdTicket] %}
                                 {% if expiry_data.days_remaining is not none %}
-                                {% if expiry_data.days_remaining <= 5 %}
+                                {% if expiry_data.days_remaining < 0 %}
                                 <span class="badge-soft badge-soft-danger">
                                     {{ expiry_data.expiry_date }}
-                                    <span class="ms-1">
-                                        {% if expiry_data.days_remaining < 0 %}
-                                            (Scaduto)
-                                        {% else %}
-                                            ({{ expiry_data.days_remaining }} giorni)
-                                        {% endif %}
+                                    <span class="ms-1">(Scaduto)</span>
                                     </span>
+                                {% elif expiry_data.days_remaining <= 5 %}
+                                <span class="badge-soft badge-soft-danger">
+                                    {{ expiry_data.expiry_date }}
+                                    <span class="ms-1">({{ expiry_data.days_remaining }} giorni)</span>
                                 </span>
                                 {% elif expiry_data.days_remaining <= 10 %}
                                 <span class="badge-soft badge-soft-warning">
@@ -258,7 +589,7 @@
                             </td>
                             <td data-label="Codice">
                                 {% if ticket.CodigoBarras %}
-                                <code>{{ ticket.CodigoBarras }}</code>
+                                <code class="small">{{ ticket.CodigoBarras }}</code>
                                 {% else %}
                                 <span class="text-muted">N/A</span>
                                 {% endif %}
@@ -281,14 +612,14 @@
                 </table>
             </div>
             
-            <!-- Pagination -->
+            <!-- Enhanced Pagination -->
             {% if tickets.pages > 1 %}
-            <div class="p-3 border-top">
+            <div class="p-3 border-top bg-light">
                 <nav aria-label="Page navigation">
                     <ul class="pagination pagination-sm justify-content-center mb-0">
                         {% if tickets.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, status=current_status, query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Previous">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, status=current_status, query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
@@ -300,13 +631,13 @@
                         
                         {% for page_num in tickets.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
                             {% if page_num %}
-                                {% if page_num != tickets.page %}
-                                <li class="page-item">
-                                    <a class="page-link" href="{{ url_for('warehouse.tickets', page=page_num, status=current_status, query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}">{{ page_num }}</a>
+                                {% if page_num == tickets.page %}
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">{{ page_num }}</a>
                                 </li>
                                 {% else %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ page_num }}</span>
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('warehouse.tickets', page=page_num, status=current_status, query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}">{{ page_num }}</a>
                                 </li>
                                 {% endif %}
                             {% else %}
@@ -318,7 +649,7 @@
                         
                         {% if tickets.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.next_num, status=current_status, query=request.args.get('query', ''), start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Next">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.next_num, status=current_status, query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>
@@ -329,14 +660,20 @@
                         {% endif %}
                     </ul>
                 </nav>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Pagina {{ tickets.page }} di {{ tickets.pages }} - {{ tickets.total }} elementi totali
+                    </small>
+                </div>
             </div>
             {% endif %}
+            
             {% else %}
             <div class="p-5 text-center">
-                <i class="fas fa-receipt text-muted mb-3" style="font-size: 3rem;"></i>
+                <i class="fas fa-receipt text-muted mb-3" style="font-size: 4rem;"></i>
                 <h5>Nessun ticket trovato</h5>
                 <p class="text-muted">Non ci sono ticket che corrispondono ai criteri di ricerca.</p>
-                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-primary mt-2">
+                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-primary btn-lg mt-3">
                     <i class="fas fa-list me-2"></i>Visualizza tutti i ticket
                 </a>
             </div>
@@ -349,27 +686,126 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Filter functionality
-        const ticketSearch = document.getElementById('ticketSearch');
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        const applyDateFilterBtn = document.getElementById('applyDateFilter');
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
         
-        // Search handling
-        if (ticketSearch) {
-            ticketSearch.addEventListener('keypress', function(e) {
+        // Enhanced search functionality - prioritize server-side search
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('.table-row');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const searchForm = document.getElementById('searchForm');
+        
+        // Check if we have an active server search
+        const hasActiveSearch = searchInput.value.trim().length > 0;
+        
+        function updateVisibleCount() {
+            const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+            visibleCountEl.textContent = visibleRows.length;
+        }
+        
+        // Server-side search with auto-submit
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const searchTerm = this.value.toLowerCase().trim();
+        
+                // If search term is long enough, use server-side search
+                if (searchTerm.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit form for server-side search
+                        searchForm.submit();
+                    }, 800); // Longer delay for server search
+                } else if (searchTerm.length === 0) {
+                    // Clear search immediately if input is empty
+                    searchForm.submit();
+                } else {
+                    // For very short terms, use client-side search on current page only
+                    searchTimeout = setTimeout(function() {
+                        performClientSideSearch(searchTerm);
+                    }, 200);
+                }
+            });
+            
+            // Handle Enter key for immediate search
+            searchInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
-                    const searchTerm = this.value.trim();
-                    if (searchTerm) {
-                        const currentUrl = new URL(window.location.href);
-                        currentUrl.searchParams.set('query', searchTerm);
-                        window.location.href = currentUrl.toString();
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    if (this.value.trim().length > 0) {
+                        searchForm.submit();
                     }
                 }
             });
         }
         
-        // Date filter
+        // Client-side search function (only for short terms or as fallback)
+        function performClientSideSearch(searchTerm) {
+            if (hasActiveSearch) {
+                // Don't perform client-side search if server search is active
+                return;
+            }
+            
+            tableRows.forEach(function(row) {
+                const ticketId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const ticketNumber = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const ticketProduct = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                const ticketCode = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                
+                // Search in multiple fields
+                if (ticketId.includes(searchTerm) || 
+                    ticketNumber.includes(searchTerm) || 
+                    ticketProduct.includes(searchTerm) || 
+                    ticketCode.includes(searchTerm)) {
+                    row.style.display = '';
+                    row.classList.add('animate__animated', 'animate__fadeIn');
+                } else {
+                    row.style.display = 'none';
+                    row.classList.remove('animate__animated', 'animate__fadeIn');
+                }
+            });
+            updateVisibleCount();
+        }
+        
+        // Clear search functionality
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.delete('query');
+                window.location.href = currentUrl.toString();
+            });
+        }
+        
+        // Add search hints
+        if (searchInput && !hasActiveSearch) {
+            const originalPlaceholder = searchInput.placeholder;
+            searchInput.addEventListener('focus', function() {
+                this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+            });
+            searchInput.addEventListener('blur', function() {
+                this.placeholder = originalPlaceholder;
+            });
+        }
+        
+        // Show search status
+        if (hasActiveSearch) {
+            // Add visual indicator that server search is active
+            const searchIcon = document.querySelector('#searchForm .input-group-text i');
+            if (searchIcon) {
+                searchIcon.className = 'fas fa-search text-success';
+                searchIcon.title = 'Ricerca attiva su tutti i tickets';
+            }
+        }
+        
+        // Date filter functionality
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const applyDateFilterBtn = document.getElementById('applyDateFilter');
+        
         if (applyDateFilterBtn) {
             applyDateFilterBtn.addEventListener('click', function() {
                 const startDate = startDateInput.value;
@@ -388,13 +824,35 @@
             });
         }
         
-        // Make rows clickable
-        const ticketRows = document.querySelectorAll('tbody tr[data-url]');
-        ticketRows.forEach(function(row) {
+        // Make rows clickable to view detail
+        tableRows.forEach(function(row) {
             row.addEventListener('click', function() {
-                window.location.href = this.getAttribute('data-url');
+                if (this.dataset.url) {
+                    window.location.href = this.dataset.url;
+                }
             });
         });
+        
+        // Export functionality
+        window.exportTickets = function() {
+            alert('Funzionalità di esportazione non ancora implementata');
+        };
+        
+        // Refresh table
+        window.refreshTable = function() {
+            window.location.reload();
+        };
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+        
+        // Initialize visible count
+        updateVisibleCount();
     });
 </script>
 {% endblock %} 

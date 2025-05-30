@@ -4,10 +4,569 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+    }
+
+    .task-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        background-color: var(--white);
+    }
+    
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.primary {
+        background-color: var(--primary-dark);
+    }
+    
+    .stats-card.primary:hover {
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.success {
+        background-color: var(--success-green);
+    }
+    
+    .stats-card.success:hover {
+        background-color: #229954;
+    }
+    
+    .stats-card.warning {
+        background-color: var(--warning-orange);
+    }
+    
+    .stats-card.warning:hover {
+        background-color: #e67e22;
+    }
+    
+    .stats-card.info {
+        background-color: var(--accent-blue);
+    }
+    
+    .stats-card.info:hover {
+        background-color: #2980b9;
+    }
+    
+    .stats-card.danger {
+        background-color: var(--danger-red);
+    }
+    
+    .stats-card.danger:hover {
+        background-color: #c0392b;
+    }
+    
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group .form-control {
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        border-color: var(--secondary-dark);
+        color: var(--secondary-dark);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+        border-radius: 12px;
+        border-left: 4px solid var(--accent-blue);
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-success {
+        background-color: var(--success-green) !important;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--warning-orange) !important;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+        color: var(--white) !important;
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--danger-red) !important;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    
+    .task-priority-badge {
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .task-priority-high {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: var(--danger-red);
+    }
+    
+    .task-priority-medium {
+        background-color: rgba(243, 156, 18, 0.15);
+        color: var(--warning-orange);
+    }
+    
+    .task-priority-low {
+        background-color: rgba(39, 174, 96, 0.15);
+        color: var(--success-green);
+    }
+    
+    .task-status-badge {
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .task-status-pending {
+        background-color: rgba(243, 156, 18, 0.15);
+        color: var(--warning-orange);
+    }
+    
+    .task-status-assigned {
+        background-color: rgba(52, 152, 219, 0.15);
+        color: var(--accent-blue);
+    }
+    
+    .task-status-in_progress {
+        background-color: rgba(52, 152, 219, 0.15);
+        color: var(--accent-blue);
+    }
+    
+    .task-status-completed {
+        background-color: rgba(39, 174, 96, 0.15);
+        color: var(--success-green);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Enhanced search functionality - prioritize server-side search
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    const taskCards = document.querySelectorAll('.task-card');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    const searchForm = document.getElementById('searchForm');
+    
+    // Check if we have an active server search
+    const hasActiveSearch = searchInput && searchInput.value.trim().length > 0;
+    
+    // Server-side search with auto-submit
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            // If search term is long enough, use server-side search
+            if (searchTerm.length >= 2) {
+                searchTimeout = setTimeout(function() {
+                    // Auto-submit form for server-side search
+                    searchForm.submit();
+                }, 800); // Longer delay for server search
+            } else if (searchTerm.length === 0) {
+                // Clear search immediately if input is empty
+                searchForm.submit();
+            }
+        });
+        
+        // Handle Enter key for immediate search
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                if (this.value.trim().length > 0) {
+                    searchForm.submit();
+                }
+            }
+        });
+    }
+    
+    // Clear search functionality
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.delete('query');
+            window.location.href = currentUrl.toString();
+        });
+    }
+    
+    // Add search hints
+    if (searchInput && !hasActiveSearch) {
+        const originalPlaceholder = searchInput.placeholder;
+        searchInput.addEventListener('focus', function() {
+            this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+        });
+        searchInput.addEventListener('blur', function() {
+            this.placeholder = originalPlaceholder;
+        });
+    }
+    
+    // Show search status
+    if (hasActiveSearch) {
+        // Add visual indicator that server search is active
+        const searchIcon = document.querySelector('#searchForm .input-group-text i');
+        if (searchIcon) {
+            searchIcon.className = 'fas fa-search text-success';
+            searchIcon.title = 'Ricerca attiva su tutti i tasks';
+        }
+    }
+    
+    // Date filter functionality
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const applyDateFilterBtn = document.getElementById('applyDateFilter');
+    
+    if (applyDateFilterBtn) {
+        applyDateFilterBtn.addEventListener('click', function() {
+            const startDate = startDateInput.value;
+            const endDate = endDateInput.value;
+            
+            if (!startDate && !endDate) return;
+            
+            const currentUrl = new URL(window.location.href);
+            if (startDate) currentUrl.searchParams.set('date_from', startDate);
+            else currentUrl.searchParams.delete('date_from');
+            
+            if (endDate) currentUrl.searchParams.set('date_to', endDate);
+            else currentUrl.searchParams.delete('date_to');
+            
+            window.location.href = currentUrl.toString();
+        });
+    }
+    
+    // Quick Filters functionality
+    const priorityFilter = document.getElementById('priorityFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const applyAllFiltersBtn = document.getElementById('applyAllFilters');
+    const clearAllFiltersBtn = document.getElementById('clearAllFilters');
+    
+    if (applyAllFiltersBtn) {
+        applyAllFiltersBtn.addEventListener('click', function() {
+            const currentUrl = new URL(window.location.href);
+            
+            // Apply priority filter
+            if (priorityFilter.value) {
+                currentUrl.searchParams.set('priority', priorityFilter.value);
+            } else {
+                currentUrl.searchParams.delete('priority');
+            }
+            
+            // Apply status filter
+            if (statusFilter.value) {
+                currentUrl.searchParams.set('status', statusFilter.value);
+            } else {
+                currentUrl.searchParams.delete('status');
+            }
+            
+            // Apply date filters
+            if (startDateInput.value) {
+                currentUrl.searchParams.set('date_from', startDateInput.value);
+            } else {
+                currentUrl.searchParams.delete('date_from');
+            }
+            
+            if (endDateInput.value) {
+                currentUrl.searchParams.set('date_to', endDateInput.value);
+            } else {
+                currentUrl.searchParams.delete('date_to');
+            }
+            
+            window.location.href = currentUrl.toString();
+        });
+    }
+    
+    if (clearAllFiltersBtn) {
+        clearAllFiltersBtn.addEventListener('click', function() {
+            window.location.href = '{{ url_for("tasks.admin_dashboard") }}';
+        });
+    }
+    
+    // Make task cards clickable
+    taskCards.forEach(function(card) {
+        const href = card.dataset.href;
+        if (href) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', function(e) {
+                // Don't navigate if clicking on buttons or form elements
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                    e.target.tagName === 'INPUT' || e.target.closest('.btn-remove-task')) {
+                    return;
+                }
+                window.location.href = href;
+            });
+        }
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            if (searchInput) searchInput.focus();
+        }
+    });
+    
+    // Auto-submit form on filter change (legacy support)
+    const filterInputs = document.querySelectorAll('#filterForm input, #filterForm select');
+    filterInputs.forEach(function(input) {
+        input.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
+        });
+    });
+
+    // Update progress bars with animation
+    const progressBars = document.querySelectorAll('.task-progress-fill');
+    progressBars.forEach(function(bar) {
+        const originalWidth = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(function() {
+            bar.style.width = originalWidth;
+        }, 100);
+    });
+
+    // Handle clickable cards hover effect
+    const clickableCards = document.querySelectorAll('.clickable-card');
+    clickableCards.forEach(function(card) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 20px rgba(44, 62, 80, 0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = '';
+            this.style.boxShadow = '';
+        });
+    });
+
+    // Modal debugging and enhancement
+    console.log('Task dashboard loaded with enhanced features');
+    console.log('Total task cards:', taskCards.length);
+    console.log('Active search:', hasActiveSearch);
+    
+    // Ensure modals work properly
+    const modalTriggers = document.querySelectorAll('[data-bs-toggle="modal"]');
+    modalTriggers.forEach(function(trigger) {
+        trigger.addEventListener('click', function(e) {
+            const target = this.getAttribute('data-bs-target');
+            console.log('Modal target:', target);
+            
+            if (!document.querySelector(target)) {
+                console.error('Modal not found:', target);
+                e.preventDefault();
+                alert('Errore: Modal non trovato. Controlla la console.');
+                return false;
+            }
+        });
+    });
+    
+    // Statistics animation
+    const statsNumbers = document.querySelectorAll('.stats-number');
+    statsNumbers.forEach(function(stat) {
+        const finalValue = parseInt(stat.textContent);
+        let currentValue = 0;
+        const increment = Math.ceil(finalValue / 30);
+        
+        const timer = setInterval(function() {
+            currentValue += increment;
+            if (currentValue >= finalValue) {
+                currentValue = finalValue;
+                clearInterval(timer);
+            }
+            stat.textContent = currentValue;
+        }, 50);
+    });
+});
+
+// Clear all filters function (legacy support)
+function clearFilters() {
+    window.location.href = '{{ url_for("tasks.admin_dashboard") }}';
+}
+</script>
+
+<style>
+    /* Enhanced clickable card styles */
+    .clickable-card {
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .clickable-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+
+    .task-card-footer button {
+        z-index: 10;
+        position: relative;
+    }
+
+    /* Search input enhancements */
+    #searchInput:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+
+    /* Progress bar animations */
+    .task-progress-fill {
+        transition: width 0.8s ease-in-out;
+    }
+
+    /* Statistics cards animation */
+    .stats-card {
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+    }
+
+    /* Loading state for search */
+    .search-loading {
+        position: relative;
+    }
+
+    .search-loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border-light);
+        border-top: 2px solid var(--accent-blue);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        transform: translateY(-50%);
+    }
+
+    @keyframes spin {
+        0% { transform: translateY(-50%) rotate(0deg); }
+        100% { transform: translateY(-50%) rotate(360deg); }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .filter-section {
+            padding: 15px;
+        }
+        
+        .stats-card {
+            margin-bottom: 15px;
+        }
+        
+        .task-card {
+            margin-bottom: 15px;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -23,19 +582,24 @@
         <div class="row align-items-center mt-3">
             <div class="col-md-8">
                 <h1 class="page-title mb-0">
-                    <i class="fas fa-tasks me-2"></i>Task Management
+                    <i class="fas fa-tasks me-2"></i>Task Management - Admin
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
-                    <span class="text-white-50">Gestione completa dei task di magazzino</span>
+                    <span class="text-white-50">{{ stats.total_tasks }} tasks totali nel sistema</span>
+                    {% if search %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="d-grid d-md-block gap-2">
-                    <a href="{{ url_for('tasks.create_task') }}" class="action-btn mb-2 mb-md-0">
-                        <i class="fas fa-plus"></i> Crea Nuovo Task
+                    <a href="{{ url_for('tasks.create_task') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Crea Nuovo Task
                     </a>
-                    <a href="{{ url_for('tasks.notifications') }}" class="action-btn position-relative">
-                        <i class="fas fa-bell"></i> Notifiche
+                    <a href="{{ url_for('tasks.notifications') }}" class="btn btn-light action-btn position-relative">
+                        <i class="fas fa-bell me-1"></i>Notifiche
                         {% if stats.pending_tasks > 0 %}
                         <span class="badge bg-danger position-absolute" style="top: -8px; right: -8px; font-size: 0.7rem;">{{ stats.pending_tasks }}</span>
                         {% endif %}
@@ -47,7 +611,81 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Statistics Cards -->
+    <!-- Enhanced Search Section -->
+    <div class="filter-section">
+        <div class="row g-4 align-items-end">
+            <div class="col-lg-6">
+                <label class="form-label fw-bold">🔍 Ricerca Avanzata Tasks</label>
+                <form method="GET" action="{{ url_for('tasks.admin_dashboard') }}" id="searchForm">
+                    <input type="hidden" name="date_from" value="{{ current_filters.date_from }}">
+                    <input type="hidden" name="date_to" value="{{ current_filters.date_to }}">
+                    <input type="hidden" name="priority" value="{{ current_filters.priority }}">
+                    <input type="hidden" name="status" value="{{ current_filters.status }}">
+                    <div class="input-group">
+                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                        <input type="text" name="query" id="searchInput" class="form-control" 
+                               placeholder="Cerca per ID, numero task, titolo, descrizione..." 
+                               value="{{ search or '' }}">
+                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+                <small class="text-muted">Ricerca in tempo reale attraverso ID, numero, titolo e descrizione</small>
+            </div>
+            <div class="col-lg-2">
+                <label class="form-label fw-bold">📅 Data inizio</label>
+                <input type="date" id="startDate" class="form-control" value="{{ current_filters.date_from }}">
+            </div>
+            <div class="col-lg-2">
+                <label class="form-label fw-bold">📅 Data fine</label>
+                <input type="date" id="endDate" class="form-control" value="{{ current_filters.date_to }}">
+            </div>
+            <div class="col-lg-2">
+                <button id="applyDateFilter" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-1"></i>Filtra
+                </button>
+            </div>
+        </div>
+        
+        <!-- Quick Filters -->
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <label class="form-label fw-bold">🎯 Priorità</label>
+                <select class="form-control" id="priorityFilter">
+                    <option value="">Tutte</option>
+                    <option value="low" {% if current_filters.priority == 'low' %}selected{% endif %}>Bassa</option>
+                    <option value="medium" {% if current_filters.priority == 'medium' %}selected{% endif %}>Media</option>
+                    <option value="high" {% if current_filters.priority == 'high' %}selected{% endif %}>Alta</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">📊 Stato</label>
+                <select class="form-control" id="statusFilter">
+                    <option value="">Tutti</option>
+                    <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>In Attesa</option>
+                    <option value="assigned" {% if current_filters.status == 'assigned' %}selected{% endif %}>Assegnato</option>
+                    <option value="in_progress" {% if current_filters.status == 'in_progress' %}selected{% endif %}>In Corso</option>
+                    <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completato</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button id="applyAllFilters" class="btn btn-primary w-100 mt-4">
+                    <i class="fas fa-filter me-1"></i>Applica Filtri
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button id="clearAllFilters" class="btn btn-outline-secondary w-100 mt-4">
+                    <i class="fas fa-times me-1"></i>Reset Filtri
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-2 col-sm-6 mb-3">
             <div class="stats-card primary">
@@ -94,74 +732,86 @@
                 <div class="stats-label">Scaduti</div>
             </div>
         </div>
+        <div class="col-md-2 col-sm-6 mb-3">
+            <div class="stats-card primary">
+                <div class="stats-icon">
+                    <i class="fas fa-eye"></i>
     </div>
-
-    <!-- Filters -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-transparent">
-            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
+                <div class="stats-number">{{ (active_tasks|length) + (completed_tasks|length) + (overdue_tasks|length) }}</div>
+                <div class="stats-label">Visualizzati</div>
         </div>
-        <div class="card-body">
-            <form method="GET" id="filterForm">
-                <div class="row g-3 align-items-end">
-                    <div class="col-xl-3 col-lg-4 col-md-6">
-                        <label for="title" class="form-label text-muted small">Titolo Task</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="title" 
-                               name="title" 
-                               value="{{ current_filters.title }}"
-                               placeholder="Cerca per titolo...">
                     </div>
-                    <div class="col-xl-2 col-lg-3 col-md-6">
-                        <label for="date_from" class="form-label text-muted small">Data Inizio</label>
-                        <input type="date" 
-                               class="form-control" 
-                               id="date_from" 
-                               name="date_from" 
-                               value="{{ current_filters.date_from }}">
                     </div>
-                    <div class="col-xl-2 col-lg-3 col-md-6">
-                        <label for="date_to" class="form-label text-muted small">Data Fine</label>
-                        <input type="date" 
-                               class="form-control" 
-                               id="date_to" 
-                               name="date_to" 
-                               value="{{ current_filters.date_to }}">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <div class="col-xl-2 col-lg-2 col-md-6">
-                        <label for="priority" class="form-label text-muted small">Priorità</label>
-                        <select class="form-control" id="priority" name="priority">
-                            <option value="">Tutte le priorità</option>
-                            <option value="low" {% if current_filters.priority == 'low' %}selected{% endif %}>Bassa</option>
-                            <option value="medium" {% if current_filters.priority == 'medium' %}selected{% endif %}>Media</option>
-                            <option value="high" {% if current_filters.priority == 'high' %}selected{% endif %}>Alta</option>
-                        </select>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Search Results Info -->
+    {% if search %}
+    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
+        <div>
+            <strong>Ricerca attiva:</strong> "{{ search }}"<br>
+            <small class="text-muted">
+                {% set total_found = (active_tasks|length) + (completed_tasks|length) + (overdue_tasks|length) %}
+                {% if total_found > 0 %}
+                    Trovati {{ total_found }} tasks corrispondenti
+                {% else %}
+                    Nessun task trovato per questa ricerca
+                {% endif %}
+            </small>
                     </div>
-                    <div class="col-xl-2 col-lg-3 col-md-6">
-                        <label for="status" class="form-label text-muted small">Stato</label>
-                        <select class="form-control" id="status" name="status">
-                            <option value="">Tutti gli stati</option>
-                            <option value="pending" {% if current_filters.status == 'pending' %}selected{% endif %}>In Attesa</option>
-                            <option value="assigned" {% if current_filters.status == 'assigned' %}selected{% endif %}>Assegnato</option>
-                            <option value="in_progress" {% if current_filters.status == 'in_progress' %}selected{% endif %}>In Corso</option>
-                            <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completato</option>
-                        </select>
+        <a href="{{ url_for('tasks.admin_dashboard', date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" class="btn btn-outline-primary btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Cancella ricerca
+        </a>
                     </div>
-                    <div class="col-xl-1 col-lg-3 col-md-6">
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
-                                <i class="fas fa-times"></i>
-                            </button>
+    {% endif %}
+
+    <!-- Active Filters Info -->
+    {% if current_filters.date_from or current_filters.date_to or current_filters.priority or current_filters.status %}
+    <div class="alert alert-info mb-4">
+        <div class="d-flex flex-wrap align-items-center">
+            <span class="me-2 mb-2">Filtri attivi:</span>
+            
+            {% if current_filters.date_from or current_filters.date_to %}
+            <span class="badge bg-primary me-2 mb-2 py-2 px-3">
+                <i class="fas fa-calendar me-1"></i> 
+                {% if current_filters.date_from and current_filters.date_to %}
+                    Dal {{ current_filters.date_from }} al {{ current_filters.date_to }}
+                {% elif current_filters.date_from %}
+                    Da {{ current_filters.date_from }}
+                {% else %}
+                    Fino al {{ current_filters.date_to }}
+                {% endif %}
+            </span>
+            {% endif %}
+            
+            {% if current_filters.priority %}
+            <span class="badge bg-success me-2 mb-2 py-2 px-3">
+                <i class="fas fa-flag me-1"></i>Priorità: {{ current_filters.priority.title() }}
+            </span>
+            {% endif %}
+            
+            {% if current_filters.status %}
+            <span class="badge bg-warning me-2 mb-2 py-2 px-3">
+                <i class="fas fa-info-circle me-1"></i>Stato: {{ current_filters.status.replace('_', ' ').title() }}
+            </span>
+            {% endif %}
+            
+            <a href="{{ url_for('tasks.admin_dashboard') }}" class="btn btn-sm btn-outline-secondary ms-auto mb-2">
+                <i class="fas fa-times me-1"></i> Rimuovi tutti i filtri
+            </a>
                         </div>
                     </div>
-                </div>
-            </form>
-        </div>
-    </div>
+    {% endif %}
 
     <!-- Active Tasks Section -->
     <div class="card shadow-sm mb-4">
@@ -652,92 +1302,4 @@
 {% for task in active_tasks + overdue_tasks + completed_tasks %}
     {% include 'tasks/task_modals.html' %}
 {% endfor %}
-
-<script>
-$(document).ready(function() {
-    // Auto-submit form on filter change
-    $('#filterForm input, #filterForm select').on('change', function() {
-        $('#filterForm').submit();
-    });
-
-    // Update progress bars
-    $('.task-progress-fill').each(function() {
-        const width = $(this).css('width');
-        $(this).css('width', '0').animate({width: width}, 1000);
-    });
-
-    // Add tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip();
-
-    // Handle clickable cards
-    $('.clickable-card').css('cursor', 'pointer');
-    $('.clickable-card').on('click', function(e) {
-        // Don't trigger if clicking on a button or modal trigger
-        if ($(e.target).is('button') || $(e.target).closest('button').length > 0) {
-            return;
-        }
-        
-        const href = $(this).data('href');
-        if (href) {
-            window.location.href = href;
-        }
-    });
-
-    // Add hover effect for clickable cards
-    $('.clickable-card').hover(
-        function() {
-            $(this).addClass('shadow-lg');
-        },
-        function() {
-            $(this).removeClass('shadow-lg');
-        }
-    );
-
-    // Modal debugging
-    console.log('Task dashboard loaded');
-    console.log('Modals found:', $('[id^="deleteModal"]').length);
-    
-    // Ensure modals work properly
-    $('[data-bs-toggle="modal"]').on('click', function(e) {
-        const target = $(this).attr('data-bs-target');
-        console.log('Modal target:', target);
-        
-        if ($(target).length === 0) {
-            console.error('Modal not found:', target);
-            e.preventDefault();
-            alert('Errore: Modal non trovato. Controlla la console.');
-            return false;
-        }
-    });
-});
-
-// Clear all filters function
-function clearFilters() {
-    // Reset all form inputs
-    $('#title').val('');
-    $('#date_from').val('');
-    $('#date_to').val('');
-    $('#priority').val('');
-    $('#status').val('');
-    
-    // Submit the form to clear filters
-    $('#filterForm').submit();
-}
-</script>
-
-<style>
-.clickable-card {
-    transition: box-shadow 0.3s ease, transform 0.2s ease;
-}
-
-.clickable-card:hover {
-    transform: translateY(-2px);
-}
-
-.task-card-footer button {
-    z-index: 10;
-    position: relative;
-}
-</style>
-
 {% endblock %} 

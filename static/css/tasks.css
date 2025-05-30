@@ -1,1794 +1,947 @@
-/* Task Management CSS - Aligned with project design */
+/* Tasks CSS - DB-LogiX - Elegant Dark Theme
+-------------------------------------------------- */
 
-/* ======================
-   PAGE HEADER STYLES (following admin.css pattern)
-====================== */
-.page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem 0;
-    margin-bottom: 2rem;
-    border-radius: 0;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+/* Custom Variables */
+:root {
+    --primary-dark: #2c3e50;
+    --secondary-dark: #34495e;
+    --accent-blue: #3498db;
+    --light-gray: #ecf0f1;
+    --medium-gray: #bdc3c7;
+    --text-dark: #2c3e50;
+    --white: #ffffff;
+    --border-light: #e9ecef;
+    --success-green: #27ae60;
+    --warning-orange: #f39c12;
+    --danger-red: #e74c3c;
 }
 
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+/* Enhanced Container styles */
+.container-fluid {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
 }
 
-.page-subtitle {
-    font-size: 0.95rem;
-    opacity: 0.9;
-    margin-bottom: 0;
-}
-
-.action-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    border-radius: 0.375rem;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.action-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    color: white;
-    text-decoration: none;
-    transform: translateY(-1px);
-}
-
-/* ======================
-   CARD STYLES (following clients.css pattern)
-====================== */
-.card {
-    border-radius: 0.5rem;
-    border: 1px solid #dee2e6;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-    overflow: hidden;
-}
-
-.card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 0.75rem 1.25rem;
-    font-weight: 600;
-}
-
-.card-body {
-    padding: 1.25rem;
-}
-
-/* ======================
-   FILTER STYLES (following clients.css pattern)
-====================== */
-.filter-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-}
-
-.filter-card .card-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 0.75rem 1.25rem;
-}
-
-.filter-card .card-body {
-    padding: 1.25rem;
-}
-
-/* ======================
-   TASK CARD STYLES (minimal and clean)
-====================== */
+/* Enhanced Task Card Styles */
 .task-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
     transition: all 0.3s ease;
-    margin-bottom: 1.5rem;
+    border: none;
+    box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+    border-radius: 15px;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background-color: var(--white);
+    position: relative;
+    cursor: pointer;
+    min-height: 280px;
 }
 
 .task-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+}
+
+.clickable-card {
+    cursor: pointer;
+}
+
+.clickable-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.task-card.task-pending {
-    border-left: 4px solid #6c757d;
-}
-
-.task-card.task-assigned {
-    border-left: 4px solid #17a2b8;
-}
-
-.task-card.task-in-progress {
-    border-left: 4px solid #ffc107;
-}
-
-.task-card.task-completed {
-    border-left: 4px solid #28a745;
-}
-
-.task-card.task-overdue {
-    border-left: 4px solid #dc3545;
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
-}
-
-.task-card.task-overdue .task-card-header {
-    background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
-}
-
-.task-card.task-overdue .task-progress-fill.bg-danger {
-    background: linear-gradient(90deg, #dc3545, #c82333) !important;
-    animation: pulse-danger 2s infinite;
-}
-
-@keyframes pulse-danger {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
+    box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
 }
 
 .task-card-header {
-    background: #f8f9fa;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #dee2e6;
+    background-color: var(--primary-dark);
+    color: var(--white);
+    padding: 15px 20px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    border-radius: 15px 15px 0 0;
 }
 
 .task-card-title {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #495057;
     margin: 0;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--white);
 }
 
 .task-card-body {
-    padding: 1rem;
+    padding: 20px;
+    flex-grow: 1;
 }
 
 .task-card-footer {
-    background: #f8f9fa;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid #dee2e6;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    padding: 15px 20px;
+    background-color: rgba(44, 62, 80, 0.05);
+    border-top: 1px solid var(--border-light);
+    text-align: center;
 }
 
-/* ======================
-   TASK PROGRESS
-====================== */
+/* Enhanced Statistics Cards */
+.stats-card {
+    background-color: var(--primary-dark);
+    color: var(--white);
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+}
+
+.stats-card.primary {
+    background-color: var(--primary-dark);
+}
+
+.stats-card.primary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.stats-card.success {
+    background-color: var(--success-green);
+}
+
+.stats-card.success:hover {
+    background-color: #229954;
+}
+
+.stats-card.warning {
+    background-color: var(--warning-orange);
+}
+
+.stats-card.warning:hover {
+    background-color: #e67e22;
+}
+
+.stats-card.info {
+    background-color: var(--accent-blue);
+}
+
+.stats-card.info:hover {
+    background-color: #2980b9;
+}
+
+.stats-card.danger {
+    background-color: var(--danger-red);
+}
+
+.stats-card.danger:hover {
+    background-color: #c0392b;
+}
+
+.stats-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Enhanced Form Controls */
+.form-control {
+    border: 2px solid var(--border-light);
+    border-radius: 10px;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    transform: scale(1.02);
+}
+
+.form-select {
+    border: 2px solid var(--border-light);
+    border-radius: 10px;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.form-select:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    transform: scale(1.02);
+}
+
+.input-group-text {
+    border: 2px solid var(--border-light);
+    background-color: var(--primary-dark);
+    color: var(--white);
+    font-weight: 600;
+    border-radius: 10px 0 0 10px;
+}
+
+.form-label {
+    color: var(--text-dark);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+/* Enhanced Buttons */
+.btn {
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.btn-primary {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-dark);
+    border-color: var(--secondary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+}
+
+.btn-outline-primary {
+    color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    background-color: transparent;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background-color: var(--success-green);
+    border-color: var(--success-green);
+    color: var(--white);
+}
+
+.btn-success:hover {
+    background-color: #229954;
+    border-color: #229954;
+    transform: translateY(-1px);
+}
+
+.btn-outline-success {
+    color: var(--success-green);
+    border-color: var(--success-green);
+    background-color: transparent;
+}
+
+.btn-outline-success:hover {
+    background-color: var(--success-green);
+    border-color: var(--success-green);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background-color: var(--warning-orange);
+    border-color: var(--warning-orange);
+    color: var(--white);
+}
+
+.btn-warning:hover {
+    background-color: #e67e22;
+    border-color: #e67e22;
+    transform: translateY(-1px);
+}
+
+.btn-outline-warning {
+    color: var(--warning-orange);
+    border-color: var(--warning-orange);
+    background-color: transparent;
+}
+
+.btn-outline-warning:hover {
+    background-color: var(--warning-orange);
+    border-color: var(--warning-orange);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background-color: var(--danger-red);
+    border-color: var(--danger-red);
+    color: var(--white);
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+    border-color: #c0392b;
+    transform: translateY(-1px);
+}
+
+.btn-outline-danger {
+    color: var(--danger-red);
+    border-color: var(--danger-red);
+    background-color: transparent;
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--danger-red);
+    border-color: var(--danger-red);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+    color: var(--secondary-dark);
+    border-color: var(--secondary-dark);
+    background-color: transparent;
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-dark);
+    border-color: var(--secondary-dark);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Task Status and Priority Badges */
+.task-status-badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-right: 5px;
+}
+
+.task-status-pending {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: var(--warning-orange);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.task-status-assigned {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: var(--accent-blue);
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.task-status-in_progress {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: var(--accent-blue);
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.task-status-completed {
+    background-color: rgba(39, 174, 96, 0.15);
+    color: var(--success-green);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.task-priority-badge {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.task-priority-high {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: var(--danger-red);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.task-priority-medium {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: var(--warning-orange);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+}
+
+.task-priority-low {
+    background-color: rgba(39, 174, 96, 0.15);
+    color: var(--success-green);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+/* Enhanced Progress Bars */
 .task-progress {
-    margin-bottom: 0.75rem;
+    margin: 15px 0;
 }
 
 .task-progress-label {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.25rem;
-    font-size: 0.8rem;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: var(--secondary-dark);
     font-weight: 600;
-    color: #6c757d;
 }
 
 .task-progress-bar {
-    height: 6px;
-    border-radius: 3px;
-    background: #e9ecef;
+    height: 8px;
+    background-color: rgba(44, 62, 80, 0.1);
+    border-radius: 10px;
     overflow: hidden;
+    position: relative;
 }
 
 .task-progress-fill {
     height: 100%;
-    border-radius: 3px;
+    background-color: var(--success-green);
+    border-radius: 10px;
     transition: width 0.3s ease;
-    background: linear-gradient(90deg, #28a745, #20c997);
+    position: relative;
 }
 
 .task-progress-fill.warning {
-    background: linear-gradient(90deg, #ffc107, #ff8c00);
+    background-color: var(--warning-orange);
 }
 
-/* ======================
-   STATUS BADGES
-====================== */
-.task-status-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.task-progress-fill.bg-danger {
+    background-color: var(--danger-red);
 }
 
-.task-status-pending {
-    background: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-}
-
-.task-status-assigned {
-    background: rgba(23, 162, 184, 0.1);
-    color: #17a2b8;
-}
-
-.task-status-in-progress {
-    background: rgba(255, 193, 7, 0.1);
-    color: #856404;
-}
-
-.task-status-completed {
-    background: rgba(40, 167, 69, 0.1);
-    color: #28a745;
-}
-
-.task-status-badge.bg-danger {
-    background: #dc3545 !important;
-    color: white;
-    font-weight: 600;
-    animation: blink-danger 1.5s infinite;
-}
-
-@keyframes blink-danger {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0.7; }
-}
-
-/* Priority badges */
-.task-priority-badge {
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.25rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-left: 0.25rem;
-}
-
-.task-priority-low {
-    background: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
-}
-
-.task-priority-medium {
-    background: rgba(255, 193, 7, 0.1);
-    color: #856404;
-}
-
-.task-priority-high {
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-}
-
-.task-card.task-overdue .task-priority-badge {
-    border: 1px solid rgba(220, 53, 69, 0.3);
-}
-
-/* ======================
-   TASK META INFO
-====================== */
+/* Enhanced Task Meta */
 .task-meta {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-    font-size: 0.85rem;
+    margin: 15px 0;
 }
 
 .task-meta-item {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 .task-meta-label {
-    font-weight: 600;
-    color: #6c757d;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--medium-gray);
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.125rem;
+    letter-spacing: 0.3px;
 }
 
 .task-meta-value {
-    color: #495057;
-    font-weight: 500;
-}
-
-/* ======================
-   STATISTICS CARDS (following admin.css pattern)
-====================== */
-.stats-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    padding: 1.25rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 1.5rem;
-    height: 100%;
-}
-
-.stats-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.stats-card.primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.stats-card.success {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-}
-
-.stats-card.warning {
-    background: linear-gradient(135deg, #ffc107, #ff8c00);
-    color: white;
-}
-
-.stats-card.danger {
-    background: linear-gradient(135deg, #dc3545, #c82333);
-    color: white;
-}
-
-.stats-card.info {
-    background: linear-gradient(135deg, #17a2b8, #138496);
-    color: white;
-}
-
-.stats-icon {
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
-    opacity: 0.9;
-}
-
-.stats-number {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-.stats-label {
     font-size: 0.85rem;
-    opacity: 0.9;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: var(--text-dark);
     font-weight: 600;
 }
 
-.stats-card.danger .stats-icon {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.stats-card.danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
-}
-
-/* ======================
-   BUTTONS
-====================== */
-.btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    border-radius: 0.25rem;
-}
-
-.btn-group {
-    display: flex;
-    gap: 0.25rem;
-}
-
-/* ======================
-   EMPTY STATES
-====================== */
-.task-empty-state {
-    text-align: center;
-    padding: 3rem 1.5rem;
-    color: #6c757d;
-}
-
-.task-empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-.task-empty-state h5 {
-    margin-bottom: 0.75rem;
-    color: #6c757d;
-}
-
-.task-empty-state p {
-    margin-bottom: 1.5rem;
-    max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* ======================
-   TASK DETAIL STYLES
-====================== */
-.task-detail-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.task-detail-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.task-detail-meta {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 1rem;
-}
-
-/* ======================
-   TICKET STYLES (minimal)
-====================== */
-.ticket-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.ticket-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.ticket-card.completed {
-    border-left: 4px solid #28a745;
-    background: rgba(40, 167, 69, 0.02);
-}
-
-.ticket-card.in-progress {
-    border-left: 4px solid #ffc107;
-    background: rgba(255, 193, 7, 0.02);
-}
-
-.ticket-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
-}
-
-.ticket-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem;
-    font-size: 0.85rem;
-}
-
-.ticket-info-item {
-    text-align: center;
-    padding: 0.5rem;
-    background: #f8f9fa;
-    border-radius: 0.25rem;
-}
-
-.ticket-info-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    color: #6c757d;
-    font-weight: 600;
-    margin-bottom: 0.125rem;
-}
-
-.ticket-info-value {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #495057;
-}
-
-/* ======================
-   SCAN PAGE STYLES
-====================== */
-.scan-container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 1rem;
-}
-
-.scan-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border-radius: 0.5rem;
-}
-
-.product-info-persistent {
-    position: sticky !important;
-    top: 20px;
-    z-index: 100;
-    animation: none !important;
-    transition: none !important;
-}
-
-.product-info-persistent:not(.fade) {
-    opacity: 1 !important;
-    display: block !important;
-}
-
-.camera-section {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.scan-controls {
-    margin-top: 1rem;
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.scan-btn {
-    padding: 0.75rem 1.5rem;
+/* Enhanced Cards */
+.card {
     border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #007bff;
-    color: white;
-}
-
-.scan-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-}
-
-.scan-btn.danger {
-    background: #dc3545;
-}
-
-.scan-btn.danger:hover {
-    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-}
-
-.scan-feedback {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    padding: 2rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    z-index: 1000;
-    text-align: center;
-    min-width: 200px;
-}
-
-.scan-feedback.success {
-    border-left: 4px solid #28a745;
-}
-
-.scan-feedback.error {
-    border-left: 4px solid #dc3545;
-}
-
-.scan-feedback.info {
-    border-left: 4px solid #17a2b8;
-}
-
-/* ======================
-   RESPONSIVE DESIGN
-====================== */
-@media (max-width: 768px) {
-    .page-header {
-        padding: 1rem 0;
-        text-align: center;
-    }
-    
-    .page-title {
-        font-size: 1.5rem;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .task-meta {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-    }
-    
-    .task-card-footer {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-    }
-    
-    .ticket-info {
-        grid-template-columns: 1fr;
-    }
-    
-    .task-detail-meta {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-    }
-    
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-    
-    .btn-group {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .btn-group .btn {
-        margin-bottom: 0.25rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .card-header {
-        padding: 0.75rem 1rem;
-    }
-    
-    .card-body {
-        padding: 1rem;
-    }
-    
-    .task-card-header,
-    .task-card-body,
-    .task-card-footer {
-        padding: 0.75rem;
-    }
-    
-    .stats-icon {
-        font-size: 1.5rem;
-    }
-    
-    .stats-number {
-        font-size: 1.5rem;
-    }
-    
-    .scan-container {
-        padding: 0.5rem;
-    }
-    
-    #camera-preview {
-        height: 250px;
-    }
-}
-
-/* ======================
-   CREATE TASK PAGE STYLES
-====================== */
-.task-form-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem;
-}
-
-.task-page-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.task-page-title {
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.task-page-subtitle {
-    font-size: 0.95rem;
-    opacity: 0.9;
-    margin-bottom: 0;
-}
-
-.task-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    border-radius: 0.375rem;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.task-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    color: white;
-    text-decoration: none;
-    transform: translateY(-1px);
-}
-
-.task-btn-primary {
-    background: #007bff;
-    border-color: #007bff;
-    color: white;
-}
-
-.task-btn-primary:hover {
-    background: #0056b3;
-    border-color: #0056b3;
-    color: white;
-}
-
-.task-btn-outline-primary {
-    background: transparent;
-    border-color: rgba(255, 255, 255, 0.5);
-    color: white;
-}
-
-.task-btn-outline-primary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
-
-/* Form Sections */
-.task-form-section {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
     overflow: hidden;
 }
 
-.task-form-section-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    padding: 0.75rem 1.25rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.card-header {
+    background-color: var(--light-gray);
+    border-bottom: 1px solid var(--border-light);
+    padding: 20px 25px;
 }
 
-.task-form-section-body {
-    padding: 1.25rem;
+.card-body {
+    padding: 25px;
 }
 
-.task-form-group {
-    margin-bottom: 1rem;
-}
-
-.task-form-label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.task-form-control {
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.task-form-control:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* Ticket List Styles */
-.ticket-list {
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 0.5rem;
-}
-
-.ticket-item {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    transition: all 0.3s ease;
-}
-
-.ticket-item:hover {
-    border-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.ticket-item:last-child {
-    margin-bottom: 0;
-}
-
-.ticket-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
-}
-
-.ticket-selection {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ticket-checkbox {
-    margin-right: 0.5rem;
-}
-
-.ticket-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 0.75rem;
-    font-size: 0.85rem;
-}
-
-.ticket-info-item {
-    text-align: center;
-    padding: 0.5rem;
-    background: #f8f9fa;
-    border-radius: 0.25rem;
-}
-
-.ticket-info-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    color: #6c757d;
-    font-weight: 600;
-    margin-bottom: 0.125rem;
-}
-
-.ticket-info-value {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #495057;
-}
-
-/* Selected Summary */
-.selected-summary {
-    position: sticky;
-    bottom: 1rem;
-    z-index: 100;
-    margin-top: 1rem;
-}
-
-/* Badge Styles */
-.badge-light {
-    background-color: #f8f9fa;
-    color: #6c757d;
-}
-
-.badge-info {
-    background-color: #17a2b8;
-    color: white;
-}
-
-.badge-secondary {
-    background-color: #6c757d;
-    color: white;
-}
-
-/* ======================
-   NOTIFICATION STYLES
-====================== */
-.notification-item {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.notification-item:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.notification-item.unread {
-    border-left: 4px solid #007bff;
-    background: rgba(0, 123, 255, 0.02);
-}
-
-.notification-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-}
-
-.notification-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #495057;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.notification-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.notification-body {
-    color: #6c757d;
-    margin-bottom: 0.75rem;
-}
-
-.notification-actions {
-    text-align: right;
-    padding-top: 0.5rem;
-    border-top: 1px solid #f8f9fa;
-}
-
-/* ======================
-   TICKET GRID STYLES (NEW MINIMAL DESIGN)
-====================== */
-.ticket-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.ticket-card-minimal {
-    background: white;
-    border: 2px solid #e9ecef;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    position: relative;
-}
-
-.ticket-card-minimal:hover {
-    border-color: #007bff;
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
-    transform: translateY(-2px);
-}
-
-.ticket-card-minimal.selected {
-    border-color: #28a745;
-    background: rgba(40, 167, 69, 0.05);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
-}
-
-.ticket-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.ticket-selection {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ticket-selection .form-check-input {
-    margin: 0;
-    transform: scale(1.2);
-}
-
-.ticket-selection label {
-    margin: 0;
-    cursor: pointer;
-    color: #495057;
-}
-
-.ticket-badges {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.ticket-card-body {
-    space-y: 1rem;
-}
-
-.ticket-info-row {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-}
-
-.ticket-info-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-}
-
-.ticket-info-item i {
-    font-size: 1rem;
-    width: 16px;
-    text-align: center;
-}
-
-.ticket-info-item-full {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-.qr-code-display {
-    font-family: 'Courier New', monospace;
-    font-size: 0.85rem;
-    color: #495057;
-    background: #f8f9fa;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: 1px solid #dee2e6;
-}
-
-.ticket-products {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #f1f3f4;
-}
-
-.products-list {
-    max-height: 120px;
-    overflow-y: auto;
-}
-
-.product-item {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f8f9fa;
-}
-
-.product-item:last-child {
-    border-bottom: none;
-}
-
-.product-item.more-products {
-    text-align: center;
-    padding: 0.25rem 0;
-    background: #f8f9fa;
-    border-radius: 0.25rem;
-    margin-top: 0.5rem;
-}
-
-.product-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.product-name {
-    font-weight: 500;
-    color: #495057;
-    font-size: 0.9rem;
-    line-height: 1.3;
-}
-
-.product-details {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    font-size: 0.8rem;
-}
-
-.product-code {
-    color: #6c757d;
-    background: #f8f9fa;
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-    font-family: 'Courier New', monospace;
-}
-
-.product-weight {
-    color: #17a2b8;
-    font-weight: 500;
-}
-
-.product-expiry {
-    font-weight: 500;
-}
-
-.product-expiry.text-danger {
-    background: rgba(220, 53, 69, 0.1);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-}
-
-.product-expiry.text-warning {
-    background: rgba(255, 193, 7, 0.1);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-}
-
-/* Summary Stats */
-.summary-stat {
-    padding: 0.5rem;
-}
-
-.summary-stat h4 {
-    font-weight: 700;
-    margin-bottom: 0.25rem;
-}
-
-/* Responsive Design for Ticket Grid */
-@media (max-width: 768px) {
-    .ticket-grid {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
-    
-    .ticket-info-row {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .product-details {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .ticket-card-minimal {
-        padding: 0.75rem;
-    }
-    
-    .ticket-card-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .ticket-badges {
-        align-self: flex-end;
-    }
-}
-
-/* ======================
-   SCAN PAGE MINIMAL HEADER
-====================== */
-.scan-product-header {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.scan-product-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.scan-product-name {
-    font-weight: 600;
-    color: #495057;
-    flex: 1;
-    min-width: 0;
-}
-
-.scan-product-details {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.85rem;
-    color: #6c757d;
-}
-
-.scan-task-progress {
-    background: #e9ecef;
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.scan-task-progress .badge {
-    font-size: 0.75rem;
-}
-
-@media (max-width: 576px) {
-    .scan-product-info {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .scan-product-details {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-}
-
-/* Pagination Styles */
-.pagination .page-link {
-    color: #007bff;
-    border: 1px solid #dee2e6;
-    padding: 0.5rem 0.75rem;
+/* Enhanced Pagination */
+.pagination .page-item .page-link {
+    color: var(--primary-dark);
+    border: 1px solid var(--border-light);
+    padding: 10px 15px;
     margin: 0 2px;
-    border-radius: 0.25rem;
-    transition: all 0.2s;
-}
-
-.pagination .page-link:hover {
-    color: #0056b3;
-    background-color: #e9ecef;
-    border-color: #adb5bd;
-    transform: translateY(-1px);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
 .pagination .page-item.active .page-link {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
-    font-weight: 600;
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--white);
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
 }
 
-.pagination .page-item.disabled .page-link {
-    color: #6c757d;
-    background-color: #fff;
-    border-color: #dee2e6;
-    cursor: not-allowed;
-}
-
-/* Responsive adjustments for 5-column layout */
-@media (max-width: 1200px) {
-    .col-lg-2 {
-        flex: 0 0 auto;
-        width: 20%;
-    }
-}
-
-@media (max-width: 992px) {
-    .col-lg-2.col-md-4 {
-        flex: 0 0 auto;
-        width: 25%;
-    }
-}
-
-@media (max-width: 768px) {
-    .col-lg-2.col-md-4.col-sm-6 {
-        flex: 0 0 auto;
-        width: 50%;
-    }
-}
-
-@media (max-width: 576px) {
-    .col-lg-2.col-md-4.col-sm-6 {
-        flex: 0 0 auto;
-        width: 100%;
-    }
-}
-
-/* Enhanced Task Card Borders */
-.task-card.task-overdue {
-    border: 2px solid #dc3545;
-    background: linear-gradient(135deg, rgba(220, 53, 69, 0.02), rgba(255, 255, 255, 1));
-}
-
-.task-card.task-overdue .task-card-footer .btn-warning {
-    background: linear-gradient(135deg, #ffc107, #e0a800);
-    border: none;
-    color: #212529;
-    font-weight: 600;
-    animation: pulse-warning 2s infinite;
-}
-
-@keyframes pulse-warning {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-/* Priority badges for overdue tasks */
-.task-card.task-overdue .task-priority-badge {
-    border: 1px solid rgba(220, 53, 69, 0.3);
-}
-
-/* Clickable card styles */
-.clickable-card {
-    cursor: pointer !important;
-    user-select: none;
-}
-
-.clickable-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.clickable-card:active {
+.pagination .page-link:hover {
+    background-color: var(--light-gray);
+    border-color: var(--primary-dark);
+    color: var(--primary-dark);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.clickable-card .task-card-footer {
-    border-top: 1px solid #f8f9fa;
-    padding: 0.75rem 1rem;
-    background: rgba(0,123,255,0.02);
-    text-align: center;
-}
-
-.clickable-card:hover .task-card-footer {
-    background: rgba(0,123,255,0.05);
-}
-
-/* ======================
-   TICKET DETAIL CARDS (for view_task.html)
-====================== */
-.ticket-detail-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: relative;
-}
-
-.ticket-detail-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.ticket-detail-card.completed {
-    border-left: 4px solid #28a745;
-    background: rgba(40, 167, 69, 0.02);
-}
-
-.ticket-detail-card.in-progress {
-    border-left: 4px solid #ffc107;
-    background: rgba(255, 193, 7, 0.02);
-}
-
-.ticket-detail-header {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f1f3f4;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-}
-
-.ticket-detail-number {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #495057;
-}
-
-.ticket-detail-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.ticket-detail-main-product {
-    padding: 1rem;
-}
-
-.ticket-detail-main-product .product-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-    line-height: 1.3;
-}
-
-.product-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    font-size: 0.85rem;
-}
-
-.product-code {
-    background: #f8f9fa;
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.25rem;
-    color: #6c757d;
-    font-family: 'Courier New', monospace;
-    border: 1px solid #dee2e6;
-}
-
-.product-expiry {
-    font-weight: 500;
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.25rem;
-}
-
-.product-expiry.text-danger {
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-}
-
-.product-expiry.text-warning {
-    background: rgba(255, 193, 7, 0.1);
-    color: #856404;
-}
-
-.product-weight {
-    font-weight: 500;
-    color: #17a2b8;
-}
-
-.ticket-detail-meta {
-    padding: 0 1rem;
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.75rem;
-}
-
-.meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
-.meta-item i {
-    width: 14px;
-    text-align: center;
-}
-
-.ticket-detail-progress {
-    padding: 0 1rem 0.75rem;
-}
-
-.progress-bar-minimal {
-    height: 4px;
-    background: #e9ecef;
-    border-radius: 2px;
-    overflow: hidden;
-    margin-bottom: 0.25rem;
-}
-
-.progress-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s ease;
-}
-
-.progress-text {
-    font-size: 0.75rem;
-    color: #6c757d;
-    text-align: center;
-}
-
-.ticket-detail-footer {
-    padding: 0.5rem 1rem;
-    background: rgba(0,123,255,0.02);
-    border-top: 1px solid #f1f3f4;
-    text-align: center;
-}
-
-.ticket-detail-card:hover .ticket-detail-footer {
-    background: rgba(0,123,255,0.05);
-}
-
-/* ======================
-   TICKET EDIT CARDS (for edit_task.html)
-====================== */
-.ticket-edit-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: relative;
-}
-
-.ticket-edit-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-color: #007bff;
-}
-
-.ticket-edit-card.completed {
-    border-left: 4px solid #28a745;
-    background: rgba(40, 167, 69, 0.02);
-}
-
-.ticket-edit-card.in-progress {
-    border-left: 4px solid #ffc107;
-    background: rgba(255, 193, 7, 0.02);
-}
-
-.ticket-edit-header {
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-}
-
-.ticket-edit-main-info {
-    flex: 1;
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-}
-
-.ticket-edit-number {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #495057;
-    white-space: nowrap;
-    margin-top: 0.125rem;
-}
-
-.ticket-edit-product {
-    flex: 1;
-}
-
-.ticket-edit-product .product-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-    line-height: 1.3;
-}
-
-.product-meta-inline {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-}
-
-.ticket-edit-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-}
-
-.progress-compact {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.progress-text-mini {
-    font-size: 0.75rem;
-    color: #6c757d;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.progress-bar-tiny {
-    width: 60px;
-    height: 3px;
-    background: #e9ecef;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill-tiny {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.3s ease;
-}
-
-.ticket-edit-footer {
-    padding: 0.75rem 1rem;
-    background: #f8f9fa;
-    border-top: 1px solid #f1f3f4;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-}
-
-.ticket-edit-meta {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.ticket-edit-meta span {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: #6c757d;
-}
-
-.ticket-edit-meta i {
-    width: 14px;
-    text-align: center;
-}
-
-.ticket-edit-card:hover .ticket-edit-footer {
-    background: rgba(0,123,255,0.02);
-}
-
-/* ======================
-   REMOVE BUTTON STYLING (Unified for all cards)
-====================== */
-.btn-remove-ticket {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
+/* Enhanced Alerts */
+.alert {
+    border-radius: 12px;
+    padding: 15px 20px;
     border: none;
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    font-weight: 500;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.alert-info {
+    background-color: #e8f5fe;
+    color: var(--primary-dark);
+    border-left: 4px solid var(--accent-blue);
+}
+
+.alert-success {
+    background-color: #e8f5e8;
+    color: #1e7e34;
+    border-left: 4px solid var(--success-green);
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border-left: 4px solid var(--warning-orange);
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid var(--danger-red);
+}
+
+/* Enhanced Badges */
+.badge {
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
     font-size: 0.75rem;
-    z-index: 10;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
-.btn-remove-ticket:hover {
-    background: #dc3545;
-    color: white;
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+.badge.bg-primary {
+    background-color: var(--primary-dark) !important;
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
 }
 
-.btn-remove-ticket:active {
-    transform: scale(0.95);
+.badge.bg-success {
+    background-color: var(--success-green) !important;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
 }
 
-/* Task removal button styling */
+.badge.bg-warning {
+    background-color: var(--warning-orange) !important;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    color: var(--white) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-red) !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.badge.bg-info {
+    background-color: var(--accent-blue) !important;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.badge.bg-secondary {
+    background-color: var(--secondary-dark) !important;
+    box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+}
+
+/* Filter Section */
+.filter-section {
+    background-color: var(--light-gray);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+    border: 1px solid var(--border-light);
+}
+
+/* Text Colors */
+.text-primary {
+    color: var(--primary-dark) !important;
+}
+
+.text-success {
+    color: var(--success-green) !important;
+}
+
+.text-info {
+    color: var(--accent-blue) !important;
+}
+
+.text-warning {
+    color: var(--warning-orange) !important;
+}
+
+.text-secondary {
+    color: var(--secondary-dark) !important;
+}
+
+.text-danger {
+    color: var(--danger-red) !important;
+}
+
+/* Task Remove Button */
 .btn-remove-task {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    width: 28px;
-    height: 28px;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: none;
-    background: rgba(220, 53, 69, 0.1);
-    color: #dc3545;
+    background-color: var(--danger-red);
+    color: var(--white);
+    border: 2px solid var(--white);
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.3s ease;
-    font-size: 0.75rem;
-    z-index: 10;
+    z-index: 15;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
 .btn-remove-task:hover {
-    background: #dc3545;
-    color: white;
+    background-color: #c0392b;
     transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5);
 }
 
-.btn-remove-task:active {
-    transform: scale(0.95);
+/* Empty State */
+.task-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--medium-gray);
 }
 
-/* Hide remove button when card is being clicked */
-.clickable-card .btn-remove-ticket,
-.clickable-card .btn-remove-task {
-    opacity: 0.7;
+.task-empty-state i {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    color: var(--light-gray);
 }
 
-.clickable-card:hover .btn-remove-ticket,
-.clickable-card:hover .btn-remove-task {
-    opacity: 1;
+.task-empty-state h5 {
+    color: var(--text-dark);
+    margin-bottom: 15px;
 }
 
-/* ======================
-   RESPONSIVE DESIGN FOR TICKET CARDS
-====================== */
+.task-empty-state p {
+    color: var(--medium-gray);
+    margin-bottom: 25px;
+}
+
+/* Task Card States */
+.task-card.task-pending {
+    border-left: 4px solid var(--warning-orange);
+}
+
+.task-card.task-assigned {
+    border-left: 4px solid var(--accent-blue);
+}
+
+.task-card.task-in_progress {
+    border-left: 4px solid var(--accent-blue);
+}
+
+.task-card.task-completed {
+    border-left: 4px solid var(--success-green);
+}
+
+.task-card.task-overdue {
+    border-left: 4px solid var(--danger-red);
+}
+
+.task-card.border-danger {
+    border: 2px solid var(--danger-red) !important;
+}
+
+/* Action Buttons */
+.action-btn {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.action-btn:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+    color: var(--white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    text-decoration: none;
+}
+
+/* Responsive Enhancements */
 @media (max-width: 768px) {
-    .ticket-edit-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
+    .task-card {
+        margin-bottom: 20px;
     }
     
-    .ticket-edit-main-info {
-        flex-direction: column;
-        gap: 0.5rem;
+    .filter-section {
+        margin: 0 -15px 20px;
+        border-radius: 0;
+        padding: 20px 15px;
     }
     
-    .ticket-edit-actions {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
+    .stats-card {
+        margin-bottom: 15px;
+        min-height: 120px;
     }
     
-    .progress-compact {
-        order: -1;
+    .task-card-header {
+        padding: 12px 15px;
     }
     
-    .ticket-edit-meta {
-        flex-direction: column;
-        gap: 0.25rem;
+    .task-card-body {
+        padding: 15px;
     }
     
-    .ticket-detail-meta {
-        flex-direction: column;
-        gap: 0.25rem;
+    .task-card-footer {
+        padding: 12px 15px;
+    }
+}
+
+/* Loading and Animation States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
     }
     
-    .product-details {
-        flex-direction: column;
-        gap: 0.25rem;
+    .task-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
     }
+    
+    .filter-section {
+        display: none !important;
+    }
+    
+    .stats-card {
+        background-color: #f8f9fa !important;
+        color: #333 !important;
+    }
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(44, 62, 80, 0.15);
+}
+
+.modal-header {
+    background-color: var(--primary-dark);
+    color: var(--white);
+    border-radius: 15px 15px 0 0;
+    border-bottom: none;
+    padding: 20px 25px;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-light);
+    padding: 20px 25px;
+}
+
+/* Enhanced Task Details */
+.task-details-section {
+    background-color: var(--white);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(44, 62, 80, 0.08);
+    border: 1px solid var(--border-light);
+}
+
+.task-details-title {
+    color: var(--primary-dark);
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.status-indicator.status-pending {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: var(--warning-orange);
+}
+
+.status-indicator.status-completed {
+    background-color: rgba(39, 174, 96, 0.15);
+    color: var(--success-green);
+}
+
+.status-indicator.status-overdue {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: var(--danger-red);
+}
+
+/* Notification styles */
+.notification-item {
+    background-color: var(--white);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.notification-item:hover {
+    box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+    transform: translateY(-1px);
+}
+
+.notification-unread {
+    border-left: 4px solid var(--accent-blue);
+    background-color: rgba(52, 152, 219, 0.02);
+}
+
+/* Form styling enhancements */
+.form-floating > label {
+    color: var(--medium-gray);
+    font-weight: 500;
+}
+
+.form-floating > .form-control:focus ~ label {
+    color: var(--accent-blue);
+}
+
+/* Task assignment styles */
+.assignment-card {
+    background-color: var(--light-gray);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-light);
+}
+
+.assignment-user {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.assignment-user .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--primary-dark);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-right: 10px;
+}
+
+/* QR Code styles */
+.qr-code-container {
+    text-align: center;
+    background-color: var(--white);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    margin: 15px 0;
+}
+
+.qr-code-container img {
+    border: 4px solid var(--border-light);
+    border-radius: 8px;
+}
+
+/* Timeline styles */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--border-light);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+    background-color: var(--white);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--primary-dark);
+    border: 3px solid var(--white);
 } 

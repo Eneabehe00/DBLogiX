@@ -8,39 +8,70 @@ import os
 from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from utils import admin_required, is_admin
+from flask import current_app
 
 clients_bp = Blueprint('clients', __name__, template_folder='templates')
 
 @clients_bp.route('/')
 @login_required
 def index():
-    """Display list of all clients"""
-    search_term = request.args.get('search', '')
+    """Display list of all clients with enhanced search functionality"""
     page = request.args.get('page', 1, type=int)
-    per_page = 20  # Number of clients per page
+    per_page = 15  # Aumentato da 20 a 15 per uniformità con DDT
+    search_query = request.args.get('search', '', type=str).strip()
+    
+    # Reset page to 1 when performing a new search
+    if search_query and page > 1:
+        # If there's a search query and we're not on page 1, redirect to page 1
+        return redirect(url_for('clients.index', search=search_query, page=1))
     
     # Base query
-    query = Client.query
+    clients_query = Client.query
     
     # Apply search filter if provided
-    if search_term:
-        query = query.filter(
-            db.or_(
-                Client.IdCliente.ilike(f'%{search_term}%'),
-                Client.Nombre.ilike(f'%{search_term}%'),
-                Client.Direccion.ilike(f'%{search_term}%'),
-                Client.Email.ilike(f'%{search_term}%'),
-                Client.Telefono1.ilike(f'%{search_term}%'),
-                Client.DNI.ilike(f'%{search_term}%')
+    if search_query:
+        current_app.logger.info(f"🔍 Client Search: cercando '{search_query}' in tutti i clienti")
+        
+        try:
+            # Try to convert search to integer for ID search
+            search_id = int(search_query)
+            clients_query = clients_query.filter(
+                db.or_(
+                    Client.IdCliente == search_id,
+                    Client.Nombre.ilike(f'%{search_query}%'),
+                    Client.Direccion.ilike(f'%{search_query}%'),
+                    Client.Email.ilike(f'%{search_query}%'),
+                    Client.Telefono1.ilike(f'%{search_query}%'),
+                    Client.DNI.ilike(f'%{search_query}%'),
+                    Client.Poblacion.ilike(f'%{search_query}%')
+                )
             )
-        )
+        except ValueError:
+            # Search only by text fields if not a number
+            clients_query = clients_query.filter(
+                db.or_(
+                    Client.Nombre.ilike(f'%{search_query}%'),
+                    Client.Direccion.ilike(f'%{search_query}%'),
+                    Client.Email.ilike(f'%{search_query}%'),
+                    Client.Telefono1.ilike(f'%{search_query}%'),
+                    Client.DNI.ilike(f'%{search_query}%'),
+                    Client.Poblacion.ilike(f'%{search_query}%')
+                )
+            )
+        
+        current_app.logger.info(f"🔍 Search query applied for '{search_query}'")
     
     # Order and paginate
-    pagination = query.order_by(Client.IdCliente.desc()).paginate(
+    pagination = clients_query.order_by(Client.IdCliente.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     
-    return render_template('clients/index.html', clients=pagination.items, pagination=pagination, search=search_term)
+    current_app.logger.info(f"📄 Clients page {page}: showing {len(pagination.items)} of {pagination.total} total clients")
+    
+    return render_template('clients/index.html', 
+                         clients=pagination.items, 
+                         pagination=pagination, 
+                         search=search_query)
 
 @clients_bp.route('/new', methods=['GET', 'POST'])
 @login_required

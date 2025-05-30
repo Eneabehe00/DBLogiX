@@ -640,11 +640,9 @@ def create():
                 elif product.IdIva == 3:
                     vat_rate = 0.22  # 22%
                 
-                # Calculate prices - USE the pre-calculated PrecioSinIVA from the article
-                # DON'T recalculate it from PrecioConIVA as it's already correctly calculated
-                price_without_vat = float(product.PrecioSinIVA) if product.PrecioSinIVA is not None else 0.0
+                # Calculate prices - Handle None value for PrecioConIVA
                 price_with_vat = float(product.PrecioConIVA) if product.PrecioConIVA is not None else 0.0
-                
+                price_without_vat = price_with_vat / (1 + vat_rate)
                 # Handle None value for Peso - use 1.0 as default if Peso is None
                 peso_value = float(ticket_line.Peso) if ticket_line.Peso is not None else 1.0
                 line_total = price_without_vat * peso_value
@@ -776,10 +774,9 @@ def create():
                 elif id_iva == 3:
                     vat_rate = 0.22  # 22%
                 
-                # Calcola prezzi per ticket manuali
-                # Il prezzo inserito dall'utente viene considerato come prezzo SENZA IVA per coerenza
-                price_without_vat = float(ticket_line['precio'])
-                price_with_vat = price_without_vat * (1 + vat_rate)
+                # Calcola prezzi
+                price_with_vat = float(ticket_line['precio'])
+                price_without_vat = price_with_vat / (1 + vat_rate)
                 peso_value = float(ticket_line['peso'])
                 line_total = price_without_vat * peso_value
                 line_vat = line_total * vat_rate

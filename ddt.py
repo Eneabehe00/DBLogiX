@@ -1554,7 +1554,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
         
         # === LOGO AND TITLE SECTION ===
-        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'LogoDDT.png')
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'logos', 'LogoDDT.png')
         logo_width = 50*mm
         logo_height = 25*mm
         

@@ -265,44 +265,359 @@
                         <div class="tab-pane fade" id="system" role="tabpanel" aria-labelledby="system-tab">
                             <div class="alert alert-success alert-config">
                                 <i class="fas fa-cog me-2"></i>
-                                <strong>Impostazioni Sistema:</strong> Configura i parametri operativi del sistema come scadenze e gestione articoli.
+                                <strong>Impostazioni Sistema:</strong> Configura tutti i parametri operativi del sistema per ottimizzare performance e funzionalità.
                             </div>
                             
-                            <form method="post" novalidate>
+                            <form method="post" novalidate enctype="multipart/form-data">
                                 {{ system_form.hidden_tag() }}
                                 
-                                <div class="row mb-4">
-                                    <div class="col-md-6">
-                                        {{ system_form.expiry_warning_days.label(class="form-label") }}
-                                        {{ system_form.expiry_warning_days(class="form-control" + (" is-invalid" if system_form.expiry_warning_days.errors else "")) }}
-                                        <div class="form-text">{{ system_form.expiry_warning_days.description }}</div>
-                                        {% for error in system_form.expiry_warning_days.errors %}
-                                        <div class="invalid-feedback">{{ error }}</div>
-                                        {% endfor %}
+                                <!-- Configurazioni Base -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-sliders-h text-primary me-2"></i>Configurazioni Base Sistema
+                                        </h6>
                                     </div>
-                                    <div class="col-md-6">
-                                        {{ system_form.articles_per_package.label(class="form-label") }}
-                                        {{ system_form.articles_per_package(class="form-control" + (" is-invalid" if system_form.articles_per_package.errors else "")) }}
-                                        <div class="form-text">{{ system_form.articles_per_package.description }}</div>
-                                        {% for error in system_form.articles_per_package.errors %}
-                                        <div class="invalid-feedback">{{ error }}</div>
-                                        {% endfor %}
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                {{ system_form.expiry_warning_days.label(class="form-label") }}
+                                                {{ system_form.expiry_warning_days(class="form-control" + (" is-invalid" if system_form.expiry_warning_days.errors else "")) }}
+                                                <div class="form-text">{{ system_form.expiry_warning_days.description }}</div>
+                                                {% for error in system_form.expiry_warning_days.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                {{ system_form.articles_per_package.label(class="form-label") }}
+                                                {{ system_form.articles_per_package(class="form-control" + (" is-invalid" if system_form.articles_per_package.errors else "")) }}
+                                                <div class="form-text">{{ system_form.articles_per_package.description }}</div>
+                                                {% for error in system_form.articles_per_package.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Configurazioni Email SMTP -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-envelope text-info me-2"></i>Configurazioni Email e Notifiche
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                {{ system_form.smtp_server.label(class="form-label") }}
+                                                {{ system_form.smtp_server(class="form-control" + (" is-invalid" if system_form.smtp_server.errors else ""), placeholder="smtp.gmail.com") }}
+                                                <div class="form-text">{{ system_form.smtp_server.description }}</div>
+                                                {% for error in system_form.smtp_server.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-3">
+                                                {{ system_form.smtp_port.label(class="form-label") }}
+                                                {{ system_form.smtp_port(class="form-control" + (" is-invalid" if system_form.smtp_port.errors else "")) }}
+                                                <div class="form-text">{{ system_form.smtp_port.description }}</div>
+                                                {% for error in system_form.smtp_port.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-check mt-4 pt-2">
+                                                    {{ system_form.smtp_use_tls(class="form-check-input") }}
+                                                    {{ system_form.smtp_use_tls.label(class="form-check-label") }}
+                                                    <div class="form-text">{{ system_form.smtp_use_tls.description }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                {{ system_form.smtp_username.label(class="form-label") }}
+                                                {{ system_form.smtp_username(class="form-control" + (" is-invalid" if system_form.smtp_username.errors else "")) }}
+                                                <div class="form-text">{{ system_form.smtp_username.description }}</div>
+                                                {% for error in system_form.smtp_username.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.smtp_password.label(class="form-label") }}
+                                                {{ system_form.smtp_password(class="form-control" + (" is-invalid" if system_form.smtp_password.errors else "")) }}
+                                                <div class="form-text">{{ system_form.smtp_password.description }}</div>
+                                                {% for error in system_form.smtp_password.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.admin_email.label(class="form-label") }}
+                                                {{ system_form.admin_email(class="form-control" + (" is-invalid" if system_form.admin_email.errors else ""), placeholder="admin@domain.com") }}
+                                                <div class="form-text">{{ system_form.admin_email.description }}</div>
+                                                {% for error in system_form.admin_email.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    {{ system_form.enable_email_notifications(class="form-check-input") }}
+                                                    {{ system_form.enable_email_notifications.label(class="form-check-label") }}
+                                                    <div class="form-text">{{ system_form.enable_email_notifications.description }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Backup Automatico -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-archive text-warning me-2"></i>Backup Automatico
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                {{ system_form.backup_frequency_hours.label(class="form-label") }}
+                                                {{ system_form.backup_frequency_hours(class="form-control" + (" is-invalid" if system_form.backup_frequency_hours.errors else "")) }}
+                                                <div class="form-text">{{ system_form.backup_frequency_hours.description }}</div>
+                                                {% for error in system_form.backup_frequency_hours.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.backup_retention_days.label(class="form-label") }}
+                                                {{ system_form.backup_retention_days(class="form-control" + (" is-invalid" if system_form.backup_retention_days.errors else "")) }}
+                                                <div class="form-text">{{ system_form.backup_retention_days.description }}</div>
+                                                {% for error in system_form.backup_retention_days.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.backup_path.label(class="form-label") }}
+                                                {{ system_form.backup_path(class="form-control" + (" is-invalid" if system_form.backup_path.errors else "")) }}
+                                                <div class="form-text">{{ system_form.backup_path.description }}</div>
+                                                {% for error in system_form.backup_path.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Timeout Database -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-database text-danger me-2"></i>Timeout Database
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                {{ system_form.db_connect_timeout.label(class="form-label") }}
+                                                {{ system_form.db_connect_timeout(class="form-control" + (" is-invalid" if system_form.db_connect_timeout.errors else "")) }}
+                                                <div class="form-text">{{ system_form.db_connect_timeout.description }}</div>
+                                                {% for error in system_form.db_connect_timeout.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.db_read_timeout.label(class="form-label") }}
+                                                {{ system_form.db_read_timeout(class="form-control" + (" is-invalid" if system_form.db_read_timeout.errors else "")) }}
+                                                <div class="form-text">{{ system_form.db_read_timeout.description }}</div>
+                                                {% for error in system_form.db_read_timeout.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.db_write_timeout.label(class="form-label") }}
+                                                {{ system_form.db_write_timeout(class="form-control" + (" is-invalid" if system_form.db_write_timeout.errors else "")) }}
+                                                <div class="form-text">{{ system_form.db_write_timeout.description }}</div>
+                                                {% for error in system_form.db_write_timeout.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Localizzazione -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-globe text-success me-2"></i>Localizzazione
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                {{ system_form.timezone.label(class="form-label") }}
+                                                {{ system_form.timezone(class="form-select" + (" is-invalid" if system_form.timezone.errors else "")) }}
+                                                <div class="form-text">{{ system_form.timezone.description }}</div>
+                                                {% for error in system_form.timezone.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                {{ system_form.date_format.label(class="form-label") }}
+                                                {{ system_form.date_format(class="form-select" + (" is-invalid" if system_form.date_format.errors else "")) }}
+                                                <div class="form-text">{{ system_form.date_format.description }}</div>
+                                                {% for error in system_form.date_format.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Logo Aziendale -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-image text-primary me-2"></i>Logo Aziendale
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-8">
+                                                {{ system_form.company_logo.label(class="form-label") }}
+                                                {{ system_form.company_logo(class="form-control" + (" is-invalid" if system_form.company_logo.errors else ""), accept=".png,.jpg,.jpeg") }}
+                                                <div class="form-text">{{ system_form.company_logo.description }} Il file verrà automaticamente rinominato in "LogoDDT.png"</div>
+                                                {% for error in system_form.company_logo.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Alert e Monitoraggio -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-bell text-warning me-2"></i>Alert e Monitoraggio
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-4">
+                                                <div class="form-check mb-3">
+                                                    {{ system_form.enable_stock_alerts(class="form-check-input") }}
+                                                    {{ system_form.enable_stock_alerts.label(class="form-check-label") }}
+                                                    <div class="form-text">{{ system_form.enable_stock_alerts.description }}</div>
+                                                </div>
+                                                {{ system_form.stock_alert_threshold.label(class="form-label") }}
+                                                {{ system_form.stock_alert_threshold(class="form-control" + (" is-invalid" if system_form.stock_alert_threshold.errors else "")) }}
+                                                <div class="form-text">{{ system_form.stock_alert_threshold.description }}</div>
+                                                {% for error in system_form.stock_alert_threshold.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-4">
+                                                {{ system_form.expiry_check_frequency_hours.label(class="form-label") }}
+                                                {{ system_form.expiry_check_frequency_hours(class="form-control" + (" is-invalid" if system_form.expiry_check_frequency_hours.errors else "")) }}
+                                                <div class="form-text">{{ system_form.expiry_check_frequency_hours.description }}</div>
+                                                {% for error in system_form.expiry_check_frequency_hours.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Logging -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-file-alt text-secondary me-2"></i>Logging e Debug
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                {{ system_form.log_level.label(class="form-label") }}
+                                                {{ system_form.log_level(class="form-select" + (" is-invalid" if system_form.log_level.errors else "")) }}
+                                                <div class="form-text">{{ system_form.log_level.description }}</div>
+                                                {% for error in system_form.log_level.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                {{ system_form.log_max_size_mb.label(class="form-label") }}
+                                                {{ system_form.log_max_size_mb(class="form-control" + (" is-invalid" if system_form.log_max_size_mb.errors else "")) }}
+                                                <div class="form-text">{{ system_form.log_max_size_mb.description }}</div>
+                                                {% for error in system_form.log_max_size_mb.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sessioni Utente -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-user-clock text-info me-2"></i>Gestione Sessioni Utente
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                {{ system_form.session_timeout_hours.label(class="form-label") }}
+                                                {{ system_form.session_timeout_hours(class="form-control" + (" is-invalid" if system_form.session_timeout_hours.errors else "")) }}
+                                                <div class="form-text">{{ system_form.session_timeout_hours.description }}</div>
+                                                {% for error in system_form.session_timeout_hours.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="col-md-6">
+                                                {{ system_form.session_inactivity_minutes.label(class="form-label") }}
+                                                {{ system_form.session_inactivity_minutes(class="form-control" + (" is-invalid" if system_form.session_inactivity_minutes.errors else "")) }}
+                                                <div class="form-text">{{ system_form.session_inactivity_minutes.description }}</div>
+                                                {% for error in system_form.session_inactivity_minutes.errors %}
+                                                <div class="invalid-feedback">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Informational section -->
                                 <div class="bg-light p-3 rounded mb-4">
-                                    <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Come funziona:</h6>
-                                    <ul class="mb-0 small">
-                                        <li><strong>Giacenza:</strong> Ticket appena creati, pronti per essere processati</li>
-                                        <li><strong>In Scadenza:</strong> Ticket con prodotti che scadranno entro i giorni configurati</li>
-                                        <li><strong>Scaduti:</strong> Ticket con prodotti già scaduti (vengono automaticamente contrassegnati)</li>
-                                    </ul>
+                                    <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Informazioni Configurazioni:</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <ul class="mb-0 small">
+                                                <li><strong>Email:</strong> Configurare SMTP per notifiche automatiche</li>
+                                                <li><strong>Backup:</strong> Proteggi i dati con backup automatici</li>
+                                                <li><strong>Timeout:</strong> Ottimizza le performance del database</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <ul class="mb-0 small">
+                                                <li><strong>Localizzazione:</strong> Adatta date e orari alla tua zona</li>
+                                                <li><strong>Logo:</strong> Personalizza i documenti DDT</li>
+                                                <li><strong>Alert:</strong> Monitora stock e scadenze</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <ul class="mb-0 small">
+                                                <li><strong>Logging:</strong> Controlla dettaglio log di sistema</li>
+                                                <li><strong>Sessioni:</strong> Gestisci sicurezza e timeout utenti</li>
+                                                <li><strong>Riavvio:</strong> Alcune impostazioni richiedono riavvio</li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
-                                
+
                                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                                    <button type="submit" name="submit_system" value="1" class="btn btn-primary">
-                                        <i class="fas fa-save me-1"></i>Salva Configurazioni Sistema
+                                    <button type="submit" name="submit_system" value="1" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save me-1"></i>Salva Tutte le Configurazioni Sistema
                                     </button>
                                 </div>
                             </form>
@@ -378,6 +693,256 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Email validation in real-time
+    const smtpServerInput = document.getElementById('system-smtp_server');
+    const smtpPortInput = document.getElementById('system-smtp_port');
+    const adminEmailInput = document.getElementById('system-admin_email');
+    
+    if (smtpServerInput) {
+        smtpServerInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value && (value.includes('smtp.') || value.includes('mail.'))) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else if (value) {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    }
+    
+    if (smtpPortInput) {
+        smtpPortInput.addEventListener('input', function() {
+            const value = parseInt(this.value);
+            const commonPorts = [25, 465, 587, 993, 995];
+            if (commonPorts.includes(value)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                
+                // Auto-suggest TLS setting
+                const tlsCheckbox = document.getElementById('system-smtp_use_tls');
+                if (tlsCheckbox) {
+                    tlsCheckbox.checked = (value === 587 || value === 465);
+                }
+            } else if (value > 0 && value <= 65535) {
+                this.classList.remove('is-invalid', 'is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    }
+    
+    if (adminEmailInput) {
+        adminEmailInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (value && emailRegex.test(value)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else if (value) {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    }
+    
+    // Logo upload preview
+    const logoInput = document.getElementById('system-company_logo');
+    if (logoInput) {
+        logoInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Check file size (2MB max)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File troppo grande! Dimensione massima: 2MB');
+                    this.value = '';
+                    return;
+                }
+                
+                // Check file type
+                const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Formato file non supportato! Usa PNG o JPG');
+                    this.value = '';
+                    return;
+                }
+                
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Remove existing preview
+                    const existingPreview = document.getElementById('logo-preview');
+                    if (existingPreview) {
+                        existingPreview.remove();
+                    }
+                    
+                    // Create new preview
+                    const preview = document.createElement('div');
+                    preview.id = 'logo-preview';
+                    preview.className = 'mt-2';
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" alt="Anteprima Logo" 
+                             style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; border-radius: 4px;">
+                        <div class="small text-muted mt-1">Anteprima: ${file.name} → LogoDDT.png (${(file.size / 1024).toFixed(1)} KB)</div>
+                    `;
+                    logoInput.parentNode.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Backup path validation
+    const backupPathInput = document.getElementById('system-backup_path');
+    if (backupPathInput) {
+        backupPathInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            // Check for valid path characters
+            const invalidChars = /[<>:"|?*]/;
+            if (value && !invalidChars.test(value)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else if (value) {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+    }
+    
+    // Timeout validation with visual feedback
+    const timeoutInputs = ['db_connect_timeout', 'db_read_timeout', 'db_write_timeout'];
+    timeoutInputs.forEach(function(inputId) {
+        const input = document.getElementById('system-' + inputId);
+        if (input) {
+            input.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                const min = parseInt(this.getAttribute('min') || 5);
+                const max = parseInt(this.getAttribute('max') || 300);
+                
+                if (value >= min && value <= max) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else if (this.value) {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        }
+    });
+    
+    // Session timeout warning
+    const sessionTimeoutInput = document.getElementById('system-session_timeout_hours');
+    const sessionInactivityInput = document.getElementById('system-session_inactivity_minutes');
+    
+    function updateSessionWarning() {
+        const timeoutHours = parseInt(sessionTimeoutInput?.value || 2);
+        const inactivityMinutes = parseInt(sessionInactivityInput?.value || 30);
+        
+        // Remove existing warning
+        const existingWarning = document.getElementById('session-warning');
+        if (existingWarning) {
+            existingWarning.remove();
+        }
+        
+        // Add warning if values are extreme
+        if (timeoutHours > 12 || inactivityMinutes > 120) {
+            const warning = document.createElement('div');
+            warning.id = 'session-warning';
+            warning.className = 'alert alert-warning alert-sm mt-2';
+            warning.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Attenzione:</strong> Sessioni molto lunghe possono rappresentare un rischio per la sicurezza.';
+            
+            const sessionCard = document.querySelector('[data-config="sessions"]') || sessionTimeoutInput?.closest('.card');
+            if (sessionCard) {
+                sessionCard.querySelector('.card-body').appendChild(warning);
+            }
+        }
+    }
+    
+    if (sessionTimeoutInput) {
+        sessionTimeoutInput.addEventListener('input', updateSessionWarning);
+    }
+    if (sessionInactivityInput) {
+        sessionInactivityInput.addEventListener('input', updateSessionWarning);
+    }
+    
+    // SMTP test connection button (if fields are filled)
+    function toggleSMTPTestButton() {
+        const server = document.getElementById('system-smtp_server')?.value;
+        const port = document.getElementById('system-smtp_port')?.value;
+        const username = document.getElementById('system-smtp_username')?.value;
+        
+        const testButton = document.getElementById('smtp-test-button');
+        if (!testButton) {
+            // Create test button if it doesn't exist
+            const emailCard = document.querySelector('.card:has(#system-smtp_server)');
+            if (emailCard && server && port && username) {
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'mt-3';
+                buttonContainer.innerHTML = `
+                    <button type="button" id="smtp-test-button" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-envelope-open-text me-1"></i>Testa Configurazione Email
+                    </button>
+                `;
+                emailCard.querySelector('.card-body').appendChild(buttonContainer);
+                
+                // Add click handler
+                document.getElementById('smtp-test-button').addEventListener('click', function() {
+                    alert('Funzione di test email sarà implementata nella prossima versione!');
+                });
+            }
+        }
+    }
+    
+    // Monitor SMTP fields for test button
+    ['smtp_server', 'smtp_port', 'smtp_username'].forEach(function(field) {
+        const input = document.getElementById('system-' + field);
+        if (input) {
+            input.addEventListener('input', toggleSMTPTestButton);
+        }
+    });
+    
+    // Initialize
+    toggleSMTPTestButton();
+    updateSessionWarning();
+    
+    // Form submission confirmation for many settings
+    const systemForm = document.querySelector('form[action*="general-config"]');
+    if (systemForm) {
+        systemForm.addEventListener('submit', function(e) {
+            if (e.submitter && e.submitter.name === 'submit_system') {
+                const changedSettings = [];
+                
+                // Check which settings have changed from defaults
+                const settingsToCheck = {
+                    'session_timeout_hours': 2,
+                    'db_connect_timeout': 10,
+                    'backup_frequency_hours': 24,
+                    'log_level': 'INFO'
+                };
+                
+                for (const [setting, defaultVal] of Object.entries(settingsToCheck)) {
+                    const input = document.getElementById('system-' + setting);
+                    if (input && input.value != defaultVal) {
+                        changedSettings.push(setting.replace('_', ' '));
+                    }
+                }
+                
+                if (changedSettings.length > 3) {
+                    const confirmed = confirm(
+                        `Stai modificando ${changedSettings.length} impostazioni di sistema. ` +
+                        `Alcune modifiche potrebbero richiedere il riavvio dell'applicazione. ` +
+                        `Continuare?`
+                    );
+                    if (!confirmed) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 {% endblock %} 

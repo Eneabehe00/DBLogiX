@@ -429,3 +429,83 @@ Il sistema implementa diverse misure di sicurezza:
 Per ulteriori informazioni sui singoli moduli e sulle funzionalità specifiche, consultare i file sorgente nella directory del progetto.
 
 Per assistenza tecnica, contattare il team di supporto all'indirizzo support@dblogix.com # DBLogiX
+
+## 🔧 Configurazioni Sistema Avanzate
+
+La nuova interfaccia di configurazione sistema include tutte le impostazioni prioritarie per ottimizzare DBLogiX:
+
+### 📧 **Email e Notifiche**
+- **Server SMTP**: Configurazione completa per invio email automatiche
+- **Autenticazione**: Username, password e crittografia TLS
+- **Email Admin**: Indirizzo per ricevere notifiche di sistema
+- **Notifiche Automatiche**: Per DDT, scadenze e alert di stock
+
+### 💾 **Backup Automatico** 
+- **Frequenza**: Configurabile da 1 ora a 1 settimana
+- **Retention**: Giorni di conservazione backup (1-90 giorni)
+- **Percorso**: Directory personalizzabile per salvataggio
+
+### ⚡ **Performance Database**
+- **Timeout Connessione**: Ottimizzazione connessioni (5-60 secondi)
+- **Timeout Lettura/Scrittura**: Performance query (10-300 secondi)
+- **Gestione Automatica**: Retry e failover connections
+
+### 🌍 **Localizzazione**
+- **Fuso Orario**: Europa/Roma, UTC, America, Asia
+- **Formato Date**: Europeo (DD/MM/YYYY), Americano (MM/DD/YYYY), ISO
+- **Timestamp**: Calcoli automatici per scadenze e DDT
+
+### 🎨 **Branding Aziendale**
+- **Logo Upload**: PNG/JPG max 2MB per documenti DDT
+- **Nome Fisso**: Automaticamente rinominato in "LogoDDT.png"
+- **Anteprima**: Visualizzazione immediata del logo caricato
+- **Integrazione**: Automatica nei template PDF DDT
+- **Migrazione**: Logo esistenti vengono automaticamente rinominati
+
+### 🔔 **Monitoraggio e Alert**
+- **Stock Minimo**: Notifiche automatiche per scorte basse
+- **Controllo Scadenze**: Frequenza check prodotti (1-24 ore)
+- **Soglie Personalizzate**: Alert configurabili per categoria
+
+### 📊 **Logging e Debug**
+- **Livelli**: DEBUG, INFO, WARNING, ERROR
+- **Rotazione**: Dimensione massima file log (1-100 MB)
+- **Backup Log**: Conservazione automatica file storici
+
+### 👤 **Sicurezza Sessioni**
+- **Durata Sessione**: Timeout automatico (1-24 ore)
+- **Inattività**: Logout per sicurezza (5-180 minuti)
+- **Avvisi**: Alert per impostazioni rischiose
+
+---
+
+### 🚀 **Come Accedere**
+
+1. **Login Admin** → Menu **Admin** → **Configurazioni Generali**
+2. **Tab "Impostazioni Sistema"** → Scorri le sezioni organizzate
+3. **Salva Configurazioni** → Riavvia app se richiesto per timeout/sessioni
+
+### ⚠️ **Note Importanti**
+
+- **Backup**: Configurazioni salvate in `system_config` table
+- **Riavvio**: Timeout DB e sessioni richiedono restart applicazione  
+- **Logo**: Salvato in `static/uploads/logos/` con timestamp
+- **Email**: Test configurazione disponibile nell'interfaccia
+- **Sicurezza**: Alert automatici per impostazioni rischiose
+
+### 🔧 **Configurazioni Tecniche**
+
+```python
+# Esempio configurazioni salvate
+SystemConfig.set_config('smtp_server', 'smtp.gmail.com', 'Server SMTP', 'string')
+SystemConfig.set_config('backup_frequency_hours', 24, 'Frequenza backup', 'integer')
+SystemConfig.set_config('enable_stock_alerts', True, 'Alert stock', 'boolean')
+```
+
+### 📱 **Interfaccia Utente**
+
+- **Design Responsive**: Ottimizzato per desktop e mobile
+- **Validazione Real-time**: Controlli input JavaScript
+- **Anteprima File**: Preview immediato logo caricato
+- **Organizzazione**: Sezioni collassabili per migliore UX
+- **Tooltips**: Descrizioni dettagliate per ogni campo

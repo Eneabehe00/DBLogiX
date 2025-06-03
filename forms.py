@@ -163,4 +163,182 @@ class SystemConfigForm(FlaskForm):
         default=5
     )
     
+    # 1. Configurazioni Email SMTP
+    smtp_server = StringField(
+        'Server SMTP',
+        validators=[Optional(), Length(max=100)],
+        description='Indirizzo del server SMTP per invio email (es. smtp.gmail.com)'
+    )
+    
+    smtp_port = IntegerField(
+        'Porta SMTP',
+        validators=[Optional(), NumberRange(min=1, max=65535)],
+        description='Porta del server SMTP (587 per TLS, 465 per SSL, 25 per non cifrato)',
+        default=587
+    )
+    
+    smtp_username = StringField(
+        'Username Email',
+        validators=[Optional(), Length(max=100)],
+        description='Username per autenticazione SMTP'
+    )
+    
+    smtp_password = PasswordField(
+        'Password Email',
+        validators=[Optional(), Length(max=100)],
+        description='Password per autenticazione SMTP'
+    )
+    
+    smtp_use_tls = BooleanField(
+        'Usa TLS',
+        description='Abilita crittografia TLS per connessioni sicure',
+        default=True
+    )
+    
+    admin_email = StringField(
+        'Email Amministratore',
+        validators=[Optional(), Email(), Length(max=120)],
+        description='Indirizzo email per ricevere notifiche di sistema'
+    )
+    
+    enable_email_notifications = BooleanField(
+        'Abilita Notifiche Email',
+        description='Invia email automatiche per DDT, scadenze e alert',
+        default=False
+    )
+    
+    # 2. Backup Automatico
+    backup_frequency_hours = IntegerField(
+        'Frequenza Backup (ore)',
+        validators=[Optional(), NumberRange(min=1, max=168)],
+        description='Ogni quante ore eseguire backup automatico (max 168 = 1 settimana)',
+        default=24
+    )
+    
+    backup_retention_days = IntegerField(
+        'Giorni Conservazione Backup',
+        validators=[Optional(), NumberRange(min=1, max=90)],
+        description='Per quanti giorni mantenere i file di backup',
+        default=7
+    )
+    
+    backup_path = StringField(
+        'Percorso Backup',
+        validators=[Optional(), Length(max=255)],
+        description='Cartella dove salvare i backup (relativa alla root dell\'app)',
+        default='backups'
+    )
+    
+    # 3. Timeout Database  
+    db_connect_timeout = IntegerField(
+        'Timeout Connessione DB (secondi)',
+        validators=[Optional(), NumberRange(min=5, max=60)],
+        description='Timeout per stabilire connessione al database',
+        default=10
+    )
+    
+    db_read_timeout = IntegerField(
+        'Timeout Lettura DB (secondi)',
+        validators=[Optional(), NumberRange(min=10, max=300)],
+        description='Timeout per operazioni di lettura dal database',
+        default=30
+    )
+    
+    db_write_timeout = IntegerField(
+        'Timeout Scrittura DB (secondi)',
+        validators=[Optional(), NumberRange(min=10, max=300)],
+        description='Timeout per operazioni di scrittura nel database',
+        default=30
+    )
+    
+    # 4. Localizzazione
+    timezone = SelectField(
+        'Fuso Orario',
+        choices=[
+            ('Europe/Rome', 'Europa/Roma (GMT+1)'),
+            ('Europe/London', 'Europa/Londra (GMT+0)'),
+            ('America/New_York', 'America/New York (GMT-5)'),
+            ('America/Los_Angeles', 'America/Los Angeles (GMT-8)'),
+            ('Asia/Tokyo', 'Asia/Tokyo (GMT+9)'),
+            ('UTC', 'UTC (GMT+0)')
+        ],
+        default='Europe/Rome',
+        description='Fuso orario per timestamp e calcoli date'
+    )
+    
+    date_format = SelectField(
+        'Formato Data',
+        choices=[
+            ('%d/%m/%Y', 'DD/MM/YYYY (Europeo)'),
+            ('%m/%d/%Y', 'MM/DD/YYYY (Americano)'),
+            ('%Y-%m-%d', 'YYYY-MM-DD (ISO)'),
+            ('%d-%m-%Y', 'DD-MM-YYYY')
+        ],
+        default='%d/%m/%Y',
+        description='Formato di visualizzazione delle date nell\'interfaccia'
+    )
+    
+    # 5. Logo Aziendale
+    company_logo = FileField(
+        'Logo Aziendale',
+        validators=[Optional()],
+        description='Upload logo aziendale per DDT (PNG, JPG, max 2MB) - verrà rinominato automaticamente in LogoDDT.png'
+    )
+    
+    # 6. Alert e Monitoraggio
+    enable_stock_alerts = BooleanField(
+        'Alert Stock Minimo',
+        description='Invia notifiche quando le scorte scendono sotto la soglia minima',
+        default=True
+    )
+    
+    stock_alert_threshold = IntegerField(
+        'Soglia Alert Stock',
+        validators=[Optional(), NumberRange(min=0, max=1000)],
+        description='Quantità minima sotto la quale inviare alert',
+        default=10
+    )
+    
+    expiry_check_frequency_hours = IntegerField(
+        'Frequenza Controllo Scadenze (ore)',
+        validators=[Optional(), NumberRange(min=1, max=24)],
+        description='Ogni quante ore controllare prodotti in scadenza',
+        default=6
+    )
+    
+    # 7. Logging
+    log_level = SelectField(
+        'Livello Logging',
+        choices=[
+            ('DEBUG', 'DEBUG - Molto dettagliato'),
+            ('INFO', 'INFO - Informazioni generali'),
+            ('WARNING', 'WARNING - Solo avvisi'),
+            ('ERROR', 'ERROR - Solo errori')
+        ],
+        default='INFO',
+        description='Livello di dettaglio per i log di sistema'
+    )
+    
+    log_max_size_mb = IntegerField(
+        'Dimensione Max Log (MB)',
+        validators=[Optional(), NumberRange(min=1, max=100)],
+        description='Dimensione massima file log prima della rotazione',
+        default=10
+    )
+    
+    # 8. Sessioni Utente
+    session_timeout_hours = IntegerField(
+        'Durata Sessione (ore)',
+        validators=[Optional(), NumberRange(min=1, max=24)],
+        description='Durata massima sessione utente prima del logout automatico',
+        default=2
+    )
+    
+    session_inactivity_minutes = IntegerField(
+        'Timeout Inattività (minuti)',
+        validators=[Optional(), NumberRange(min=5, max=180)],
+        description='Minuti di inattività prima del logout automatico',
+        default=30
+    )
+    
     submit = SubmitField('Salva Configurazioni') 

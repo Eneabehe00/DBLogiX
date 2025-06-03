@@ -8,6 +8,7 @@ import pymysql
 from datetime import datetime, timedelta
 import json
 import os
+import re
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -195,6 +196,32 @@ def reset_password(user_id):
 @admin_required
 def general_config():
     """Unified configuration page with tabs for DB, Company, and System settings"""
+    
+    # Migrazione automatica del logo esistente al nome fisso
+    def migrate_existing_logo():
+        """Migra eventuali loghi esistenti al nome fisso LogoDDT.png"""
+        try:
+            logo_dir = os.path.join('static', 'uploads', 'logos')
+            if os.path.exists(logo_dir):
+                for filename in os.listdir(logo_dir):
+                    if filename.startswith('logo_') and filename.endswith(('.png', '.jpg', '.jpeg')):
+                        old_path = os.path.join(logo_dir, filename)
+                        new_path = os.path.join(logo_dir, 'LogoDDT.png')
+                        
+                        # Rimuovi il LogoDDT.png esistente se presente
+                        if os.path.exists(new_path):
+                            os.remove(new_path)
+                        
+                        # Rinomina il file
+                        os.rename(old_path, new_path)
+                        flash(f'Logo esistente {filename} migrato automaticamente a LogoDDT.png', 'info')
+                        break  # Prendi solo il primo logo trovato
+        except Exception as e:
+            pass  # Ignora eventuali errori di migrazione
+    
+    # Esegui la migrazione del logo
+    migrate_existing_logo()
+    
     db_form = DbConfigForm(prefix="db")
     company_form = CompanyConfigForm(prefix="company")
     system_form = SystemConfigForm(prefix="system")
@@ -219,11 +246,45 @@ def general_config():
             company_form.poblacion.data = company.Poblacion
             company_form.provincia.data = company.Provincia
         
-        # System form
-        expiry_warning_days = SystemConfig.get_config('expiry_warning_days', 7)
-        articles_per_package = SystemConfig.get_config('articles_per_package', 5)
-        system_form.expiry_warning_days.data = expiry_warning_days
-        system_form.articles_per_package.data = articles_per_package
+        # System form - Carica tutte le configurazioni
+        system_form.expiry_warning_days.data = SystemConfig.get_config('expiry_warning_days', 7)
+        system_form.articles_per_package.data = SystemConfig.get_config('articles_per_package', 5)
+        
+        # Email configurations
+        system_form.smtp_server.data = SystemConfig.get_config('smtp_server', '')
+        system_form.smtp_port.data = SystemConfig.get_config('smtp_port', 587)
+        system_form.smtp_username.data = SystemConfig.get_config('smtp_username', '')
+        system_form.smtp_password.data = SystemConfig.get_config('smtp_password', '')
+        system_form.smtp_use_tls.data = SystemConfig.get_config('smtp_use_tls', True)
+        system_form.admin_email.data = SystemConfig.get_config('admin_email', '')
+        system_form.enable_email_notifications.data = SystemConfig.get_config('enable_email_notifications', False)
+        
+        # Backup configurations
+        system_form.backup_frequency_hours.data = SystemConfig.get_config('backup_frequency_hours', 24)
+        system_form.backup_retention_days.data = SystemConfig.get_config('backup_retention_days', 7)
+        system_form.backup_path.data = SystemConfig.get_config('backup_path', 'backups')
+        
+        # Database timeout configurations
+        system_form.db_connect_timeout.data = SystemConfig.get_config('db_connect_timeout', 10)
+        system_form.db_read_timeout.data = SystemConfig.get_config('db_read_timeout', 30)
+        system_form.db_write_timeout.data = SystemConfig.get_config('db_write_timeout', 30)
+        
+        # Localization configurations
+        system_form.timezone.data = SystemConfig.get_config('timezone', 'Europe/Rome')
+        system_form.date_format.data = SystemConfig.get_config('date_format', '%d/%m/%Y')
+        
+        # Alert configurations
+        system_form.enable_stock_alerts.data = SystemConfig.get_config('enable_stock_alerts', True)
+        system_form.stock_alert_threshold.data = SystemConfig.get_config('stock_alert_threshold', 10)
+        system_form.expiry_check_frequency_hours.data = SystemConfig.get_config('expiry_check_frequency_hours', 6)
+        
+        # Logging configurations
+        system_form.log_level.data = SystemConfig.get_config('log_level', 'INFO')
+        system_form.log_max_size_mb.data = SystemConfig.get_config('log_max_size_mb', 10)
+        
+        # Session configurations
+        system_form.session_timeout_hours.data = SystemConfig.get_config('session_timeout_hours', 2)
+        system_form.session_inactivity_minutes.data = SystemConfig.get_config('session_inactivity_minutes', 30)
     
     # Handle DB config form submit
     if 'submit_db' in request.form and db_form.validate():
@@ -275,15 +336,12 @@ def general_config():
                 new_config_str += "}"
                 
                 # Replace the old config with the new one
-                import re
-                pattern = r"REMOTE_DB_CONFIG = \{[^}]+\}"
-                updated_content = re.sub(pattern, new_config_str, config_content)
+                updated_content = re.sub(r"REMOTE_DB_CONFIG = \{[^}]+\}", new_config_str, config_content)
                 
                 # Update the SQLALCHEMY_DATABASE_URI
                 sqlalchemy_uri = f"SQLALCHEMY_DATABASE_URI = f\"mysql+pymysql://{new_config['user']}:{new_config['password']}@{new_config['host']}:{new_config['port']}/{new_config['database']}\""
                 
-                pattern = r"SQLALCHEMY_DATABASE_URI = f\"mysql\+pymysql://[^\"]+\""
-                updated_content = re.sub(pattern, sqlalchemy_uri, updated_content)
+                updated_content = re.sub(r"SQLALCHEMY_DATABASE_URI = f\"mysql\+pymysql://[^\"]+\"", sqlalchemy_uri, updated_content)
                 
                 # Write the updated content back to the file
                 with open('config.py', 'w') as f:
@@ -319,23 +377,100 @@ def general_config():
     # Handle System config form submit
     if 'submit_system' in request.form and system_form.validate():
         try:
-            # Save expiry warning days configuration
-            SystemConfig.set_config(
-                'expiry_warning_days', 
-                system_form.expiry_warning_days.data,
-                'Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"',
-                'integer'
-            )
+            # Save basic system configurations
+            SystemConfig.set_config('expiry_warning_days', system_form.expiry_warning_days.data,
+                                   'Numero di giorni prima della scadenza per contrassegnare i ticket come "In Scadenza"', 'integer')
+            SystemConfig.set_config('articles_per_package', system_form.articles_per_package.data,
+                                   'Numero di articoli necessari per determinare un collo nei DDT', 'integer')
             
-            # Save articles per package configuration
-            SystemConfig.set_config(
-                'articles_per_package',
-                system_form.articles_per_package.data,
-                'Numero di articoli necessari per determinare un collo nei DDT (escluso l\'articolo "trasporto")',
-                'integer'
-            )
+            # Save Email configurations
+            if system_form.smtp_server.data:
+                SystemConfig.set_config('smtp_server', system_form.smtp_server.data, 'Server SMTP per invio email', 'string')
+            if system_form.smtp_port.data:
+                SystemConfig.set_config('smtp_port', system_form.smtp_port.data, 'Porta server SMTP', 'integer')
+            if system_form.smtp_username.data:
+                SystemConfig.set_config('smtp_username', system_form.smtp_username.data, 'Username autenticazione SMTP', 'string')
+            if system_form.smtp_password.data:
+                SystemConfig.set_config('smtp_password', system_form.smtp_password.data, 'Password autenticazione SMTP', 'string')
+            SystemConfig.set_config('smtp_use_tls', system_form.smtp_use_tls.data, 'Utilizza TLS per SMTP', 'boolean')
+            if system_form.admin_email.data:
+                SystemConfig.set_config('admin_email', system_form.admin_email.data, 'Email amministratore per notifiche', 'string')
+            SystemConfig.set_config('enable_email_notifications', system_form.enable_email_notifications.data, 'Abilita notifiche email automatiche', 'boolean')
             
-            flash('Configurazioni sistema salvate con successo!', 'success')
+            # Save Backup configurations
+            SystemConfig.set_config('backup_frequency_hours', system_form.backup_frequency_hours.data, 'Frequenza backup automatico in ore', 'integer')
+            SystemConfig.set_config('backup_retention_days', system_form.backup_retention_days.data, 'Giorni di conservazione backup', 'integer')
+            SystemConfig.set_config('backup_path', system_form.backup_path.data, 'Percorso di salvataggio backup', 'string')
+            
+            # Save Database timeout configurations
+            SystemConfig.set_config('db_connect_timeout', system_form.db_connect_timeout.data, 'Timeout connessione database in secondi', 'integer')
+            SystemConfig.set_config('db_read_timeout', system_form.db_read_timeout.data, 'Timeout lettura database in secondi', 'integer')
+            SystemConfig.set_config('db_write_timeout', system_form.db_write_timeout.data, 'Timeout scrittura database in secondi', 'integer')
+            
+            # Save Localization configurations
+            SystemConfig.set_config('timezone', system_form.timezone.data, 'Fuso orario sistema', 'string')
+            SystemConfig.set_config('date_format', system_form.date_format.data, 'Formato visualizzazione date', 'string')
+            
+            # Handle logo upload
+            if system_form.company_logo.data:
+                try:
+                    import os
+                    from werkzeug.utils import secure_filename
+                    
+                    # Create uploads directory if it doesn't exist
+                    upload_dir = os.path.join('static', 'uploads', 'logos')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    
+                    # Always use the fixed filename LogoDDT.png
+                    filename = "LogoDDT.png"
+                    filepath = os.path.join(upload_dir, filename)
+                    
+                    # Remove existing logo if it exists
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                    
+                    # Save the new logo with the fixed name
+                    system_form.company_logo.data.save(filepath)
+                    
+                    # Save path in config
+                    logo_path = f"uploads/logos/{filename}"
+                    SystemConfig.set_config('company_logo_path', logo_path, 'Percorso logo aziendale per DDT', 'string')
+                    flash('Logo aziendale caricato con successo come LogoDDT.png!', 'success')
+                except Exception as e:
+                    flash(f'Errore nel caricamento del logo: {str(e)}', 'warning')
+            
+            # Save Alert configurations
+            SystemConfig.set_config('enable_stock_alerts', system_form.enable_stock_alerts.data, 'Abilita alert per stock minimo', 'boolean')
+            SystemConfig.set_config('stock_alert_threshold', system_form.stock_alert_threshold.data, 'Soglia minima per alert stock', 'integer')
+            SystemConfig.set_config('expiry_check_frequency_hours', system_form.expiry_check_frequency_hours.data, 'Frequenza controllo scadenze in ore', 'integer')
+            
+            # Save Logging configurations
+            SystemConfig.set_config('log_level', system_form.log_level.data, 'Livello di logging sistema', 'string')
+            SystemConfig.set_config('log_max_size_mb', system_form.log_max_size_mb.data, 'Dimensione massima file log in MB', 'integer')
+            
+            # Save Session configurations
+            SystemConfig.set_config('session_timeout_hours', system_form.session_timeout_hours.data, 'Durata massima sessione in ore', 'integer')
+            SystemConfig.set_config('session_inactivity_minutes', system_form.session_inactivity_minutes.data, 'Timeout inattività in minuti', 'integer')
+            
+            # Update config.py for session timeout (requires app restart)
+            try:
+                with open('config.py', 'r') as f:
+                    config_content = f.read()
+                
+                # Update PERMANENT_SESSION_LIFETIME
+                new_session_timeout = f"PERMANENT_SESSION_LIFETIME = timedelta(hours={system_form.session_timeout_hours.data})"
+                pattern = r"PERMANENT_SESSION_LIFETIME = timedelta\(hours=\d+\)"
+                
+                if re.search(pattern, config_content):
+                    updated_content = re.sub(pattern, new_session_timeout, config_content)
+                    with open('config.py', 'w') as f:
+                        f.write(updated_content)
+                    flash('Configurazione sessioni aggiornata nel file config.py. Riavvia l\'app per applicare le modifiche.', 'info')
+            except Exception as e:
+                flash(f'Attenzione: Impossibile aggiornare il timeout sessioni nel file config.py: {str(e)}', 'warning')
+            
+            flash('Tutte le configurazioni sistema sono state salvate con successo!', 'success')
+            
         except Exception as e:
             flash(f'Errore nel salvataggio delle configurazioni sistema: {str(e)}', 'danger')
     

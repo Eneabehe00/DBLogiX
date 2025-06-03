@@ -163,10 +163,39 @@ def create_app():
         def utility_processor():
             from datetime import datetime
             from flask_wtf.csrf import generate_csrf
+            
+            def is_task_expired(task_deadline):
+                """Check if task deadline has passed (only tomorrow counts as expired)"""
+                if not task_deadline:
+                    return False
+                today = datetime.now().date()
+                deadline_date = task_deadline.date()
+                return deadline_date < today  # Only expired if deadline date is in the past
+            
+            def is_task_expiring_soon(task_deadline):
+                """Check if task deadline is today or tomorrow (warning)"""
+                if not task_deadline:
+                    return False
+                today = datetime.now().date()
+                deadline_date = task_deadline.date()
+                days_left = (deadline_date - today).days
+                return days_left <= 1 and days_left >= 0  # Today or tomorrow
+            
+            def days_until_task_deadline(task_deadline):
+                """Calculate days until task deadline"""
+                if not task_deadline:
+                    return None
+                today = datetime.now().date()
+                deadline_date = task_deadline.date()
+                return (deadline_date - today).days
+                
             return {
                 'current_time': current_time,
                 'now': lambda: datetime.now(),
-                'csrf_token': generate_csrf
+                'csrf_token': generate_csrf,
+                'is_task_expired': is_task_expired,
+                'is_task_expiring_soon': is_task_expiring_soon,
+                'days_until_task_deadline': days_until_task_deadline
             }
         
         # Add root route that redirects to login

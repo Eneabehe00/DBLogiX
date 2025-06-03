@@ -60,6 +60,14 @@
         
         <div class="login-footer">
             <p>Primo accesso? Contatta l'amministratore per un account.</p>
+            
+            <!-- Quick Registration Link for Admins -->
+            <div class="admin-actions mb-3">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-user-plus me-2"></i>Registra Nuovo Utente
+                </a>
+            </div>
+            
             <div class="company-info">
                 <small>&copy; 2023 DBLogiX - Gestione Magazzino</small>
             </div>

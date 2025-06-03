@@ -21,7 +21,10 @@ def login():
         login_user(user, remember=form.remember_me.data)
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('warehouse.index')
+            if user.screen_task:
+                next_page = url_for('tasks.task_screen')
+            else:
+                next_page = url_for('warehouse.index')
         return redirect(next_page)
     
     return render_template('auth/login.html', title='Sign In', form=form)
@@ -49,7 +52,8 @@ def register():
         user = User(
             username=form.username.data,
             email=form.email.data,
-            is_admin=form.is_admin.data if current_user.is_authenticated and current_user.is_admin else False
+            is_admin=form.is_admin.data if current_user.is_authenticated and current_user.is_admin else False,
+            screen_task=form.screen_task.data if current_user.is_authenticated and current_user.is_admin else False
         )
         user.set_password(form.password.data)
         

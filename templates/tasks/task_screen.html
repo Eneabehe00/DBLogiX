@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCHERMO TASK - DBLogiX</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: #2c3e50;
+        }
+
+        .task-screen-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-bottom: 6px solid #007bff;
+            padding: 25px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .task-screen-title {
+            color: #1a202c;
+            font-weight: 900;
+            font-size: 3.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin: 30px 20px;
+            padding: 0 10px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 25px;
+            padding: 35px 25px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transition: all 0.4s ease;
+            border: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, var(--accent-color), var(--accent-color-light));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+        }
+
+        .stat-card.pending {
+            --accent-color: #f39c12;
+            --accent-color-light: #f5b041;
+            border-color: #f39c12;
+        }
+
+        .stat-card.assigned {
+            --accent-color: #3498db;
+            --accent-color-light: #5dade2;
+            border-color: #3498db;
+        }
+
+        .stat-card.in-progress {
+            --accent-color: #2ecc71;
+            --accent-color-light: #58d68d;
+            border-color: #2ecc71;
+        }
+
+        .stat-card.overdue {
+            --accent-color: #e74c3c;
+            --accent-color-light: #ec7063;
+            border-color: #e74c3c;
+            animation: pulse-warning 3s infinite;
+        }
+
+        .stat-number {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin: 15px 0;
+            color: var(--accent-color);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2c3e50;
+            margin-top: 10px;
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .task-section {
+            margin: 40px 20px;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 30px 35px;
+            border-bottom: 6px solid var(--section-color);
+            margin-bottom: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-header.pending {
+            --section-color: #f39c12;
+        }
+
+        .section-header.assigned {
+            --section-color: #3498db;
+        }
+
+        .section-header.in-progress {
+            --section-color: #2ecc71;
+        }
+
+        .section-header.overdue {
+            --section-color: #e74c3c;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .section-title i {
+            color: var(--section-color);
+            font-size: 2rem;
+        }
+
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 25px;
+            padding: 30px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .task-card {
+            background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid transparent;
+            border-left: 8px solid var(--card-accent);
+        }
+
+        .task-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--card-accent), var(--card-accent-light));
+        }
+
+        .task-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+            border-color: var(--card-accent);
+        }
+
+        .task-card.pending {
+            --card-accent: #f39c12;
+            --card-accent-light: #f5b041;
+        }
+
+        .task-card.assigned {
+            --card-accent: #3498db;
+            --card-accent-light: #5dade2;
+        }
+
+        .task-card.in-progress {
+            --card-accent: #2ecc71;
+            --card-accent-light: #58d68d;
+        }
+
+        .task-card.overdue {
+            --card-accent: #e74c3c;
+            --card-accent-light: #ec7063;
+            animation: pulse-card 4s infinite;
+        }
+
+        .task-number {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--card-accent);
+            margin-bottom: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .task-number::before {
+            content: '#';
+            font-size: 1.5rem;
+            opacity: 0.7;
+        }
+
+        .task-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a202c;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .task-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .task-priority {
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            border: 2px solid;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .task-priority.low {
+            background: linear-gradient(135deg, #d5f4e6, #ffffff);
+            color: #27ae60;
+            border-color: #27ae60;
+        }
+
+        .task-priority.medium {
+            background: linear-gradient(135deg, #fef9e7, #ffffff);
+            color: #f39c12;
+            border-color: #f39c12;
+        }
+
+        .task-priority.high {
+            background: linear-gradient(135deg, #fdedec, #ffffff);
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .task-priority.urgent {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border-color: #c0392b;
+            animation: pulse-urgent 2s infinite;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .task-assignee {
+            background: linear-gradient(135deg, #eaf2f8, #ffffff);
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            border: 2px solid #3498db;
+            color: #2980b9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .task-assignee i {
+            font-size: 1.1rem;
+        }
+
+        .task-progress {
+            margin-bottom: 25px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .progress-percentage {
+            background: var(--card-accent);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 800;
+        }
+
+        .progress {
+            height: 15px;
+            border-radius: 25px;
+            background: #e9ecef;
+            overflow: hidden;
+            border: 2px solid #dee2e6;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            border-radius: 25px;
+            transition: width 0.8s ease;
+            background: linear-gradient(135deg, var(--card-accent), var(--card-accent-light));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: progress-shine 2s infinite;
+        }
+
+        .task-deadline {
+            text-align: center;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .deadline-normal {
+            background: linear-gradient(135deg, #eaf2f8, #ffffff);
+            color: #2980b9;
+            border-color: #3498db;
+        }
+
+        .deadline-warning {
+            background: linear-gradient(135deg, #fef9e7, #ffffff);
+            color: #d68910;
+            border-color: #f39c12;
+        }
+
+        .deadline-danger {
+            background: linear-gradient(135deg, #fdedec, #ffffff);
+            color: #c0392b;
+            border-color: #e74c3c;
+            animation: pulse-deadline 3s infinite;
+        }
+
+        .no-tasks {
+            text-align: center;
+            padding: 60px 40px;
+            color: #7f8c8d;
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-style: italic;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 20px;
+            border: 3px dashed #bdc3c7;
+        }
+
+        .no-tasks i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #bdc3c7;
+        }
+
+        .clock-display {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1a202c;
+            text-align: right;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .auto-refresh {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 1rem;
+            color: #2c3e50;
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: 2px solid #e9ecef;
+        }
+
+        .refresh-icon {
+            color: #3498db;
+            margin-right: 8px;
+            animation: spin 2s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes pulse-warning {
+            0%, 100% { 
+                transform: scale(1); 
+                box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+            }
+            50% { 
+                transform: scale(1.02); 
+                box-shadow: 0 20px 45px rgba(231, 76, 60, 0.3); 
+            }
+        }
+
+        @keyframes pulse-card {
+            0%, 100% { 
+                transform: translateY(0) scale(1); 
+                box-shadow: 0 8px 25px rgba(0,0,0,0.1); 
+            }
+            50% { 
+                transform: translateY(-3px) scale(1.01); 
+                box-shadow: 0 12px 35px rgba(231, 76, 60, 0.25); 
+            }
+        }
+
+        @keyframes pulse-urgent {
+            0%, 100% { 
+                background: linear-gradient(135deg, #e74c3c, #c0392b);
+                transform: scale(1);
+            }
+            50% { 
+                background: linear-gradient(135deg, #c0392b, #a93226);
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes pulse-deadline {
+            0%, 100% { 
+                border-color: #e74c3c;
+            }
+            50% { 
+                border-color: #c0392b;
+                box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
+            }
+        }
+
+        @keyframes progress-shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .task-grid {
+                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            }
+        }
+
+        @media (max-width: 992px) {
+            .task-screen-title {
+                font-size: 2.5rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 20px;
+            }
+            
+            .stat-number {
+                font-size: 3.5rem;
+            }
+            
+            .task-grid {
+                grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+                gap: 20px;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .task-screen-title {
+                font-size: 2rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                margin: 20px 10px;
+            }
+            
+            .stat-card {
+                padding: 25px 20px;
+            }
+            
+            .stat-number {
+                font-size: 3rem;
+            }
+            
+            .task-grid {
+                grid-template-columns: 1fr;
+                padding: 15px;
+            }
+            
+            .task-section {
+                margin: 30px 10px;
+            }
+            
+            .section-header {
+                padding: 20px 25px;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+            }
+            
+            .auto-refresh {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="task-screen-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="task-screen-title">
+                        <i class="fas fa-desktop me-3"></i>DBLogiX - TASK
+                    </h1>
+                </div>
+                <div class="col-md-4">
+                    <div class="clock-display" id="currentTime"></div>
+                    <div class="text-end mt-2">
+                        <div class="user-info">
+                            <i class="fas fa-user me-2"></i>{{ current_user.username }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Statistics Overview -->
+        <div class="stats-overview">
+            <div class="stat-card overdue">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_overdue }}</div>
+                <div class="stat-label">
+                    SCADUTI
+                </div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_pending }}</div>
+                <div class="stat-label">
+                    IN ATTESA
+                </div>
+            </div>
+            <div class="stat-card assigned">
+                <div class="stat-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_assigned }}</div>
+                <div class="stat-label">
+                    ASSEGNATI
+                </div>
+            </div>
+            <div class="stat-card in-progress">
+                <div class="stat-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_in_progress }}</div>
+                <div class="stat-label">
+                    IN CORSO
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Tasks (Priority Display) -->
+        {% if overdue_tasks %}
+        <div class="task-section">
+            <div class="section-header overdue">
+                <h2 class="section-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    TASK SCADUTI - URGENTE ({{ overdue_tasks|length }})
+                </h2>
+            </div>
+            <div class="task-grid">
+                {% for task in overdue_tasks %}
+                <div class="task-card overdue">
+                    <div class="task-number">{{ task.task_number }}</div>
+                    <div class="task-title">{{ task.title }}</div>
+                    
+                    <div class="task-meta">
+                        <div class="task-priority {{ task.priority }}">
+                            <i class="fas fa-fire me-2"></i>{{ task.priority.upper() }}
+                        </div>
+                        {% if task.assignee %}
+                        <div class="task-assignee">
+                            <i class="fas fa-user"></i>{{ task.assignee.username }}
+                        </div>
+                        {% else %}
+                        <div class="task-assignee">
+                            <i class="fas fa-user-slash"></i>NON ASSEGNATO
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="task-progress">
+                        <div class="progress-label">
+                            <span><i class="fas fa-tasks me-2"></i>PROGRESSO</span>
+                            <span class="progress-percentage">{{ "%.0f"|format(task.progress_percentage) }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%"></div>
+                        </div>
+                        <div class="text-center mt-2" style="font-size: 1rem; font-weight: 600; color: #7f8c8d;">
+                            {{ task.completed_tickets }} / {{ task.total_tickets }} TICKET COMPLETATI
+                        </div>
+                    </div>
+                    
+                    {% if task.deadline %}
+                    <div class="task-deadline deadline-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        SCADUTO IL {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- In Progress Tasks -->
+        {% if in_progress_tasks %}
+        <div class="task-section">
+            <div class="section-header in-progress">
+                <h2 class="section-title">
+                    <i class="fas fa-play-circle"></i>
+                    TASK IN CORSO ({{ in_progress_tasks|length }})
+                </h2>
+            </div>
+            <div class="task-grid">
+                {% for task in in_progress_tasks %}
+                <div class="task-card in-progress">
+                    <div class="task-number">{{ task.task_number }}</div>
+                    <div class="task-title">{{ task.title }}</div>
+                    
+                    <div class="task-meta">
+                        <div class="task-priority {{ task.priority }}">
+                            <i class="fas fa-flag me-2"></i>{{ task.priority.upper() }}
+                        </div>
+                        {% if task.assignee %}
+                        <div class="task-assignee">
+                            <i class="fas fa-user"></i>{{ task.assignee.username }}
+                        </div>
+                        {% else %}
+                        <div class="task-assignee">
+                            <i class="fas fa-user-slash"></i>NON ASSEGNATO
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="task-progress">
+                        <div class="progress-label">
+                            <span><i class="fas fa-tasks me-2"></i>PROGRESSO</span>
+                            <span class="progress-percentage">{{ "%.0f"|format(task.progress_percentage) }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%"></div>
+                        </div>
+                        <div class="text-center mt-2" style="font-size: 1rem; font-weight: 600; color: #7f8c8d;">
+                            {{ task.completed_tickets }} / {{ task.total_tickets }} TICKET COMPLETATI
+                        </div>
+                    </div>
+                    
+                    {% if task.deadline %}
+                    <div class="task-deadline {% if task.is_overdue %}deadline-danger{% elif (task.deadline - now()).days <= 1 %}deadline-warning{% else %}deadline-normal{% endif %}">
+                        <i class="fas fa-calendar-alt"></i>
+                        SCADENZA: {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Assigned Tasks -->
+        {% if assigned_tasks %}
+        <div class="task-section">
+            <div class="section-header assigned">
+                <h2 class="section-title">
+                    <i class="fas fa-user-check"></i>
+                    TASK ASSEGNATI ({{ assigned_tasks|length }})
+                </h2>
+            </div>
+            <div class="task-grid">
+                {% for task in assigned_tasks %}
+                <div class="task-card assigned">
+                    <div class="task-number">{{ task.task_number }}</div>
+                    <div class="task-title">{{ task.title }}</div>
+                    
+                    <div class="task-meta">
+                        <div class="task-priority {{ task.priority }}">
+                            <i class="fas fa-flag me-2"></i>{{ task.priority.upper() }}
+                        </div>
+                        {% if task.assignee %}
+                        <div class="task-assignee">
+                            <i class="fas fa-user"></i>{{ task.assignee.username }}
+                        </div>
+                        {% else %}
+                        <div class="task-assignee">
+                            <i class="fas fa-user-slash"></i>NON ASSEGNATO
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="task-progress">
+                        <div class="progress-label">
+                            <span><i class="fas fa-tasks me-2"></i>PROGRESSO</span>
+                            <span class="progress-percentage">{{ "%.0f"|format(task.progress_percentage) }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%"></div>
+                        </div>
+                        <div class="text-center mt-2" style="font-size: 1rem; font-weight: 600; color: #7f8c8d;">
+                            {{ task.completed_tickets }} / {{ task.total_tickets }} TICKET COMPLETATI
+                        </div>
+                    </div>
+                    
+                    {% if task.deadline %}
+                    <div class="task-deadline {% if task.is_overdue %}deadline-danger{% elif (task.deadline - now()).days <= 1 %}deadline-warning{% else %}deadline-normal{% endif %}">
+                        <i class="fas fa-calendar-alt"></i>
+                        SCADENZA: {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pending Tasks -->
+        {% if pending_tasks %}
+        <div class="task-section">
+            <div class="section-header pending">
+                <h2 class="section-title">
+                    <i class="fas fa-clock"></i>
+                    TASK IN ATTESA ({{ pending_tasks|length }})
+                </h2>
+            </div>
+            <div class="task-grid">
+                {% for task in pending_tasks %}
+                <div class="task-card pending">
+                    <div class="task-number">{{ task.task_number }}</div>
+                    <div class="task-title">{{ task.title }}</div>
+                    
+                    <div class="task-meta">
+                        <div class="task-priority {{ task.priority }}">
+                            <i class="fas fa-flag me-2"></i>{{ task.priority.upper() }}
+                        </div>
+                        <div class="task-assignee">
+                            <i class="fas fa-user-slash"></i>NON ASSEGNATO
+                        </div>
+                    </div>
+                    
+                    <div class="task-progress">
+                        <div class="progress-label">
+                            <span><i class="fas fa-tasks me-2"></i>PROGRESSO</span>
+                            <span class="progress-percentage">{{ "%.0f"|format(task.progress_percentage) }}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: {{ task.progress_percentage }}%"></div>
+                        </div>
+                        <div class="text-center mt-2" style="font-size: 1rem; font-weight: 600; color: #7f8c8d;">
+                            {{ task.completed_tickets }} / {{ task.total_tickets }} TICKET COMPLETATI
+                        </div>
+                    </div>
+                    
+                    {% if task.deadline %}
+                    <div class="task-deadline {% if task.is_overdue %}deadline-danger{% elif (task.deadline - now()).days <= 1 %}deadline-warning{% else %}deadline-normal{% endif %}">
+                        <i class="fas fa-calendar-alt"></i>
+                        SCADENZA: {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- No Tasks Message -->
+        {% if not (overdue_tasks or in_progress_tasks or assigned_tasks or pending_tasks) %}
+        <div class="task-section">
+            <div class="no-tasks">
+                <i class="fas fa-clipboard-check"></i>
+                <h3>NESSUN TASK ATTIVO</h3>
+                <p>Al momento non ci sono task da visualizzare</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Auto-refresh indicator -->
+    <div class="auto-refresh">
+        <i class="fas fa-sync-alt refresh-icon"></i>
+        Aggiornamento automatico ogni 30 secondi
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('it-IT', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('currentTime').innerHTML = 
+                `<div>${timeString}</div><div style="font-size: 0.8rem; opacity: 0.8;">${dateString}</div>`;
+        }
+
+        // Auto-refresh every 30 seconds
+        function autoRefresh() {
+            location.reload();
+        }
+
+        // Initialize
+        updateClock();
+        setInterval(updateClock, 1000);
+        setInterval(autoRefresh, 30000);
+
+        // Add entrance animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.task-card, .stat-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.8s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
+            });
+        });
+
+        // Prevent accidental navigation
+        window.addEventListener('beforeunload', function(e) {
+            // Maintain screen display
+        });
+
+        // Fullscreen toggle on F11
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F11') {
+                e.preventDefault();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen();
+                } else {
+                    document.exitFullscreen();
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

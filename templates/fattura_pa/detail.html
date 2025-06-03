@@ -2,923 +2,581 @@
 
 {% block title %}Dettaglio Fattura - DBLogiX{% endblock %}
 
-{% block header_title %}Dettaglio Fattura{% endblock %}
+{% block header_title %}Dettaglio Fattura PA{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/fattura_pa.css') }}">
-<style>
-    /* Enhanced styles for detail page */
-    .invoice-detail-container {
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-    
-    .invoice-header-card {
-        background: linear-gradient(135deg, #1336d0 0%, #1336d0 100%);
-        color: white;
-        border-radius: 15px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-    
-    .invoice-header-info {
-        background: rgba(255,255,255,0.1);
-        border-radius: 10px;
-        padding: 1.5rem;
-        backdrop-filter: blur(10px);
-    }
-    
-    .invoice-status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        background: rgba(255,255,255,0.2);
-        border-radius: 50px;
-        font-weight: 600;
-        backdrop-filter: blur(10px);
-    }
-    
-    .detail-tabs {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        overflow: hidden;
-    }
-    
-    .nav-pills .nav-link {
-        border-radius: 0;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        color: #6c757d;
-        border-bottom: 3px solid transparent;
-        transition: all 0.3s ease;
-    }
-    
-    .nav-pills .nav-link:hover {
-        background-color: #f8f9fa;
-        color: #495057;
-    }
-    
-    .nav-pills .nav-link.active {
-        background-color: white;
-        color: #667eea;
-        border-bottom-color: #667eea;
-    }
-    
-    .tab-content {
-        padding: 2rem;
-    }
-    
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-    
-    .info-card {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1.5rem;
-        border-left: 4px solid #667eea;
-    }
-    
-    .info-card-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #6c757d;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-    }
-    
-    .info-card-value {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #212529;
-    }
-    
-    .section-header {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid #e9ecef;
-    }
-    
-    .section-header h5 {
-        margin: 0;
-        color: #495057;
-        font-weight: 600;
-    }
-    
-    .section-icon {
-        background: linear-gradient(135deg, #0f32ce 0%, #0f32ce 100%);
-        color: white;
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .data-table {
-        background: white;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    
-    .data-table table {
-        margin-bottom: 0;
-    }
-    
-    .data-table th {
-        background: #f8f9fa;
-        border: none;
-        font-weight: 600;
-        color: #495057;
-        padding: 1rem;
-    }
-    
-    .data-table td {
-        border: none;
-        padding: 1rem;
-        border-bottom: 1px solid #f1f3f4;
-    }
-    
-    .data-table tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-    
-    .summary-card {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        border-radius: 15px;
-        padding: 2rem;
-        text-align: center;
-        box-shadow: 0 5px 20px rgba(40, 167, 69, 0.3);
-    }
-    
-    .summary-amount {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    
-    .summary-label {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
-    
-    .quick-actions {
-        background: white;
-        border-radius: 15px;
-        padding: 1.5rem;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        margin-bottom: 2rem;
-    }
-    
-    .action-btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: none;
-        margin-right: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 10px;
-        padding: 1.5rem;
-        text-align: center;
-        box-shadow: 0 3px 15px rgba(0,0,0,0.05);
-        border-left: 4px solid;
-    }
-    
-    .stat-card.primary {
-        border-left-color: #667eea;
-    }
-    
-    .stat-card.success {
-        border-left-color: #28a745;
-    }
-    
-    .stat-card.info {
-        border-left-color: #17a2b8;
-    }
-    
-    .stat-card.warning {
-        border-left-color: #ffc107;
-    }
-    
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #495057;
-    }
-    
-    .stat-label {
-        color: #6c757d;
-        font-size: 0.9rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #6c757d;
-    }
-    
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    
-    @media (max-width: 768px) {
-        .invoice-header-card {
-            padding: 1.5rem;
-        }
-        
-        .info-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-        
-        .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-        
-        .tab-content {
-            padding: 1rem;
-        }
-        
-        .action-btn {
-            width: 100%;
-            margin-right: 0;
-        }
-    }
-</style>
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="page-header shadow-sm mb-4">
-    <div class="container-fluid">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('fattura_pa.list_invoices') }}" class="text-white">Fatture PA</a></li>
-                <li class="breadcrumb-item active text-white-50" aria-current="page">Dettaglio Fattura</li>
-            </ol>
-        </nav>
-        <div class="row align-items-center mt-3">
-            <div class="col-md-8">
-                <h1 class="page-title mb-0">
-                    <i class="fas fa-file-alt me-2"></i>Dettaglio Fattura
-                </h1>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="container-fluid invoice-detail-container">
-    {% if invoice_details %}
-    <!-- Invoice Header Card -->
-    <div class="invoice-header-card">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <div class="invoice-header-info">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h2 class="mb-2">
-                                Fattura #{{ invoice_details.invoice_number or 'N/A' }}
-                            </h2>
-                            <p class="mb-1">
-                                <i class="fas fa-calendar me-2"></i>
-                                {{ invoice_details.invoice_date or 'Data non disponibile' }}
-                            </p>
-                            <p class="mb-0">
-                                <i class="fas fa-building me-2"></i>
-                                {{ invoice_details.client_name or 'Cliente non specificato' }}
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="invoice-status-badge mb-2">
-                                <i class="fas fa-check-circle"></i>
-                                {{ invoice_details.document_type or 'Tipo non specificato' }}
-                            </div>
-                            <p class="mb-1">
-                                <i class="fas fa-file me-2"></i>
-                                {{ invoice_details.filename }}
-                            </p>
-                            <p class="mb-0">
-                                <i class="fas fa-database me-2"></i>
-                                {{ invoice_details.size }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                {% if invoice_details.total_amount %}
-                <div class="summary-card">
-                    <div class="summary-amount">€ {{ invoice_details.total_amount }}</div>
-                    <div class="summary-label">Importo Totale</div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <div class="d-flex flex-wrap align-items-center justify-content-between">
-            <div>
-                <a href="{{ url_for('fattura_pa.list_invoices') }}" class="action-btn btn btn-light">
-                    <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
-                </a>
-                <a href="{{ url_for('fattura_pa.download_invoice', filename=invoice_details.filename) }}" class="action-btn btn btn-success">
-                    <i class="fas fa-download me-2"></i>Scarica XML
-                </a>
-                <button type="button" class="action-btn btn btn-info" onclick="viewXmlContent('{{ invoice_details.filename }}')">
-                    <i class="fas fa-code me-2"></i>Visualizza XML
-                </button>
-            </div>
-            {% if current_user.is_admin %}
-            <div>
-                <button type="button" class="action-btn btn btn-danger" onclick="deleteInvoice('{{ invoice_details.filename }}')">
-                    <i class="fas fa-trash me-2"></i>Elimina
-                </button>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Main Content Tabs -->
-    <div class="detail-tabs">
-        <ul class="nav nav-pills nav-fill" id="detailTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="invoice-tab" data-bs-toggle="pill" data-bs-target="#invoice-content" type="button" role="tab">
-                    <i class="fas fa-file-invoice me-2"></i>Dettagli Fattura
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="parties-tab" data-bs-toggle="pill" data-bs-target="#parties-content" type="button" role="tab">
-                    <i class="fas fa-handshake me-2"></i>Soggetti
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="products-tab" data-bs-toggle="pill" data-bs-target="#products-content" type="button" role="tab">
-                    <i class="fas fa-boxes me-2"></i>Prodotti
-                </button>
-            </li>
-            {% if invoice_details.ddt_data %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="ddt-tab" data-bs-toggle="pill" data-bs-target="#ddt-content" type="button" role="tab">
-                    <i class="fas fa-truck me-2"></i>DDT Originale
-                </button>
-            </li>
-            {% endif %}
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="xml-tab" data-bs-toggle="pill" data-bs-target="#xml-content" type="button" role="tab">
-                    <i class="fas fa-code me-2"></i>XML
-                </button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="detailTabsContent">
-            <!-- Invoice Details Tab -->
-            <div class="tab-pane fade show active" id="invoice-content" role="tabpanel">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-info-circle"></i>
-                    </div>
-                    <h5>Informazioni Generali</h5>
-                </div>
-                
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-card-title">Numero Fattura</div>
-                        <div class="info-card-value">{{ invoice_details.invoice_number or 'N/A' }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Data Fattura</div>
-                        <div class="info-card-value">{{ invoice_details.invoice_date or 'N/A' }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Tipo Documento</div>
-                        <div class="info-card-value">{{ invoice_details.document_type or 'N/A' }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Valuta</div>
-                        <div class="info-card-value">{{ invoice_details.currency or 'N/A' }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Data Creazione File</div>
-                        <div class="info-card-value">{{ invoice_details.created_at }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Dimensione File</div>
-                        <div class="info-card-value">{{ invoice_details.size }}</div>
-                    </div>
-                </div>
-
-                {% if invoice_details.causale %}
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-comment"></i>
-                    </div>
-                    <h5>Causale</h5>
-                </div>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    {{ invoice_details.causale }}
-                </div>
-                {% endif %}
-
-                <!-- Payment Info -->
-                {% if invoice_details.payment_conditions or invoice_details.payment_method %}
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-credit-card"></i>
-                    </div>
-                    <h5>Informazioni Pagamento</h5>
-                </div>
-                
-                <div class="info-grid">
-                    {% if invoice_details.payment_conditions %}
-                    <div class="info-card">
-                        <div class="info-card-title">Condizioni Pagamento</div>
-                        <div class="info-card-value">{{ invoice_details.payment_conditions }}</div>
-                    </div>
-                    {% endif %}
-                    {% if invoice_details.payment_method %}
-                    <div class="info-card">
-                        <div class="info-card-title">Modalità Pagamento</div>
-                        <div class="info-card-value">{{ invoice_details.payment_method }}</div>
-                    </div>
-                    {% endif %}
-                    {% if invoice_details.payment_due_date %}
-                    <div class="info-card">
-                        <div class="info-card-title">Scadenza Pagamento</div>
-                        <div class="info-card-value">{{ invoice_details.payment_due_date }}</div>
-                    </div>
-                    {% endif %}
-                    {% if invoice_details.payment_amount %}
-                    <div class="info-card">
-                        <div class="info-card-title">Importo Pagamento</div>
-                        <div class="info-card-value">€ {{ invoice_details.payment_amount }}</div>
-                    </div>
-                    {% endif %}
-                    {% if invoice_details.iban %}
-                    <div class="info-card">
-                        <div class="info-card-title">IBAN</div>
-                        <div class="info-card-value">{{ invoice_details.iban }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Parties Tab -->
-            <div class="tab-pane fade" id="parties-content" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <i class="fas fa-building"></i>
-                            </div>
-                            <h5>Azienda Emittente</h5>
-                        </div>
-                        
-                        {% if invoice_details.company_name %}
-                        <div class="info-grid">
-                            <div class="info-card">
-                                <div class="info-card-title">Denominazione</div>
-                                <div class="info-card-value">{{ invoice_details.company_name }}</div>
-                            </div>
-                            {% if invoice_details.company_vat %}
-                            <div class="info-card">
-                                <div class="info-card-title">Partita IVA</div>
-                                <div class="info-card-value">{{ invoice_details.company_vat }}</div>
-                            </div>
-                            {% endif %}
-                            {% if invoice_details.company_fiscal_code %}
-                            <div class="info-card">
-                                <div class="info-card-title">Codice Fiscale</div>
-                                <div class="info-card-value">{{ invoice_details.company_fiscal_code }}</div>
-                            </div>
-                            {% endif %}
-                            {% if invoice_details.company_regime %}
-                            <div class="info-card">
-                                <div class="info-card-title">Regime Fiscale</div>
-                                <div class="info-card-value">{{ invoice_details.company_regime }}</div>
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        {% if invoice_details.company_address %}
-                        <div class="alert alert-light border-left border-primary">
-                            <h6><i class="fas fa-map-marker-alt me-2"></i>Indirizzo</h6>
-                            {{ invoice_details.company_address }}<br>
-                            {% if invoice_details.company_cap %}{{ invoice_details.company_cap }} {% endif %}
-                            {% if invoice_details.company_city %}{{ invoice_details.company_city }}{% endif %}
-                            {% if invoice_details.company_province %} ({{ invoice_details.company_province }}){% endif %}
-                            {% if invoice_details.company_country %}<br>{{ invoice_details.company_country }}{% endif %}
-                        </div>
-                        {% endif %}
-                        {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-building"></i>
-                            <p>Informazioni azienda non disponibili</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="section-header">
-                            <div class="section-icon">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <h5>Cliente</h5>
-                        </div>
-                        
-                        {% if invoice_details.client_name %}
-                        <div class="info-grid">
-                            <div class="info-card">
-                                <div class="info-card-title">Denominazione</div>
-                                <div class="info-card-value">{{ invoice_details.client_name }}</div>
-                            </div>
-                            {% if invoice_details.client_vat %}
-                            <div class="info-card">
-                                <div class="info-card-title">Partita IVA</div>
-                                <div class="info-card-value">{{ invoice_details.client_vat }}</div>
-                            </div>
-                            {% endif %}
-                            {% if invoice_details.client_fiscal_code %}
-                            <div class="info-card">
-                                <div class="info-card-title">Codice Fiscale</div>
-                                <div class="info-card-value">{{ invoice_details.client_fiscal_code }}</div>
-                            </div>
-                            {% endif %}
-                            {% if invoice_details.client_email %}
-                            <div class="info-card">
-                                <div class="info-card-title">Email</div>
-                                <div class="info-card-value">{{ invoice_details.client_email }}</div>
-                            </div>
-                            {% endif %}
-                            {% if invoice_details.client_phone %}
-                            <div class="info-card">
-                                <div class="info-card-title">Telefono</div>
-                                <div class="info-card-value">{{ invoice_details.client_phone }}</div>
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        {% if invoice_details.client_address %}
-                        <div class="alert alert-light border-left border-info">
-                            <h6><i class="fas fa-map-marker-alt me-2"></i>Indirizzo</h6>
-                            {{ invoice_details.client_address }}<br>
-                            {% if invoice_details.client_cap %}{{ invoice_details.client_cap }} {% endif %}
-                            {% if invoice_details.client_city %}{{ invoice_details.client_city }}{% endif %}
-                            {% if invoice_details.client_province %} ({{ invoice_details.client_province }}){% endif %}
-                            {% if invoice_details.client_country %}<br>{{ invoice_details.client_country }}{% endif %}
-                        </div>
-                        {% endif %}
-                        {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-user"></i>
-                            <p>Informazioni cliente non disponibili</p>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Products Tab -->
-            <div class="tab-pane fade" id="products-content" role="tabpanel">
-                {% if invoice_details.invoice_lines %}
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-list"></i>
-                    </div>
-                    <h5>Righe Fattura ({{ invoice_details.invoice_lines|length }} prodotti)</h5>
-                </div>
-                
-                <div class="data-table">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th style="width: 5%">#</th>
-                                <th style="width: 40%">Descrizione</th>
-                                <th style="width: 10%" class="text-center">Quantità</th>
-                                <th style="width: 8%" class="text-center">U.M.</th>
-                                <th style="width: 12%" class="text-end">Prezzo Unit.</th>
-                                <th style="width: 12%" class="text-end">Totale</th>
-                                <th style="width: 8%" class="text-center">IVA %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for line in invoice_details.invoice_lines %}
-                            <tr>
-                                <td class="text-center fw-bold">{{ line.numero }}</td>
-                                <td>{{ line.descrizione }}</td>
-                                <td class="text-center">{{ line.quantita }}</td>
-                                <td class="text-center">{{ line.unita }}</td>
-                                <td class="text-end">€ {{ line.prezzo_unitario }}</td>
-                                <td class="text-end fw-bold">€ {{ line.prezzo_totale }}</td>
-                                <td class="text-center">{{ line.aliquota_iva }}%</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                {% if invoice_details.vat_summary %}
-                <div class="section-header mt-4">
-                    <div class="section-icon">
-                        <i class="fas fa-percent"></i>
-                    </div>
-                    <h5>Riepilogo IVA</h5>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6 offset-md-6">
-                        <div class="data-table">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center">Aliquota IVA</th>
-                                        <th class="text-end">Imponibile</th>
-                                        <th class="text-end">Imposta</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for vat in invoice_details.vat_summary %}
-                                    <tr>
-                                        <td class="text-center">{{ vat.aliquota }}%</td>
-                                        <td class="text-end">€ {{ vat.imponibile }}</td>
-                                        <td class="text-end">€ {{ vat.imposta }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                    {% if invoice_details.total_amount %}
-                                    <tr class="table-success">
-                                        <td class="text-center fw-bold">TOTALE</td>
-                                        <td class="text-end fw-bold" colspan="2">€ {{ invoice_details.total_amount }}</td>
-                                    </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-boxes"></i>
-                    <p>Nessun prodotto trovato nella fattura</p>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- DDT Tab -->
-            {% if invoice_details.ddt_data %}
-            <div class="tab-pane fade" id="ddt-content" role="tabpanel">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-info-circle"></i>
-                    </div>
-                    <h5>Informazioni DDT</h5>
-                </div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card primary">
-                        <div class="stat-number">{{ invoice_details.ddt_data.header.num_albaran }}</div>
-                        <div class="stat-label">Numero DDT</div>
-                    </div>
-                    <div class="stat-card success">
-                        <div class="stat-number">{{ invoice_details.ddt_data.statistics.total_lines }}</div>
-                        <div class="stat-label">Righe</div>
-                    </div>
-                    <div class="stat-card info">
-                        <div class="stat-number">{{ invoice_details.ddt_data.statistics.total_products }}</div>
-                        <div class="stat-label">Prodotti</div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-number">{{ "%.1f"|format(invoice_details.ddt_data.statistics.total_weight) }} kg</div>
-                        <div class="stat-label">Peso Totale</div>
-                    </div>
-                </div>
-
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-euro-sign"></i>
-                    </div>
-                    <h5>Totali Finanziari</h5>
-                </div>
-                
-                <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-card-title">Imponibile</div>
-                        <div class="info-card-value">€ {{ "%.2f"|format(invoice_details.ddt_data.totals.importe_total_sin_iva_con_dto) }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Totale IVA</div>
-                        <div class="info-card-value">€ {{ "%.2f"|format(invoice_details.ddt_data.totals.importe_total_del_iva) }}</div>
-                    </div>
-                    <div class="info-card">
-                        <div class="info-card-title">Totale DDT</div>
-                        <div class="info-card-value text-success">€ {{ "%.2f"|format(invoice_details.ddt_data.totals.importe_total) }}</div>
-                    </div>
-                    {% if invoice_details.ddt_data.totals.importe_descuento > 0 %}
-                    <div class="info-card">
-                        <div class="info-card-title">Sconto Applicato</div>
-                        <div class="info-card-value">€ {{ "%.2f"|format(invoice_details.ddt_data.totals.importe_descuento) }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <div class="text-center">
-                    <a href="{{ url_for('ddt.detail', ddt_id=invoice_details.ddt_data.header.id_albaran) }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-external-link-alt me-2"></i>Visualizza DDT Completo
+<div class="container-fluid">
+    <div class="detail-container">
+        {% if not invoice_details %}
+        <!-- File Not Found -->
+        <div class="detail-card">
+            <div class="info-section">
+                <div class="no-data">
+                    <i class="fas fa-file-times text-danger"></i>
+                    <h3>Fattura non trovata</h3>
+                    <p>Il file della fattura richiesto non è stato trovato nel sistema.</p>
+                    <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Torna all'elenco
                     </a>
                 </div>
             </div>
-            {% endif %}
+        </div>
+        {% else %}
 
-            <!-- XML Tab -->
-            <div class="tab-pane fade" id="xml-content" role="tabpanel">
-                <div class="section-header">
-                    <div class="section-icon">
-                        <i class="fas fa-code"></i>
+        <!-- Header Card with Breadcrumb -->
+        <div class="detail-card">
+            <div class="detail-header">
+                <!-- Breadcrumb -->
+                <nav class="breadcrumb-custom mb-3">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('fattura_pa.list_invoices') }}"><i class="fas fa-file-invoice"></i> Fatture PA</a></li>
+                        <li class="breadcrumb-item active">
+                            {% if invoice_details and invoice_details.invoice_number %}
+                                Fattura #{{ invoice_details.invoice_number }}
+                            {% else %}
+                                Dettaglio Fattura
+                            {% endif %}
+                        </li>
+                    </ol>
+                </nav>
+                
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1 class="mb-2">
+                            <i class="fas fa-file-invoice me-3"></i>
+                            {% if invoice_details.invoice_number %}
+                                Fattura PA #{{ invoice_details.invoice_number }}
+                            {% else %}
+                                Fattura PA
+                            {% endif %}
+                        </h1>
+                        <p class="lead mb-0">
+                            <i class="fas fa-building me-2"></i>
+                            {{ invoice_details.client_name or 'Cliente non specificato' }}
+                        </p>
+                        <div class="invoice-status">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Documento Elettronico</span>
+                        </div>
                     </div>
-                    <h5>Contenuto XML</h5>
+                    <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                        <div class="text-white-50">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Creata il {{ invoice_details.created_at }}
+                        </div>
+                        <div class="text-white-50 mt-1">
+                            <i class="fas fa-file-code me-2"></i>
+                            {{ invoice_details.size }}
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Questo è il contenuto XML della fattura elettronica. Puoi copiare questo codice o scaricarlo usando il pulsante in alto.
-                </div>
-                
-                <div style="position: relative;">
-                    <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" onclick="copyXmlContent()" style="z-index: 10;">
-                        <i class="fas fa-copy me-1"></i>Copia
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="detail-card">
+            <div class="info-section">
+                <div class="action-buttons">
+                    <a href="{{ url_for('fattura_pa.download_invoice', filename=invoice_details.filename) }}" 
+                       class="btn btn-success btn-action">
+                        <i class="fas fa-download"></i>
+                        Scarica XML
+                    </a>
+                    <a href="{{ url_for('fattura_pa.get_xml_content', filename=invoice_details.filename) }}" 
+                       class="btn btn-primary btn-action" target="_blank">
+                        <i class="fas fa-external-link-alt"></i>
+                        Visualizza XML
+                    </a>
+                    {% if current_user.is_admin %}
+                    <button class="btn btn-danger btn-action" onclick="deleteInvoice('{{ invoice_details.filename }}')">
+                        <i class="fas fa-trash"></i>
+                        Elimina
                     </button>
-                    <pre id="xmlContentDisplay" class="bg-light border rounded p-3" style="max-height: 500px; overflow-y: auto; font-size: 0.85em;">{{ invoice_details.xml_content or 'Contenuto XML non disponibile' }}</pre>
+                    {% endif %}
+                    <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-outline-secondary btn-action">
+                        <i class="fas fa-arrow-left"></i>
+                        Elenco Fatture
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
 
-    {% else %}
-    <!-- Error State -->
-    <div class="text-center py-5">
-        <div class="empty-state">
-            <i class="fas fa-exclamation-triangle"></i>
-            <h4>Fattura Non Trovata</h4>
-            <p>La fattura richiesta non è stata trovata o non esiste.</p>
-            <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-primary">
-                <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco Fatture
-            </a>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteConfirmModalLabel">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Conferma Eliminazione
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <!-- Tabbed Information -->
+        <div class="detail-card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="invoiceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                            <i class="fas fa-info-circle me-2"></i>Informazioni Generali
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="company-tab" data-bs-toggle="tab" data-bs-target="#company" type="button" role="tab">
+                            <i class="fas fa-building me-2"></i>Azienda & Cliente
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="payment-tab" data-bs-toggle="tab" data-bs-target="#payment" type="button" role="tab">
+                            <i class="fas fa-credit-card me-2"></i>Pagamento
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="transmission-tab" data-bs-toggle="tab" data-bs-target="#transmission" type="button" role="tab">
+                            <i class="fas fa-paper-plane me-2"></i>Trasmissione
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="xml-tab" data-bs-toggle="tab" data-bs-target="#xml" type="button" role="tab">
+                            <i class="fas fa-code me-2"></i>XML
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <div class="delete-icon-container">
-                        <div class="delete-icon">
-                            <i class="fas fa-trash-alt"></i>
-                        </div>
-                    </div>
-                    <div class="delete-warning">
-                        <div class="delete-warning-title">Sei sicuro di voler eliminare questa fattura?</div>
-                        <div class="delete-warning-text">
-                            Stai per eliminare la fattura <strong id="deleteInvoiceName"></strong>. 
-                            Questa azione è irreversibile.
+            
+            <div class="tab-content" id="invoiceTabsContent">
+                <!-- General Information Tab -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel">
+                    <div class="info-section">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-hashtag me-1"></i>
+                                    Numero Fattura
+                                </div>
+                                <div class="info-value highlight">
+                                    {{ invoice_details.invoice_number or 'Non specificato' }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Data Fattura
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.invoice_date or 'Non specificata' }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-file-alt me-1"></i>
+                                    Tipo Documento
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.document_type or 'Fattura Elettronica' }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-coins me-1"></i>
+                                    Valuta
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.currency or 'EUR' }}
+                                </div>
+                            </div>
+                            {% if invoice_details.causale %}
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <div class="info-label">
+                                    <i class="fas fa-comment me-1"></i>
+                                    Causale
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.causale }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.ddt_reference %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-truck me-1"></i>
+                                    Riferimento DDT
+                                </div>
+                                <div class="info-value highlight">
+                                    #{{ invoice_details.ddt_reference }}
+                                </div>
+                            </div>
+                            {% if invoice_details.ddt_date %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Data DDT
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.ddt_date }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-                    <i class="fas fa-trash me-2"></i>Elimina Fattura
-                </button>
+
+                <!-- Company & Client Tab -->
+                <div class="tab-pane fade" id="company" role="tabpanel">
+                    <div class="info-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-building"></i>
+                            Cedente / Prestatore
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-building me-1"></i>
+                                    Denominazione
+                                </div>
+                                <div class="info-value highlight">
+                                    {{ invoice_details.company_name or 'Non specificato' }}
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-id-card me-1"></i>
+                                    Partita IVA
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.company_vat or 'Non specificata' }}
+                                </div>
+                            </div>
+                            {% if invoice_details.company_fiscal_code %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-barcode me-1"></i>
+                                    Codice Fiscale
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.company_fiscal_code }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.company_regime %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-gavel me-1"></i>
+                                    Regime Fiscale
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.company_regime }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.company_address %}
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <div class="info-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    Indirizzo Completo
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.company_address }}
+                                    {% if invoice_details.company_cap %}, {{ invoice_details.company_cap }}{% endif %}
+                                    {% if invoice_details.company_city %} {{ invoice_details.company_city }}{% endif %}
+                                    {% if invoice_details.company_province %} ({{ invoice_details.company_province }}){% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h3 class="section-title">
+                            <i class="fas fa-user"></i>
+                            Cessionario / Committente
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-user me-1"></i>
+                                    Denominazione
+                                </div>
+                                <div class="info-value highlight">
+                                    {{ invoice_details.client_name or 'Non specificato' }}
+                                </div>
+                            </div>
+                            {% if invoice_details.client_vat %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-id-card me-1"></i>
+                                    Partita IVA
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.client_vat }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.client_fiscal_code %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-barcode me-1"></i>
+                                    Codice Fiscale
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.client_fiscal_code }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.client_address %}
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <div class="info-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    Indirizzo Completo
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.client_address }}
+                                    {% if invoice_details.client_cap %}, {{ invoice_details.client_cap }}{% endif %}
+                                    {% if invoice_details.client_city %} {{ invoice_details.client_city }}{% endif %}
+                                    {% if invoice_details.client_province %} ({{ invoice_details.client_province }}){% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Tab -->
+                <div class="tab-pane fade" id="payment" role="tabpanel">
+                    <div class="info-section">
+                        {% if invoice_details.payment_amount or invoice_details.payment_method %}
+                        <div class="info-grid">
+                            {% if invoice_details.payment_amount %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-euro-sign me-1"></i>
+                                    Importo
+                                </div>
+                                <div class="info-value highlight">
+                                    € {{ invoice_details.payment_amount }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.payment_method %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-credit-card me-1"></i>
+                                    Modalità Pagamento
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.payment_method }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.payment_due_date %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-calendar-check me-1"></i>
+                                    Scadenza
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.payment_due_date }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.iban %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-university me-1"></i>
+                                    IBAN
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.iban }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-credit-card" style="opacity: 0.3; font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>Nessuna informazione di pagamento disponibile per questa fattura.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Transmission Tab -->
+                <div class="tab-pane fade" id="transmission" role="tabpanel">
+                    <div class="info-section">
+                        {% if invoice_details.transmission_id or invoice_details.destination_code %}
+                        <div class="info-grid">
+                            {% if invoice_details.transmission_id %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-fingerprint me-1"></i>
+                                    ID Trasmissione
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.transmission_id }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.transmission_format %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-code me-1"></i>
+                                    Formato
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.transmission_format }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.destination_code %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-qrcode me-1"></i>
+                                    Codice Destinatario
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.destination_code }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if invoice_details.pec_destination %}
+                            <div class="info-item">
+                                <div class="info-label">
+                                    <i class="fas fa-envelope me-1"></i>
+                                    PEC Destinatario
+                                </div>
+                                <div class="info-value">
+                                    {{ invoice_details.pec_destination }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-paper-plane" style="opacity: 0.3; font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>Nessuna informazione di trasmissione disponibile per questa fattura.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- XML Tab -->
+                <div class="tab-pane fade" id="xml" role="tabpanel">
+                    <div class="info-section">
+                        {% if invoice_details.xml_content %}
+                        <div class="xml-preview" id="xmlPreview">{{ invoice_details.xml_content[:1000] }}{% if invoice_details.xml_content|length > 1000 %}...{% endif %}</div>
+                        {% if invoice_details.xml_content|length > 1000 %}
+                        <div class="text-center mt-3">
+                            <button class="btn btn-outline-primary" onclick="toggleXmlPreview()">
+                                <i class="fas fa-expand-alt me-1"></i>
+                                <span id="toggleText">Mostra tutto il contenuto</span>
+                            </button>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="no-data">
+                            <i class="fas fa-code" style="opacity: 0.3; font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>Contenuto XML non disponibile per questa fattura.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
+
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// JavaScript functions for the detail page
-function deleteInvoice(filename) {
-    document.getElementById('deleteInvoiceName').textContent = filename;
-    var modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-    modal.show();
-    
-    document.getElementById('confirmDeleteBtn').onclick = function() {
-        fetch(`/fattura_pa/delete/${filename}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            }
+    // Initialize Bootstrap tabs
+    var triggerTabList = [].slice.call(document.querySelectorAll('#invoiceTabs button'))
+    triggerTabList.forEach(function (triggerEl) {
+        var tabTrigger = new bootstrap.Tab(triggerEl)
+        
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault()
+            tabTrigger.show()
         })
-        .then(response => response.json())
-        .then(data => {
-            modal.hide();
-            if (data.success) {
-                showAlert('Fattura eliminata con successo', 'success');
-                setTimeout(() => {
-                    window.location.href = '/fattura_pa/list';
-                }, 1500);
-            } else {
-                showAlert('Errore durante l\'eliminazione: ' + data.message, 'danger');
-            }
-        })
-        .catch(error => {
-            modal.hide();
-            showAlert('Errore di connessione: ' + error.message, 'danger');
-        });
-    };
-}
+    })
 
-function viewXmlContent(filename) {
-    // Switch to XML tab
-    var xmlTab = new bootstrap.Tab(document.getElementById('xml-tab'));
-    xmlTab.show();
-}
-
-function copyXmlContent() {
-    var xmlContent = document.getElementById('xmlContentDisplay').textContent;
-    navigator.clipboard.writeText(xmlContent).then(function() {
-        showAlert('Contenuto XML copiato negli appunti', 'success');
-    }, function(err) {
-        showAlert('Errore durante la copia: ' + err, 'danger');
-    });
-}
-
-function showAlert(message, type) {
-    // Create and show bootstrap alert
-    var alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
+    // Toggle XML preview
+    let xmlExpanded = false;
+    const fullXmlContent = `{{ invoice_details.xml_content | safe }}`;
     
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.parentNode.removeChild(alertDiv);
+    function toggleXmlPreview() {
+        const preview = document.getElementById('xmlPreview');
+        const toggleText = document.getElementById('toggleText');
+        
+        if (!xmlExpanded) {
+            preview.textContent = fullXmlContent;
+            toggleText.textContent = 'Mostra meno contenuto';
+            xmlExpanded = true;
+        } else {
+            preview.textContent = fullXmlContent.substring(0, 1000) + '...';
+            toggleText.textContent = 'Mostra tutto il contenuto';
+            xmlExpanded = false;
         }
-    }, 5000);
-}
-
-// Initialize tooltips
-document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    }
+    
+    // Delete invoice function
+    function deleteInvoice(filename) {
+        if (confirm('Sei sicuro di voler eliminare questa fattura? Questa azione non può essere annullata.')) {
+            fetch(`/fattura_pa/delete/${filename}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Fattura eliminata con successo!');
+                    window.location.href = "{{ url_for('fattura_pa.list_invoices') }}";
+                } else {
+                    alert('Errore durante l\'eliminazione: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Errore di rete durante l\'eliminazione: ' + error);
+            });
+        }
+    }
+    
+    // Copy to clipboard functionality for data values
+    document.addEventListener('DOMContentLoaded', function() {
+        const dataValues = document.querySelectorAll('.info-value');
+        dataValues.forEach(value => {
+            if (value.textContent.trim() !== 'Non specificato' && value.textContent.trim() !== 'Non specificata') {
+                value.style.cursor = 'pointer';
+                value.title = 'Clicca per copiare negli appunti';
+                value.addEventListener('click', () => {
+                    copyToClipboard(value.textContent.trim());
+                    
+                    // Visual feedback
+                    const originalText = value.innerHTML;
+                    value.innerHTML = '<i class="fas fa-check text-success"></i> Copiato!';
+                    setTimeout(() => {
+                        value.innerHTML = originalText;
+                    }, 1500);
+                });
+            }
+        });
     });
-});
+    
+    function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+                console.log('Text copied to clipboard');
+            }).catch(function(err) {
+                console.error('Error copying text: ', err);
+            });
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        }
+    }
 </script>
 {% endblock %} 

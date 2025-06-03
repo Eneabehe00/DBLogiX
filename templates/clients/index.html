@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info %}
 
 {% block title %}Gestione Clienti{% endblock %}
 
@@ -232,74 +233,66 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Enhanced Search and Filters -->
-    <div class="filter-section">
-        <div class="row g-4 align-items-end">
-            <div class="col-lg-4">
-                <label class="form-label fw-bold">🔍 Ricerca Avanzata</label>
-                <form method="GET" action="{{ url_for('clients.index') }}" id="searchForm">
-                    <div class="input-group">
-                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
-                        <input type="text" name="search" id="searchInput" class="form-control" 
-                               placeholder="Cerca per nome, ID, indirizzo, email..." 
-                               value="{{ search or '' }}">
-                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </form>
-                <small class="text-muted">Cerca per nome, ID cliente, indirizzo o email</small>
-            </div>
-            <div class="col-lg-3">
-                <label class="form-label fw-bold">🏙️ Città</label>
-                <input type="text" id="cityFilter" class="form-control" placeholder="Filtra per città...">
-            </div>
-            <div class="col-lg-3">
-                <label class="form-label fw-bold">📧 Email</label>
-                <select id="emailFilter" class="form-select">
-                    <option value="">Tutti</option>
-                    <option value="has_email">Con email</option>
-                    <option value="no_email">Senza email</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
-                <button id="applyFilters" class="btn btn-primary w-100">
-                    <i class="fas fa-filter me-2"></i>Filtra
-                </button>
-            </div>
-        </div>
-        
-        <!-- Quick Stats -->
-        <div class="row mt-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-1">{{ pagination.total if pagination else clients|length }}</h5>
-                    <small>Totale Clienti</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-success">
-                    <h5 class="mb-1" id="visibleCount">{{ clients|length }}</h5>
-                    <small>Clienti visualizzati</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-warning">
-                    <h5 class="mb-1">{{ pagination.page if pagination else 1 }}</h5>
-                    <small>Pagina corrente</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-info">
-                    <h5 class="mb-1">{{ pagination.pages if pagination else 1 }}</h5>
-                    <small>Totale pagine</small>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Clienti',
+        'action': url_for('clients.index'),
+        'search_param': 'search',
+        'placeholder': 'Cerca per nome, ID, indirizzo, email...',
+        'current_value': search or '',
+        'show_help': true,
+        'help_text': 'Cerca per nome, ID cliente, indirizzo o email',
+        'preserve_params': {},
+        'advanced_filters': [
+            {
+                'id': 'cityFilter',
+                'name': 'city',
+                'label': '🏙️ Città',
+                'type': 'text',
+                'placeholder': 'Filtra per città...',
+                'value': request.args.get('city', '')
+            },
+            {
+                'id': 'emailFilter',
+                'name': 'email_filter',
+                'label': '📧 Email',
+                'type': 'select',
+                'value': request.args.get('email_filter', ''),
+                'options': [
+                    {'value': 'has_email', 'label': 'Con email'},
+                    {'value': 'no_email', 'label': 'Senza email'}
+                ]
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': pagination.total if pagination else clients|length,
+            'label': 'Totale Clienti',
+            'icon': 'fas fa-users',
+            'variant': ''
+        },
+        {
+            'value': clients|length,
+            'label': 'Visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': pagination.page if pagination else 1,
+            'label': 'Pagina',
+            'icon': 'fas fa-bookmark',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': pagination.pages if pagination else 1,
+            'label': 'Tot. Pagine',
+            'icon': 'fas fa-file',
+            'variant': 'stat-info'
+        }
+    ]) }}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -313,27 +306,16 @@
     {% endwith %}
 
     <!-- Search Results Info -->
-    {% if search %}
-    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
-        <div>
-            <strong>Ricerca attiva:</strong> "{{ search }}"<br>
-            <small class="text-muted">
-                {% if pagination and pagination.total > 0 %}
-                    Trovati {{ pagination.total }} clienti corrispondenti in tutto il database
-                    {% if pagination.total > clients|length %}
-                        • Visualizzando {{ clients|length }} risultati (pagina {{ pagination.page }} di {{ pagination.pages }})
-                    {% endif %}
-                {% else %}
-                    Nessun cliente trovato per questa ricerca
-                {% endif %}
-            </small>
-        </div>
-        <a href="{{ url_for('clients.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
-            <i class="fas fa-times me-1"></i>Cancella ricerca
-        </a>
-    </div>
-    {% endif %}
+    {{ render_search_results_info({
+        'is_search_active': search,
+        'search_term': search,
+        'total_results': pagination.total if pagination else 0,
+        'visible_results': clients|length,
+        'paginated': pagination and pagination.pages > 1,
+        'current_page': pagination.page if pagination else 1,
+        'total_pages': pagination.pages if pagination else 1,
+        'clear_url': url_for('clients.index')
+    }) }}
 
     <!-- Enhanced Client List -->
     <div class="client-card card shadow-sm">

@@ -9,19 +9,20 @@ from datetime import datetime, timedelta
 import json
 import os
 import re
+from functools import wraps
+from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint('admin', __name__)
 
 # Admin access decorator
-def admin_required(view_func):
-    @login_required
-    def wrapped_view(*args, **kwargs):
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
         if not current_user.is_admin:
-            flash('You need administrator privileges to access this page.', 'danger')
-            return redirect(url_for('warehouse.index'))
-        return view_func(*args, **kwargs)
-    wrapped_view.__name__ = view_func.__name__
-    return wrapped_view
+            flash('Devi avere privilegi di amministratore per accedere a questa pagina.', 'danger')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Admin index redirecting to dashboard
 @admin_bp.route('/')
@@ -130,12 +131,13 @@ def add_user():
         user = User(
             username=form.username.data,
             email=form.email.data,
-            is_admin=form.is_admin.data
+            is_admin=form.is_admin.data,
+            screen_task=form.screen_task.data
         )
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
-        flash('User added successfully!', 'success')
+        flash('Utente aggiunto con successo!', 'success')
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/configurazioni/user_form.html', form=form, title='Add User')
@@ -155,8 +157,9 @@ def edit_user(user_id):
         user.username = form.username.data
         user.email = form.email.data
         user.is_admin = form.is_admin.data
+        user.screen_task = form.screen_task.data
         db.session.commit()
-        flash('User updated successfully!', 'success')
+        flash('Utente aggiornato con successo!', 'success')
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/configurazioni/user_form.html', form=form, title='Edit User', edit_mode=True)
@@ -169,12 +172,12 @@ def delete_user(user_id):
     
     # Prevent deleting yourself
     if user.id == current_user.id:
-        flash('You cannot delete your own account!', 'danger')
+        flash('Non puoi eliminare il tuo stesso account!', 'danger')
         return redirect(url_for('admin.manage_users'))
     
     db.session.delete(user)
     db.session.commit()
-    flash('User deleted successfully!', 'success')
+    flash('Utente eliminato con successo!', 'success')
     return redirect(url_for('admin.manage_users'))
 
 @admin_bp.route('/configurazioni/users/<int:user_id>/reset-password', methods=['GET', 'POST'])
@@ -187,7 +190,7 @@ def reset_password(user_id):
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
-        flash('Password reset successfully!', 'success')
+        flash('Password reimpostata con successo!', 'success')
         return redirect(url_for('admin.manage_users'))
     
     return render_template('admin/configurazioni/reset_password.html', user=user, form=form)
@@ -300,7 +303,7 @@ def general_config():
                     connect_timeout=10
                 )
                 conn.close()
-                flash('Connessione al database riuscita!', 'success')
+                flash('Database connesso!', 'success')
             except Exception as e:
                 flash(f'Connessione fallita: {str(e)}', 'danger')
         else:
@@ -347,9 +350,9 @@ def general_config():
                 with open('config.py', 'w') as f:
                     f.write(updated_content)
                 
-                flash('Configurazione database salvata con successo! Riavvia l\'applicazione per applicare le modifiche.', 'success')
+                flash('Configurazione database aggiornata!', 'success')
             except Exception as e:
-                flash(f'Errore nel salvataggio della configurazione: {str(e)}', 'danger')
+                flash(f'Errore nel salvataggio: {str(e)}', 'danger')
     
     # Handle Company config form submit
     if 'submit_company' in request.form and company_form.validate():
@@ -370,9 +373,9 @@ def general_config():
             company.Provincia = company_form.provincia.data
             
             db.session.commit()
-            flash('Configurazione azienda salvata con successo!', 'success')
+            flash('Configurazione azienda aggiornata!', 'success')
         except Exception as e:
-            flash(f'Errore nel salvataggio della configurazione azienda: {str(e)}', 'danger')
+            flash(f'Errore nel salvataggio: {str(e)}', 'danger')
     
     # Handle System config form submit
     if 'submit_system' in request.form and system_form.validate():
@@ -435,9 +438,9 @@ def general_config():
                     # Save path in config
                     logo_path = f"uploads/logos/{filename}"
                     SystemConfig.set_config('company_logo_path', logo_path, 'Percorso logo aziendale per DDT', 'string')
-                    flash('Logo aziendale caricato con successo come LogoDDT.png!', 'success')
+                    flash('Logo caricato con successo!', 'success')
                 except Exception as e:
-                    flash(f'Errore nel caricamento del logo: {str(e)}', 'warning')
+                    flash(f'Errore caricamento logo: {str(e)}', 'warning')
             
             # Save Alert configurations
             SystemConfig.set_config('enable_stock_alerts', system_form.enable_stock_alerts.data, 'Abilita alert per stock minimo', 'boolean')
@@ -469,10 +472,10 @@ def general_config():
             except Exception as e:
                 flash(f'Attenzione: Impossibile aggiornare il timeout sessioni nel file config.py: {str(e)}', 'warning')
             
-            flash('Tutte le configurazioni sistema sono state salvate con successo!', 'success')
+            flash('Configurazioni sistema aggiornate!', 'success')
             
         except Exception as e:
-            flash(f'Errore nel salvataggio delle configurazioni sistema: {str(e)}', 'danger')
+            flash(f'Errore nel salvataggio: {str(e)}', 'danger')
     
     return render_template('admin/configurazioni/general_config.html', 
                          db_form=db_form, 
@@ -487,9 +490,9 @@ def create_tables():
         # Create the tables if they don't exist
         db.create_all()
         
-        flash('Tables created successfully!', 'success')
+        flash('Tabelle create con successo!', 'success')
     except Exception as e:
-        flash(f'Failed to create tables: {str(e)}', 'danger')
+        flash(f'Errore nella creazione delle tabelle: {str(e)}', 'danger')
     
     return redirect(url_for('admin.general_config'))
 

@@ -22,7 +22,9 @@ logger = logging.getLogger(__name__)
 @login_required
 def index():
     """Main tasks page - shows different views based on user role"""
-    if current_user.is_admin:
+    if current_user.screen_task:
+        return redirect(url_for('tasks.task_screen'))
+    elif current_user.is_admin:
         return redirect(url_for('tasks.admin_dashboard'))
     else:
         return redirect(url_for('tasks.user_dashboard'))
@@ -197,6 +199,8 @@ def user_dashboard():
     title_filter = request.args.get('title', '').strip()
     priority_filter = request.args.get('priority', '')
     status_filter = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
     
     # Pagination parameters
     active_page = int(request.args.get('active_page', 1))
@@ -216,6 +220,21 @@ def user_dashboard():
     
     if status_filter:
         query = query.filter(Task.status == status_filter)
+    
+    # Apply date filters
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(Task.created_at >= date_from_obj)
+        except ValueError:
+            pass
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Task.created_at < date_to_obj)
+        except ValueError:
+            pass
     
     # Get filtered tasks
     assigned_tasks = query.order_by(desc(Task.assigned_at)).all()
@@ -638,7 +657,7 @@ def assign_task(task_id):
         db.session.add(notification)
         
         db.session.commit()
-        flash(f'Task assegnato con successo a {task.assignee.username}!', 'success')
+        flash(f'Task assegnato a {task.assignee.username}!', 'success')
     else:
         flash('Errore: seleziona un utente valido.', 'error')
     
@@ -707,7 +726,7 @@ def process_scan(task_ticket_id):
             task.update_progress()
             
             # Find next ticket in task
-            next_task_ticket = TaskTicket.query.filter(
+            next_ticket = TaskTicket.query.filter(
                 TaskTicket.task_id == task.id_task,
                 TaskTicket.status != 'completed',
                 TaskTicket.id != task_ticket_id
@@ -715,21 +734,29 @@ def process_scan(task_ticket_id):
             
             db.session.commit()
             
-            if next_task_ticket:
-                return jsonify({
-                    'success': True, 
-                    'message': 'Prodotto scansionato! Passaggio al prossimo ticket...',
-                    'next_ticket_id': next_task_ticket.id
-                })
+            if next_ticket:
+                # Redirect to next ticket
+                flash(f'Ticket #{task_ticket.ticket.NumTicket} completato! Passaggio al prossimo ticket.', 'success')
+                return redirect(url_for('tasks.scan_ticket', task_ticket_id=next_ticket.id))
             else:
-                # All tickets completed
-                task.status = 'completed' if task.progress_percentage == 100 else 'in_progress'
+                # All tickets completed - mark task as completed and redirect to dashboard
+                task.status = 'completed'
+                task.completed_at = datetime.utcnow()
                 db.session.commit()
-                return jsonify({
-                    'success': True, 
-                    'message': 'Task completato!',
-                    'task_completed': True
-                })
+                
+                # Create notification for admin
+                notification = TaskNotification(
+                    task_id=task.id_task,
+                    user_id=task.created_by,
+                    notification_type='task_completed',
+                    title=f'Task Completato: {task.task_number}',
+                    message=f'Il task "{task.title}" è stato completato da {current_user.username}.'
+                )
+                db.session.add(notification)
+                db.session.commit()
+                
+                flash(f'Task {task.task_number} completato!', 'success')
+                return redirect(url_for('tasks.user_dashboard'))
         else:
             db.session.commit()
             return jsonify({
@@ -820,7 +847,7 @@ def scan_ticket(task_ticket_id):
             db.session.add(notification)
             db.session.commit()
             
-            flash(f'🎉 Task {task.task_number} completato con successo!', 'success')
+            flash(f'Task {task.task_number} completato!', 'success')
             return redirect(url_for('tasks.user_dashboard'))
     
     return render_template('tasks/scan_ticket.html',
@@ -1124,7 +1151,7 @@ def complete_task(task_id):
         
         db.session.commit()
         
-        flash(f'DDT generato con successo! ID DDT: {ddt_id}', 'success')
+        flash(f'DDT generato! ID: {ddt_id}', 'success')
         return redirect(url_for('ddt.detail', ddt_id=ddt_id))
         
     except Exception as e:
@@ -1465,9 +1492,9 @@ def delete_task(task_id):
         
 # Different success messages based on DDT status
         if task.ddt_generated and task.ddt_id:
-            flash(f'Task {task_number} eliminato con successo. I ticket restano processati perché già inclusi nel DDT #{task.ddt_id}.', 'success')
+            flash(f'Task {task_number} eliminato. Ticket preservati (DDT #{task.ddt_id}).', 'success')
         else:
-            flash(f'Task {task_number} eliminato con successo. {tickets_reset} ticket sono stati rimessi a disposizione.', 'success')
+            flash(f'Task {task_number} eliminato. {tickets_reset} ticket disponibili.', 'success')
         return redirect(url_for('tasks.admin_dashboard'))
         
     except Exception as e:
@@ -1515,7 +1542,7 @@ def remove_ticket_from_task():
         
         db.session.commit()
         
-        flash(f'Ticket #{ticket_number} rimosso dal task con successo.', 'success')
+        flash(f'Ticket #{ticket_number} rimosso dal task.', 'success')
         return redirect(url_for('tasks.view_task', task_id=task_id))
         
     except Exception as e:
@@ -1615,11 +1642,71 @@ def delete_all_tasks():
         
         db.session.commit()
         
-        flash(f'Eliminati {total_tasks} task con successo. Tutti i ticket sono stati rimessi a disposizione.', 'success')
+        flash(f'{total_tasks} task eliminati. Ticket disponibili.', 'success')
         return redirect(url_for('tasks.admin_dashboard'))
         
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error deleting all tasks: {str(e)}")
         flash(f'Errore durante l\'eliminazione di tutti i task: {str(e)}', 'error')
-        return redirect(url_for('tasks.admin_dashboard')) 
+        return redirect(url_for('tasks.admin_dashboard'))
+
+
+@tasks_bp.route('/task-screen')
+@login_required
+def task_screen():
+    """Task screen display for SCREEN TASK users - McDonald's style"""
+    # Only allow screen_task users
+    if not current_user.screen_task:
+        flash('Accesso negato: solo utenti SCREEN TASK possono accedere a questa pagina.', 'error')
+        return redirect(url_for('tasks.index'))
+    
+    # Get all active tasks (non-completed) ordered by priority and creation date
+    active_tasks = Task.query.filter(
+        Task.status.in_(['pending', 'assigned', 'in_progress'])
+    ).order_by(
+        db.case(
+            (Task.priority == 'urgent', 1),
+            (Task.priority == 'high', 2), 
+            (Task.priority == 'medium', 3),
+            (Task.priority == 'low', 4)
+        ),
+        desc(Task.created_at)
+    ).all()
+    
+    # Update progress for all tasks
+    for task in active_tasks:
+        task.update_progress()
+    
+    # Separate tasks by status for better visualization
+    pending_tasks = []
+    assigned_tasks = []
+    in_progress_tasks = []
+    overdue_tasks = []
+    
+    for task in active_tasks:
+        if task.is_overdue:
+            overdue_tasks.append(task)
+        elif task.status == 'pending':
+            pending_tasks.append(task)
+        elif task.status == 'assigned':
+            assigned_tasks.append(task)
+        elif task.status == 'in_progress':
+            in_progress_tasks.append(task)
+    
+    # Get task statistics
+    stats = {
+        'total_pending': len(pending_tasks),
+        'total_assigned': len(assigned_tasks),
+        'total_in_progress': len(in_progress_tasks),
+        'total_overdue': len(overdue_tasks),
+        'total_active': len(active_tasks)
+    }
+    
+    return render_template('tasks/task_screen.html',
+                         pending_tasks=pending_tasks,
+                         assigned_tasks=assigned_tasks,
+                         in_progress_tasks=in_progress_tasks,
+                         overdue_tasks=overdue_tasks,
+                         stats=stats,
+                         now=datetime.now) 

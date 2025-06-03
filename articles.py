@@ -151,6 +151,8 @@ def load_article_tickets(id_articulo, limit=10):
                 ticket["EstadoTicket"] = "DDT2"
             elif ticket["Enviado"] == 4:
                 ticket["EstadoTicket"] = "Scaduto"
+            elif ticket["Enviado"] == 10:
+                ticket["EstadoTicket"] = "Task"
             else:
                 ticket["EstadoTicket"] = "Sconosciuto"
                 
@@ -757,7 +759,7 @@ def create():
         
         db.session.commit()
         
-        flash('Article created successfully', 'success')
+        flash('Articolo creato!', 'success')
         return redirect(url_for('articles.view', id=article.IdArticulo))
     
     return render_template('articles/create.html', 
@@ -1055,7 +1057,7 @@ def edit(id):
         
         db.session.commit()
         
-        flash('Article updated successfully', 'success')
+        flash('Articolo aggiornato!', 'success')
         return redirect(url_for('articles.view', id=article.IdArticulo))
     
     return render_template('articles/edit.html', 
@@ -1279,6 +1281,7 @@ def import_sample_data():
 
 @articles_bp.route('/get-lot-details/<int:id_elem_asociado>')
 @login_required
+@admin_required
 def get_lot_details(id_elem_asociado):
     """Get lot details from dat_detalle_elem_asociado table"""
     try:
@@ -1307,6 +1310,7 @@ def toggle_eanscanner(id_registro):
         """), {"id_registro": id_registro}).fetchone()
         
         if not result:
+            flash('Scanner EAN non trovato.', 'error')
             return jsonify({"success": False, "error": "EAN scanner not found"})
         
         id_articulo = result[0]
@@ -1332,10 +1336,12 @@ def toggle_eanscanner(id_registro):
         """), {"id_registro": id_registro})
         
         db.session.commit()
+        flash('Scanner EAN attivato!', 'success')
         
         return jsonify({"success": True})
     except Exception as e:
         db.session.rollback()
+        flash(f'Errore nell\'attivazione del scanner EAN: {str(e)}', 'error')
         return jsonify({"success": False, "error": str(e)})
 
 @articles_bp.route('/delete-eanscanner/<int:id_registro>')
@@ -1351,6 +1357,7 @@ def remove_eanscanner(id_registro):
         """), {"id_registro": id_registro}).fetchone()
         
         if not result:
+            flash('Scanner EAN non trovato.', 'error')
             return jsonify({"success": False, "error": "EAN scanner not found"})
         
         id_articulo = result[0]
@@ -1383,10 +1390,12 @@ def remove_eanscanner(id_registro):
                 """), {"id_registro": result[0]})
         
         db.session.commit()
+        flash('Scanner EAN eliminato!', 'success')
         
         return jsonify({"success": True})
     except Exception as e:
         db.session.rollback()
+        flash(f'Errore nell\'eliminazione del scanner EAN: {str(e)}', 'error')
         return jsonify({"success": False, "error": str(e)})
 
 @articles_bp.route('/add-eanscanner/<int:id_articulo>', methods=['POST'])
@@ -1399,7 +1408,7 @@ def add_eanscanner(id_articulo):
         eanscanner = data.get('eanscanner')
         
         if not eanscanner:
-            return jsonify({"success": False, "error": "EAN scanner is required"})
+            return jsonify({"success": False, "error": "Scanner EAN richiesto"})
         
         # Verifica se questo EAN scanner esiste già per questo articolo
         existing_ean = db.session.execute(text("""
@@ -1408,7 +1417,7 @@ def add_eanscanner(id_articulo):
         """), {"id_articulo": id_articulo, "eanscanner": eanscanner}).fetchone()
         
         if existing_ean:
-            return jsonify({"success": False, "error": "Questo EAN scanner esiste già per questo articolo"})
+            return jsonify({"success": False, "error": "Questo scanner EAN esiste già per questo articolo"})
         
         # Prima disattiva tutti gli EAN scanner per questo articolo
         db.session.execute(text("""
@@ -1436,6 +1445,7 @@ def add_eanscanner(id_articulo):
             if result:
                 return jsonify({
                     "success": True, 
+                    "message": "Scanner EAN aggiunto con successo!",
                     "eanscanner": {
                         "IdRegistro": result[0],
                         "EANScanner": result[1],
@@ -1443,7 +1453,7 @@ def add_eanscanner(id_articulo):
                     }
                 })
         
-        return jsonify({"success": False, "error": "Failed to save EAN scanner"})
+        return jsonify({"success": False, "error": "Errore nel salvataggio del scanner EAN"})
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)})
@@ -1535,12 +1545,14 @@ def upload_photo(id_articulo):
     article = Article.query.get_or_404(id_articulo)
     
     if 'photo' not in request.files:
-        return jsonify({'success': False, 'message': 'No photo included in request'}), 400
+        flash('Nessuna foto inclusa nella richiesta.', 'error')
+        return jsonify({'success': False, 'message': 'Nessuna foto inclusa nella richiesta'}), 400
     
     photo = request.files['photo']
     
     if not photo.filename:
-        return jsonify({'success': False, 'message': 'Empty photo file'}), 400
+        flash('File foto vuoto.', 'error')
+        return jsonify({'success': False, 'message': 'File foto vuoto'}), 400
     
     # Ensure local Uploads directory exists
     upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Uploads')
@@ -1550,14 +1562,14 @@ def upload_photo(id_articulo):
     # Create a unique filename using article ID and timestamp
     filename = f"article_{id_articulo}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
     
-    # Save the file locally
-    filepath = os.path.join(upload_dir, filename)
-    photo.save(filepath)
-    
-    # Format the network path to the shared folder
-    network_path = f"\\\\192.168.1.26\\DBLogiXUploads\\{filename}"
-    
     try:
+        # Save the file locally
+        filepath = os.path.join(upload_dir, filename)
+        photo.save(filepath)
+        
+        # Format the network path to the shared folder
+        network_path = f"\\\\192.168.1.26\\DBLogiXUploads\\{filename}"
+        
         # Update LogoPantalla field in database with the network path
         db.session.execute(text("""
             UPDATE dat_articulo 
@@ -1573,15 +1585,18 @@ def upload_photo(id_articulo):
         })
         db.session.commit()
         
+        flash('Foto dell\'articolo caricata!', 'success')
+        
         return jsonify({
             'success': True, 
-            'message': 'Photo uploaded successfully',
+            'message': 'Foto caricata con successo',
             'path': network_path,
             'filename': filename
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
+        flash(f'Errore durante il caricamento della foto: {str(e)}', 'error')
+        return jsonify({'success': False, 'message': f'Errore durante il caricamento: {str(e)}'}), 500
 
 @articles_bp.route('/get_product_photo/<int:id_articulo>')
 @login_required

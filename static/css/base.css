@@ -329,10 +329,40 @@ body {
     padding: 0 1rem;
     width: 100%;
     position: relative;
+    margin-top: 1rem;
 }
 
 .flash-container {
     padding: 15px 20px 0;
+    display: none !important;
+}
+
+/* Nasconde gli alert Bootstrap originali per evitare clutter, ma non quelli nei modali */
+.alert:not(.elegant-notification):not(.modal .alert):not(.dropdown-menu .alert):not(.offcanvas .alert) {
+    display: none !important;
+}
+
+/* Nasconde tutti gli alert con classi Bootstrap standard, ma non nei modali */
+.alert-success:not(.modal .alert-success):not(.dropdown-menu .alert-success),
+.alert-danger:not(.modal .alert-danger):not(.dropdown-menu .alert-danger), 
+.alert-warning:not(.modal .alert-warning):not(.dropdown-menu .alert-warning),
+.alert-info:not(.modal .alert-info):not(.dropdown-menu .alert-info),
+.alert-error:not(.modal .alert-error):not(.dropdown-menu .alert-error) {
+    display: none !important;
+}
+
+/* Eccezione per gli alert che potrebbero essere necessari in contesti specifici */
+.alert.show-always {
+    display: block !important;
+}
+
+/* Mantieni visibili gli alert nei modali */
+.modal .alert,
+.dropdown-menu .alert,
+.offcanvas .alert,
+.tooltip .alert,
+.popover .alert {
+    display: block !important;
 }
 
 .app-footer {
@@ -500,6 +530,10 @@ body {
     .page-subtitle {
         font-size: 0.9rem;
     }
+    
+    .content-wrapper {
+        margin-top: 0.75rem; /* Meno margine su mobile */
+    }
 }
 
 /* Breadcrumbs */
@@ -579,5 +613,33 @@ body {
     
     .table-responsive tbody td.text-center {
         text-align: center !important;
+    }
+}
+
+/* Notifiche eleganti - responsive */
+@media (max-width: 767.98px) {
+    #elegant-notifications-container {
+        top: 10px !important;
+        right: 10px !important;
+        left: 10px !important;
+        max-width: none !important;
+    }
+    
+    .elegant-notification {
+        margin-bottom: 8px !important;
+        padding: 12px 16px !important;
+        border-radius: 6px !important;
+    }
+    
+    .elegant-notification div[style*="font-size: 14px"] {
+        font-size: 13px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #elegant-notifications-container {
+        top: 5px !important;
+        right: 5px !important;
+        left: 5px !important;
     }
 } 

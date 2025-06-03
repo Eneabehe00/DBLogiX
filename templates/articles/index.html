@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
 
 {% block title %}Gestione Articoli - DBLogiX{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
 <style>
     /* Elegant Dark Theme - No Gradients */
     :root {
@@ -181,6 +183,7 @@
 
 {% block extra_js %}
 {{ super() }}
+<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Enhanced search functionality - prioritize server-side search
@@ -323,33 +326,46 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <div class="container-fluid">
-    <!-- Enhanced Search Section -->
-    <div class="filter-section">
-        <div class="row g-4 align-items-end">
-            <div class="col-lg-8">
-                <label class="form-label fw-bold">🔍 Ricerca Avanzata Articoli</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
-                    <input type="text" id="liveSearch" class="form-control" 
-                           placeholder="Cerca per descrizione, codice articolo o EAN..." 
-                           value="{{ query or '' }}">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <small class="text-muted">Ricerca in tempo reale attraverso descrizione, ID articolo e codici EAN</small>
-            </div>
-            <div class="col-lg-4">
-                <div class="stats-card">
-                    <div class="stats-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <div class="stats-number">{{ articles.total if articles else 0 }}</div>
-                    <div class="stats-label">Articoli Totali</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Articoli',
+        'action': url_for('articles.index'),
+        'search_param': 'query',
+        'placeholder': 'Cerca per descrizione, codice articolo o EAN...',
+        'current_value': query or '',
+        'show_help': true,
+        'help_text': 'Ricerca in tempo reale attraverso descrizione, ID articolo e codici EAN',
+        'preserve_params': {},
+        'advanced_filters': []
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': articles.total if articles else 0,
+            'label': 'Articoli Totali',
+            'icon': 'fas fa-box',
+            'variant': ''
+        },
+        {
+            'value': articles.items|length if articles else 0,
+            'label': 'Visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': articles.page if articles else 1,
+            'label': 'Pagina',
+            'icon': 'fas fa-bookmark',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': articles.pages if articles else 1,
+            'label': 'Tot. Pagine',
+            'icon': 'fas fa-file',
+            'variant': 'stat-info'
+        }
+    ]) }}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -363,29 +379,24 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endwith %}
 
     <!-- Search Results Info -->
-    {% if query %}
-    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
-        <div>
-            <strong>Ricerca attiva:</strong> "{{ query }}"<br>
-            <small class="text-muted">
-                {% if articles and articles.items %}
-                    Trovati {{ articles.total }} articoli corrispondenti
-                {% else %}
-                    Nessun articolo trovato per questa ricerca
-                {% endif %}
-            </small>
-        </div>
-        <a href="{{ url_for('articles.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
-            <i class="fas fa-times me-1"></i>Cancella ricerca
-        </a>
-    </div>
-    {% endif %}
+    {{ render_search_results_info({
+        'is_search_active': query is defined and query,
+        'search_term': query,
+        'total_results': articles.total if articles else 0,
+        'visible_results': articles.items|length if articles else 0,
+        'current_page': articles.page if articles else 1,
+        'total_pages': articles.pages if articles else 1,
+        'clear_url': url_for('articles.index'),
+        'paginated': articles.pages > 1 if articles else false
+    }) }}
 
     <!-- Product List -->
     <div class="card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Articoli</h5>
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2 text-primary"></i>Elenco Articoli
+                <span class="badge bg-primary ms-2">{{ articles.total if articles else 0 }} totali</span>
+            </h5>
             {% if articles and articles.items %}
             <small class="text-muted">Pagina {{ articles.page }} di {{ articles.pages }}</small>
             {% endif %}
@@ -405,7 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p>Si è verificato un problema durante la ricerca. Visualizzazione degli articoli non disponibile.</p>
                 <p>Per riprovare, <a href="{{ url_for('articles.index') }}">clicca qui</a> per tornare alla lista completa.</p>
             </div>
-            {% else %}
+            {% endif %}
+            
             {% if articles.items|length == 0 and query %}
             <div class="alert alert-info m-3">
                 <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
@@ -414,7 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             {% endif %}
             
-            {% if articles.items|length > 0 %}
+            {% if articles and articles.items|length > 0 %}
             <div class="d-none d-md-block">
                 <div class="table-responsive">
                     <table class="table table-hover" id="articlesTable">
@@ -569,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </nav>
             </div>
             {% endif %}
-            {% else %}
+            {% elif articles and articles.items|length == 0 and not query %}
             <div class="p-5 text-center">
                 <i class="fas fa-boxes text-muted mb-3" style="font-size: 4rem;"></i>
                 <h5>Nessun articolo trovato</h5>
@@ -581,8 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% endif %}
             </div>
             {% endif %}
-            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

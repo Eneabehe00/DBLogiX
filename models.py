@@ -145,6 +145,8 @@ class TicketHeader(db.Model):
             return "DDT2"
         elif self.Enviado == 4:
             return "Scaduto"
+        elif self.Enviado == 10:
+            return "Task"
         else:
             return "Sconosciuto"
     
@@ -161,6 +163,8 @@ class TicketHeader(db.Model):
             return "secondary"  # DDT2
         elif self.Enviado == 4:
             return "danger"   # Scaduto
+        elif self.Enviado == 10:
+            return "primary"  # Task
         else:
             return "dark"     # Sconosciuto
     
@@ -201,6 +205,8 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
     is_admin = db.Column(db.Boolean, default=False)
+    screen_task = db.Column(db.Boolean, default=False)  # Flag per utenti schermo task
+    is_active = db.Column(db.Boolean, default=True)  # Campo per disabilitare utenti
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     scan_logs = db.relationship('ScanLog', backref='user', lazy='dynamic')
@@ -866,10 +872,16 @@ class Task(db.Model):
     
     @property
     def is_overdue(self):
-        """Check if task is overdue (deadline passed and not completed)"""
+        """Check if task is overdue (deadline passed and not completed)
+        
+        A task is only considered overdue if the deadline date has passed
+        (not if it's today - so a task can be opened and closed on the same day)
+        """
         if not self.deadline:
             return False
-        return datetime.utcnow() > self.deadline and self.status != 'completed'
+        today = datetime.utcnow().date()
+        deadline_date = self.deadline.date()
+        return deadline_date < today and self.status != 'completed'
     
     def update_progress(self):
         """Update the progress counters"""

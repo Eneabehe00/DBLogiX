@@ -19,6 +19,8 @@
     <!-- Custom styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <!-- Shared Components CSS - Unified Search and Stats -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
     {% if current_user.is_authenticated %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
     {% endif %}
@@ -320,8 +322,11 @@
     </script>
     
     <!-- Custom scripts -->
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+    <!-- Shared Components JS - Unified Search and Stats -->
+    <script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
     <!-- Delete Confirmation -->
     <script src="{{ url_for('static', filename='js/delete-confirmation.js') }}"></script>
     {% if current_user.is_authenticated %}

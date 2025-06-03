@@ -15,6 +15,7 @@ class RegistrationForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
     password2 = PasswordField('Repeat Password', validators=[DataRequired(), EqualTo('password')])
     is_admin = BooleanField('Administrator')
+    screen_task = BooleanField('Screen Task - Utente Schermo Task')
     submit = SubmitField('Register')
     
     def validate_username(self, username):

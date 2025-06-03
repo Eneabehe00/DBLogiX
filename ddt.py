@@ -22,6 +22,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from sqlalchemy.sql import text
 import time
 from models import SystemConfig
+from utils import admin_required
 
 ddt_bp = Blueprint('ddt', __name__)
 
@@ -127,6 +128,7 @@ def index():
 
 @ddt_bp.route('/new', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def new():
     """Step 1: Select a client for the new DDT"""
     form = DDTClientSelectForm()
@@ -146,6 +148,7 @@ def new():
 
 @ddt_bp.route('/select_tickets/<int:cliente_id>', methods=['GET', 'POST'])
 @login_required
+@admin_required
 def select_tickets(cliente_id):
     """Step 2: Select tickets to include in the DDT"""
     cliente = Client.query.get_or_404(cliente_id)
@@ -177,6 +180,7 @@ def select_tickets(cliente_id):
 
 @ddt_bp.route('/preview', methods=['POST'])
 @login_required
+@admin_required
 def preview():
     """Step 2.5: Preview DDT before final creation with ability to modify tickets"""
     # Get form data
@@ -440,6 +444,7 @@ def ensure_custom_product_exists():
 
 @ddt_bp.route('/create', methods=['POST'])
 @login_required
+@admin_required
 def create():
     """Step 3: Create the DDT with the selected client and tickets"""
     # Get form data
@@ -920,12 +925,10 @@ def create():
         # Redirect based on source
         if from_task and task_id:
             flash(f'DDT #{ddt.IdAlbaran} generato dal task #{task_id}', 'success')
-            return redirect(url_for('tasks.view_task', task_id=task_id))
-        elif from_warehouse:
-            flash(f'DDT #{ddt.IdAlbaran} generato dal warehouse', 'success')
-            return redirect(url_for('warehouse.scanner'))
         else:
-            return redirect(url_for('ddt.detail', ddt_id=ddt.IdAlbaran))
+            flash(f'DDT #{ddt.IdAlbaran} generato dal warehouse', 'success')
+        
+        return redirect(url_for('ddt.detail', ddt_id=ddt.IdAlbaran))
         
     except Exception as e:
         db.session.rollback()
@@ -1003,6 +1006,7 @@ def detail(ddt_id):
 
 @ddt_bp.route('/<int:ddt_id>/delete', methods=['POST'])
 @login_required
+@admin_required
 def delete(ddt_id):
     """Delete a DDT and all its lines"""
     ddt = AlbaranCabecera.query.filter_by(IdAlbaran=ddt_id).first_or_404()

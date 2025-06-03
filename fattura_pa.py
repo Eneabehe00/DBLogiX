@@ -9,6 +9,7 @@ from xml.dom import minidom
 import io
 import logging
 import uuid
+from utils import admin_required
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -278,6 +279,7 @@ def create_fattura_pa_from_ddt(ddt_id):
 # Blueprint routes
 @fattura_pa_bp.route('/create/<int:ddt_id>', methods=['POST'])
 @login_required
+@admin_required
 def create_invoice(ddt_id):
     """Create a FatturaPA invoice from a DDT"""
     try:
@@ -314,6 +316,7 @@ def create_invoice(ddt_id):
 
 @fattura_pa_bp.route('/list')
 @login_required
+@admin_required
 def list_invoices():
     """List all generated invoices"""
     fatture_dir = os.path.join(current_app.root_path, 'Fatture')
@@ -338,6 +341,7 @@ def list_invoices():
 
 @fattura_pa_bp.route('/details/<filename>')
 @login_required
+@admin_required
 def invoice_details(filename):
     """Get invoice details for AJAX requests"""
     try:
@@ -389,6 +393,7 @@ def invoice_details(filename):
 
 @fattura_pa_bp.route('/detail/<filename>')
 @login_required
+@admin_required
 def invoice_detail_page(filename):
     """Show invoice detail page"""
     try:
@@ -968,6 +973,7 @@ def invoice_detail_page(filename):
 
 @fattura_pa_bp.route('/xml/<filename>')
 @login_required
+@admin_required
 def get_xml_content(filename):
     """Get XML content for preview"""
     try:
@@ -988,6 +994,7 @@ def get_xml_content(filename):
 
 @fattura_pa_bp.route('/download/<filename>')
 @login_required
+@admin_required
 def download_invoice(filename):
     """Download a specific invoice"""
     fatture_dir = os.path.join(current_app.root_path, 'Fatture')
@@ -1009,6 +1016,7 @@ def download_invoice(filename):
 
 @fattura_pa_bp.route('/delete/<filename>', methods=['POST'])
 @login_required
+@admin_required
 def delete_invoice(filename):
     """Delete a specific invoice"""
     fatture_dir = os.path.join(current_app.root_path, 'Fatture')
@@ -1028,6 +1036,7 @@ def delete_invoice(filename):
 
 @fattura_pa_bp.route('/delete/<filename>', methods=['DELETE'])
 @login_required
+@admin_required
 def delete_invoice_ajax(filename):
     """Delete a specific invoice via AJAX"""
     try:
@@ -1052,6 +1061,7 @@ def delete_invoice_ajax(filename):
 
 @fattura_pa_bp.route('/test/<filename>')
 @login_required
+@admin_required
 def test_invoice_parsing(filename):
     """Test route to debug XML parsing - shows all extracted data"""
     try:

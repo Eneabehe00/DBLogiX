@@ -1,0 +1,485 @@
+<!-- Macro per la sezione di ricerca unificata -->
+{% macro render_search_section(config) %}
+<div class="unified-search-section">
+    <div class="search-header">
+        <i class="fas fa-search"></i>
+        {{ config.title or "Ricerca" }}
+    </div>
+    
+    <form method="GET" action="{{ config.action }}" id="unifiedSearchForm">
+        <!-- Mantieni filtri esistenti -->
+        {% for key, value in config.preserve_params.items() %}
+            {% if value %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endif %}
+        {% endfor %}
+        
+        <div class="search-controls">
+            <div class="search-input-wrapper">
+                <input type="text" 
+                       name="{{ config.search_param or 'search' }}" 
+                       class="unified-search-input" 
+                       placeholder="{{ config.placeholder or 'Cerca...' }}" 
+                       value="{{ config.current_value or '' }}"
+                       autocomplete="off">
+            </div>
+            
+            <div class="search-actions">
+                <button type="button" class="search-btn search-btn-secondary search-clear-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+                <button type="submit" class="search-btn search-btn-primary">
+                    <i class="fas fa-search"></i>
+                    Cerca
+                </button>
+            </div>
+        </div>
+        
+        {% if config.show_help %}
+        <small class="text-muted mt-1 d-block">{{ config.help_text or "Suggerimento: usa Ctrl+F per accesso rapido" }}</small>
+        {% endif %}
+    </form>
+    
+    {% if config.advanced_filters %}
+    <a href="#" class="filter-toggle">
+        <i class="fas fa-chevron-down"></i>
+        Filtri avanzati
+    </a>
+    
+    <div class="advanced-filters">
+        <div class="filters-grid">
+            {% for filter in config.advanced_filters %}
+            <div class="filter-group">
+                <label for="{{ filter.id }}">{{ filter.label }}</label>
+                {% if filter.type == 'date' %}
+                    <input type="date" 
+                           id="{{ filter.id }}" 
+                           name="{{ filter.name }}" 
+                           value="{{ filter.value or '' }}"
+                           class="form-control">
+                {% elif filter.type == 'select' %}
+                    <select id="{{ filter.id }}" 
+                            name="{{ filter.name }}" 
+                            class="form-control">
+                        <option value="">{{ filter.default_option or 'Tutti' }}</option>
+                        {% for option in filter.options %}
+                        <option value="{{ option.value }}" 
+                                {% if option.value == filter.value %}selected{% endif %}>
+                            {{ option.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="{{ filter.type or 'text' }}" 
+                           id="{{ filter.id }}" 
+                           name="{{ filter.name }}" 
+                           value="{{ filter.value or '' }}"
+                           placeholder="{{ filter.placeholder or '' }}"
+                           class="form-control">
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="d-flex gap-2 mt-3">
+            <button type="button" class="search-btn search-btn-primary" onclick="window.unifiedSearch.applyFilters()">
+                <i class="fas fa-filter"></i>
+                Applica filtri
+            </button>
+            <button type="button" class="search-btn search-btn-secondary" onclick="window.unifiedSearch.clearSearch()">
+                <i class="fas fa-times"></i>
+                Reset
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+<!-- Macro per le statistiche unificate -->
+{% macro render_stats_grid(stats) %}
+<div class="unified-stats-grid">
+    {% for stat in stats %}
+    <div class="unified-stat-card {{ stat.variant or '' }}">
+        {% if stat.icon %}
+        <i class="stat-icon {{ stat.icon }}"></i>
+        {% endif %}
+        <div class="stat-number">{{ stat.value or 0 }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endmacro %}
+
+<!-- Macro per info risultati ricerca -->
+{% macro render_search_results_info(config) %}
+{% if config.is_search_active %}
+<div class="search-results-info">
+    <i class="fas fa-search"></i>
+    <div class="search-results-content">
+        <div class="search-results-title">
+            Ricerca attiva: "{{ config.search_term }}"
+        </div>
+        <div class="search-results-subtitle">
+            {% if config.total_results > 0 %}
+                {{ config.results_text or "Trovati " + config.total_results|string + " risultati" }}
+                {% if config.paginated and config.total_results > config.visible_results %}
+                    • Visualizzando {{ config.visible_results }} (pagina {{ config.current_page }} di {{ config.total_pages }})
+                {% endif %}
+            {% else %}
+                Nessun risultato trovato per questa ricerca
+            {% endif %}
+        </div>
+    </div>
+    <a href="{{ config.clear_url }}" class="clear-search-btn">
+        <i class="fas fa-times"></i>
+        Cancella
+    </a>
+</div>
+{% endif %}
+{% endmacro %}
+
+<!-- Macro per filtri attivi -->
+{% macro render_active_filters(filters) %}
+{% if filters %}
+<div class="active-filters-container mb-3">
+    <div class="active-filters-content">
+        <div class="active-filters-header">
+            <i class="fas fa-filter active-filters-icon"></i>
+            <span class="active-filters-title">Filtri attivi</span>
+        </div>
+        
+        <div class="active-filters-badges">
+            {% for filter in filters %}
+            <span class="filter-badge filter-badge-{{ filter.type or 'default' }}">
+                <i class="{{ filter.icon or 'fas fa-tag' }} filter-badge-icon"></i>
+                <span class="filter-badge-label">{{ filter.label }}</span>
+                <span class="filter-badge-value">{{ filter.value }}</span>
+                {% if filter.remove_url %}
+                <a href="{{ filter.remove_url }}" class="filter-badge-remove" title="Rimuovi filtro">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </span>
+            {% endfor %}
+        </div>
+        
+        {% if filters.clear_all_url %}
+        <a href="{{ filters.clear_all_url }}" class="clear-all-filters-btn">
+            <i class="fas fa-broom"></i>
+            <span>Pulisci tutto</span>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+<!-- Macro per loading state -->
+{% macro render_loading_overlay() %}
+<div class="loading-overlay d-none">
+    <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Caricamento...</span>
+    </div>
+</div>
+{% endmacro %}
+
+<!-- Stili aggiuntivi per i componenti -->
+<style>
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.alert-info {
+    background-color: rgba(52, 152, 219, 0.05);
+    border-left: 4px solid var(--accent-blue);
+    color: var(--primary-dark);
+}
+
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Filtri attivi semplificati */
+.active-filters-container {
+    background: rgba(44, 62, 80, 0.05);
+    border: 1px solid rgba(44, 62, 80, 0.1);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+
+.active-filters-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.active-filters-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+}
+
+.active-filters-icon {
+    color: var(--primary-dark);
+    font-size: 16px;
+}
+
+.active-filters-title {
+    font-weight: 600;
+    color: var(--primary-dark);
+    font-size: 14px;
+}
+
+.active-filters-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+}
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    background: var(--primary-dark);
+    color: white;
+}
+
+.filter-badge:hover {
+    background: #34495e;
+    color: white;
+    text-decoration: none;
+}
+
+.filter-badge-icon {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.filter-badge-label {
+    font-weight: 600;
+}
+
+.filter-badge-value {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.filter-badge-remove {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-left: 4px;
+}
+
+.filter-badge-remove:hover {
+    background: rgba(255, 255, 255, 0.4);
+    color: white;
+}
+
+.filter-badge-remove i {
+    font-size: 8px;
+}
+
+.clear-all-filters-btn {
+    background: #e74c3c;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 16px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    margin-left: auto;
+}
+
+.clear-all-filters-btn:hover {
+    background: #c0392b;
+    color: white;
+    text-decoration: none;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: var(--accent-blue);
+    font-size: 14px;
+}
+
+.loading-spinner i {
+    font-size: 24px;
+}
+
+/* Animazioni smooth */
+.search-results-info,
+.alert,
+.active-filters-container {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Micro-animazioni per una UX superiore */
+.filter-badge {
+    animation: fadeInScale 0.3s ease;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.filter-toggle-animation {
+    animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Indicatori di stato per filtri */
+.filter-status-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: var(--success-green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7);
+}
+
+/* Tooltips migliorati per filtri */
+.filter-tooltip {
+    position: relative;
+}
+
+.filter-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-dark);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.filter-tooltip:hover::after {
+    opacity: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .search-results-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .clear-search-btn {
+        align-self: flex-end;
+    }
+    
+    .alert .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .alert .ms-auto {
+        margin-left: 0 !important;
+        align-self: flex-end;
+    }
+}
+</style>
+
+<script>
+// Inizializzazione semplice dei filtri
+document.addEventListener('DOMContentLoaded', function() {
+    // Inizializza UnifiedSearch se non già presente
+    if (typeof window.unifiedSearch === 'undefined' && typeof UnifiedSearch !== 'undefined') {
+        window.unifiedSearch = new UnifiedSearch();
+    }
+    
+    console.log('✅ Filtri DBLogiX inizializzati');
+});
+</script> 

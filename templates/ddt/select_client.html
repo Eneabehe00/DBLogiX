@@ -3,199 +3,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
-<style>
-    .client-selector-container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
-    .search-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 1rem;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        color: white;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-    
-    .search-input {
-        border: none;
-        border-radius: 50px;
-        padding: 1rem 1.5rem;
-        font-size: 1.1rem;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .search-input:focus {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        border: none;
-        outline: none;
-    }
-    
-    .clients-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 1.5rem;
-        margin-top: 2rem;
-    }
-    
-    .client-card {
-        background: white;
-        border-radius: 1rem;
-        padding: 1.5rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: 2px solid transparent;
-        position: relative;
-    }
-    
-    .client-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        border-color: #667eea;
-    }
-    
-    .client-card.selected {
-        border-color: #28a745;
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-    }
-    
-    .client-avatar {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
-        margin: 0 auto 1rem;
-    }
-    
-    .client-name {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 0.5rem;
-        text-align: center;
-    }
-    
-    .client-details {
-        color: #6c757d;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-    
-    .client-detail-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 0.25rem;
-    }
-    
-    .client-detail-item i {
-        margin-right: 0.5rem;
-        width: 16px;
-        color: #667eea;
-    }
-    
-    .selected-indicator {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        background: #28a745;
-        color: white;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transform: scale(0);
-        transition: all 0.3s ease;
-    }
-    
-    .client-card.selected .selected-indicator {
-        opacity: 1;
-        transform: scale(1);
-    }
-    
-    .no-clients-message {
-        text-align: center;
-        padding: 3rem;
-        color: #6c757d;
-        font-size: 1.1rem;
-    }
-    
-    .clients-count {
-        color: rgba(255,255,255,0.8);
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-    }
-    
-    .action-buttons {
-        position: sticky;
-        bottom: 2rem;
-        background: white;
-        padding: 1.5rem;
-        border-radius: 1rem;
-        box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
-        margin-top: 2rem;
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-    }
-    
-    .btn-modern {
-        padding: 0.8rem 2rem;
-        border-radius: 50px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-        border: none;
-        min-width: 150px;
-    }
-    
-    .btn-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    
-    .btn-cancel {
-        background: #6c757d;
-        color: white;
-    }
-    
-    .btn-continue {
-        background: linear-gradient(135deg, #28a745, #20c997);
-        color: white;
-    }
-    
-    .btn-continue:disabled {
-        background: #e9ecef;
-        color: #6c757d;
-        cursor: not-allowed;
-        transform: none !important;
-        box-shadow: none !important;
-    }
-    
-    .loading-spinner {
-        display: none;
-        text-align: center;
-        padding: 2rem;
-    }
-    
-    .spinner-border {
-        color: #667eea;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -203,8 +10,8 @@
     <div class="container-fluid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}" class="text-white">DDT</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white"><i class="fas fa-home"></i> Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}" class="text-white"><i class="fas fa-file-invoice"></i> DDT</a></li>
                 <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo DDT</li>
             </ol>
         </nav>
@@ -255,20 +62,20 @@
             <span class="visually-hidden">Caricamento...</span>
         </div>
         <p class="mt-2">Caricamento clienti in corso...</p>
-                </div>
-                
+    </div>
+    
     <!-- Clients Grid -->
     <div class="clients-grid" id="clientsGrid">
         <!-- I clienti verranno caricati qui tramite JavaScript -->
-                    </div>
+    </div>
 
     <!-- No Results Message -->
     <div class="no-clients-message d-none" id="noClientsMessage">
         <i class="fas fa-search fa-3x mb-3" style="opacity: 0.3;"></i>
         <p>Nessun cliente trovato con i criteri di ricerca specificati.</p>
         <small>Prova a modificare il termine di ricerca o contatta l'amministratore se il cliente non è presente nel sistema.</small>
-                </div>
-                
+    </div>
+    
     <!-- Action Buttons -->
     <div class="action-buttons">
         <form id="clientSelectForm" method="POST" action="{{ url_for('ddt.new') }}">
@@ -278,11 +85,11 @@
             
             <a href="{{ url_for('ddt.index') }}" class="btn btn-modern btn-cancel">
                 <i class="fas fa-times me-2"></i>Annulla
-                    </a>
+            </a>
             <button type="submit" class="btn btn-modern btn-continue" id="submitBtn" disabled>
                 <i class="fas fa-arrow-right me-2"></i>Continua
-                    </button>
-            </form>
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}
@@ -397,11 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add selection to clicked card
         const selectedCard = document.querySelector(`[data-client-id="${client.id}"]`);
         selectedCard.classList.add('selected');
-            
-            // Update form fields
+        
+        // Update form fields
         document.getElementById('cliente_id').value = client.id;
         document.getElementById('cliente_nome').value = client.nombre;
-            
+        
         // Enable submit button
         submitBtn.disabled = false;
         

@@ -1,9 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Scansione Ticket - {{ task_ticket.task.task_number }}{% endblock %}
+{% block title %}📱 Scansione - {{ task_ticket.task.task_number }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+<style>
+/* Hide sidebar and navbar for full-screen mobile experience */
+@media (max-width: 768px) {
+    .sidebar { display: none !important; }
+    .mobile-header { display: none !important; }
+    .main-content { margin-left: 0 !important; padding-top: 0 !important; }
+    body { overflow-x: hidden; }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -12,22 +21,36 @@
 {% endblock %}
 
 {% block content %}
-<div class="scan-container" data-task-ticket-id="{{ task_ticket.id }}">
+<div class="scan-container" 
+     data-task-ticket-id="{{ task_ticket.id }}"
+     data-has-current-product="{% if current_product %}true{% else %}false{% endif %}">
     
-    <!-- Task Progress (minimal) -->
+    <!-- Task Progress Header -->
     <div class="scan-task-progress">
-        <span>Task: {{ task_ticket.task.task_number }}</span>
-        <span class="badge bg-primary">{{ current_ticket_index }}/{{ total_tickets }}</span>
+        <div>
+            <i class="fas fa-tasks"></i>
+            <span>{{ task_ticket.task.task_number }}</span>
+        </div>
+        <span class="badge bg-primary">
+            <i class="fas fa-list-ol"></i> {{ current_ticket_index }}/{{ total_tickets }}
+        </span>
     </div>
 
     {% if current_product %}
-    <!-- Product Info (minimal) -->
+    <!-- Product Information -->
     <div class="scan-product-header">
         <div class="scan-product-info">
-            <div class="scan-product-name">{{ current_product.Descripcion }}</div>
+            <div class="scan-product-name">
+                <i class="fas fa-box"></i>
+                {{ current_product.Descripcion }}
+            </div>
             <div class="scan-product-details">
-                <span>Ticket #{{ task_ticket.ticket.NumTicket }}</span>
                 <span>
+                    <i class="fas fa-receipt"></i>
+                    Ticket #{{ task_ticket.ticket.NumTicket }}
+                </span>
+                <span>
+                    <i class="fas fa-calendar-alt"></i>
                     {% if current_product.FechaCaducidad %}
                         {{ current_product.FechaCaducidad.strftime('%d/%m/%Y') }}
                     {% else %}
@@ -40,50 +63,210 @@
 
     <!-- Camera Section -->
     <div class="camera-section">
-        <video id="camera-preview" autoplay playsinline style="display: none; width: 100%; max-width: 400px; height: auto; border-radius: 0.5rem;"></video>
+        <!-- Auto-start loading message -->
+        <div id="camera-starting" class="camera-starting">
+            <i class="fas fa-camera"></i>
+            <h4>📱 Avvio automatico camera...</h4>
+            <p>Preparazione dell'interfaccia di scansione mobile</p>
+        </div>
+        
+        <!-- Camera preview (hidden initially) -->
+        <video id="camera-preview" 
+               autoplay 
+               playsinline 
+               muted
+               style="display: none;">
+        </video>
+        
+        <!-- Camera controls -->
         <div class="scan-controls">
-            <button id="start-camera" class="scan-btn">
-                <i class="fas fa-camera"></i> Avvia Camera
+            <button id="start-camera" class="scan-btn" style="display: none;">
+                <i class="fas fa-camera"></i> 
+                Avvia Camera
             </button>
             <button id="stop-camera" class="scan-btn danger" style="display: none;">
-                <i class="fas fa-stop"></i> Ferma Camera
+                <i class="fas fa-stop"></i> 
+                Ferma
+            </button>
+            <button id="switch-camera" class="scan-btn" style="display: none;">
+                <i class="fas fa-sync-alt"></i>
+                Cambia
             </button>
         </div>
     </div>
+
     {% else %}
-    <!-- All products scanned message -->
-    <div class="card shadow-sm mb-3">
-        <div class="card-body text-center">
-            <div class="alert alert-success">
-                <i class="fas fa-check-circle fa-2x mb-2"></i>
-                <h5>Ticket Completato!</h5>
-                <p class="mb-0">Tutti i prodotti di questo ticket sono stati scansionati.</p>
-                <p class="mb-0">Passaggio automatico al prossimo ticket...</p>
-            </div>
+    <!-- Ticket Completed -->
+    <div class="scan-completion">
+        <div class="completion-content">
+            <i class="fas fa-check-circle completion-icon"></i>
+            <h5>🎉 Ticket Completato!</h5>
+            <p>Tutti i prodotti di questo ticket sono stati scansionati con successo.</p>
+            <p><strong>Passaggio automatico al prossimo ticket...</strong></p>
         </div>
     </div>
     {% endif %}
 
-    <!-- Navigation -->
-    <div class="text-center">
+    <!-- Bottom Navigation -->
+    <div class="scan-navigation">
         <a href="{{ url_for('tasks.view_task', task_id=task_ticket.task.id_task) }}" 
-           class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Torna al Task
+           class="btn">
+            <i class="fas fa-arrow-left"></i> 
+            Torna al Task
         </a>
     </div>
 </div>
 
-<!-- Scan Feedback Modal -->
+<!-- Enhanced Scan Feedback Modal -->
 <div id="scan-feedback" class="scan-feedback" style="display: none;">
-    <div id="feedback-content"></div>
+    <div id="feedback-content">
+        <div class="feedback-icon">
+            <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+        <div class="feedback-message">Elaborazione...</div>
+    </div>
 </div>
 
 {% if not current_product %}
 <script>
-// Auto-redirect after 2 seconds if no current product (ticket completed)
+// Auto-redirect for completed tickets
 setTimeout(function() {
     window.location.reload();
-}, 2000);
+}, 3000);
 </script>
 {% endif %}
+
+<script>
+// Mobile-optimized scan page initialization - Fixed Auto-Start
+document.addEventListener('DOMContentLoaded', function() {
+    // Get scan container data
+    const scanContainer = document.querySelector('.scan-container');
+    const hasCurrentProduct = scanContainer.dataset.hasCurrentProduct === 'true';
+    
+    console.log('📱 Scan page loaded, hasCurrentProduct:', hasCurrentProduct);
+    
+    // Auto-start camera immediately if we have a current product (similar to warehouse scanner)
+    if (hasCurrentProduct) {
+        console.log('🚀 Auto-starting camera...');
+        
+        // Start camera immediately, don't wait for additional delays
+        setTimeout(function() {
+            if (typeof startCamera === 'function') {
+                startCamera();
+            } else {
+                console.error('❌ startCamera function not available yet, retrying...');
+                // Retry after a short delay
+                setTimeout(function() {
+                    if (typeof startCamera === 'function') {
+                        startCamera();
+                    } else {
+                        console.error('❌ startCamera still not available, showing manual button');
+                        $('#camera-starting').hide();
+                        $('#start-camera').show();
+                    }
+                }, 500);
+            }
+        }, 100);
+    } else {
+        // No current product, hide camera starting message
+        $('#camera-starting').hide();
+    }
+    
+    // Prevent screen lock on mobile during scanning
+    if ('wakeLock' in navigator) {
+        let wakeLock = null;
+        
+        async function requestWakeLock() {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('📱 Screen wake lock activated');
+            } catch (err) {
+                console.log('📱 Wake lock request failed:', err);
+            }
+        }
+        
+        // Request wake lock when camera starts
+        $(document).on('cameraStarted', requestWakeLock);
+        
+        // Release wake lock when leaving page
+        $(window).on('beforeunload', function() {
+            if (wakeLock) {
+                wakeLock.release();
+            }
+        });
+    }
+    
+    // Enhanced feedback for mobile
+    window.showMobileFeedback = function(message, type, icon) {
+        const iconMap = {
+            success: 'fas fa-check-circle feedback-success',
+            error: 'fas fa-exclamation-triangle feedback-error',
+            info: 'fas fa-info-circle feedback-info'
+        };
+        
+        const feedbackIcon = icon || iconMap[type] || 'fas fa-info-circle feedback-info';
+        
+        $('#feedback-content').html(`
+            <div class="feedback-icon">
+                <i class="${feedbackIcon}"></i>
+            </div>
+            <div class="feedback-message">${message}</div>
+        `);
+        
+        $('#scan-feedback').fadeIn(300);
+        
+        // Auto-hide after 3 seconds for success/info messages
+        if (type === 'success' || type === 'info') {
+            setTimeout(function() {
+                $('#scan-feedback').fadeOut(300);
+            }, 3000);
+        }
+    };
+    
+    // Override the original showFeedback function
+    window.showFeedback = window.showMobileFeedback;
+    
+    // Add haptic feedback for mobile devices
+    window.triggerHapticFeedback = function(type = 'light') {
+        if ('vibrate' in navigator) {
+            switch(type) {
+                case 'success':
+                    navigator.vibrate([100, 50, 100]);
+                    break;
+                case 'error':
+                    navigator.vibrate([200, 100, 200, 100, 200]);
+                    break;
+                case 'light':
+                default:
+                    navigator.vibrate(50);
+                    break;
+            }
+        }
+    };
+    
+    // Enhanced touch interactions
+    $('.scan-btn').on('touchstart', function() {
+        $(this).addClass('active');
+        triggerHapticFeedback('light');
+    }).on('touchend touchcancel', function() {
+        $(this).removeClass('active');
+    });
+    
+    // Close feedback on tap
+    $('#scan-feedback').on('click', function() {
+        $(this).fadeOut(300);
+    });
+    
+    // Orientation change handling
+    $(window).on('orientationchange', function() {
+        setTimeout(function() {
+            // Recalculate camera preview size
+            const video = document.getElementById('camera-preview');
+            if (video && video.style.display !== 'none') {
+                video.style.height = 'auto';
+            }
+        }, 500);
+    });
+});
+</script>
 {% endblock %} 

@@ -17,7 +17,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('tasks.user_dashboard') }}" class="text-white">I Miei Task</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('tasks.admin_dashboard') if current_user.is_admin else url_for('tasks.user_dashboard') }}" class="text-white">{{ 'Dashboard Admin' if current_user.is_admin else 'I Miei Task' }}</a></li>
                 <li class="breadcrumb-item active text-white-50" aria-current="page">Notifiche</li>
             </ol>
         </nav>
@@ -35,8 +35,8 @@
                     <button type="button" class="action-btn mb-2 mb-md-0" onclick="TasksJS.markAllAsRead()">
                         <i class="fas fa-check-double"></i> Segna tutto come letto
                     </button>
-                    <a href="{{ url_for('tasks.user_dashboard') }}" class="action-btn">
-                        <i class="fas fa-arrow-left"></i> Torna ai Task
+                    <a href="{{ url_for('tasks.admin_dashboard') if current_user.is_admin else url_for('tasks.user_dashboard') }}" class="action-btn">
+                        <i class="fas fa-arrow-left"></i> {{ 'Torna alla Dashboard Admin' if current_user.is_admin else 'Torna ai Task' }}
                     </a>
                 </div>
             </div>

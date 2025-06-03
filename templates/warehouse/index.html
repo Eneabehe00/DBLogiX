@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
 
 {% block title %}Home - DBLogiX{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
 <style>
     /* Elegant Dark Theme - No Gradients */
     :root {
@@ -390,47 +392,33 @@
         </div>
     </div>
     
-    <!-- Statistics Overview -->
-    <div class="stats-overview">
-        <div class="row g-4">
-            <div class="col-md-3">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-boxes"></i>
-                    </div>
-                    <div class="stat-number">{{ products_count }}</div>
-                    <div class="stat-label">Prodotti</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card warning">
-                    <div class="stat-icon">
-                        <i class="fas fa-warehouse"></i>
-                    </div>
-                    <div class="stat-number">{{ task_tickets }}</div>
-                    <div class="stat-label">Dentro Task</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card success">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-number">{{ recent_tickets|length }}</div>
-                    <div class="stat-label">Ticket Recenti</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card info">
-                    <div class="stat-icon">
-                        <i class="fas fa-qrcode"></i>
-                    </div>
-                    <div class="stat-number">{{ recent_scans|length }}</div>
-                    <div class="stat-label">Scansioni</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': products_count,
+            'label': 'Prodotti',
+            'icon': 'fas fa-boxes',
+            'variant': ''
+        },
+        {
+            'value': task_tickets,
+            'label': 'Dentro Task',
+            'icon': 'fas fa-warehouse',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': recent_tickets|length,
+            'label': 'Ticket Recenti',
+            'icon': 'fas fa-check-circle',
+            'variant': 'stat-success'
+        },
+        {
+            'value': recent_scans|length,
+            'label': 'Scansioni',
+            'icon': 'fas fa-qrcode',
+            'variant': 'stat-info'
+        }
+    ]) }}
     
     <!-- Quick Actions -->
     <div class="row g-4 mb-4">
@@ -769,6 +757,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Make rows clickable to view detail

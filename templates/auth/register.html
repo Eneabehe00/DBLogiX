@@ -52,6 +52,14 @@
                             {{ form.is_admin.label }}
                         </label>
                     </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.screen_task(class="form-check-input", id="screen_task") }}
+                        <label class="form-check-label" for="screen_task">
+                            {{ form.screen_task.label }}
+                            <small class="text-muted d-block">Utente per visualizzazione schermo task tipo McDonald's</small>
+                        </label>
+                    </div>
                     {% endif %}
                     
                     <div class="d-grid gap-2">

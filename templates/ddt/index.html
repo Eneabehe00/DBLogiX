@@ -1,192 +1,12 @@
 {% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
+
 {% block title %}Documenti di Trasporto{% endblock %}
 
 {% block header_title %}Documenti di Trasporto{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
-<style>
-    /* Elegant Dark Theme - No Gradients */
-    :root {
-        --primary-dark: #2c3e50;
-        --secondary-dark: #34495e;
-        --accent-blue: #3498db;
-        --light-gray: #ecf0f1;
-        --medium-gray: #bdc3c7;
-        --text-dark: #2c3e50;
-        --white: #ffffff;
-        --border-light: #e9ecef;
-    }
-
-    .ddt-card {
-        transition: all 0.3s ease;
-        border: none;
-        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
-        border-radius: 15px;
-        overflow: hidden;
-    }
-    
-    .ddt-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
-    }
-    
-    .table th {
-        background-color: var(--primary-dark);
-        color: var(--white);
-        border: none;
-        font-weight: 600;
-        padding: 15px 12px;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-    
-    .table tbody tr {
-        transition: all 0.2s ease;
-        border-bottom: 1px solid var(--border-light);
-    }
-    
-    .table tbody tr:hover {
-        background-color: #f8f9ff;
-        transform: scale(1.01);
-        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
-    }
-    
-    .filter-section {
-        background-color: var(--light-gray);
-        border-radius: 15px;
-        padding: 25px;
-        margin-bottom: 25px;
-        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
-        border: 1px solid var(--border-light);
-    }
-    
-    .stats-card {
-        background-color: var(--primary-dark);
-        color: var(--white);
-        border-radius: 15px;
-        padding: 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-        border: none;
-        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
-    }
-    
-    .stats-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
-        background-color: var(--secondary-dark);
-    }
-    
-    .stats-card.bg-success {
-        background-color: #27ae60;
-    }
-    
-    .stats-card.bg-success:hover {
-        background-color: #229954;
-    }
-    
-    .stats-card.bg-warning {
-        background-color: #f39c12;
-    }
-    
-    .stats-card.bg-warning:hover {
-        background-color: #e67e22;
-    }
-    
-    .stats-card.bg-info {
-        background-color: var(--accent-blue);
-    }
-    
-    .stats-card.bg-info:hover {
-        background-color: #2980b9;
-    }
-    
-    .input-group .form-control {
-        border: 2px solid var(--border-light);
-        border-radius: 10px 0 0 10px;
-        padding: 12px 15px;
-        transition: all 0.3s ease;
-    }
-    
-    .input-group .form-control:focus {
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-        transform: scale(1.02);
-    }
-    
-    .input-group-text {
-        border: 2px solid var(--border-light);
-        border-left: none;
-        background-color: var(--primary-dark);
-        color: var(--white);
-        font-weight: 600;
-    }
-    
-    .badge.bg-primary {
-        background-color: var(--primary-dark) !important;
-        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
-    }
-    
-    .badge.bg-info {
-        background-color: var(--accent-blue) !important;
-        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-    }
-    
-    .badge.bg-secondary {
-        background-color: var(--secondary-dark) !important;
-        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
-    }
-    
-    .btn-outline-primary:hover {
-        background-color: var(--primary-dark);
-        border-color: var(--primary-dark);
-        transform: translateY(-1px);
-    }
-    
-    .btn-outline-success:hover {
-        background-color: #27ae60;
-        border-color: #27ae60;
-        transform: translateY(-1px);
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: var(--primary-dark);
-        border-color: var(--primary-dark);
-        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
-    }
-    
-    .pagination .page-link:hover {
-        background-color: var(--light-gray);
-        transform: translateY(-1px);
-        color: var(--primary-dark);
-    }
-    
-    .btn-primary {
-        background-color: var(--primary-dark);
-        border-color: var(--primary-dark);
-    }
-    
-    .btn-primary:hover {
-        background-color: var(--secondary-dark);
-        border-color: var(--secondary-dark);
-    }
-    
-    .alert-info {
-        background-color: #e8f5fe;
-        border-color: var(--accent-blue);
-        color: var(--primary-dark);
-    }
-    
-    .text-primary {
-        color: var(--primary-dark) !important;
-    }
-    
-    .text-success {
-        color: #27ae60 !important;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -206,84 +26,82 @@
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
                     <span class="text-white-50">{{ ddts.total if ddts else 0 }} documenti nel database</span>
+                    {% if search_query %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
                 </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
                 <div class="d-grid d-md-block gap-2">
                     <a href="{{ url_for('ddt.new') }}" class="btn btn-light action-btn">
                         <i class="fas fa-plus me-1"></i>Nuovo DDT
                     </a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <div class="container-fluid">
-    <!-- Enhanced Search and Filters -->
-    <div class="filter-section">
-        <div class="row g-4 align-items-end">
-            <div class="col-lg-4">
-                <label class="form-label fw-bold">🔍 Ricerca Avanzata</label>
-                <form method="GET" action="{{ url_for('ddt.index') }}" id="searchForm">
-                            <div class="input-group">
-                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
-                        <input type="text" name="search" id="searchInput" class="form-control" 
-                               placeholder="Cerca per cliente o ID DDT..." 
-                               value="{{ search_query or '' }}">
-                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </form>
-                <small class="text-muted">Cerca per nome cliente o ID del DDT</small>
-                </div>
-            <div class="col-lg-3">
-                <label class="form-label fw-bold">📅 Data Inizio</label>
-                            <input type="date" id="startDate" class="form-control">
-                        </div>
-            <div class="col-lg-3">
-                <label class="form-label fw-bold">📅 Data Fine</label>
-                            <input type="date" id="endDate" class="form-control">
-                        </div>
-            <div class="col-lg-2">
-                <button id="applyDateFilter" class="btn btn-primary w-100">
-                    <i class="fas fa-filter me-2"></i>Filtra
-                </button>
-            </div>
-        </div>
-        
-        <!-- Quick Stats -->
-        <div class="row mt-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-1">{{ ddts.total if ddts else 0 }}</h5>
-                    <small>Totale DDT</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-success">
-                    <h5 class="mb-1" id="visibleCount">{{ ddts.items|length if ddts else 0 }}</h5>
-                    <small>DDT visualizzati</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-warning">
-                    <h5 class="mb-1">{{ ddts.page if ddts else 1 }}</h5>
-                    <small>Pagina corrente</small>
-                        </div>
-                    </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-info">
-                    <h5 class="mb-1">{{ ddts.pages if ddts else 1 }}</h5>
-                    <small>Totale pagine</small>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca DDT',
+        'action': url_for('ddt.index'),
+        'search_param': 'search',
+        'placeholder': 'Cerca per cliente o ID DDT...',
+        'current_value': search_query or '',
+        'show_help': true,
+        'help_text': 'Ricerca per nome cliente o ID del DDT',
+        'preserve_params': {},
+        'advanced_filters': [
+            {
+                'id': 'startDate',
+                'name': 'start_date',
+                'label': '📅 Data inizio',
+                'type': 'date',
+                'value': request.args.get('start_date', '')
+            },
+            {
+                'id': 'endDate',
+                'name': 'end_date',
+                'label': '📅 Data fine',
+                'type': 'date',
+                'value': request.args.get('end_date', '')
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': ddts.total if ddts else 0,
+            'label': 'Totale DDT',
+            'icon': 'fas fa-file-invoice',
+            'variant': ''
+        },
+        {
+            'value': ddts.items|length if ddts else 0,
+            'label': 'DDT visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': ddts.page if ddts else 1,
+            'label': 'Pagina corrente',
+            'icon': 'fas fa-bookmark',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': ddts.pages if ddts else 1,
+            'label': 'Totale pagine',
+            'icon': 'fas fa-copy',
+            'variant': 'stat-info'
+        }
+    ]) }}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -297,27 +115,15 @@
     {% endwith %}
 
     <!-- Search Results Info -->
-    {% if search_query %}
-    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
-        <div>
-            <strong>Ricerca attiva:</strong> "{{ search_query }}"<br>
-            <small class="text-muted">
-                {% if ddts.total > 0 %}
-                    Trovati {{ ddts.total }} DDT corrispondenti in tutto il database
-                    {% if ddts.total > ddts.items|length %}
-                        • Visualizzando {{ ddts.items|length }} risultati (pagina {{ ddts.page }} di {{ ddts.pages }})
-                    {% endif %}
-                {% else %}
-                    Nessun DDT trovato per questa ricerca
-                {% endif %}
-            </small>
-        </div>
-        <a href="{{ url_for('ddt.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
-            <i class="fas fa-times me-1"></i>Cancella ricerca
-        </a>
-    </div>
-    {% endif %}
+    {{ render_search_results_info({
+        'search_query': search_query,
+        'total_results': ddts.total if ddts else 0,
+        'visible_results': ddts.items|length if ddts else 0,
+        'current_page': ddts.page if ddts else 1,
+        'total_pages': ddts.pages if ddts else 1,
+        'clear_url': url_for('ddt.index'),
+        'entity_name': 'DDT'
+    }) }}
 
     <!-- Enhanced DDT List -->
     <div class="ddt-card card shadow-sm">
@@ -356,9 +162,6 @@
                             <th>
                                 <i class="fas fa-tag me-1"></i>Origine
                             </th>
-                            <th>
-                                <i class="fas fa-cogs me-1"></i>Azioni
-                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -394,16 +197,6 @@
                                     <i class="fas fa-weight me-1"></i>Bilancia
                                 </span>
                                 {% endif %}
-                            </td>
-                            <td data-label="Azioni">
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary view-btn" data-url="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" title="Visualizza">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-outline-success print-btn" data-id="{{ ddt.id }}" title="Stampa">
-                                        <i class="fas fa-print"></i>
-                                    </button>
-                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -630,22 +423,6 @@
                 updateVisibleCount();
             });
         }
-        
-        // Enhanced button handlers for actions
-        document.querySelectorAll('.view-btn').forEach(function(button) {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                window.location.href = this.dataset.url;
-            });
-        });
-        
-        document.querySelectorAll('.print-btn').forEach(function(button) {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const ddtId = this.dataset.id;
-                window.open('{{ url_for("ddt.export", ddt_id=0) }}'.replace('0', ddtId), '_blank');
-            });
-        });
         
         // Make rows clickable to view detail
         tableRows.forEach(function(row) {

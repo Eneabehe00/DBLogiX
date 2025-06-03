@@ -800,7 +800,7 @@ function displaySearchResults(tickets) {
 function addTicket(ticketId, empresaId, event) {
     // Verifica se già presente
     if (currentTickets.find(t => t.id_ticket === ticketId)) {
-        alert('Questo ticket è già incluso nel DDT');
+        showNotification('Questo ticket è già incluso nel DDT', 'warning');
         return;
     }
     
@@ -849,14 +849,14 @@ function addTicket(ticketId, empresaId, event) {
             btn.closest('.list-group-item').remove();
             
         } else {
-            alert(data.message || 'Errore nell\'aggiunta del ticket');
+            showNotification(data.message || 'Errore nell\'aggiunta del ticket', 'error');
             btn.innerHTML = originalHTML;
             btn.disabled = false;
         }
     })
     .catch(error => {
         console.error('Errore:', error);
-        alert('Errore di rete');
+        showNotification('Errore di rete', 'error');
         btn.innerHTML = originalHTML;
         btn.disabled = false;
     });
@@ -1007,12 +1007,12 @@ function removeTicket(ticketId) {
                     
                     console.log('Ticket rimosso dal preview e stato aggiornato nel database');
                 } else {
-                    alert('Errore nella rimozione del ticket: ' + (data.message || 'Errore sconosciuto'));
+                    showNotification('Errore nella rimozione del ticket: ' + (data.message || 'Errore sconosciuto'), 'error');
                 }
             })
             .catch(error => {
                 console.error('Errore:', error);
-                alert('Errore di rete durante la rimozione del ticket');
+                showNotification('Errore di rete durante la rimozione del ticket', 'error');
             });
         }
     }
@@ -1107,7 +1107,7 @@ document.getElementById('final-ddt-form').addEventListener('submit', function(e)
     
     if (totalTickets === 0) {
         e.preventDefault();
-        alert('Devi selezionare almeno un ticket per creare il DDT.');
+        showNotification('Devi selezionare almeno un ticket per creare il DDT.', 'warning');
         return false;
     }
     
@@ -1397,14 +1397,14 @@ document.getElementById('save-manual-ticket').addEventListener('click', function
             const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
             modal.hide();
             
-            alert('Ticket manuale creato con successo!');
+            showNotification('Ticket manuale creato con successo!', 'success');
         } else {
-            alert(data.message || 'Errore nella creazione del ticket');
+            showNotification(data.message || 'Errore nella creazione del ticket', 'error');
         }
     })
     .catch(error => {
         console.error('Errore:', error);
-        alert('Errore di rete');
+        showNotification('Errore di rete', 'error');
     })
     .finally(() => {
         btn.innerHTML = '<i class="fas fa-save me-1"></i>Crea Ticket';
@@ -1482,46 +1482,6 @@ document.querySelectorAll('.form-control').forEach(input => {
         this.parentElement.style.transform = 'scale(1)';
     });
 });
-
-// Notifiche eleganti invece degli alert
-function showElegantNotification(message, type = 'success') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} position-fixed`;
-    notification.style.cssText = `
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 350px;
-        border-radius: 0.75rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    `;
-    notification.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
-    setTimeout(() => {
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
-}
-
-// Override alert globale per notifiche eleganti
-const originalAlert = window.alert;
-window.alert = function(message) {
-    showElegantNotification(message, 'info');
-};
 
 // Gestione responsive avanzata
 function handleResponsiveLayout() {

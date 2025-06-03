@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
 
 {% block title %}Gestione Tickets{% endblock %}
 
@@ -6,6 +7,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
 <style>
     /* Elegant Dark Theme - No Gradients */
     :root {
@@ -112,7 +114,7 @@
     }
     
     .stats-card.bg-danger:hover {
-        background-color: #c0392b;
+        background-color: var(--danger-red);
     }
     
     .input-group .form-control {
@@ -268,6 +270,59 @@
         background-color: rgba(52, 73, 94, 0.15);
         color: var(--secondary-dark);
     }
+    
+    /* Status Filter Improvements */
+    .status-filters .btn {
+        padding: 12px 16px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .status-filters .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    
+    .status-filters .btn.active {
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .status-filters .badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
+    @media (max-width: 991.98px) {
+        .status-filters .btn {
+            font-size: 0.9rem;
+            padding: 10px 12px;
+            min-height: 44px;
+        }
+        
+        .status-filters .btn i {
+            font-size: 0.85rem;
+        }
+    }
+    
+    @media (max-width: 575.98px) {
+        .status-filters .btn {
+            font-size: 0.85rem;
+            padding: 8px 10px;
+            min-height: 40px;
+        }
+        
+        .status-filters .btn .badge {
+            display: none;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -319,73 +374,65 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Enhanced Search and Filters -->
-    <div class="filter-section">
-        <div class="row g-4 align-items-end">
-            <div class="col-lg-5">
-                <label class="form-label fw-bold">🔍 Ricerca Avanzata Tickets</label>
-                <form method="GET" action="{{ url_for('warehouse.tickets') }}" id="searchForm">
-                    <input type="hidden" name="status" value="{{ current_status or '' }}">
-                    <input type="hidden" name="start_date" value="{{ request.args.get('start_date', '') }}">
-                    <input type="hidden" name="end_date" value="{{ request.args.get('end_date', '') }}">
-                    <div class="input-group">
-                        <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
-                        <input type="text" name="query" id="searchInput" class="form-control" 
-                               placeholder="Cerca per #numero, ID, codice a barre, prodotto..." 
-                               value="{{ search or '' }}">
-                        <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn btn-primary" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </form>
-                <small class="text-muted">Usa #123 per ticket numero 123, oppure cerca per prodotto</small>
-            </div>
-            <div class="col-lg-3">
-                <label class="form-label fw-bold">📅 Data inizio</label>
-                <input type="date" id="startDate" class="form-control" value="{{ request.args.get('start_date', '') }}">
-            </div>
-            <div class="col-lg-3">
-                <label class="form-label fw-bold">📅 Data fine</label>
-                <input type="date" id="endDate" class="form-control" value="{{ request.args.get('end_date', '') }}">
-            </div>
-            <div class="col-lg-1">
-                <button id="applyDateFilter" class="btn btn-primary w-100">
-                    <i class="fas fa-filter me-1"></i>Filtra
-                </button>
-            </div>
-        </div>
-        
-        <!-- Quick Stats -->
-        <div class="row mt-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-1">{{ tickets.total if tickets.total else 0 }}</h5>
-                    <small>Totale Tickets</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-success">
-                    <h5 class="mb-1" id="visibleCount">{{ tickets.items|length }}</h5>
-                    <small>Tickets visualizzati</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-warning">
-                    <h5 class="mb-1">{{ expiring_count or 0 }}</h5>
-                    <small>In Scadenza</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-danger">
-                    <h5 class="mb-1">{{ expired_count or 0 }}</h5>
-                    <small>Scaduti</small>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Tickets',
+        'action': url_for('warehouse.tickets'),
+        'search_param': 'query',
+        'placeholder': 'Cerca per #numero, ID, codice a barre, prodotto...',
+        'current_value': search or '',
+        'show_help': true,
+        'help_text': 'Usa #123 per ticket numero 123, oppure cerca per prodotto',
+        'preserve_params': {
+            'status': current_status or '',
+            'start_date': request.args.get('start_date', ''),
+            'end_date': request.args.get('end_date', '')
+        },
+        'advanced_filters': [
+            {
+                'id': 'startDate',
+                'name': 'start_date',
+                'label': '📅 Data inizio',
+                'type': 'date',
+                'value': request.args.get('start_date', '')
+            },
+            {
+                'id': 'endDate',
+                'name': 'end_date',
+                'label': '📅 Data fine',
+                'type': 'date',
+                'value': request.args.get('end_date', '')
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': tickets.total if tickets.total else 0,
+            'label': 'Totale Tickets',
+            'icon': 'fas fa-ticket-alt',
+            'variant': ''
+        },
+        {
+            'value': tickets.items|length,
+            'label': 'Tickets visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': expiring_count or 0,
+            'label': 'In Scadenza',
+            'icon': 'fas fa-exclamation-triangle',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': expired_count or 0,
+            'label': 'Scaduti',
+            'icon': 'fas fa-times-circle',
+            'variant': 'stat-danger'
+        }
+    ]) }}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -404,85 +451,66 @@
             <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Stato Tickets</h5>
         </div>
         <div class="card-body">
-            <div class="btn-group w-100 overflow-auto" role="group">
-                <a href="{{ url_for('warehouse.tickets', query=search or '') }}" class="btn btn-outline-primary {% if not current_status %}active{% endif %}">
-                    <i class="fas fa-list-ul me-1"></i> Tutti
-                </a>
-                <a href="{{ url_for('warehouse.tickets', status='in_task', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-primary {% if current_status == 'in_task' %}active{% endif %}">
-                    <i class="fas fa-tasks me-1"></i> Dentro Task
-                    {% if task_count > 0 %}
-                        <span class="badge bg-primary ms-1">{{ task_count }}</span>
-                    {% endif %}
-                </a>
-                <a href="{{ url_for('warehouse.tickets', status='processed', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success {% if current_status == 'processed' %}active{% endif %}">
-                    <i class="fas fa-check-circle me-1"></i> Processati
-                </a>
-                <a href="{{ url_for('warehouse.tickets', status='expired', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expired' %}active{% endif %}">
-                    <i class="fas fa-times-circle me-1"></i> Scaduti
-                    {% if expired_count > 0 %}
-                    <span class="badge bg-danger ms-1">{{ expired_count }}</span>
-                    {% endif %}
-                </a>
-                <a href="{{ url_for('warehouse.tickets', status='expiring', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger {% if current_status == 'expiring' %}active{% endif %}">
-                    <i class="fas fa-exclamation-circle me-1"></i> Scadenza
-                    {% if expiring_count > 0 %}
-                    <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
-                    {% endif %}
-                </a>
+            <div class="row g-2">
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', query=search or '') }}" class="btn btn-outline-primary w-100 {% if not current_status %}active{% endif %}">
+                        <i class="fas fa-list-ul me-1"></i> Tutti
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='in_task', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-primary w-100 {% if current_status == 'in_task' %}active{% endif %}">
+                        <i class="fas fa-tasks me-1"></i> Dentro Task
+                        {% if task_count > 0 %}
+                            <span class="badge bg-primary ms-1">{{ task_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='processed', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success w-100 {% if current_status == 'processed' %}active{% endif %}">
+                        <i class="fas fa-check-circle me-1"></i> Processati
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='expired', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger w-100 {% if current_status == 'expired' %}active{% endif %}">
+                        <i class="fas fa-times-circle me-1"></i> Scaduti
+                        {% if expired_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ expired_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='expiring', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger w-100 {% if current_status == 'expiring' %}active{% endif %}">
+                        <i class="fas fa-exclamation-circle me-1"></i> Scadenza
+                        {% if expiring_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Search Results Info -->
-    {% if search %}
-    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
-        <div>
-            <strong>Ricerca attiva:</strong> "{{ search }}"<br>
-            <small class="text-muted">
-                {% if tickets and tickets.total > 0 %}
-                    Trovati {{ tickets.total }} tickets corrispondenti in tutto il database
-                    {% if tickets.total > tickets.items|length %}
-                        • Visualizzando {{ tickets.items|length }} risultati (pagina {{ tickets.page }} di {{ tickets.pages }})
-                    {% endif %}
-                {% else %}
-                    Nessun ticket trovato per questa ricerca
-                {% endif %}
-            </small>
-        </div>
-        <a href="{{ url_for('warehouse.tickets', status=current_status, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-primary btn-sm ms-auto">
-            <i class="fas fa-times me-1"></i>Cancella ricerca
-        </a>
-    </div>
-    {% endif %}
+    {{ render_search_results_info({
+        'search_query': search,
+        'total_results': tickets.total if tickets else 0,
+        'visible_results': tickets.items|length if tickets else 0,
+        'current_page': tickets.page if tickets else 1,
+        'total_pages': tickets.pages if tickets else 1,
+        'clear_url': url_for('warehouse.tickets', status=current_status, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')),
+        'entity_name': 'tickets'
+    }) }}
 
     <!-- Active Filters Info -->
     {% if request.args.get('start_date') or request.args.get('end_date') %}
-    <div class="alert alert-info mb-4">
-        <div class="d-flex flex-wrap align-items-center">
-            <span class="me-2 mb-2">Filtri data attivi:</span>
-            
-            {% if request.args.get('start_date') or request.args.get('end_date') %}
-            <span class="badge-soft badge-soft-primary me-2 mb-2 py-2 px-3">
-                <i class="fas fa-calendar me-1"></i> 
-                {% if request.args.get('start_date') and request.args.get('end_date') %}
-                    Dal {{ request.args.get('start_date') }} al {{ request.args.get('end_date') }}
-                {% elif request.args.get('start_date') %}
-                    Da {{ request.args.get('start_date') }}
-                {% else %}
-                    Fino al {{ request.args.get('end_date') }}
-                {% endif %}
-                <a href="{{ url_for('warehouse.tickets', status=current_status, query=search or '') }}" class="ms-2 text-primary">
-                    <i class="fas fa-times"></i>
-                </a>
-            </span>
-            {% endif %}
-            
-            <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-sm btn-outline-secondary ms-auto mb-2">
-                <i class="fas fa-times me-1"></i> Rimuovi tutti i filtri
-            </a>
-        </div>
-    </div>
+    {{ render_active_filters([
+        {
+            'label': 'Filtro data',
+            'value': (request.args.get('start_date', '') + ' - ' + request.args.get('end_date', '')) if request.args.get('start_date') and request.args.get('end_date') else ('Da ' + request.args.get('start_date', '')) if request.args.get('start_date') else ('Fino al ' + request.args.get('end_date', '')),
+            'icon': 'fas fa-calendar',
+            'clear_all_url': url_for('warehouse.tickets')
+        }
+    ]) }}
     {% endif %}
 
     <!-- Enhanced Tickets List -->
@@ -687,6 +715,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize tooltips

@@ -235,7 +235,7 @@ def new():
             db.session.execute(sql_cliente_t_b, params_t_b)
             
             db.session.commit()
-            flash('Cliente creato con successo e sincronizzato nelle tabelle di configurazione!', 'success')
+            flash('Cliente creato e sincronizzato!', 'success')
             return redirect(url_for('clients.index'))
         
         except SQLAlchemyError as e:
@@ -370,7 +370,7 @@ def edit(id):
             # Let the database handle the timestamp
             
             db.session.commit()
-            flash('Cliente aggiornato con successo!', 'success')
+            flash('Cliente aggiornato!', 'success')
             return redirect(url_for('clients.view', id=client.IdCliente))
         
         except SQLAlchemyError as e:
@@ -403,7 +403,7 @@ def delete(id):
         # Poi eliminiamo il record principale
         db.session.delete(client)
         db.session.commit()
-        flash('Cliente e tutti i record correlati eliminati con successo!', 'success')
+        flash('Cliente eliminato!', 'success')
     except SQLAlchemyError as e:
         db.session.rollback()
         flash(f'Errore nell\'eliminazione del cliente: {str(e)}', 'danger')
@@ -540,7 +540,7 @@ def import_csv():
                         clients_imported += 1
                 
                 db.session.commit()
-                flash(f'{clients_imported} clienti importati con successo!', 'success')
+                flash(f'{clients_imported} clienti importati!', 'success')
                 
             except Exception as e:
                 db.session.rollback()
@@ -555,6 +555,7 @@ def import_csv():
 
 @clients_bp.route('/export_csv')
 @login_required
+@admin_required
 def export_csv():
     """Export clients to CSV file"""
     try:

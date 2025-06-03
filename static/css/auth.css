@@ -137,6 +137,29 @@
     color: #adb5bd;
 }
 
+/* Admin Registration Button */
+.admin-actions {
+    margin: 1rem 0;
+}
+
+.admin-actions .btn {
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #6c757d, #495057);
+    border-color: #495057;
+    color: white;
+}
+
+.admin-actions .btn:hover {
+    background: linear-gradient(135deg, #495057, #343a40);
+    border-color: #343a40;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 767.98px) {
     .login-container {

@@ -369,9 +369,16 @@
                 btnCheckout.innerHTML = '<i class="fas fa-times-circle me-2"></i>Ticket Scaduto';
                 btnCheckout.classList.remove('btn-success');
                 btnCheckout.classList.add('btn-outline-danger');
-            } else { // Dentro Task / Available
+            } else if (currentScanData.enviado === "10") { // In Task
                 resultTicketStatus.className = 'badge bg-primary';
-                resultTicketStatus.textContent = 'Dentro Task';
+                resultTicketStatus.textContent = 'Task';
+                btnCheckout.disabled = false; // Can checkout from task
+                btnCheckout.innerHTML = '<i class="fas fa-check-circle me-2"></i>Scaricare';
+                btnCheckout.classList.remove('btn-outline-success', 'btn-outline-info', 'btn-outline-secondary', 'btn-outline-danger');
+                btnCheckout.classList.add('btn-success');
+            } else { // Available/Giacenza
+                resultTicketStatus.className = 'badge bg-warning';
+                resultTicketStatus.textContent = 'Giacenza';
             }
 
             if (currentScanData.product) {

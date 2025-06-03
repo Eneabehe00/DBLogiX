@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
 
 {% block title %}Gestione Sezioni - DBLogiX{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/sections.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
 <style>
     /* Elegant Dark Theme - No Gradients */
     :root {
@@ -181,6 +183,7 @@
 
 {% block extra_js %}
 {{ super() }}
+<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Enhanced search functionality - prioritize server-side search
@@ -199,24 +202,19 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // If search term is long enough, use server-side search
             if (searchTerm.length >= 2) {
-                searchTimeout = setTimeout(function() {
-                    // Auto-redirect for server-side search
-                    window.location.href = '{{ url_for("sections.index") }}?query=' + encodeURIComponent(searchTerm);
-                }, 800); // Longer delay for server search
+                searchTimeout = setTimeout(() => {
+                    // Submit the form for server-side search
+                    const form = this.closest('form');
+                    if (form) {
+                        form.submit();
+                    }
+                }, 800); // 800ms delay for auto-submit
             } else if (searchTerm.length === 0) {
-                // Clear search immediately if input is empty
-                window.location.href = '{{ url_for("sections.index") }}';
-            }
-        });
-        
-        // Handle Enter key for immediate search
-        searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
+                // Clear search immediately when empty
                 clearTimeout(searchTimeout);
-                if (this.value.trim().length > 0) {
-                    window.location.href = '{{ url_for("sections.index") }}?query=' + encodeURIComponent(this.value.trim());
-                }
+                searchTimeout = setTimeout(() => {
+                    window.location.href = "{{ url_for('sections.index') }}";
+                }, 300);
             }
         });
     }
@@ -224,77 +222,37 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear search functionality
     if (clearSearchBtn) {
         clearSearchBtn.addEventListener('click', function() {
-            window.location.href = '{{ url_for("sections.index") }}';
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+                // Navigate to clear URL
+                window.location.href = "{{ url_for('sections.index') }}";
+            }
         });
     }
     
-    // Add search hints
-    if (searchInput && !hasActiveSearch) {
-        const originalPlaceholder = searchInput.placeholder;
-        searchInput.addEventListener('focus', function() {
-            this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
-        });
-        searchInput.addEventListener('blur', function() {
-            this.placeholder = originalPlaceholder;
-        });
-    }
-    
-    // Show search status
-    if (hasActiveSearch) {
-        // Add visual indicator that server search is active
-        const searchIcon = document.querySelector('.search-input-group i');
-        if (searchIcon) {
-            searchIcon.className = 'fas fa-search text-success';
-            searchIcon.title = 'Ricerca attiva su tutte le sezioni';
-        }
-    }
-    
-    // Make table rows clickable
+    // Enhanced table interactions
     const sectionRows = document.querySelectorAll('.section-row');
-    sectionRows.forEach(function(row) {
-        const url = row.dataset.url;
-        if (url) {
-            row.style.cursor = 'pointer';
-            row.addEventListener('click', function(e) {
-                // Don't navigate if clicking on buttons or form elements
-                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
-                    e.target.tagName === 'INPUT') {
-                    return;
+    sectionRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Only navigate if not clicking on a button or link
+            if (!e.target.closest('button') && !e.target.closest('a')) {
+                const url = this.dataset.url;
+                if (url) {
+                    window.location.href = url;
                 }
-                window.location.href = url;
-            });
-        }
+            }
+        });
+        
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
     });
-    
-    // Make mobile cards clickable
-    const sectionCards = document.querySelectorAll('.section-card[data-section-url]');
-    sectionCards.forEach(function(card) {
-        const url = card.dataset.sectionUrl;
-        if (url) {
-            card.style.cursor = 'pointer';
-            card.addEventListener('click', function(e) {
-                // Don't navigate if clicking on buttons or form elements
-                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
-                    e.target.tagName === 'INPUT') {
-                    return;
-                }
-                window.location.href = url;
-            });
-        }
-    });
-    
-    // Add keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.key === 'f') {
-            e.preventDefault();
-            if (searchInput) searchInput.focus();
-        }
-    });
-
-    // Console debugging
-    console.log('Sections page loaded with enhanced features');
-    console.log('Total sections on page:', sectionRows.length);
-    console.log('Active search:', hasActiveSearch);
 });
 </script>
 {% endblock %}
@@ -337,33 +295,46 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <div class="container-fluid">
-    <!-- Enhanced Search Section -->
-    <div class="filter-section">
-        <div class="row g-4 align-items-end">
-            <div class="col-lg-8">
-                <label class="form-label fw-bold">🔍 Ricerca Avanzata Sezioni</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
-                    <input type="text" id="liveSearch" class="form-control" 
-                           placeholder="Cerca per nome sezione o ID..." 
-                           value="{{ query or '' }}">
-                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <small class="text-muted">Ricerca in tempo reale attraverso nome e ID sezione</small>
-            </div>
-            <div class="col-lg-4">
-                <div class="stats-card">
-                    <div class="stats-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
-                    <div class="stats-number">{{ sections.total if sections else 0 }}</div>
-                    <div class="stats-label">Sezioni Totali</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Sezioni',
+        'action': url_for('sections.index'),
+        'search_param': 'query',
+        'placeholder': 'Cerca sezioni per nome o ID...',
+        'current_value': query or '',
+        'show_help': true,
+        'help_text': 'Ricerca in tempo reale attraverso nome e ID sezione',
+        'preserve_params': {},
+        'advanced_filters': []
+    }) }}
+
+    <!-- Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'title': 'Totale Sezioni',
+            'value': sections.total if sections else 0,
+            'icon': 'fas fa-tags',
+            'color': 'primary'
+        },
+        {
+            'title': 'Con Articoli',
+            'value': section_counts.keys()|length if section_counts else 0,
+            'icon': 'fas fa-box',
+            'color': 'success'
+        },
+        {
+            'title': 'Pagina Corrente',
+            'value': sections.page if sections and sections.pages > 1 else 1,
+            'icon': 'fas fa-file-alt',
+            'color': 'info'
+        },
+        {
+            'title': 'Risultati Visualizzati',
+            'value': sections.items|length if sections else 0,
+            'icon': 'fas fa-eye',
+            'color': 'warning'
+        }
+    ]) }}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -377,29 +348,24 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endwith %}
 
     <!-- Search Results Info -->
-    {% if query %}
-    <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
-        <i class="fas fa-search me-3" style="font-size: 1.2rem;"></i>
-        <div>
-            <strong>Ricerca attiva:</strong> "{{ query }}"<br>
-            <small class="text-muted">
-                {% if sections and sections.items %}
-                    Trovate {{ sections.total }} sezioni corrispondenti
-                {% else %}
-                    Nessuna sezione trovata per questa ricerca
-                {% endif %}
-            </small>
-        </div>
-        <a href="{{ url_for('sections.index') }}" class="btn btn-outline-primary btn-sm ms-auto">
-            <i class="fas fa-times me-1"></i>Cancella ricerca
-        </a>
-    </div>
-    {% endif %}
+    {{ render_search_results_info({
+        'is_search_active': query is defined and query,
+        'search_term': query,
+        'total_results': sections.total if sections else 0,
+        'visible_results': sections.items|length if sections else 0,
+        'current_page': sections.page if sections else 1,
+        'total_pages': sections.pages if sections else 1,
+        'clear_url': url_for('sections.index'),
+        'paginated': sections.pages > 1 if sections else false
+    }) }}
 
     <!-- Sections List -->
     <div class="card shadow-sm">
         <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Sezioni</h5>
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2 text-primary"></i>Elenco Sezioni
+                <span class="badge bg-primary ms-2">{{ sections.total if sections else 0 }} totali</span>
+            </h5>
             {% if sections and sections.items %}
             <small class="text-muted">Pagina {{ sections.page }} di {{ sections.pages }}</small>
             {% endif %}
@@ -419,16 +385,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p>Si è verificato un problema durante la ricerca. Visualizzazione delle sezioni non disponibile.</p>
                 <p>Per riprovare, <a href="{{ url_for('sections.index') }}">clicca qui</a> per tornare alla lista completa.</p>
             </div>
-            {% else %}
-            {% if sections.items|length == 0 and query %}
+            {% elif sections and sections.items|length == 0 and not query %}
+            <div class="p-5 text-center">
+                <i class="fas fa-tags text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessuna sezione trovata</h5>
+                <p class="text-muted">Non ci sono sezioni nel sistema. Clicca su "Nuova Sezione" per aggiungerne una.</p>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('sections.new') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Aggiungi Sezione
+                </a>
+                {% endif %}
+            </div>
+            {% elif sections and sections.items|length == 0 and query %}
             <div class="alert alert-info m-3">
                 <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
                 <p>La ricerca per "{{ query }}" non ha prodotto risultati. Prova con un termine diverso o consulta la lista completa.</p>
                 <a href="{{ url_for('sections.index') }}" class="btn btn-primary mt-2">Mostra tutte le sezioni</a>
             </div>
-            {% endif %}
-            
-            {% if sections.items|length > 0 %}
+            {% elif sections and sections.items|length > 0 %}
             <div class="d-none d-md-block">
                 <div class="table-responsive">
                     <table class="table table-hover" id="sectionsTable">
@@ -553,18 +527,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         {% endif %}
                     </ul>
                 </nav>
-            </div>
-            {% endif %}
-            {% else %}
-            <div class="p-5 text-center">
-                <i class="fas fa-tags text-muted mb-3" style="font-size: 4rem;"></i>
-                <h5>Nessuna sezione trovata</h5>
-                <p class="text-muted">Non ci sono sezioni nel sistema. Clicca su "Nuova Sezione" per aggiungerne una.</p>
-                {% if current_user.is_admin %}
-                <a href="{{ url_for('sections.new') }}" class="btn btn-primary mt-2">
-                    <i class="fas fa-plus me-2"></i>Aggiungi Sezione
-                </a>
-                {% endif %}
             </div>
             {% endif %}
             {% endif %}

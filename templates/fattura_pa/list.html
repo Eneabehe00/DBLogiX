@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
 
 {% block title %}Fatture PA - DBLogiX{% endblock %}
 
@@ -14,165 +15,227 @@
     <div class="container-fluid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
                 <li class="breadcrumb-item active text-white-50" aria-current="page">Fatture PA</li>
             </ol>
         </nav>
         <div class="row align-items-center mt-3">
             <div class="col-md-8">
                 <h1 class="page-title mb-0">
-                    <i class="fas fa-file-alt me-2"></i>Fatture PA
+                    <i class="fas fa-file-invoice me-2"></i>Fatture PA
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
                     <span class="text-white-50">{{ invoices|length }} fatture elettroniche generate</span>
+                    {% if request.args.get('query') %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
                 </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ddt.index') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-plus me-1"></i>Crea da DDT
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <div class="container-fluid">
-    <!-- Search and Filter Section -->
-    <div class="search-filter-section">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="search-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Cerca fatture per numero o cliente...">
-                </div>
-            </div>
-            <div class="col-md-3">
-                <select class="form-select" id="clientFilter">
-                    <option value="">Tutti i clienti</option>
-                    <!-- Options will be populated by JavaScript -->
-                </select>
-            </div>
-            <div class="col-md-2">
-                <input type="date" class="form-control" id="dateFromFilter" placeholder="Da">
-            </div>
-            <div class="col-md-2">
-                <input type="date" class="form-control" id="dateToFilter" placeholder="A">
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-outline-secondary" id="clearFilters">
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Fatture PA',
+        'action': url_for('fattura_pa.list_invoices'),
+        'search_param': 'query',
+        'placeholder': 'Cerca per numero fattura, cliente, DDT...',
+        'current_value': request.args.get('query', ''),
+        'show_help': true,
+        'help_text': 'Cerca per numero fattura, nome cliente o riferimento DDT',
+        'preserve_params': {
+            'start_date': request.args.get('start_date', ''),
+            'end_date': request.args.get('end_date', '')
+        },
+        'advanced_filters': [
+            {
+                'id': 'startDate',
+                'name': 'start_date',
+                'label': '📅 Data inizio',
+                'type': 'date',
+                'value': request.args.get('start_date', '')
+            },
+            {
+                'id': 'endDate',
+                'name': 'end_date',
+                'label': '📅 Data fine',
+                'type': 'date',
+                'value': request.args.get('end_date', '')
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': invoices|length,
+            'label': 'Fatture Totali',
+            'icon': 'fas fa-file-invoice',
+            'variant': ''
+        },
+        {
+            'value': invoices|length,
+            'label': 'Fatture visualizzate',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': 'XML',
+            'label': 'Formato PA',
+            'icon': 'fas fa-code',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': 0,
+            'label': 'Questo Mese',
+            'icon': 'fas fa-calendar-month',
+            'variant': 'stat-info',
+            'id': 'monthlyCount'
+        }
+    ]) }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Search Results Info -->
+    {{ render_search_results_info({
+        'search_query': request.args.get('query'),
+        'total_results': invoices|length,
+        'visible_results': invoices|length,
+        'clear_url': url_for('fattura_pa.list_invoices'),
+        'entity_name': 'fatture'
+    }) }}
+
+    <!-- Active Filters Info -->
+    {% if request.args.get('start_date') or request.args.get('end_date') %}
+    <div class="alert alert-info mb-4">
+        <div class="d-flex flex-wrap align-items-center">
+            <span class="me-2 mb-2">Filtri data attivi:</span>
+            
+            <span class="badge-soft badge-soft-primary me-2 mb-2 py-2 px-3">
+                <i class="fas fa-calendar me-1"></i> 
+                {% if request.args.get('start_date') and request.args.get('end_date') %}
+                    Dal {{ request.args.get('start_date') }} al {{ request.args.get('end_date') }}
+                {% elif request.args.get('start_date') %}
+                    Da {{ request.args.get('start_date') }}
+                {% else %}
+                    Fino al {{ request.args.get('end_date') }}
+                {% endif %}
+                <a href="{{ url_for('fattura_pa.list_invoices', query=request.args.get('query', '')) }}" class="ms-2 text-primary">
                     <i class="fas fa-times"></i>
+                </a>
+            </span>
+            
+            <a href="{{ url_for('fattura_pa.list_invoices') }}" class="btn btn-sm btn-outline-secondary ms-auto mb-2">
+                <i class="fas fa-times me-1"></i> Rimuovi tutti i filtri
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Enhanced Invoices List -->
+    <div class="fattura-card card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Fatture PA</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportInvoices()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
                 </button>
             </div>
         </div>
-        
-        <!-- Active Filters Display -->
-        <div class="row mt-3" id="activeFilters" style="display: none;">
-            <div class="col-12">
-                <div class="d-flex flex-wrap gap-2" id="filterBadges">
-                    <!-- Filter badges will be inserted here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="fattura-card">
-                <div class="card-body text-center">
-                    <div class="stat-icon">
-                        <i class="fas fa-file-alt text-primary"></i>
-                    </div>
-                    <div class="stat-value text-primary">{{ invoices|length }}</div>
-                    <div class="stat-label">Fatture Totali</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="fattura-card">
-                <div class="card-body text-center">
-                    <div class="stat-icon">
-                        <i class="fas fa-calendar-day text-success"></i>
-                    </div>
-                    <div class="stat-value text-success" id="monthlyCount">0</div>
-                    <div class="stat-label">Questo Mese</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="fattura-card">
-                <div class="card-body text-center">
-                    <div class="stat-icon">
-                        <i class="fas fa-download text-info"></i>
-                    </div>
-                    <div class="stat-value text-info">{{ invoices|length }}</div>
-                    <div class="stat-label">Disponibili</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="fattura-card">
-                <div class="card-body text-center">
-                    <div class="stat-icon">
-                        <i class="fas fa-file-export text-warning"></i>
-                    </div>
-                    <div class="stat-value text-warning">XML</div>
-                    <div class="stat-label">Formato</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Invoices Table -->
-    <div class="fattura-card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Elenco Fatture
-            </h5>
-            <span class="badge bg-primary" id="invoiceCount">{{ invoices|length }} fatture</span>
-        </div>
         <div class="card-body p-0">
             {% if invoices %}
-                <div class="table-responsive">
-                <table class="fattura-table table table-hover mb-0" id="invoicesTable">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="invoicesTable">
                     <thead>
-                            <tr>
-                            <th>Numero Fattura</th>
-                            <th>Data</th>
-                            <th>Cliente</th>
-                                <th>Nome File</th>
-                                <th>Dimensione</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for invoice in invoices %}
-                        <tr class="invoice-row" data-filename="{{ invoice.filename }}" style="cursor: pointer;">
+                        <tr>
+                            <th>
+                                <i class="fas fa-hashtag me-1"></i>Numero
+                            </th>
+                            <th>
+                                <i class="fas fa-calendar me-1"></i>Data
+                            </th>
+                            <th>
+                                <i class="fas fa-user me-1"></i>Cliente
+                            </th>
+                            <th>
+                                <i class="fas fa-truck me-1"></i>DDT Rif.
+                            </th>
+                            <th>
+                                <i class="fas fa-file me-1"></i>Nome File
+                            </th>
+                            <th>
+                                <i class="fas fa-weight-hanging me-1"></i>Dimensione
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr data-filename="{{ invoice.filename }}" data-href="{{ url_for('fattura_pa.invoice_detail_page', filename=invoice.filename) }}" class="table-row clickable-row">
                             <td data-label="Numero">
-                                <span class="fw-bold">{{ invoice.filename.split('_')[2].split('.')[0] if '_' in invoice.filename else 'N/A' }}</span>
+                                <span class="badge bg-primary">
+                                    {{ invoice.filename.split('_')[2].split('.')[0] if '_' in invoice.filename else 'N/A' }}
+                                </span>
                             </td>
                             <td data-label="Data">
-                                <span>{{ invoice.created_at.strftime('%d/%m/%Y') if invoice.created_at else 'N/A' }}</span>
+                                <small class="text-muted">{{ invoice.created_at.strftime('%d/%m/%Y') }}</small>
+                                <br>
+                                <small class="text-muted">{{ invoice.created_at.strftime('%H:%M') }}</small>
                             </td>
-                            <td data-label="Cliente">
-                                <span class="text-muted">Caricamento...</span>
+                            <td data-label="Cliente" class="invoice-client">
+                                <span class="text-muted loading-text">Caricamento...</span>
+                            </td>
+                            <td data-label="DDT Rif." class="invoice-ddt">
+                                <span class="text-muted loading-text">Caricamento...</span>
                             </td>
                             <td data-label="File">
-                                <span class="text-muted">{{ invoice.filename }}</span>
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ invoice.filename }}">
+                                    <i class="fas fa-file-code text-muted me-1"></i>
+                                    <code class="small">{{ invoice.filename }}</code>
+                                </div>
                             </td>
                             <td data-label="Dimensione">
-                                <span class="badge bg-light text-dark">{{ "%.1f KB"|format(invoice.size / 1024) }}</span>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                <span class="badge-soft badge-soft-secondary">{{ "%.1f KB"|format(invoice.size / 1024) }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
             {% else %}
-            <div class="text-center py-5">
-                <div class="fattura-info">
-                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-                    <h4 class="text-muted">Nessuna Fattura Trovata</h4>
-                    <p class="text-muted">Non sono ancora state generate fatture elettroniche.</p>
-                    <a href="{{ url_for('ddt.index') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Vai ai DDT per generare fatture
-                    </a>
-                </div>
-                </div>
+            <div class="p-5 text-center">
+                <i class="fas fa-file-invoice text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessuna fattura trovata</h5>
+                <p class="text-muted">Non ci sono fatture PA che corrispondono ai criteri di ricerca.</p>
+                <a href="{{ url_for('ddt.index') }}" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-plus me-2"></i>Crea prima fattura da DDT
+                </a>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -180,5 +243,181 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/fattura_pa.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Enhanced search functionality
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('.table-row');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const searchForm = document.getElementById('searchForm');
+        
+        function updateVisibleCount() {
+            const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+            visibleCountEl.textContent = visibleRows.length;
+        }
+        
+        // Load invoice details asynchronously
+        async function loadInvoiceDetails() {
+            const rows = document.querySelectorAll('.table-row');
+            const monthlyCountEl = document.getElementById('monthlyCount');
+            let monthlyCount = 0;
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            for (const row of rows) {
+                const filename = row.dataset.filename;
+                const clientCell = row.querySelector('.invoice-client');
+                const ddtCell = row.querySelector('.invoice-ddt');
+                
+                try {
+                    const response = await fetch(`/fattura_pa/details/${filename}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            const details = data.data;
+                            
+                            // Update client name
+                            if (details.client_name) {
+                                clientCell.innerHTML = `<strong>${details.client_name}</strong>`;
+                            } else {
+                                clientCell.innerHTML = '<span class="text-muted">N/A</span>';
+                            }
+                            
+                            // Update DDT reference
+                            if (details.ddt_reference) {
+                                ddtCell.innerHTML = `<span class="badge-soft badge-soft-info">DDT #${details.ddt_reference}</span>`;
+                            } else {
+                                ddtCell.innerHTML = '<span class="text-muted">N/A</span>';
+                            }
+                            
+                            // Count monthly invoices
+                            const invoiceDate = new Date(details.created_at.split(' ')[0].split('/').reverse().join('-'));
+                            if (invoiceDate.getMonth() === currentMonth && invoiceDate.getFullYear() === currentYear) {
+                                monthlyCount++;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error loading details for ${filename}:`, error);
+                    clientCell.innerHTML = '<span class="text-muted">Errore caricamento</span>';
+                    ddtCell.innerHTML = '<span class="text-muted">Errore caricamento</span>';
+                }
+            }
+            
+            monthlyCountEl.textContent = monthlyCount;
+        }
+        
+        // Load details on page load
+        loadInvoiceDetails();
+        
+        // Make rows clickable
+        const clickableRows = document.querySelectorAll('.clickable-row');
+        clickableRows.forEach(row => {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function() {
+                const href = this.dataset.href;
+                if (href) {
+                    window.location.href = href;
+                }
+            });
+        });
+        
+        // Search functionality
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const searchTerm = this.value.toLowerCase().trim();
+        
+                if (searchTerm.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        searchForm.submit();
+                    }, 800);
+                } else if (searchTerm.length === 0) {
+                    searchForm.submit();
+                } else {
+                    searchTimeout = setTimeout(function() {
+                        performClientSideSearch(searchTerm);
+                    }, 200);
+                }
+            });
+            
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    if (this.value.trim().length > 0) {
+                        searchForm.submit();
+                    }
+                }
+            });
+        }
+        
+        // Client-side search function
+        function performClientSideSearch(searchTerm) {
+            let visibleCount = 0;
+            tableRows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            visibleCountEl.textContent = visibleCount;
+        }
+        
+        // Clear search button
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                tableRows.forEach(row => row.style.display = '');
+                updateVisibleCount();
+            });
+        }
+        
+        // Date filters
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const applyDateFilterBtn = document.getElementById('applyDateFilter');
+        
+        if (applyDateFilterBtn) {
+            applyDateFilterBtn.addEventListener('click', function() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                const currentQuery = searchInput.value;
+                
+                const url = new URL(window.location.href);
+                if (startDate) url.searchParams.set('start_date', startDate);
+                else url.searchParams.delete('start_date');
+                
+                if (endDate) url.searchParams.set('end_date', endDate);
+                else url.searchParams.delete('end_date');
+                
+                if (currentQuery) url.searchParams.set('query', currentQuery);
+                else url.searchParams.delete('query');
+                
+                window.location.href = url.toString();
+            });
+        }
+    });
+    
+    // Export function
+    function exportInvoices() {
+        alert('Funzione di esportazione non ancora implementata');
+    }
+    
+    // Refresh function
+    function refreshTable() {
+        window.location.reload();
+    }
+</script>
 {% endblock %} 

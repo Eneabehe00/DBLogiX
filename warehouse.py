@@ -203,6 +203,12 @@ def product_detail(product_id):
 @login_required
 def tickets():
     """List of all tickets with enhanced search functionality"""
+    
+    # Update ticket statuses before displaying
+    update_expired_tickets()
+    reset_non_expired_tickets_to_giacenza()
+    
+    # Get query parameters
     page = request.args.get('page', 1, type=int)
     per_page = 15  # Cambiato da 20 a 15 per uniformità con DDT e Clients
     search_form = SearchForm()
@@ -217,9 +223,6 @@ def tickets():
                                status=request.args.get('status'),
                                start_date=request.args.get('start_date'),
                                end_date=request.args.get('end_date')))
-    
-    # Prima di tutto, aggiorna i ticket scaduti
-    update_expired_tickets()
     
     # Get date range params if provided
     start_date = request.args.get('start_date')
@@ -447,19 +450,22 @@ def update_expired_tickets():
     Trova tutti i ticket che dovrebbero essere marcati come scaduti (Enviado = 4)
     e li aggiorna nel database. Questa funzione viene eseguita ad ogni richiesta
     della pagina tickets per mantenere i dati sempre aggiornati.
+    
+    Un prodotto è considerato scaduto solo dal giorno DOPO la sua data di scadenza,
+    non lo stesso giorno (così può essere aperto e chiuso nello stesso giorno).
     """
     try:
         from models import SystemConfig
         today = datetime.now().date()  # Usa solo la data, non l'ora
         
         # Trova tutti i ticket nei task (Enviado = 10) che hanno prodotti scaduti
-        # Un prodotto è considerato scaduto solo DOPO la sua data di scadenza
+        # Un prodotto è considerato scaduto solo DOPO la sua data di scadenza (non oggi)
         expired_ticket_ids = db.session.query(TicketHeader.IdTicket).distinct().\
             join(TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket).\
             filter(
                 TicketHeader.Enviado == 10,  # Solo ticket nei task
                 TicketLine.FechaCaducidad.isnot(None),
-                func.date(TicketLine.FechaCaducidad) < today  # Data di scadenza passata (confronto solo date)
+                func.date(TicketLine.FechaCaducidad) < today  # Data di scadenza PASSATA (non oggi)
             ).all()
         
         if expired_ticket_ids:
@@ -477,6 +483,67 @@ def update_expired_tickets():
     
     except Exception as e:
         print(f"Errore nell'aggiornamento dei ticket scaduti: {str(e)}")
+        db.session.rollback()
+
+def reset_non_expired_tickets_to_giacenza():
+    """
+    Trova tutti i ticket con stato Enviado = 10 (Task) che NON sono più associati 
+    a task attivi o che non hanno prodotti scaduti e li riporta allo stato 
+    Enviado = 0 (Giacenza) per renderli nuovamente disponibili.
+    """
+    try:
+        from models import TaskTicket, Task
+        today = datetime.now().date()
+        
+        # Trova ticket con Enviado = 10 che non sono in task attivi
+        # o che sono in task ma non hanno prodotti scaduti
+        tickets_to_reset = db.session.query(TicketHeader).filter(
+            TicketHeader.Enviado == 10
+        ).all()
+        
+        reset_count = 0
+        for ticket in tickets_to_reset:
+            should_reset = False
+            
+            # Verifica se il ticket è ancora associato a un task attivo
+            active_task_ticket = db.session.query(TaskTicket).join(Task).filter(
+                TaskTicket.ticket_id == ticket.IdTicket,
+                Task.status.in_(['pending', 'assigned', 'in_progress'])
+            ).first()
+            
+            if not active_task_ticket:
+                # Ticket non è in un task attivo, può essere rimesso in giacenza
+                should_reset = True
+            else:
+                # Verifica se tutti i prodotti nel ticket non sono scaduti
+                # Un prodotto non è scaduto se la scadenza è oggi o futura
+                non_expired_lines = db.session.query(TicketLine).filter(
+                    TicketLine.IdTicket == ticket.IdTicket,
+                    TicketLine.FechaCaducidad.isnot(None),
+                    func.date(TicketLine.FechaCaducidad) >= today  # Scadenza oggi o futura
+                ).count()
+                
+                expired_lines = db.session.query(TicketLine).filter(
+                    TicketLine.IdTicket == ticket.IdTicket,
+                    TicketLine.FechaCaducidad.isnot(None),
+                    func.date(TicketLine.FechaCaducidad) < today  # Scadenza passata (non oggi)
+                ).count()
+                
+                # Se ci sono solo prodotti non scaduti, resetta il ticket
+                if non_expired_lines > 0 and expired_lines == 0:
+                    should_reset = True
+            
+            if should_reset:
+                ticket.Enviado = 0
+                reset_count += 1
+                print(f"Ticket #{ticket.NumTicket} (ID: {ticket.IdTicket}) reimpostato a Giacenza")
+        
+        if reset_count > 0:
+            db.session.commit()
+            print(f"Reset {reset_count} ticket da Task a Giacenza")
+            
+    except Exception as e:
+        print(f"Errore nel reset dei ticket non scaduti: {str(e)}")
         db.session.rollback()
 
 @warehouse_bp.route('/ticket/<int:ticket_id>')
@@ -723,7 +790,7 @@ def ticket_checkout(ticket_id):
         db.session.add(log)
         db.session.commit()
         
-        flash('Ticket processato con successo!', 'success')
+        flash('Ticket processato!', 'success')
     else:
         flash(f'Stato ticket non riconosciuto: {ticket.Enviado}', 'danger')
     
@@ -825,8 +892,7 @@ def scanner():
                     elif days_to_expire < 0:
                         expiration_msg = f" - ATTENZIONE: Prodotto SCADUTO da {abs(days_to_expire)} giorni!"
                 
-                flash(f'QR Code elaborato: Ticket #{ticket_num}, Prodotto #{product_id}, Peso: {weight:.3f}kg{expiration_msg}', 
-                      'warning' if expiration_msg else 'success')
+                flash(f'QR: Ticket #{ticket_num}, Prodotto #{product_id}, Peso: {weight:.3f}kg{expiration_msg}', 'success')
                 return redirect(url_for('warehouse.ticket_detail', ticket_id=matching_ticket.IdTicket))
             else:
                 flash(f'Ticket {ticket_num} non trovato.', 'danger')

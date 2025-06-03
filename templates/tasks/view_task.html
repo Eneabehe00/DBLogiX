@@ -14,11 +14,188 @@
         --accent-blue: #3498db;
         --success-green: #27ae60;
         --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
         --light-gray: #ecf0f1;
         --medium-gray: #bdc3c7;
         --text-dark: #2c3e50;
         --white: #ffffff;
         --border-light: #e9ecef;
+    }
+
+    /* Mobile Scanner Button - Prominent and Easy to Access */
+    .mobile-scanner-section {
+        background: linear-gradient(135deg, var(--accent-blue) 0%, #2980b9 100%);
+        border-radius: 20px;
+        padding: 25px 20px;
+        margin-bottom: 25px;
+        text-align: center;
+        color: var(--white);
+        box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .mobile-scanner-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .mobile-scanner-section h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        position: relative;
+        z-index: 2;
+    }
+
+    .mobile-scanner-section p {
+        font-size: 1rem;
+        margin-bottom: 25px;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+
+    .mobile-scanner-btn {
+        background: var(--white);
+        color: var(--accent-blue);
+        border: 3px solid var(--white);
+        border-radius: 50px;
+        padding: 18px 40px;
+        font-size: 1.3rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+        z-index: 2;
+        min-width: 250px;
+        justify-content: center;
+    }
+
+    .mobile-scanner-btn:hover {
+        color: var(--white);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--white);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .mobile-scanner-btn i {
+        font-size: 1.5rem;
+        animation: pulse-icon 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-icon {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .scanner-stats {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .scanner-stat {
+        text-align: center;
+    }
+
+    .scanner-stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        display: block;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .scanner-stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Mobile-first: Show the mobile scanner prominently on small screens */
+    @media (max-width: 767px) {
+        .mobile-scanner-section {
+            margin: -10px -15px 25px;
+            border-radius: 0;
+            padding: 30px 20px;
+        }
+        
+        .mobile-scanner-btn {
+            width: 100%;
+            font-size: 1.4rem;
+            padding: 20px;
+        }
+        
+        /* Simplify other sections on mobile */
+        .task-info-minimal {
+            display: none;
+        }
+        
+        .stats-card {
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .stats-card h3 {
+            font-size: 1.5rem;
+        }
+        
+        .stats-card p {
+            font-size: 0.85rem;
+        }
+        
+        /* Make ticket section more compact on mobile */
+        .ticket-simple-card {
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .section-header {
+            padding: 15px 20px;
+            font-size: 1rem;
+        }
+    }
+
+    /* Hide scanner for admin on desktop */
+    @media (min-width: 768px) {
+        .mobile-scanner-section.admin-hidden {
+            display: none;
+        }
+    }
+
+    /* Pulse animation for completed tasks */
+    .scanner-completed-notification {
+        background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+        animation: pulse-success 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-success {
+        0% { box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3); }
+        50% { box-shadow: 0 12px 35px rgba(39, 174, 96, 0.5); }
+        100% { box-shadow: 0 8px 25px rgba(39, 174, 96, 0.3); }
     }
 
     .task-view-card {
@@ -414,11 +591,282 @@
         border: 2px solid var(--border-light);
         border-top: none;
     }
+
+    /* Simplified Ticket Cards */
+    .ticket-simple-card {
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 16px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .ticket-simple-card:hover {
+        border-color: var(--accent-blue);
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    .ticket-simple-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    
+    .ticket-simple-id {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--primary-dark);
+    }
+    
+    .ticket-simple-status {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    
+    .ticket-status-completed {
+        background-color: rgba(39, 174, 96, 0.1);
+        color: var(--success-green);
+    }
+    
+    .ticket-status-in_progress {
+        background-color: rgba(243, 156, 18, 0.1);
+        color: var(--warning-orange);
+    }
+    
+    .ticket-status-pending {
+        background-color: rgba(108, 117, 125, 0.1);
+        color: var(--secondary-dark);
+    }
+    
+    .ticket-simple-product {
+        margin-bottom: 12px;
+    }
+    
+    .ticket-product-name {
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .ticket-product-details {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 0.8rem;
+        color: var(--medium-gray);
+    }
+    
+    .ticket-simple-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: var(--medium-gray);
+    }
+    
+    .ticket-progress-simple {
+        background: rgba(52, 152, 219, 0.1);
+        height: 4px;
+        border-radius: 2px;
+        overflow: hidden;
+        margin: 8px 0;
+    }
+    
+    .ticket-progress-fill-simple {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-complete {
+        background-color: var(--success-green);
+    }
+    
+    .progress-partial {
+        background-color: var(--warning-orange);
+    }
+    
+    .progress-none {
+        background-color: var(--medium-gray);
+    }
+    
+    .btn-remove-ticket-simple {
+        background: none;
+        border: none;
+        color: var(--danger-red);
+        padding: 4px;
+        border-radius: 4px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-remove-ticket-simple:hover {
+        opacity: 1;
+        background-color: rgba(231, 76, 60, 0.1);
+    }
+    
+    /* Task Info Minimal Style */
+    .task-info-minimal {
+        background: var(--light-gray);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .task-info-grid-minimal {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .task-info-item-minimal {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .task-info-label-minimal {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--medium-gray);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .task-info-value-minimal {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+<script>
+    // Add click handlers for clickable cards
+    document.querySelectorAll('.clickable-card').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Don't navigate if clicking on a button
+            if (e.target.closest('button')) {
+                return;
+            }
+            
+            const href = this.getAttribute('data-href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    });
+
+    // Remove ticket functionality with new class
+    document.querySelectorAll('.btn-remove-ticket-simple').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent card click
+            const taskTicketId = this.getAttribute('data-task-ticket-id');
+            const ticketNumber = this.getAttribute('data-ticket-number');
+            
+            if (confirm(`Sei sicuro di voler rimuovere il ticket #${ticketNumber} da questo task?`)) {
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.disabled = true;
+                
+                fetch('{{ url_for("tasks.remove_ticket_from_task") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        task_ticket_id: parseInt(taskTicketId)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the card with animation
+                        const card = this.closest('.ticket-simple-card').parentElement;
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateX(-100%)';
+                        
+                        setTimeout(() => {
+                            card.remove();
+                            // Update counters if elements exist
+                            const totalElement = document.querySelector('.stats-card h3');
+                            if (totalElement) {
+                                const currentTotal = parseInt(totalElement.textContent);
+                                totalElement.textContent = currentTotal - 1;
+                            }
+                        }, 300);
+                        
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.style.position = 'fixed';
+                        alertDiv.style.top = '20px';
+                        alertDiv.style.right = '20px';
+                        alertDiv.style.zIndex = '9999';
+                        alertDiv.innerHTML = `
+                            Ticket #${ticketNumber} rimosso dal task con successo.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(alertDiv);
+                        setTimeout(() => alertDiv.remove(), 5000);
+                    } else {
+                        // Show error message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                        alertDiv.style.position = 'fixed';
+                        alertDiv.style.top = '20px';
+                        alertDiv.style.right = '20px';
+                        alertDiv.style.zIndex = '9999';
+                        alertDiv.innerHTML = `
+                            ${data.message || 'Errore durante la rimozione del ticket.'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.body.appendChild(alertDiv);
+                        setTimeout(() => alertDiv.remove(), 5000);
+                        
+                        // Restore button
+                        this.innerHTML = '<i class="fas fa-times"></i>';
+                        this.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    
+                    // Show error message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                    alertDiv.style.position = 'fixed';
+                    alertDiv.style.top = '20px';
+                    alertDiv.style.right = '20px';
+                    alertDiv.style.zIndex = '9999';
+                    alertDiv.innerHTML = `
+                        Errore di connessione durante la rimozione.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.body.appendChild(alertDiv);
+                    setTimeout(() => alertDiv.remove(), 5000);
+                    
+                    // Restore button
+                    this.innerHTML = '<i class="fas fa-times"></i>';
+                    this.disabled = false;
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}
 
 {% block content %}
@@ -450,15 +898,6 @@
                     <a href="{{ url_for('tasks.edit_task', task_id=task.id_task) }}" class="action-btn mb-2 mb-md-0">
                         <i class="fas fa-edit"></i> Modifica Task
                     </a>
-                    {% endif %}
-                    {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
-                    <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#deleteTaskModal" style="background: var(--warning-orange);">
-                        <i class="fas fa-trash"></i> Elimina Task
-                    </button>
-                    {% elif current_user.is_admin and task.ddt_generated and task.ddt_id %}
-                    <span class="badge bg-info fs-6 py-2 px-3" title="Task bloccato: DDT #{{ task.ddt_id }} già generato">
-                        <i class="fas fa-lock me-1"></i> BLOCCATO
-                    </span>
                     {% endif %}
                 </div>
             </div>
@@ -507,61 +946,119 @@
         </div>
     </div>
 
+    <!-- Mobile Scanner Section - Only for Users, Not Admin -->
+    {% if not current_user.is_admin and task.status != 'completed' and task.task_tickets and task.task_tickets.first() %}
+    <div class="mobile-scanner-section {% if task.status == 'completed' %}scanner-completed-notification{% endif %}">
+        {% if task.status == 'completed' %}
+        <h3>🎉 Task Completato!</h3>
+        <p>Tutti i ticket sono stati scansionati con successo</p>
+        {% else %}
+        <h3>📱 Inizia Scansione</h3>
+        <p>Tocca il pulsante per iniziare a scansionare i QR code dei prodotti</p>
+        <a href="{{ url_for('tasks.scan_ticket', task_ticket_id=task.task_tickets.first().id) }}" class="mobile-scanner-btn">
+            <i class="fas fa-qrcode"></i>SCANNER
+        </a>
+        
+        <!-- Scanner Stats -->
+        <div class="scanner-stats">
+            <div class="scanner-stat">
+                <span class="scanner-stat-number">{{ task.completed_tickets }}</span>
+                <span class="scanner-stat-label">Completati</span>
+            </div>
+            <div class="scanner-stat">
+                <span class="scanner-stat-number">{{ task.total_tickets - task.completed_tickets }}</span>
+                <span class="scanner-stat-label">Rimanenti</span>
+            </div>
+            <div class="scanner-stat">
+                <span class="scanner-stat-number">{{ ((task.completed_tickets / task.total_tickets * 100) | round(0)) if task.total_tickets > 0 else 0 }}%</span>
+                <span class="scanner-stat-label">Progresso</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Task Information -->
-    <div class="task-info-section">
-        <h4 class="mb-0 text-dark">
+    <div class="task-info-minimal">
+        <h4 class="mb-3">
             <i class="fas fa-info-circle me-2 text-primary"></i>Informazioni Task
         </h4>
         
-        <div class="task-meta-grid">
-            <div class="task-meta-item">
-                <span class="task-meta-label">Creato da</span>
-                <span class="task-meta-value">{{ task.creator.username }}</span>
+        <div class="task-info-grid-minimal">
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Creato da</span>
+                <span class="task-info-value-minimal">{{ task.creator.username }}</span>
             </div>
             
-            <div class="task-meta-item">
-                <span class="task-meta-label">Data creazione</span>
-                <span class="task-meta-value">{{ task.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Data creazione</span>
+                <span class="task-info-value-minimal">{{ task.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
             </div>
             
             {% if task.assignee %}
-            <div class="task-meta-item">
-                <span class="task-meta-label">Assegnato a</span>
-                <span class="task-meta-value">{{ task.assignee.username }}</span>
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Assegnato a</span>
+                <span class="task-info-value-minimal">{{ task.assignee.username }}</span>
             </div>
             {% endif %}
             
             {% if task.assigned_at %}
-            <div class="task-meta-item">
-                <span class="task-meta-label">Data assegnazione</span>
-                <span class="task-meta-value">{{ task.assigned_at.strftime('%d/%m/%Y %H:%M') if task.assigned_at else 'N/A' }}</span>
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Data assegnazione</span>
+                <span class="task-info-value-minimal">{{ task.assigned_at.strftime('%d/%m/%Y %H:%M') if task.assigned_at else 'N/A' }}</span>
             </div>
             {% endif %}
             
             {% if task.deadline %}
-            <div class="task-meta-item">
-                <span class="task-meta-label">Scadenza</span>
-                <span class="task-meta-value {% if task.deadline < now() %}text-danger{% elif (task.deadline - now()).days < 1 %}text-warning{% endif %}">
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Scadenza</span>
+                <span class="task-info-value-minimal {% if is_task_expired(task.deadline) %}text-danger{% elif is_task_expiring_soon(task.deadline) %}text-warning{% endif %}">
                     {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
                 </span>
             </div>
             {% endif %}
             
-            <div class="task-meta-item">
-                <span class="task-meta-label">Priorità</span>
-                <div class="task-meta-value">
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Priorità</span>
+                <div class="task-info-value-minimal">
                     <span class="task-priority-badge task-priority-{{ task.priority }}">{{ task.priority.upper() }}</span>
                 </div>
             </div>
         </div>
         
         {% if task.description %}
-        <div class="mt-4 p-3" style="background: var(--white); border-radius: 10px; border-left: 4px solid var(--accent-blue);">
-            <h6 class="text-dark mb-2"><i class="fas fa-align-left me-2"></i>Descrizione:</h6>
-            <p class="text-muted mb-0">{{ task.description }}</p>
+        <div class="mt-3">
+            <span class="task-info-label-minimal">Descrizione</span>
+            <div class="task-info-value-minimal mt-1">{{ task.description }}</div>
         </div>
         {% endif %}
     </div>
+
+    <!-- DDT Information (if generated) -->
+    {% if task.ddt_generated and task.ddt_id %}
+    <div class="task-info-minimal">
+        <h4 class="mb-3">
+            <i class="fas fa-file-alt me-2 text-success"></i>DDT Generato
+        </h4>
+        <div class="task-info-grid-minimal">
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">Cliente</span>
+                <span class="task-info-value-minimal">{{ task.client.Nombre if task.client else 'N/A' }}</span>
+            </div>
+            <div class="task-info-item-minimal">
+                <span class="task-info-label-minimal">DDT ID</span>
+                <span class="task-info-value-minimal">#{{ task.ddt_id }}</span>
+            </div>
+        </div>
+        {% if task.ddt_id %}
+        <div class="text-center mt-3">
+            <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" class="btn btn-info">
+                <i class="fas fa-external-link-alt me-2"></i>Visualizza DDT
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 
     <!-- Action Cards Row -->
     <div class="row mb-4">
@@ -576,35 +1073,6 @@
                     <a href="{{ url_for('tasks.preview_ddt_from_task', task_id=task.id_task) }}" class="btn btn-success btn-lg">
                         <i class="fas fa-file-alt me-2"></i>Anteprima DDT
                     </a>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        {% if task.ddt_generated %}
-        <div class="col-md-6 mb-3">
-            <div class="task-view-card" style="border: 2px solid var(--accent-blue);">
-                <div class="section-header" style="background: var(--accent-blue);">
-                    <span><i class="fas fa-file-alt me-2"></i>DDT Generato</span>
-                </div>
-                <div class="section-body">
-                    <div class="task-meta-grid">
-                        <div class="task-meta-item">
-                            <span class="task-meta-label">Cliente</span>
-                            <span class="task-meta-value">{{ task.client.Nombre if task.client else 'N/A' }}</span>
-                        </div>
-                        <div class="task-meta-item">
-                            <span class="task-meta-label">DDT ID</span>
-                            <span class="task-meta-value">#{{ task.ddt_id }}</span>
-                        </div>
-                    </div>
-                    {% if task.ddt_id %}
-                    <div class="text-center mt-3">
-                        <a href="{{ url_for('ddt.detail', ddt_id=task.ddt_id) }}" class="btn btn-info btn-lg">
-                            <i class="fas fa-external-link-alt me-2"></i>Visualizza DDT
-                        </a>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
@@ -632,78 +1100,59 @@
             <div class="row">
                 {% for task_ticket in task_tickets %}
                 <div class="col-lg-6 col-xl-4 mb-3">
-                    <div class="ticket-detail-card {% if task_ticket.status == 'completed' %}completed{% elif task_ticket.status == 'in_progress' %}in-progress{% endif %} clickable-card" 
+                    <div class="ticket-simple-card {% if task_ticket.status == 'completed' %}completed{% elif task_ticket.status == 'in_progress' %}in-progress{% endif %} clickable-card" 
                          data-href="{{ url_for('warehouse.ticket_detail', ticket_id=task_ticket.ticket_id) }}">
                         
                         <!-- Header con numero e status -->
-                        <div class="ticket-detail-header">
-                            <div class="ticket-detail-number">#{{ task_ticket.ticket.IdTicket }}</div>
-                            <div class="ticket-detail-actions">
-                                <span class="task-status-badge task-status-{{ task_ticket.status }}">
-                                    {{ task_ticket.status.replace('_', ' ').title() }}
-                                </span>
-                                {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
-                                <button type="button" class="btn-remove-ticket" data-task-ticket-id="{{ task_ticket.id }}" data-ticket-number="{{ task_ticket.ticket.IdTicket }}">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                {% endif %}
+                        <div class="ticket-simple-header">
+                            <div class="ticket-simple-id">#{{ task_ticket.ticket.IdTicket }}</div>
+                            <div class="ticket-simple-status task-status-{{ task_ticket.status }}">
+                                {{ task_ticket.status.replace('_', ' ').title() }}
                             </div>
                         </div>
 
                         <!-- Prodotto principale -->
-                        <div class="ticket-detail-main-product">
+                        <div class="ticket-simple-product">
                             {% if task_ticket.ticket.loaded_lines and task_ticket.ticket.loaded_lines|length > 0 %}
                                 {% set main_line = task_ticket.ticket.loaded_lines[0] %}
-                                <h6 class="product-name">{{ main_line.Descripcion }}</h6>
-                                <div class="product-details">
-                                    <span class="product-code">ID: {{ main_line.IdArticulo }}</span>
+                                <div class="ticket-product-name">{{ main_line.Descripcion }}</div>
+                                <div class="ticket-product-details">
+                                    <span>ID: {{ main_line.IdArticulo }}</span>
                                     {% if main_line.FechaCaducidad %}
                                     {% set expiry_date = main_line.FechaCaducidad.date() if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad %}
                                     {% set today = now().date() %}
-                                    <span class="product-expiry {% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}">
+                                    <span class="{% if expiry_date < today %}text-danger{% elif (expiry_date - today).days < 7 %}text-warning{% endif %}">
                                         Scade: {{ main_line.FechaCaducidad.strftime('%d/%m/%Y') if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad.strftime('%d/%m/%Y') }}
                                     </span>
                                     {% endif %}
-                                    <span class="product-weight">{{ main_line.Peso }}kg</span>
+                                    <span>{{ main_line.Peso }}kg</span>
                                 </div>
                             {% else %}
-                                <h6 class="product-name text-muted">Prodotti non disponibili</h6>
-                                <div class="product-details">
-                                    <span class="text-muted">Dettagli non caricati</span>
-                                </div>
+                                <div class="ticket-product-name text-muted">Prodotti non disponibili</div>
                             {% endif %}
                         </div>
 
                         <!-- Info compatta -->
-                        <div class="ticket-detail-meta">
-                            <div class="meta-item">
-                                <i class="fas fa-calendar"></i>
-                                <span>{{ task_ticket.ticket.Fecha.strftime('%d/%m/%Y') if task_ticket.ticket.Fecha else 'N/A' }}</span>
+                        <div class="ticket-simple-meta">
+                            <div>
+                                <span><i class="fas fa-calendar me-1"></i>{{ task_ticket.ticket.Fecha.strftime('%d/%m/%Y') if task_ticket.ticket.Fecha else 'N/A' }}</span>
+                                <span class="ms-3"><i class="fas fa-box me-1"></i>{{ task_ticket.ticket.NumLineas }} prodotti</span>
                             </div>
-                            <div class="meta-item">
-                                <i class="fas fa-box"></i>
-                                <span>{{ task_ticket.ticket.NumLineas }} prodotti</span>
-                            </div>
-                            <div class="meta-item">
-                                <i class="fas fa-chart-pie"></i>
-                                <span>{{ task_ticket.scanned_items }}/{{ task_ticket.ticket.NumLineas }}</span>
-                            </div>
+                            {% if current_user.is_admin and not (task.ddt_generated and task.ddt_id) %}
+                            <button type="button" class="btn-remove-ticket-simple" data-task-ticket-id="{{ task_ticket.id }}" data-ticket-number="{{ task_ticket.ticket.IdTicket }}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% endif %}
                         </div>
 
                         <!-- Progress bar -->
-                        <div class="ticket-detail-progress">
-                            <div class="progress-bar-minimal">
-                                <div class="progress-fill {% if task_ticket.scan_progress_percentage == 100 %}bg-success{% elif task_ticket.scan_progress_percentage > 0 %}bg-warning{% else %}bg-light{% endif %}" 
-                                     style="width: {{ task_ticket.scan_progress_percentage }}%"></div>
-                            </div>
-                            <div class="progress-text">{{ task_ticket.scan_progress_percentage }}% completato</div>
+                        <div class="ticket-progress-simple">
+                            <div class="ticket-progress-fill-simple {% if task_ticket.scan_progress_percentage == 100 %}progress-complete{% elif task_ticket.scan_progress_percentage > 0 %}progress-partial{% else %}progress-none{% endif %}" 
+                                 style="width: {{ task_ticket.scan_progress_percentage }}%"></div>
                         </div>
-
-                        <!-- Footer con indicazione click -->
-                        <div class="ticket-detail-footer">
-                            <small class="text-muted">
-                                <i class="fas fa-mouse-pointer me-1"></i>Clicca per visualizzare i dettagli
-                            </small>
+                        
+                        <div class="text-center mt-2">
+                            <small class="text-muted">{{ task_ticket.scan_progress_percentage }}% completato</small>
                         </div>
                     </div>
                 </div>
@@ -719,70 +1168,5 @@
         </div>
     </div>
 </div>
-
-<!-- Delete Task Modal -->
-{% if current_user.is_admin %}
-<div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content" style="border-radius: 15px; border: none;">
-            <div class="modal-header text-white" style="background: var(--warning-orange); border-radius: 15px 15px 0 0;">
-                <h5 class="modal-title" id="deleteTaskModalLabel">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Elimina Task: {{ task.task_number }}
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id_task) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-body" style="padding: 30px;">
-                    <div class="alert alert-danger" style="border-radius: 10px; border: 2px solid #dc3545;">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Attenzione!</strong> Questa azione è irreversibile.
-                    </div>
-                    <p><strong>Stai per eliminare il task:</strong></p>
-                    <div class="task-meta-grid">
-                        <div class="task-meta-item">
-                            <span class="task-meta-label">Numero</span>
-                            <span class="task-meta-value">{{ task.task_number }}</span>
-                        </div>
-                        <div class="task-meta-item">
-                            <span class="task-meta-label">Titolo</span>
-                            <span class="task-meta-value">{{ task.title }}</span>
-                        </div>
-                        <div class="task-meta-item">
-                            <span class="task-meta-label">Ticket associati</span>
-                            <span class="task-meta-value">{{ task.total_tickets }}</span>
-                        </div>
-                        <div class="task-meta-item">
-                            <span class="task-meta-label">Status</span>
-                            <span class="task-status-badge task-status-{{ task.status }}">{{ task.status }}</span>
-                        </div>
-                    </div>
-                    {% if task.ddt_generated and task.ddt_id %}
-                    <div class="alert alert-warning mt-3" style="border-radius: 10px; border: 2px solid var(--warning-orange);">
-                        <i class="fas fa-file-invoice me-2"></i>
-                        <strong>DDT già generato!</strong><br>
-                        Questo task ha già generato il DDT #{{ task.ddt_id }}.<br>
-                        I ticket associati <strong>resteranno processati</strong> (<code>Enviado = 1</code>) perché già inclusi nel DDT ufficiale.
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info mt-3" style="border-radius: 10px; border: 2px solid var(--accent-blue);">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Tutti i ticket associati torneranno allo stato <code>Enviado = 0</code> e saranno di nuovo disponibili per altri task.
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="modal-footer" style="border-top: 2px solid var(--border-light); padding: 20px 30px;">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 10px; padding: 10px 20px;">
-                        <i class="fas fa-times me-2"></i>Annulla
-                    </button>
-                    <button type="submit" class="btn btn-danger" style="border-radius: 10px; padding: 10px 20px;">
-                        <i class="fas fa-trash me-2"></i>Elimina Task
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 {% endblock %} 

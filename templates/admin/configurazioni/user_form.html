@@ -98,6 +98,17 @@
                             {{ form.is_admin.label(class="form-check-label") }}
                         </div>
                         
+                        <div class="mb-3 form-check">
+                            {{ form.screen_task(class="form-check-input") }}
+                            {{ form.screen_task.label(class="form-check-label") }}
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-tv me-1"></i>
+                                    Utente configurato per la modalità "Schermo Task" - dashboard dedicata tipo McDonald's per visualizzazione task in tempo reale
+                                </small>
+                            </div>
+                        </div>
+                        
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary me-md-2">Annulla</a>
                             <button type="submit" class="btn btn-primary">Salva</button>

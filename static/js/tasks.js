@@ -325,38 +325,60 @@ function initializeScanPage() {
 }
 
 /**
- * Start camera for QR code scanning
+ * Start camera for QR code scanning - Mobile Optimized
  */
 function startCamera() {
-    console.log('Tentativo di avvio camera...');
+    console.log('🔍 Tentativo di avvio camera...');
+    
+    // Hide starting message immediately
+    $('#camera-starting').hide();
     
     // Check if browser supports camera
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.error('Browser non supporta getUserMedia');
         showFeedback('Il browser non supporta l\'accesso alla camera', 'error');
+        $('#start-camera').show();
         return;
     }
     
-    // Show loading
-    showFeedback('Avvio camera...', 'info');
+    // Show processing feedback
+    showFeedback('🔍 Avvio camera...', 'info');
     
     // Initialize code reader if not already done
     if (!codeReader) {
         try {
             codeReader = new ZXing.BrowserQRCodeReader();
-            console.log('ZXing BrowserQRCodeReader inizializzato');
+            console.log('✅ ZXing BrowserQRCodeReader inizializzato');
         } catch (error) {
-            console.error('Errore inizializzazione ZXing:', error);
+            console.error('❌ Errore inizializzazione ZXing:', error);
             showFeedback('Errore nell\'inizializzazione del lettore QR', 'error');
+            $('#start-camera').show();
             return;
         }
     }
     
+    // Mobile-optimized camera constraints
+    const isMobile = window.innerWidth <= 768;
+    const constraints = isMobile ? {
+        video: {
+            facingMode: { ideal: 'environment' }, // Prefer rear camera
+            width: { ideal: 1920, min: 640 },
+            height: { ideal: 1080, min: 480 },
+            frameRate: { ideal: 30, min: 15 }
+        }
+    } : {
+        video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        }
+    };
+    
     // Get available video devices first
-    console.log('Ricerca dispositivi video...');
+    console.log('🔍 Ricerca dispositivi video...');
     codeReader.getVideoInputDevices()
     .then((videoInputDevices) => {
-        console.log('Dispositivi video trovati:', videoInputDevices.length);
+        console.log(`📱 Dispositivi video trovati: ${videoInputDevices.length}`);
         
         if (videoInputDevices.length === 0) {
             throw new Error('Nessuna camera disponibile');
@@ -366,7 +388,7 @@ function startCamera() {
         let selectedDeviceId = null;
         
         // Look for rear camera keywords
-        const rearCameraKeywords = ['back', 'rear', 'environment', 'facing back', 'camera2'];
+        const rearCameraKeywords = ['back', 'rear', 'environment', 'facing back', 'camera2', 'main'];
         const rearCamera = videoInputDevices.find(device => {
             const label = device.label.toLowerCase();
             return rearCameraKeywords.some(keyword => label.includes(keyword));
@@ -374,50 +396,71 @@ function startCamera() {
         
         if (rearCamera) {
             selectedDeviceId = rearCamera.deviceId;
-            console.log('Camera posteriore trovata:', rearCamera.label);
+            console.log('📷 Camera posteriore trovata:', rearCamera.label);
         } else {
             // If no rear camera found, use the last camera (often the rear one on mobile)
             selectedDeviceId = videoInputDevices[videoInputDevices.length - 1].deviceId;
-            console.log('Usando ultima camera disponibile:', videoInputDevices[videoInputDevices.length - 1].label);
+            console.log('📷 Usando ultima camera disponibile:', videoInputDevices[videoInputDevices.length - 1].label);
         }
         
         // Start camera with selected device
         return codeReader.decodeFromVideoDevice(selectedDeviceId, 'camera-preview', (result, err) => {
             if (result) {
-                console.log('QR Code rilevato:', result.text);
+                console.log('🎯 QR Code rilevato:', result.text);
+                
+                // Add haptic feedback for successful scan
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 50, 100]); // Success pattern
+                }
+                
                 processScan(result.text);
             }
             if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error('Errore scansione:', err);
+                console.error('⚠️ Errore scansione:', err);
             }
         });
     })
     .then(() => {
         // Camera started successfully
         scanning = true;
+        
+        // Update UI
         $('#start-camera').hide();
         $('#stop-camera').show();
         $('#camera-preview').show();
-        showFeedback('Camera avviata! Inquadra il QR code', 'success');
         
-        console.log('Camera avviata con successo');
+        // Mobile-specific UI updates
+        if (isMobile) {
+            $('#switch-camera').show();
+            
+            // Add mobile-specific styles
+            const video = document.getElementById('camera-preview');
+            if (video) {
+                video.style.borderRadius = '15px';
+                video.style.width = '100%';
+                video.style.height = 'auto';
+                video.style.maxHeight = '60vh';
+                video.style.objectFit = 'cover';
+            }
+        }
+        
+        showFeedback('📱 Camera avviata! Inquadra il QR code', 'success');
+        
+        // Trigger custom event for mobile optimizations
+        $(document).trigger('cameraStarted');
+        
+        console.log('✅ Camera avviata con successo');
     })
     .catch((err) => {
-        console.error('Errore camera completo:', err);
+        console.error('❌ Errore camera completo:', err);
         
-        // Fallback: try with basic constraints
-        if (err.name !== 'NotAllowedError') {
-            console.log('Tentativo fallback con vincoli di base...');
+        // Fallback: try with basic constraints for mobile
+        if (err.name !== 'NotAllowedError' && isMobile) {
+            console.log('🔄 Tentativo fallback con vincoli mobili...');
             
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: { ideal: 'environment' }, // Prefer rear camera
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
-            })
+            navigator.mediaDevices.getUserMedia(constraints)
             .then((stream) => {
-                console.log('Stream camera ottenuto con fallback:', stream);
+                console.log('✅ Stream camera ottenuto con fallback:', stream);
                 
                 // Show video element and set stream
                 const videoElement = document.getElementById('camera-preview');
@@ -427,21 +470,31 @@ function startCamera() {
                 // Start QR code detection with stream
                 codeReader.decodeFromVideoElement('camera-preview', (result, err) => {
                     if (result) {
-                        console.log('QR Code rilevato:', result.text);
+                        console.log('🎯 QR Code rilevato (fallback):', result.text);
+                        
+                        // Add haptic feedback
+                        if ('vibrate' in navigator) {
+                            navigator.vibrate([100, 50, 100]);
+                        }
+                        
                         processScan(result.text);
                     }
                     if (err && !(err instanceof ZXing.NotFoundException)) {
-                        console.error('Errore scansione:', err);
+                        console.error('⚠️ Errore scansione (fallback):', err);
                     }
                 });
                 
                 scanning = true;
                 $('#start-camera').hide();
                 $('#stop-camera').show();
-                showFeedback('Camera avviata! Inquadra il QR code', 'success');
+                $('#switch-camera').show();
+                showFeedback('📱 Camera mobile attivata!', 'success');
+                
+                // Trigger custom event
+                $(document).trigger('cameraStarted');
             })
             .catch((fallbackErr) => {
-                console.error('Errore anche con fallback:', fallbackErr);
+                console.error('❌ Errore anche con fallback:', fallbackErr);
                 handleCameraError(fallbackErr);
             });
         } else {
@@ -451,22 +504,50 @@ function startCamera() {
 }
 
 /**
- * Handle camera errors with user-friendly messages
+ * Handle camera errors with user-friendly messages - Mobile Optimized
  */
 function handleCameraError(err) {
-    console.error('Errore camera:', err);
+    console.error('❌ Errore camera:', err);
+    
+    // Hide starting message if visible
+    $('#camera-starting').hide();
+    
+    // Add error haptic feedback
+    if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200]); // Error pattern
+    }
+    
+    let errorMessage = '';
+    let errorIcon = 'fas fa-exclamation-triangle';
     
     if (err.name === 'NotAllowedError') {
-        showFeedback('Permesso camera negato. Abilita l\'accesso alla camera nelle impostazioni del browser.', 'error');
+        errorMessage = '📷 Permesso camera negato\n\nPer utilizzare la scansione:\n1. Tocca l\'icona del lucchetto nella barra degli indirizzi\n2. Consenti l\'accesso alla camera\n3. Ricarica la pagina';
+        errorIcon = 'fas fa-lock';
     } else if (err.name === 'NotFoundError') {
-        showFeedback('Nessuna camera trovata sul dispositivo', 'error');
+        errorMessage = '📱 Nessuna camera trovata\n\nAssicurati che il dispositivo abbia una camera funzionante e riprova.';
+        errorIcon = 'fas fa-camera-slash';
     } else if (err.name === 'NotReadableError') {
-        showFeedback('Camera già in uso da un\'altra applicazione', 'error');
+        errorMessage = '📷 Camera in uso\n\nLa camera è già utilizzata da un\'altra app. Chiudi le altre applicazioni che potrebbero usare la camera e riprova.';
+        errorIcon = 'fas fa-ban';
     } else if (err.name === 'OverconstrainedError') {
-        showFeedback('Camera non supporta le impostazioni richieste. Prova con un altro dispositivo.', 'error');
+        errorMessage = '⚙️ Camera non compatibile\n\nLe impostazioni richieste non sono supportate da questo dispositivo. Prova con un altro dispositivo.';
+        errorIcon = 'fas fa-cog';
     } else {
-        showFeedback('Errore nell\'accesso alla camera: ' + (err.message || 'Errore sconosciuto'), 'error');
+        errorMessage = `🔧 Errore tecnico\n\n${err.message || 'Errore sconosciuto'}\n\nProva a ricaricare la pagina o usa un altro browser.`;
+        errorIcon = 'fas fa-tools';
     }
+    
+    // Show enhanced error feedback
+    if (window.showMobileFeedback) {
+        showMobileFeedback(errorMessage, 'error', errorIcon);
+    } else {
+        showFeedback(errorMessage, 'error');
+    }
+    
+    // Show manual start button as fallback
+    $('#start-camera').show();
+    $('#stop-camera').hide();
+    $('#switch-camera').hide();
 }
 
 /**
@@ -484,29 +565,48 @@ function stopCamera() {
 }
 
 /**
- * Process scanned code
+ * Process scanned code - Mobile Enhanced
  */
 function processScan(code) {
     if (!code) return;
     
-    // Clear manual input
+    // Clear manual input if exists
     $('#manual-code').val('');
     
-    // Show processing feedback
-    showFeedback('Elaborazione...', 'info');
+    // Add light haptic feedback for scan initiation
+    if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+    }
+    
+    // Show enhanced processing feedback
+    if (window.showMobileFeedback) {
+        showMobileFeedback('🔍 Elaborazione codice...', 'info', 'fas fa-qrcode');
+    } else {
+        showFeedback('Elaborazione...', 'info');
+    }
     
     // Get task ticket ID from URL or data attribute
     const taskTicketId = getTaskTicketId();
     
     if (!taskTicketId) {
-        showFeedback('Errore: ID ticket non trovato', 'error');
+        const errorMsg = '❌ Errore di configurazione\n\nID ticket non trovato. Ricarica la pagina e riprova.';
+        if (window.showMobileFeedback) {
+            showMobileFeedback(errorMsg, 'error', 'fas fa-exclamation-triangle');
+        } else {
+            showFeedback('Errore: ID ticket non trovato', 'error');
+        }
         return;
     }
     
     // Get CSRF token
     const csrfToken = getCSRFToken();
     if (!csrfToken) {
-        showFeedback('Errore: Token CSRF non trovato', 'error');
+        const errorMsg = '🔒 Errore di sicurezza\n\nToken di sicurezza non trovato. Ricarica la pagina e riprova.';
+        if (window.showMobileFeedback) {
+            showMobileFeedback(errorMsg, 'error', 'fas fa-shield-alt');
+        } else {
+            showFeedback('Errore: Token CSRF non trovato', 'error');
+        }
         return;
     }
     
@@ -525,59 +625,119 @@ function processScan(code) {
         }),
         success: function(response) {
             if (response.success) {
-                showFeedback(response.message, 'success');
+                // Success haptic feedback
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 50, 100]); // Success pattern
+                }
+                
+                if (window.showMobileFeedback) {
+                    showMobileFeedback(`✅ ${response.message}`, 'success', 'fas fa-check-circle');
+                } else {
+                    showFeedback(response.message, 'success');
+                }
                 
                 // Handle different completion scenarios
                 setTimeout(function() {
                     if (response.task_completed) {
                         // Task completed - redirect to user dashboard
-                        showFeedback('🎉 Task completato! Ritorno alla dashboard...', 'success');
+                        const completionMsg = '🎉 Task completato!\n\nTutti i ticket sono stati elaborati. Ritorno alla dashboard...';
+                        if (window.showMobileFeedback) {
+                            showMobileFeedback(completionMsg, 'success', 'fas fa-trophy');
+                        } else {
+                            showFeedback('🎉 Task completato! Ritorno alla dashboard...', 'success');
+                        }
+                        
                         setTimeout(function() {
                             window.location.href = '/tasks/user';
-                        }, 2000);
+                        }, 2500);
                     } else if (response.ticket_completed && response.next_ticket_id) {
                         // Current ticket completed, move to next ticket
-                        showFeedback('Ticket completato! Passaggio al prossimo...', 'success');
+                        const nextMsg = '🎯 Ticket completato!\n\nPassaggio automatico al prossimo ticket...';
+                        if (window.showMobileFeedback) {
+                            showMobileFeedback(nextMsg, 'success', 'fas fa-arrow-right');
+                        } else {
+                            showFeedback('Ticket completato! Passaggio al prossimo...', 'success');
+                        }
+                        
                         setTimeout(function() {
                             window.location.href = `/tasks/ticket/${response.next_ticket_id}/scan`;
-                        }, 1500);
+                        }, 2000);
                     } else {
                         // Product scanned successfully, reload to show next product
-                        window.location.reload();
+                        const nextProductMsg = '✅ Prodotto scansionato!\n\nCaricamento prossimo prodotto...';
+                        if (window.showMobileFeedback) {
+                            showMobileFeedback(nextProductMsg, 'success', 'fas fa-box-open');
+                        }
+                        
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
                     }
                 }, 1500);
             } else {
-                showFeedback(response.message || 'Errore nella scansione', 'error');
+                // Error haptic feedback
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([200, 100, 200]); // Error pattern
+                }
                 
-                // Focus back on manual input for retry
+                const errorMsg = `❌ Errore di scansione\n\n${response.message || 'Errore nella scansione'}\n\nRiprova con un altro QR code.`;
+                if (window.showMobileFeedback) {
+                    showMobileFeedback(errorMsg, 'error', 'fas fa-times-circle');
+                } else {
+                    showFeedback(response.message || 'Errore nella scansione', 'error');
+                }
+                
+                // Don't focus manual input on mobile as it might interfere with camera
+                if (window.innerWidth > 768) {
+                    setTimeout(function() {
+                        $('#manual-code').focus();
+                    }, 2000);
+                }
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('❌ Scan error:', xhr.responseText, error);
+            
+            // Error haptic feedback
+            if ('vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200, 100, 200]); // Strong error pattern
+            }
+            
+            let errorMessage = '🔧 Errore di connessione\n\nVerifica la connessione internet e riprova.';
+            let errorIcon = 'fas fa-wifi';
+            
+            if (xhr.status === 400) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = `📋 Richiesta non valida\n\n${response.message || response.error || 'Formato del QR code non riconosciuto'}\n\nRiprova con un QR code valido.`;
+                    errorIcon = 'fas fa-qrcode';
+                } catch (e) {
+                    errorMessage = '📋 Richiesta non valida\n\nFormato del QR code non riconosciuto. Riprova con un QR code valido.';
+                    errorIcon = 'fas fa-qrcode';
+                }
+            } else if (xhr.status === 403) {
+                errorMessage = '🔒 Errore di autorizzazione\n\nLa sessione è scaduta. Ricarica la pagina e riprova.';
+                errorIcon = 'fas fa-lock';
+            } else if (xhr.status === 500) {
+                errorMessage = '🚨 Errore del server\n\nProblema temporaneo del sistema. Riprova tra qualche secondo.';
+                errorIcon = 'fas fa-server';
+            } else if (xhr.status === 0) {
+                errorMessage = '📶 Connessione persa\n\nVerifica la connessione internet e riprova.';
+                errorIcon = 'fas fa-signal';
+            }
+            
+            if (window.showMobileFeedback) {
+                showMobileFeedback(errorMessage, 'error', errorIcon);
+            } else {
+                showFeedback(errorMessage, 'error');
+            }
+            
+            // Don't focus manual input on mobile
+            if (window.innerWidth > 768) {
                 setTimeout(function() {
                     $('#manual-code').focus();
                 }, 2000);
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('Scan error:', xhr.responseText, error);
-            
-            let errorMessage = 'Errore di connessione';
-            if (xhr.status === 400) {
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    errorMessage = response.message || response.error || 'Errore 400 - Richiesta non valida';
-                } catch (e) {
-                    errorMessage = 'Errore 400 - Richiesta non valida';
-                }
-            } else if (xhr.status === 403) {
-                errorMessage = 'Errore 403 - Token CSRF non valido';
-            } else if (xhr.status === 500) {
-                errorMessage = 'Errore 500 - Errore interno del server';
-            }
-            
-            showFeedback(errorMessage, 'error');
-            
-            // Focus back on manual input for retry
-            setTimeout(function() {
-                $('#manual-code').focus();
-            }, 2000);
         }
     });
 }

@@ -206,13 +206,13 @@
                                     <li class="{% if request.endpoint and request.endpoint == 'admin.manage_users' %}active{% endif %}">
                                         <a href="{{ url_for('admin.manage_users') }}">
                                             <i class="fas fa-users"></i>
-                                            <span>Gestione Utenti</span>
+                                            <span>Utenti</span>
                                         </a>
                                     </li>
                                     <li class="{% if request.endpoint and (request.endpoint == 'admin.general_config' or request.endpoint == 'admin.db_config' or request.endpoint == 'admin.system_config') %}active{% endif %}">
                                         <a href="{{ url_for('admin.general_config') }}">
                                             <i class="fas fa-sliders-h"></i>
-                                            <span>Configurazioni Generali</span>
+                                            <span>Sistema</span>
                                         </a>
                                     </li>
                                 </ul>

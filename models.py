@@ -178,8 +178,16 @@ class TicketHeader(db.Model):
 class TicketLine(db.Model):
     __tablename__ = 'dat_ticket_linea'
     
+    # Composite primary key matching the actual database structure
     IdLineaTicket = db.Column(db.Integer, primary_key=True)
-    IdTicket = db.Column(db.Integer, db.ForeignKey('dat_ticket_cabecera.IdTicket'))
+    IdEmpresa = db.Column(db.Integer, primary_key=True, default=1)
+    IdTienda = db.Column(db.Integer, primary_key=True, default=1)
+    IdBalanzaMaestra = db.Column(db.Integer, primary_key=True, default=0)
+    IdBalanzaEsclava = db.Column(db.Integer, primary_key=True, default=0)
+    IdTicket = db.Column(db.BigInteger, db.ForeignKey('dat_ticket_cabecera.IdTicket'), primary_key=True)
+    TipoVenta = db.Column(db.Integer, primary_key=True, default=2)
+    
+    # Other fields
     IdArticulo = db.Column(db.Integer, db.ForeignKey('dat_articulo.IdArticulo'))
     Descripcion = db.Column(db.String(100))
     Peso = db.Column(db.Numeric(15, 3))

@@ -33,7 +33,7 @@ def index():
 @tasks_bp.route('/admin')
 @admin_required
 def admin_dashboard():
-    """Admin dashboard for task management with enhanced search functionality"""
+    """Admin dashboard for task management with enhanced search functionality and specific filters"""
     # Get filter parameters
     search_query = request.args.get('query', '').strip()  # Parametro search unificato
     title_filter = request.args.get('title', '').strip()  # Mantengo per compatibilità
@@ -42,24 +42,30 @@ def admin_dashboard():
     priority_filter = request.args.get('priority', '')
     status_filter = request.args.get('status', '')
     
+    # New specific filter parameter for the 4 categories
+    category_filter = request.args.get('category', '')  # active, overdue, completed_no_ddt, completed_with_ddt
+    
     # Pagination parameters
     active_page = int(request.args.get('active_page', 1))
-    completed_page = int(request.args.get('completed_page', 1))
     overdue_page = int(request.args.get('overdue_page', 1))
+    completed_no_ddt_page = int(request.args.get('completed_no_ddt_page', 1))
+    completed_with_ddt_page = int(request.args.get('completed_with_ddt_page', 1))
     per_page = 6
     
     # Reset page to 1 when performing a new search
-    if search_query and (active_page > 1 or completed_page > 1 or overdue_page > 1):
+    if search_query and (active_page > 1 or overdue_page > 1 or completed_no_ddt_page > 1 or completed_with_ddt_page > 1):
         # If there's a search query and we're not on page 1, redirect to page 1
         return redirect(url_for('tasks.admin_dashboard', 
                                query=search_query,
                                active_page=1,
-                               completed_page=1, 
                                overdue_page=1,
+                               completed_no_ddt_page=1,
+                               completed_with_ddt_page=1,
                                date_from=date_from,
                                date_to=date_to,
                                priority=priority_filter,
-                               status=status_filter))
+                               status=status_filter,
+                               category=category_filter))
     
     # Base query
     query = Task.query
@@ -122,42 +128,92 @@ def admin_dashboard():
     for task in tasks:
         task.update_progress()
     
-    # Separate tasks into categories
-    active_tasks = []
-    completed_tasks = []
-    overdue_tasks = []
+    # Separate tasks into the 4 specific categories
+    active_tasks = []           # pending, assigned, in_progress (not overdue)
+    overdue_tasks = []          # any task that is overdue
+    completed_no_ddt_tasks = [] # completed but no DDT generated
+    completed_with_ddt_tasks = [] # completed with DDT generated
     
     for task in tasks:
         if task.is_overdue:
             overdue_tasks.append(task)
         elif task.status == 'completed':
-            completed_tasks.append(task)
+            if task.ddt_generated and task.ddt_id:
+                completed_with_ddt_tasks.append(task)
+            else:
+                completed_no_ddt_tasks.append(task)
         else:
+            # pending, assigned, in_progress (and not overdue)
             active_tasks.append(task)
     
+    # Store original counts for statistics (before category filter)
+    original_stats = {
+        'total_tasks': Task.query.count(),
+        'active_tasks': len(active_tasks),
+        'overdue_tasks': len(overdue_tasks),
+        'completed_no_ddt_tasks': len(completed_no_ddt_tasks),
+        'completed_with_ddt_tasks': len(completed_with_ddt_tasks),
+        # Keep old stats for compatibility
+        'pending_tasks': Task.query.filter_by(status='pending').count(),
+        'in_progress_tasks': Task.query.filter_by(status='in_progress').count(),
+        'completed_tasks': Task.query.filter_by(status='completed').count()
+    }
+    
+    # Apply category filter if specified
+    if category_filter:
+        if category_filter == 'active':
+            overdue_tasks = []
+            completed_no_ddt_tasks = []
+            completed_with_ddt_tasks = []
+        elif category_filter == 'overdue':
+            active_tasks = []
+            completed_no_ddt_tasks = []
+            completed_with_ddt_tasks = []
+        elif category_filter == 'completed_no_ddt':
+            active_tasks = []
+            overdue_tasks = []
+            completed_with_ddt_tasks = []
+        elif category_filter == 'completed_with_ddt':
+            active_tasks = []
+            overdue_tasks = []
+            completed_no_ddt_tasks = []
+    
     # Apply pagination to each category
+    # Active tasks pagination
     active_start = (active_page - 1) * per_page
     active_end = active_start + per_page
     active_tasks_paginated = active_tasks[active_start:active_end]
     active_total_pages = (len(active_tasks) + per_page - 1) // per_page
     
-    completed_start = (completed_page - 1) * per_page
-    completed_end = completed_start + per_page
-    completed_tasks_paginated = completed_tasks[completed_start:completed_end]
-    completed_total_pages = (len(completed_tasks) + per_page - 1) // per_page
-    
+    # Overdue tasks pagination
     overdue_start = (overdue_page - 1) * per_page
     overdue_end = overdue_start + per_page
     overdue_tasks_paginated = overdue_tasks[overdue_start:overdue_end]
     overdue_total_pages = (len(overdue_tasks) + per_page - 1) // per_page
     
-    # Get task statistics
+    # Completed without DDT pagination
+    completed_no_ddt_start = (completed_no_ddt_page - 1) * per_page
+    completed_no_ddt_end = completed_no_ddt_start + per_page
+    completed_no_ddt_tasks_paginated = completed_no_ddt_tasks[completed_no_ddt_start:completed_no_ddt_end]
+    completed_no_ddt_total_pages = (len(completed_no_ddt_tasks) + per_page - 1) // per_page
+    
+    # Completed with DDT pagination
+    completed_with_ddt_start = (completed_with_ddt_page - 1) * per_page
+    completed_with_ddt_end = completed_with_ddt_start + per_page
+    completed_with_ddt_tasks_paginated = completed_with_ddt_tasks[completed_with_ddt_start:completed_with_ddt_end]
+    completed_with_ddt_total_pages = (len(completed_with_ddt_tasks) + per_page - 1) // per_page
+    
+    # Get task statistics with new categories
     stats = {
         'total_tasks': Task.query.count(),
+        'active_tasks': len(active_tasks),
+        'overdue_tasks': len(overdue_tasks),
+        'completed_no_ddt_tasks': len(completed_no_ddt_tasks),
+        'completed_with_ddt_tasks': len(completed_with_ddt_tasks),
+        # Keep old stats for compatibility
         'pending_tasks': Task.query.filter_by(status='pending').count(),
         'in_progress_tasks': Task.query.filter_by(status='in_progress').count(),
-        'completed_tasks': Task.query.filter_by(status='completed').count(),
-        'overdue_tasks': len([t for t in Task.query.all() if t.is_overdue])
+        'completed_tasks': Task.query.filter_by(status='completed').count()
     }
     
     # Get users for assignment
@@ -166,27 +222,32 @@ def admin_dashboard():
     # Get clients for DDT generation
     clients = Client.query.order_by(Client.Nombre).all()
     
-    return render_template('tasks/admin_dashboard.html', 
+    return render_template('tasks/admin_dashboard_new.html', 
                          active_tasks=active_tasks_paginated,
-                         completed_tasks=completed_tasks_paginated,
                          overdue_tasks=overdue_tasks_paginated,
+                         completed_no_ddt_tasks=completed_no_ddt_tasks_paginated,
+                         completed_with_ddt_tasks=completed_with_ddt_tasks_paginated,
                          # Pagination info
                          active_page=active_page,
                          active_total_pages=active_total_pages,
-                         completed_page=completed_page,
-                         completed_total_pages=completed_total_pages,
                          overdue_page=overdue_page,
                          overdue_total_pages=overdue_total_pages,
-                         stats=stats,
+                         completed_no_ddt_page=completed_no_ddt_page,
+                         completed_no_ddt_total_pages=completed_no_ddt_total_pages,
+                         completed_with_ddt_page=completed_with_ddt_page,
+                         completed_with_ddt_total_pages=completed_with_ddt_total_pages,
+                         stats=original_stats,
                          users=users,
                          clients=clients,
                          search=search_query,  # Aggiungo search_query come search per il template
+                         category_filter=category_filter,  # New category filter
                          current_filters={
                              'title': title_filter,
                              'date_from': date_from,
                              'date_to': date_to,
                              'priority': priority_filter,
-                             'status': status_filter
+                             'status': status_filter,
+                             'category': category_filter
                          },
                          now=datetime.now)
 
@@ -321,10 +382,10 @@ def create_task():
                     # Get data for re-rendering the form
                     available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
                     for ticket in available_tickets:
-                        ticket_lines = db.session.query(TicketLine).join(
+                        ticket_lines = db.session.query(TicketLine).outerjoin(
                             Product, TicketLine.IdArticulo == Product.IdArticulo
                         ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
-                        ticket.lines = ticket_lines
+                        ticket.loaded_lines = ticket_lines
                         actual_lines = len(ticket_lines)
                         if ticket.NumLineas != actual_lines:
                             ticket.NumLineas = actual_lines
@@ -338,10 +399,10 @@ def create_task():
                 # Get data for re-rendering the form
                 available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
                 for ticket in available_tickets:
-                    ticket_lines = db.session.query(TicketLine).join(
+                    ticket_lines = db.session.query(TicketLine).outerjoin(
                         Product, TicketLine.IdArticulo == Product.IdArticulo
                     ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
-                    ticket.lines = ticket_lines
+                    ticket.loaded_lines = ticket_lines
                     actual_lines = len(ticket_lines)
                     if ticket.NumLineas != actual_lines:
                         ticket.NumLineas = actual_lines
@@ -361,7 +422,8 @@ def create_task():
                                 expiry_date = line.FechaCaducidad.date() if hasattr(line.FechaCaducidad, 'date') else line.FechaCaducidad
                                 task_deadline_date = deadline.date()
                                 
-                                if expiry_date > task_deadline_date:
+                                # FIX: Corrected logic - block if expiry date is BEFORE task deadline (product is expired)
+                                if expiry_date < task_deadline_date:
                                     invalid_tickets.append({
                                         'ticket_num': ticket.NumTicket,
                                         'product_id': line.IdArticulo,
@@ -371,7 +433,7 @@ def create_task():
                                     })
                 
                 if invalid_tickets:
-                    error_message = "I seguenti ticket contengono prodotti con scadenza posteriore alla scadenza del task:\n"
+                    error_message = "I seguenti ticket contengono prodotti con scadenza anteriore alla scadenza del task:\n"
                     for invalid in invalid_tickets[:3]:  # Show only first 3 to avoid too long message
                         error_message += f"- Ticket #{invalid['ticket_num']}: {invalid['product_name']} (scade {invalid['expiry_date']})\n"
                     if len(invalid_tickets) > 3:
@@ -381,10 +443,11 @@ def create_task():
                     # Get data for re-rendering the form
                     available_tickets = TicketHeader.query.filter_by(Enviado=0).order_by(desc(TicketHeader.Fecha)).all()
                     for ticket in available_tickets:
-                        ticket_lines = db.session.query(TicketLine).join(
+                        # FIX: Use LEFT JOIN to handle missing products gracefully
+                        ticket_lines = db.session.query(TicketLine).outerjoin(
                             Product, TicketLine.IdArticulo == Product.IdArticulo
                         ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
-                        ticket.lines = ticket_lines
+                        ticket.loaded_lines = ticket_lines
                         actual_lines = len(ticket_lines)
                         if ticket.NumLineas != actual_lines:
                             ticket.NumLineas = actual_lines
@@ -455,13 +518,13 @@ def create_task():
     
     # Calculate actual line count and load lines for each ticket
     for ticket in available_tickets:
-        # Load ticket lines with product details
-        ticket_lines = db.session.query(TicketLine).join(
+        # FIX: Use LEFT JOIN to handle missing products gracefully
+        ticket_lines = db.session.query(TicketLine).outerjoin(
             Product, TicketLine.IdArticulo == Product.IdArticulo
         ).filter(TicketLine.IdTicket == ticket.IdTicket).all()
         
         # Attach lines to ticket object for template access
-        ticket.lines = ticket_lines
+        ticket.loaded_lines = ticket_lines
         
         # Count actual lines in database
         actual_lines = len(ticket_lines)
@@ -493,8 +556,8 @@ def view_task(task_id):
     # Load product lines for each ticket
     for task_ticket in task_tickets:
         if task_ticket.ticket:
-            # Load ticket lines with product details
-            ticket_lines = db.session.query(TicketLine).join(
+            # FIX: Use LEFT JOIN to handle missing products gracefully
+            ticket_lines = db.session.query(TicketLine).outerjoin(
                 Product, TicketLine.IdArticulo == Product.IdArticulo
             ).filter(TicketLine.IdTicket == task_ticket.ticket.IdTicket).all()
             
@@ -620,8 +683,8 @@ def edit_task(task_id):
     # Load product lines for each ticket
     for task_ticket in task_tickets:
         if task_ticket.ticket:
-            # Load ticket lines with product details
-            ticket_lines = db.session.query(TicketLine).join(
+            # FIX: Use LEFT JOIN to handle missing products gracefully
+            ticket_lines = db.session.query(TicketLine).outerjoin(
                 Product, TicketLine.IdArticulo == Product.IdArticulo
             ).filter(TicketLine.IdTicket == task_ticket.ticket.IdTicket).all()
             
@@ -1530,6 +1593,7 @@ def remove_ticket_from_task():
         if ticket:
             ticket.Enviado = 0
             current_app.logger.info(f"Reset Ticket #{ticket.NumTicket} to Enviado = 0 (removed from task before DDT generation)")
+        
         # Delete associated scans
         TaskTicketScan.query.filter_by(task_ticket_id=task_ticket_id).delete()
         
@@ -1540,17 +1604,35 @@ def remove_ticket_from_task():
         # Update task progress
         task.update_progress()
         
-        db.session.commit()
+        # Check if the task has no more tickets after removal
+        remaining_tickets_count = TaskTicket.query.filter_by(task_id=task_id).count()
         
-        flash(f'Ticket #{ticket_number} rimosso dal task.', 'success')
-        return redirect(url_for('tasks.view_task', task_id=task_id))
+        if remaining_tickets_count == 0:
+            # Task is now empty - delete it automatically
+            current_app.logger.info(f"Task {task.task_number} is now empty after removing ticket #{ticket_number} - deleting task automatically")
+            
+            # Delete task notifications
+            TaskNotification.query.filter_by(task_id=task_id).delete()
+            
+            # Delete the task
+            task_number = task.task_number
+            db.session.delete(task)
+            
+            db.session.commit()
+            
+            flash(f'Ticket #{ticket_number} rimosso. Task {task_number} eliminato automaticamente (vuoto).', 'success')
+            return redirect(url_for('tasks.admin_dashboard'))
+        else:
+            db.session.commit()
+            flash(f'Ticket #{ticket_number} rimosso dal task.', 'success')
+            return redirect(url_for('tasks.view_task', task_id=task_id))
         
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error removing ticket from task: {str(e)}")
         flash(f'Errore durante la rimozione del ticket: {str(e)}', 'error')
         return redirect(url_for('tasks.view_task', task_id=task_id))
-        
+
 
 @tasks_bp.route('/task/<int:task_id>/preview_ddt', methods=['GET', 'POST'])
 @admin_required
@@ -1709,4 +1791,78 @@ def task_screen():
                          in_progress_tasks=in_progress_tasks,
                          overdue_tasks=overdue_tasks,
                          stats=stats,
-                         now=datetime.now) 
+                         now=datetime.now)
+
+
+@tasks_bp.route('/api/remove-ticket', methods=['POST'])
+@admin_required
+def api_remove_ticket_from_task():
+    """API endpoint to remove a ticket from a task and return JSON response"""
+    data = request.get_json()
+    task_ticket_id = data.get('task_ticket_id')
+    
+    if not task_ticket_id:
+        return jsonify({'success': False, 'message': 'ID del task ticket mancante'})
+    
+    try:
+        task_ticket = TaskTicket.query.get_or_404(task_ticket_id)
+        task = Task.query.get_or_404(task_ticket.task_id)
+        
+        # Check if DDT was already generated from this task
+        if task.ddt_generated and task.ddt_id:
+            return jsonify({
+                'success': False, 
+                'message': f'Impossibile rimuovere il ticket da un task con DDT #{task.ddt_id} già generato.'
+            })
+        
+        # Get the ticket and reset its status (only if no DDT was generated)
+        ticket = TicketHeader.query.get(task_ticket.ticket_id)
+        if ticket:
+            ticket.Enviado = 0
+            current_app.logger.info(f"Reset Ticket #{ticket.NumTicket} to Enviado = 0 (removed from task before DDT generation)")
+        
+        # Delete associated scans
+        TaskTicketScan.query.filter_by(task_ticket_id=task_ticket_id).delete()
+        
+        # Remove the task ticket
+        ticket_number = task_ticket.ticket.NumTicket
+        task_id = task.id_task
+        task_number = task.task_number
+        db.session.delete(task_ticket)
+        
+        # Update task progress
+        task.update_progress()
+        
+        # Check if the task has no more tickets after removal
+        remaining_tickets_count = TaskTicket.query.filter_by(task_id=task_id).count()
+        
+        if remaining_tickets_count == 0:
+            # Task is now empty - delete it automatically
+            current_app.logger.info(f"Task {task_number} is now empty after removing ticket #{ticket_number} - deleting task automatically")
+            
+            # Delete task notifications
+            TaskNotification.query.filter_by(task_id=task_id).delete()
+            
+            # Delete the task
+            db.session.delete(task)
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Ticket #{ticket_number} rimosso. Task {task_number} eliminato automaticamente (vuoto).',
+                'task_deleted': True,
+                'redirect_url': url_for('tasks.admin_dashboard')
+            })
+        else:
+            db.session.commit()
+            return jsonify({
+                'success': True, 
+                'message': f'Ticket #{ticket_number} rimosso dal task con successo.',
+                'task_deleted': False
+            })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error removing ticket from task via API: {str(e)}")
+        return jsonify({'success': False, 'message': f'Errore durante la rimozione del ticket: {str(e)}'}) 

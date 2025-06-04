@@ -1997,10 +1997,11 @@ def api_add_ticket_to_preview():
 @ddt_bp.route('/api/preview/remove_ticket', methods=['POST'])
 @login_required
 def api_remove_ticket_from_preview():
-    """API to remove a ticket from DDT preview"""
+    """API to remove a ticket from DDT preview and optionally from task"""
     data = request.get_json()
     ticket_id = data.get('ticket_id')
     from_task = data.get('from_task', False)  # Indica se viene da un task
+    task_id = data.get('task_id')  # ID della task specifica (se disponibile)
     
     if not ticket_id:
         return jsonify({'success': False, 'message': 'ID ticket mancante'})
@@ -2008,16 +2009,97 @@ def api_remove_ticket_from_preview():
     try:
         # Trova il ticket e resetta il suo stato
         ticket = TicketHeader.query.get(ticket_id)
-        if ticket:
-            ticket.Enviado = 0  # Reset to not sent/processed
-            db.session.commit()
-            
-            current_app.logger.info(f"🔄 Ticket #{ticket.NumTicket} rimosso dalla preview DDT - stato reimpostato a Enviado = 0")
-            
-            if from_task:
-                current_app.logger.info(f"📋 Ticket #{ticket.NumTicket} rimosso da task DDT preview - non sarà più incluso nel task")
+        if not ticket:
+            return jsonify({'success': False, 'message': 'Ticket non trovato'})
         
-        return jsonify({'success': True, 'message': 'Ticket rimosso dal preview e stato reimpostato'})
+        # Se il ticket viene da una task, gestisci la rimozione dalla task
+        if from_task:
+            current_app.logger.info(f"🎯 Rimozione ticket #{ticket.NumTicket} da task DDT preview")
+            
+            # Trova il TaskTicket associato se non è stato fornito task_id
+            if not task_id:
+                from models import TaskTicket, Task
+                task_ticket = TaskTicket.query.filter_by(ticket_id=ticket_id).first()
+                if task_ticket:
+                    task_id = task_ticket.task_id
+                    current_app.logger.info(f"🔍 Trovato ticket nella task ID: {task_id}")
+            
+            if task_id:
+                from models import TaskTicket, Task, TaskTicketScan
+                
+                # Verifica che la task esista e non abbia già generato un DDT
+                task = Task.query.get(task_id)
+                if task and task.ddt_generated and task.ddt_id:
+                    return jsonify({
+                        'success': False, 
+                        'message': f'Impossibile rimuovere il ticket da un task con DDT #{task.ddt_id} già generato.'
+                    })
+                
+                # Trova e rimuovi il TaskTicket
+                task_ticket = TaskTicket.query.filter_by(
+                    task_id=task_id, 
+                    ticket_id=ticket_id
+                ).first()
+                
+                if task_ticket:
+                    current_app.logger.info(f"🗑️ Rimozione TaskTicket ID: {task_ticket.id}")
+                    
+                    # Rimuovi tutti i scan associati a questo TaskTicket
+                    TaskTicketScan.query.filter_by(task_ticket_id=task_ticket.id).delete()
+                    
+                    # Rimuovi il TaskTicket
+                    db.session.delete(task_ticket)
+                    
+                    # Aggiorna il progresso della task
+                    if task:
+                        task.update_progress()
+                        
+                        # Verifica se la task è ora vuota (senza ticket)
+                        remaining_tickets = TaskTicket.query.filter_by(task_id=task_id).count()
+                        current_app.logger.info(f"📊 Ticket rimanenti nella task {task.task_number}: {remaining_tickets}")
+                        
+                        if remaining_tickets == 0:
+                            current_app.logger.info(f"🚨 Task {task.task_number} è ora vuota - eliminazione automatica")
+                            
+                            # Elimina le notifiche della task
+                            from models import TaskNotification
+                            TaskNotification.query.filter_by(task_id=task_id).delete()
+                            
+                            # Elimina la task vuota
+                            task_number = task.task_number
+                            db.session.delete(task)
+                            
+                            current_app.logger.info(f"✅ Task {task_number} eliminata automaticamente (vuota)")
+                            
+                            # Resetta lo stato del ticket solo se la task è stata eliminata
+                            ticket.Enviado = 0
+                            db.session.commit()
+                            
+                            return jsonify({
+                                'success': True, 
+                                'message': f'Ticket rimosso dalla task {task_number}. Task eliminata (vuota).',
+                                'task_deleted': True,
+                                'task_number': task_number
+                            })
+                        else:
+                            current_app.logger.info(f"📋 Task {task.task_number} mantiene {remaining_tickets} ticket")
+                    
+                    current_app.logger.info(f"📋 Ticket #{ticket.NumTicket} rimosso dalla task ID: {task_id}")
+                else:
+                    current_app.logger.warning(f"⚠️ TaskTicket non trovato per ticket {ticket_id} nella task {task_id}")
+        
+        # Resetta sempre lo stato del ticket (se non è stato già fatto sopra)
+        if ticket.Enviado != 0:
+            ticket.Enviado = 0  # Reset to not sent/processed
+            current_app.logger.info(f"🔄 Ticket #{ticket.NumTicket} rimosso dalla preview DDT - stato reimpostato a Enviado = 0")
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Ticket rimosso dal preview e stato reimpostato',
+            'task_deleted': False
+        })
         
     except Exception as e:
         db.session.rollback()

@@ -1,63 +1,119 @@
 {% extends "base.html" %}
 {% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
 
-{% block title %}Task Management - Dashboard Admin{% endblock %}
+{% block title %}Task Management - Admin - DBLogiX{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
 <style>
-    /* Enhanced Task Card Styles */
-    .task-card-enhanced {
-        background: #ffffff;
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
-        border: 2px solid #e9ecef;
-        transition: all 0.3s ease;
-        cursor: pointer;
+    /* Enhanced Task Dashboard - Elegant Dark Theme like Home Page */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+        --info-blue: #3498db;
+        --purple-elegant: #8e44ad;
+    }
+    
+    /* Page Header - Elegant Style */
+    .page-header {
+        background-color: var(--primary-dark);
+        border-radius: 1rem;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        color: white;
         position: relative;
         overflow: hidden;
+        box-shadow: 0 0.5rem 1rem rgba(44, 62, 80, 0.15);
+        border: none;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .page-subtitle {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .action-btn {
+        background-color: var(--accent-blue);
+        border-color: var(--accent-blue);
+        color: var(--white);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .action-btn:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+        color: var(--white);
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1rem rgba(52, 152, 219, 0.3);
+        text-decoration: none;
+    }
+    
+    /* Enhanced Task Cards */
+    .task-card-enhanced {
+        background: var(--white);
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 1px solid var(--border-light);
+        position: relative;
     }
     
     .task-card-enhanced:hover {
         transform: translateY(-3px);
         box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
-        border-color: #3498db;
     }
     
-    .task-card-enhanced.task-overdue {
-        border-color: #e74c3c;
-        background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%);
+    .task-card-enhanced.overdue {
+        border-left: 4px solid var(--danger-red);
+        background: linear-gradient(135deg, #fff 0%, #fdf2f2 100%);
     }
     
-    .task-card-enhanced.task-completed {
-        border-color: #27ae60;
-        background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+    .task-card-enhanced.completed {
+        border-left: 4px solid var(--success-green);
+        background: linear-gradient(135deg, #fff 0%, #f0f9f0 100%);
     }
     
-    .task-card-enhanced.task-completed-ddt {
-        border-color: #8e44ad;
-        background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+    .task-card-enhanced.active {
+        border-left: 4px solid var(--accent-blue);
+        background: linear-gradient(135deg, #fff 0%, #f0f7ff 100%);
     }
     
-    .task-header-enhanced {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 15px;
-        padding-bottom: 12px;
+    .task-card-body {
+        padding: 25px;
         border-bottom: 2px solid #f8f9fa;
     }
     
     .task-number-enhanced {
         font-size: 1.2rem;
         font-weight: 700;
-        color: #2c3e50;
-        background: #ecf0f1;
+        color: var(--primary-dark);
+        background: var(--light-gray);
         padding: 6px 12px;
         border-radius: 8px;
-        border: 2px solid #3498db;
+        border: 2px solid var(--accent-blue);
     }
     
     .task-badges-enhanced {
@@ -79,7 +135,7 @@
     .task-title-enhanced {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #2c3e50;
+        color: var(--text-dark);
         margin-bottom: 12px;
         line-height: 1.3;
     }
@@ -96,7 +152,7 @@
         align-items: center;
         gap: 8px;
         padding: 8px 10px;
-        background: #f8f9fa;
+        background: var(--light-gray);
         border-radius: 8px;
         font-size: 0.85rem;
     }
@@ -104,7 +160,7 @@
     .task-detail-item i {
         width: 16px;
         text-align: center;
-        color: #3498db;
+        color: var(--accent-blue);
     }
     
     .task-progress-enhanced {
@@ -130,15 +186,15 @@
         height: 100%;
         border-radius: 10px;
         transition: width 0.3s ease;
-        background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+        background: linear-gradient(90deg, var(--accent-blue) 0%, #2980b9 100%);
     }
     
     .task-progress-fill-enhanced.overdue {
-        background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+        background: linear-gradient(90deg, var(--danger-red) 0%, #c0392b 100%);
     }
     
     .task-progress-fill-enhanced.completed {
-        background: linear-gradient(90deg, #27ae60 0%, #229954 100%);
+        background: linear-gradient(90deg, var(--success-green) 0%, #229954 100%);
     }
     
     .task-tickets-info {
@@ -149,7 +205,7 @@
     }
     
     .ticket-info-item {
-        background: #ecf0f1;
+        background: var(--light-gray);
         padding: 8px;
         border-radius: 6px;
         text-align: center;
@@ -159,7 +215,7 @@
     .ticket-info-number {
         font-weight: 700;
         font-size: 1rem;
-        color: #2c3e50;
+        color: var(--text-dark);
         display: block;
     }
     
@@ -174,7 +230,7 @@
     
     .task-dates-info {
         font-size: 0.75rem;
-        color: #7f8c8d;
+        color: var(--medium-gray);
     }
     
     .task-action-buttons {
@@ -200,16 +256,17 @@
         text-decoration: none;
     }
     
-    /* Category Filter Tabs */
+    /* Category Filter Tabs - Elegant Colors */
     .category-filter-tabs {
-        background: #ffffff;
+        background: var(--white);
         border-radius: 15px;
         padding: 8px;
         margin-bottom: 25px;
-        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
         display: flex;
         gap: 4px;
         overflow-x: auto;
+        border: 1px solid var(--border-light);
     }
     
     .category-tab {
@@ -227,17 +284,20 @@
         align-items: center;
         gap: 4px;
         border: 2px solid transparent;
+        color: var(--medium-gray);
     }
     
     .category-tab:hover {
-        background: #f8f9fa;
+        background: var(--light-gray);
         text-decoration: none;
+        color: var(--text-dark);
     }
     
     .category-tab.active {
-        background: #3498db;
-        color: white;
+        background: var(--accent-blue);
+        color: var(--white);
         border-color: #2980b9;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
     }
     
     .category-tab .tab-icon {
@@ -249,10 +309,84 @@
         opacity: 0.8;
     }
     
-    .category-tab.tab-active { background: #3498db; color: white; }
-    .category-tab.tab-overdue { background: #e74c3c; color: white; }
-    .category-tab.tab-no-ddt { background: #f39c12; color: white; }
-    .category-tab.tab-with-ddt { background: #8e44ad; color: white; }
+    /* Elegant Tab Colors */
+    .category-tab.tab-active { 
+        background: var(--accent-blue); 
+        color: var(--white); 
+        border-color: #2980b9;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+    .category-tab.tab-overdue { 
+        background: var(--danger-red); 
+        color: var(--white); 
+        border-color: #c0392b;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    .category-tab.tab-no-ddt { 
+        background: var(--warning-orange); 
+        color: var(--white); 
+        border-color: #e67e22;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    }
+    .category-tab.tab-with-ddt { 
+        background: var(--purple-elegant); 
+        color: var(--white); 
+        border-color: #7d3c98;
+        box-shadow: 0 2px 8px rgba(142, 68, 173, 0.3);
+    }
+    
+    /* Status and Priority Badges - Elegant Colors */
+    .badge {
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-success {
+        background-color: var(--success-green) !important;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--warning-orange) !important;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+        color: var(--white) !important;
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--danger-red) !important;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--secondary-dark) !important;
+        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    }
+    
+    /* Empty State - Elegant */
+    .task-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--medium-gray);
+        background: var(--white);
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .task-empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: var(--border-light);
+    }
     
     /* Responsive */
     @media (max-width: 768px) {
@@ -270,6 +404,14 @@
         
         .task-tickets-info {
             grid-template-columns: 1fr;
+        }
+        
+        .page-header {
+            padding: 1.5rem 1.25rem;
+        }
+        
+        .page-title {
+            font-size: 2rem;
         }
     }
 </style>
@@ -382,7 +524,14 @@ function clearFilters() {
 </div>
 
 <div class="container-fluid">
-    <!-- Category Filter Tabs -->
+    <!-- Category Filter Tabs with Dynamic Counts -->
+    {% set active_count = active_tasks|length + overdue_tasks|length + completed_no_ddt_tasks|length + completed_with_ddt_tasks|length %}
+    {% set overdue_count = overdue_tasks|length + active_tasks|length + completed_no_ddt_tasks|length + completed_with_ddt_tasks|length %}
+    {% set no_ddt_count = completed_no_ddt_tasks|length + active_tasks|length + overdue_tasks|length + completed_with_ddt_tasks|length %}
+    {% set with_ddt_count = completed_with_ddt_tasks|length + active_tasks|length + overdue_tasks|length + completed_no_ddt_tasks|length %}
+    {% set total_count = active_tasks|length + overdue_tasks|length + completed_no_ddt_tasks|length + completed_with_ddt_tasks|length %}
+    
+    <!-- Calculate real counts from backend stats -->
     <div class="category-filter-tabs">
         <a href="{{ url_for('tasks.admin_dashboard', category='active', query=search, date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" 
            class="category-tab {% if category_filter == 'active' %}tab-active{% endif %}">
@@ -538,7 +687,7 @@ function clearFilters() {
         'clear_url': url_for('tasks.admin_dashboard', date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status, category=current_filters.category)
     }) }}
 
-    <!-- Tasks Content -->
+    <!-- Enhanced Task Card Macro -->
     {% macro render_enhanced_task_card(task, task_type='active') %}
     <div class="col-lg-6 col-xl-4 mb-4">
         <div class="task-card-enhanced task-{{ task_type }} clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
@@ -548,13 +697,13 @@ function clearFilters() {
                 <div class="task-badges-enhanced">
                     <span class="task-status-enhanced task-status-{{ task.status }}">
                         {{ task.status.replace('_', ' ').title() }}
-                                </span>
+                    </span>
                     <span class="task-priority-enhanced task-priority-{{ task.priority }}">
-                                    {{ task.priority.title() }}
-                                </span>
-                            </div>
-                        </div>
-                        
+                        {{ task.priority.title() }}
+                    </span>
+                </div>
+            </div>
+            
             <!-- Task Title -->
             <div class="task-title-enhanced">{{ task.title }}</div>
             
@@ -584,39 +733,39 @@ function clearFilters() {
                 <div class="task-detail-item">
                     <i class="fas fa-file-alt text-purple"></i>
                     <span>DDT #{{ task.ddt_id }}</span>
-                                </div>
+                </div>
                 {% endif %}
                 {% if task.client %}
                 <div class="task-detail-item">
                     <i class="fas fa-building"></i>
                     <span>{{ task.client.Nombre[:20] }}{% if task.client.Nombre|length > 20 %}...{% endif %}</span>
-                                </div>
+                </div>
                 {% endif %}
-                            </div>
-                            
+            </div>
+            
             <!-- Task Progress -->
             <div class="task-progress-enhanced">
                 <div class="task-progress-header">
                     <span style="font-weight: 600; font-size: 0.9rem;">Progresso Task</span>
                     <span style="font-weight: 700; color: #2c3e50;">{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
-                                </div>
+                </div>
                 <div class="task-progress-bar-enhanced">
                     <div class="task-progress-fill-enhanced {% if task.is_overdue %}overdue{% elif task.status == 'completed' %}completed{% endif %}" 
                          style="width: {% if task.total_tickets > 0 %}{{ (task.completed_tickets / task.total_tickets * 100)|round|int }}%{% else %}0%{% endif %}">
-                                </div>
-                            </div>
-                        </div>
-                        
+                    </div>
+                </div>
+            </div>
+            
             <!-- Tickets Info -->
             <div class="task-tickets-info">
                 <div class="ticket-info-item">
                     <span class="ticket-info-number">{{ task.total_tickets }}</span>
                     <div>Ticket Tot.</div>
-                        </div>
+                </div>
                 <div class="ticket-info-item">
                     <span class="ticket-info-number">{{ task.completed_tickets }}</span>
                     <div>Completati</div>
-                    </div>
+                </div>
                 <div class="ticket-info-item">
                     <span class="ticket-info-number">{{ task.total_tickets - task.completed_tickets }}</span>
                     <div>Rimanenti</div>
@@ -641,22 +790,27 @@ function clearFilters() {
                     {% endif %}
                 </div>
                 <div class="task-action-buttons">
-                    <a href="#" class="btn-task-action" style="background: #3498db; color: white; border-color: #3498db;" 
+                    <!-- Bottone Dettagli sempre visibile -->
+                    <a href="#" class="btn-task-action" style="background: var(--accent-blue); color: white; border-color: var(--accent-blue);" 
                        data-action="view" data-task-id="{{ task.id_task }}">
                         <i class="fas fa-eye"></i> Dettagli
                     </a>
-                    {% if current_user.is_admin and task.status != 'completed' %}
-                    <a href="#" class="btn-task-action" style="background: #f39c12; color: white; border-color: #f39c12;" 
+                    
+                    <!-- Bottone Modifica sempre visibile per admin -->
+                    {% if current_user.is_admin %}
+                    <a href="#" class="btn-task-action" style="background: var(--warning-orange); color: white; border-color: var(--warning-orange);" 
                        data-action="edit" data-task-id="{{ task.id_task }}">
                         <i class="fas fa-edit"></i> Modifica
                     </a>
                     {% endif %}
+                    
+                    <!-- Bottone DDT solo per task completati senza DDT -->
                     {% if task.is_completed and not task.ddt_generated and current_user.is_admin %}
-                    <a href="#" class="btn-task-action" style="background: #8e44ad; color: white; border-color: #8e44ad;" 
+                    <a href="#" class="btn-task-action" style="background: var(--purple-elegant); color: white; border-color: var(--purple-elegant);" 
                        data-action="ddt" data-task-id="{{ task.id_task }}">
                         <i class="fas fa-file-alt"></i> DDT
                     </a>
-            {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -678,9 +832,9 @@ function clearFilters() {
                 {% for task in active_tasks %}
                 {{ render_enhanced_task_card(task, 'active') }}
                 {% endfor %}
-                                </div>
-                            </div>
-                        </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
     {% endif %}
 
@@ -693,7 +847,7 @@ function clearFilters() {
                 <i class="fas fa-exclamation-triangle me-2"></i>Task Scaduti ({{ overdue_tasks|length }})
             </h5>
             <small class="text-danger">Task che hanno superato la scadenza</small>
-                        </div>
+        </div>
         <div class="card-body">
             <div class="row">
                 {% for task in overdue_tasks %}
@@ -720,9 +874,9 @@ function clearFilters() {
                 {% for task in completed_no_ddt_tasks %}
                 {{ render_enhanced_task_card(task, 'completed') }}
                 {% endfor %}
-                                </div>
-                            </div>
-                        </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
     {% endif %}
 
@@ -735,7 +889,7 @@ function clearFilters() {
                 <i class="fas fa-file-alt me-2"></i>Task Completati con DDT ({{ completed_with_ddt_tasks|length }})
             </h5>
             <small class="text-success">Task completati con DDT generato</small>
-                        </div>
+        </div>
         <div class="card-body">
             <div class="row">
                 {% for task in completed_with_ddt_tasks %}
@@ -745,8 +899,8 @@ function clearFilters() {
         </div>
     </div>
     {% endif %}
-                    {% endif %}
-                    
+    {% endif %}
+
     <!-- Empty State -->
     {% if not active_tasks and not overdue_tasks and not completed_no_ddt_tasks and not completed_with_ddt_tasks %}
     <div class="text-center py-5">

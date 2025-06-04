@@ -780,7 +780,7 @@
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 this.disabled = true;
                 
-                fetch('{{ url_for("tasks.remove_ticket_from_task") }}', {
+                fetch('{{ url_for("tasks.api_remove_ticket_from_task") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -793,35 +793,56 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Remove the card with animation
-                        const card = this.closest('.ticket-simple-card').parentElement;
-                        card.style.transition = 'all 0.3s ease';
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateX(-100%)';
-                        
-                        setTimeout(() => {
-                            card.remove();
-                            // Update counters if elements exist
-                            const totalElement = document.querySelector('.stats-card h3');
-                            if (totalElement) {
-                                const currentTotal = parseInt(totalElement.textContent);
-                                totalElement.textContent = currentTotal - 1;
-                            }
-                        }, 300);
-                        
-                        // Show success message
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                        alertDiv.style.position = 'fixed';
-                        alertDiv.style.top = '20px';
-                        alertDiv.style.right = '20px';
-                        alertDiv.style.zIndex = '9999';
-                        alertDiv.innerHTML = `
-                            Ticket #${ticketNumber} rimosso dal task con successo.
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        `;
-                        document.body.appendChild(alertDiv);
-                        setTimeout(() => alertDiv.remove(), 5000);
+                        // Check if task was deleted
+                        if (data.task_deleted) {
+                            // Show success message and redirect to dashboard
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                            alertDiv.style.position = 'fixed';
+                            alertDiv.style.top = '20px';
+                            alertDiv.style.right = '20px';
+                            alertDiv.style.zIndex = '9999';
+                            alertDiv.innerHTML = `
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(alertDiv);
+                            
+                            // Redirect to dashboard after 2 seconds
+                            setTimeout(() => {
+                                window.location.href = data.redirect_url || '{{ url_for("tasks.admin_dashboard") }}';
+                            }, 2000);
+                        } else {
+                            // Remove the card with animation
+                            const card = this.closest('.ticket-simple-card').parentElement;
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateX(-100%)';
+                            
+                            setTimeout(() => {
+                                card.remove();
+                                // Update counters if elements exist
+                                const totalElement = document.querySelector('.stats-card h3');
+                                if (totalElement) {
+                                    const currentTotal = parseInt(totalElement.textContent);
+                                    totalElement.textContent = currentTotal - 1;
+                                }
+                            }, 300);
+                            
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                            alertDiv.style.position = 'fixed';
+                            alertDiv.style.top = '20px';
+                            alertDiv.style.right = '20px';
+                            alertDiv.style.zIndex = '9999';
+                            alertDiv.innerHTML = `
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.body.appendChild(alertDiv);
+                            setTimeout(() => alertDiv.remove(), 5000);
+                        }
                     } else {
                         // Show error message
                         const alertDiv = document.createElement('div');

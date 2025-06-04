@@ -342,4 +342,122 @@ class SystemConfigForm(FlaskForm):
         default=30
     )
     
+    # 9. Gestione Chat
+    enable_chat_auto_cleanup = BooleanField(
+        'Svuotamento Automatico Chat',
+        description='Abilita svuotamento automatico periodico della chat',
+        default=False
+    )
+    
+    chat_cleanup_frequency_days = IntegerField(
+        'Frequenza Svuotamento Chat (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Ogni quanti giorni svuotare automaticamente la chat',
+        default=7
+    )
+    
+    enable_chat_auto_backup = BooleanField(
+        'Backup Automatico Chat',
+        description='Crea backup automatico prima dello svuotamento',
+        default=True
+    )
+    
+    chat_backup_retention_days = IntegerField(
+        'Conservazione Backup Chat (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Per quanti giorni conservare i backup della chat',
+        default=30
+    )
+    
+    chat_backup_path = StringField(
+        'Percorso Backup Chat',
+        validators=[Optional(), Length(max=255)],
+        description='Cartella dove salvare i backup della chat (relativa alla root dell\'app)',
+        default='Backup/Chat'
+    )
+    
+    # 10. Gestione Backup Clienti
+    enable_clienti_auto_backup = BooleanField(
+        'Backup Automatico Clienti',
+        description='Crea backup automatico periodico dei dati clienti',
+        default=True
+    )
+    
+    clienti_backup_frequency_days = IntegerField(
+        'Frequenza Backup Clienti (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Ogni quanti giorni eseguire backup automatico dei clienti',
+        default=7
+    )
+    
+    clienti_backup_retention_days = IntegerField(
+        'Conservazione Backup Clienti (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Per quanti giorni conservare i backup dei clienti',
+        default=30
+    )
+    
+    clienti_backup_path = StringField(
+        'Percorso Backup Clienti',
+        validators=[Optional(), Length(max=255)],
+        description='Cartella dove salvare i backup dei clienti (relativa alla root dell\'app)',
+        default='Backup/Clienti'
+    )
+    
+    # 11. Gestione Backup DDT
+    enable_ddt_auto_backup = BooleanField(
+        'Backup Automatico DDT',
+        description='Crea backup automatico periodico dei DDT',
+        default=True
+    )
+    
+    ddt_backup_frequency_days = IntegerField(
+        'Frequenza Backup DDT (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Ogni quanti giorni eseguire backup automatico dei DDT',
+        default=7
+    )
+    
+    ddt_backup_retention_days = IntegerField(
+        'Conservazione Backup DDT (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Per quanti giorni conservare i backup dei DDT',
+        default=30
+    )
+    
+    ddt_backup_path = StringField(
+        'Percorso Backup DDT',
+        validators=[Optional(), Length(max=255)],
+        description='Cartella dove salvare i backup dei DDT (relativa alla root dell\'app)',
+        default='Backup/DDT'
+    )
+    
+    # 12. Gestione Backup Fatture
+    enable_fatture_auto_backup = BooleanField(
+        'Backup Automatico Fatture',
+        description='Crea backup automatico periodico delle fatture',
+        default=True
+    )
+    
+    fatture_backup_frequency_days = IntegerField(
+        'Frequenza Backup Fatture (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Ogni quanti giorni eseguire backup automatico delle fatture',
+        default=7
+    )
+    
+    fatture_backup_retention_days = IntegerField(
+        'Conservazione Backup Fatture (giorni)',
+        validators=[Optional(), NumberRange(min=1, max=365)],
+        description='Per quanti giorni conservare i backup delle fatture',
+        default=30
+    )
+    
+    fatture_backup_path = StringField(
+        'Percorso Backup Fatture',
+        validators=[Optional(), Length(max=255)],
+        description='Cartella dove salvare i backup delle fatture (relativa alla root dell\'app)',
+        default='Backup/Fatture'
+    )
+    
     submit = SubmitField('Salva Configurazioni') 

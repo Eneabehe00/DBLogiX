@@ -89,7 +89,7 @@ function initializeCommonTasks() {
             // Create and submit form for ticket removal
             const form = $('<form>', {
                 'method': 'POST',
-                'action': '/tasks/remove-ticket-from-task'
+                'action': '/tasks/remove-ticket'
             });
             
             // Add CSRF token

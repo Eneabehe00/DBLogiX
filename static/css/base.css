@@ -97,7 +97,29 @@ body {
     transition: transform var(--transition-speed) ease, width var(--transition-speed) ease;
     box-shadow: var(--box-shadow);
     overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.sidebar:hover {
     overflow-y: auto;
+}
+
+/* Aggiunto stile per la scrollbar personalizzata */
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .sidebar-header {
@@ -134,8 +156,31 @@ body {
 
 .sidebar-content {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     padding: 10px 0;
+    min-height: 0;
+}
+
+.sidebar-content:hover {
+    overflow-y: auto;
+}
+
+/* Aggiunto stile per la scrollbar del contenuto */
+.sidebar-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .sidebar-nav {
@@ -163,7 +208,7 @@ body {
 }
 
 .sidebar-link i:first-child {
-    margin-right: 10px;
+    margin-right: 15px;
     width: 20px;
     text-align: center;
 }
@@ -212,6 +257,12 @@ body {
     transition: background-color var(--transition-speed) ease;
 }
 
+.sidebar-submenu li a i {
+    margin-right: 15px;
+    width: 20px;
+    text-align: center;
+}
+
 .sidebar-submenu li a:hover {
     background-color: var(--sidebar-hover);
 }
@@ -254,6 +305,12 @@ body {
     padding-left: 90px;
 }
 
+.sidebar-submenu .sidebar-submenu .sidebar-submenu li a i {
+    margin-right: 15px;
+    width: 20px;
+    text-align: center;
+}
+
 /* Ensure submenu toggle arrows have proper styling in all levels */
 .sidebar-submenu .submenu-toggle .submenu-arrow {
     margin-left: auto;
@@ -285,6 +342,7 @@ body {
     align-items: center;
     justify-content: space-between;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 .user-info {
@@ -293,7 +351,7 @@ body {
 }
 
 .user-info i {
-    margin-right: 10px;
+    margin-right: 15px;
     font-size: 1.2rem;
 }
 
@@ -393,6 +451,7 @@ body {
     .sidebar {
         transform: translateX(-100%);
         width: 280px;
+        overflow-y: auto;
     }
     
     .sidebar.active {
@@ -417,6 +476,18 @@ body {
     .sidebar-submenu {
         background-color: rgba(0, 0, 0, 0.2);
     }
+    
+    .sidebar-link i:first-child {
+        margin-right: 15px;
+    }
+    
+    .sidebar-submenu li a i {
+        margin-right: 15px;
+    }
+    
+    .user-info i {
+        margin-right: 15px;
+    }
 }
 
 /* Tablet Adjustments */
@@ -433,6 +504,11 @@ body {
 /* Collapsed Sidebar (Desktop) */
 .sidebar.collapsed {
     width: var(--sidebar-width-collapsed);
+    overflow-y: hidden;
+}
+
+.sidebar.collapsed:hover {
+    overflow-y: auto;
 }
 
 .sidebar.collapsed .sidebar-title,
@@ -448,6 +524,7 @@ body {
 
 .sidebar.collapsed .sidebar-link i:first-child {
     margin-right: 0;
+    width: auto;
 }
 
 .sidebar.collapsed .submenu-arrow {
@@ -538,7 +615,7 @@ body {
 
 /* Breadcrumbs */
 .breadcrumb-item + .breadcrumb-item::before {
-    content: "›";
+    content: "â€º";
 }
 
 /* Card styles */

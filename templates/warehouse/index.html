@@ -502,7 +502,7 @@
                             </thead>
                             <tbody>
                                 {% for ticket in recent_tickets %}
-                                <tr class="ticket-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}">
+                                <tr class="clickable-row" data-href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}">
                                     <td data-label="Numero">
                                         <span class="ticket-number">#{{ ticket.NumTicket }}</span>
                                     </td>
@@ -567,7 +567,7 @@
                             </thead>
                             <tbody>
                                 {% for scan in recent_scans %}
-                                <tr class="activity-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}">
+                                <tr class="clickable-row" data-href="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}">
                                     <td data-label="Ticket">
                                         <span class="activity-number">#{{ scan.ticket_id or 'N/D' }}</span>
                                     </td>
@@ -646,7 +646,7 @@
                     <div class="mobile-table-container">
                         {% if recent_tickets %}
                             {% for ticket in recent_tickets %}
-                            <div class="mobile-table-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}">
+                            <div class="mobile-table-row clickable-row" data-href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}">
                                 <div class="row g-0">
                                     <div class="col-6">
                                         <div class="mobile-cell">
@@ -699,7 +699,7 @@
                     <div class="mobile-table-container">
                         {% if recent_scans %}
                             {% for scan in recent_scans %}
-                            <div class="mobile-table-row" data-url="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}">
+                            <div class="mobile-table-row clickable-row" data-href="{{ url_for('warehouse.ticket_detail', ticket_id=scan.ticket_id) if scan.ticket_id else '#' }}">
                                 <div class="row g-0">
                                     <div class="col-6">
                                         <div class="mobile-cell">
@@ -761,9 +761,9 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Make rows clickable to view detail
-    const ticketRows = document.querySelectorAll('.ticket-row, .activity-row');
+    const ticketRows = document.querySelectorAll('.clickable-row');
     ticketRows.forEach(function(row) {
-        const url = row.dataset.url;
+        const url = row.dataset.href;
         if (url && url !== '#') {
             row.style.cursor = 'pointer';
             row.addEventListener('click', function(e) {
@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Make mobile rows clickable
     const mobileRows = document.querySelectorAll('.mobile-table-row');
     mobileRows.forEach(function(row) {
-        const url = row.dataset.url;
+        const url = row.dataset.href;
         if (url && url !== '#') {
             row.style.cursor = 'pointer';
             row.addEventListener('click', function(e) {

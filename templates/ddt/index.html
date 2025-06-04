@@ -166,7 +166,7 @@
                     </thead>
                     <tbody>
                         {% for ddt in ddts.items %}
-                        <tr data-url="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" style="cursor: pointer;" class="table-row">
+                        <tr data-href="{{ url_for('ddt.detail', ddt_id=ddt.id) }}" style="cursor: pointer;" class="clickable-row">
                             <td data-label="ID">
                                 <span class="badge bg-primary">{{ ddt.id }}</span>
                             </td>
@@ -287,7 +287,7 @@
         // Enhanced search functionality - prioritize server-side search
         let searchTimeout;
         const searchInput = document.getElementById('searchInput');
-        const tableRows = document.querySelectorAll('.table-row');
+        const tableRows = document.querySelectorAll('.clickable-row');
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         const clearSearchBtn = document.getElementById('clearSearch');
@@ -423,15 +423,6 @@
                 updateVisibleCount();
             });
         }
-        
-        // Make rows clickable to view detail
-        tableRows.forEach(function(row) {
-            row.addEventListener('click', function() {
-                if (this.dataset.url) {
-                    window.location.href = this.dataset.url;
-                }
-            });
-        });
         
         // Print functionality (legacy support)
         window.printDDT = function(id) {

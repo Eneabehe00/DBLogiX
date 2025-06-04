@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </thead>
                         <tbody>
                             {% for section in sections.items %}
-                            <tr class="section-row" data-url="{{ url_for('sections.view', id=section.IdSeccion) }}">
+                            <tr class="clickable-row" data-href="{{ url_for('sections.view', id=section.IdSeccion) }}">
                                 <td data-label="ID">
                                     <span class="fw-bold text-primary">#{{ section.IdSeccion }}</span>
                                 </td>

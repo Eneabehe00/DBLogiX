@@ -55,24 +55,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle clickable table rows globally
-    const handleClickableRows = function() {
-        const clickableRows = document.querySelectorAll('.clickable-row, .home-table-row');
-        clickableRows.forEach(function(row) {
+    // Handle clickable table rows and cards globally
+    const handleClickableElements = function() {
+        const clickableElements = document.querySelectorAll('.clickable-row, .home-table-row, .clickable-card');
+        clickableElements.forEach(function(element) {
             // Add keyboard accessibility
-            if (!row.hasAttribute('tabindex')) {
-                row.setAttribute('tabindex', '0');
+            if (!element.hasAttribute('tabindex')) {
+                element.setAttribute('tabindex', '0');
             }
-            if (!row.hasAttribute('role')) {
-                row.setAttribute('role', 'button');
+            if (!element.hasAttribute('role')) {
+                element.setAttribute('role', 'button');
             }
             
             // Remove existing event listeners to prevent duplicates
-            const newRow = row.cloneNode(true);
-            row.parentNode.replaceChild(newRow, row);
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
             
             // Handle click events
-            newRow.addEventListener('click', function(e) {
+            newElement.addEventListener('click', function(e) {
                 // Don't trigger if clicking on buttons, links, or form elements
                 if (e.target.closest('button, a, input, select, textarea, .btn')) {
                     return;
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Handle keyboard navigation
-            newRow.addEventListener('keypress', function(e) {
+            newElement.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     this.click();
@@ -102,13 +102,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Add hover effects for better UX
-            newRow.addEventListener('mouseenter', function() {
+            newElement.addEventListener('mouseenter', function() {
                 if (!this.style.backgroundColor || this.style.backgroundColor === '') {
                     this.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
                 }
             });
             
-            newRow.addEventListener('mouseleave', function() {
+            newElement.addEventListener('mouseleave', function() {
                 if (this.style.backgroundColor === 'rgba(13, 110, 253, 0.05)') {
                     this.style.backgroundColor = '';
                 }
@@ -116,18 +116,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
     
-    // Initialize clickable rows
-    handleClickableRows();
+    // Initialize clickable elements
+    handleClickableElements();
     
-    // Reinitialize clickable rows when content is dynamically loaded
+    // Reinitialize clickable elements when content is dynamically loaded
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 mutation.addedNodes.forEach(function(node) {
                     if (node.nodeType === 1) { // Element node
-                        const newClickableRows = node.querySelectorAll ? node.querySelectorAll('.clickable-row, .home-table-row') : [];
-                        if (newClickableRows.length > 0 || node.classList?.contains('clickable-row') || node.classList?.contains('home-table-row')) {
-                            setTimeout(handleClickableRows, 100);
+                        const newClickableElements = node.querySelectorAll ? node.querySelectorAll('.clickable-row, .home-table-row, .clickable-card') : [];
+                        if (newClickableElements.length > 0 || node.classList?.contains('clickable-row') || node.classList?.contains('home-table-row') || node.classList?.contains('clickable-card')) {
+                            setTimeout(handleClickableElements, 100);
                         }
                     }
                 });

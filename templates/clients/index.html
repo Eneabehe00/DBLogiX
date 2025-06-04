@@ -364,7 +364,7 @@
                     </thead>
                     <tbody>
                         {% for client in clients %}
-                        <tr data-url="{{ url_for('clients.view', id=client.IdCliente) }}" style="cursor: pointer;" class="table-row">
+                        <tr data-href="{{ url_for('clients.view', id=client.IdCliente) }}" style="cursor: pointer;" class="clickable-row">
                             <td data-label="ID">
                                 <span class="badge bg-primary">{{ client.IdCliente }}</span>
                             </td>
@@ -407,11 +407,11 @@
                             </td>
                             <td data-label="Azioni">
                                 <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary view-btn" data-url="{{ url_for('clients.view', id=client.IdCliente) }}" title="Visualizza">
+                                    <button class="btn btn-outline-primary view-btn" data-href="{{ url_for('clients.view', id=client.IdCliente) }}" title="Visualizza">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     {% if current_user.is_admin %}
-                                    <button class="btn btn-outline-warning edit-btn" data-url="{{ url_for('clients.edit', id=client.IdCliente) }}" title="Modifica">
+                                    <button class="btn btn-outline-warning edit-btn" data-href="{{ url_for('clients.edit', id=client.IdCliente) }}" title="Modifica">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     {% endif %}
@@ -506,7 +506,7 @@
         // Enhanced search functionality - prioritize server-side search
         let searchTimeout;
         const searchInput = document.getElementById('searchInput');
-        const tableRows = document.querySelectorAll('.table-row');
+        const tableRows = document.querySelectorAll('.clickable-row');
         const cityFilter = document.getElementById('cityFilter');
         const emailFilter = document.getElementById('emailFilter');
         const clearSearchBtn = document.getElementById('clearSearch');
@@ -647,23 +647,14 @@
         document.querySelectorAll('.view-btn').forEach(function(button) {
             button.addEventListener('click', function(e) {
                 e.stopPropagation();
-                window.location.href = this.dataset.url;
+                window.location.href = this.dataset.href;
             });
         });
         
         document.querySelectorAll('.edit-btn').forEach(function(button) {
             button.addEventListener('click', function(e) {
                 e.stopPropagation();
-                window.location.href = this.dataset.url;
-            });
-        });
-        
-        // Make rows clickable to view detail
-        tableRows.forEach(function(row) {
-            row.addEventListener('click', function() {
-                if (this.dataset.url) {
-                    window.location.href = this.dataset.url;
-                }
+                window.location.href = this.dataset.href;
             });
         });
         

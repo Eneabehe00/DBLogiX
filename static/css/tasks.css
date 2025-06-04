@@ -365,6 +365,12 @@
     border: 1px solid rgba(39, 174, 96, 0.3);
 }
 
+.task-status-overdue {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: var(--danger-red);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
 .task-priority-badge {
     padding: 6px 12px;
     border-radius: 8px;

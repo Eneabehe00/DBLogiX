@@ -681,7 +681,7 @@
                 </thead>
                 <tbody>
                     {% for ticket in article_tickets %}
-                    <tr data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;">
+                    <tr data-href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;" class="clickable-row">
                         <td>{{ ticket.IdTicket }}</td>
                         <td>#{{ ticket.NumTicket }}</td>
                         <td>{{ ticket.FechaFormateada }}</td>
@@ -850,10 +850,10 @@
         });
 
         // Make ticket rows clickable
-        const ticketRows = document.querySelectorAll('tr[data-url]');
+        const ticketRows = document.querySelectorAll('tr[data-href]');
         ticketRows.forEach(function(row) {
             row.addEventListener('click', function() {
-                window.location.href = this.getAttribute('data-url');
+                window.location.href = this.getAttribute('data-href');
             });
         });
     });

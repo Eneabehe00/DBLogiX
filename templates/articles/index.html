@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </thead>
                         <tbody>
                             {% for article in articles.items %}
-                            <tr class="product-row" data-url="{{ url_for('articles.view', id=article.IdArticulo) }}">
+                            <tr class="clickable-row" data-href="{{ url_for('articles.view', id=article.IdArticulo) }}">
                                 <td data-label="ID">
                                     <span class="fw-bold text-primary">#{{ article.IdArticulo }}</span>
                                 </td>

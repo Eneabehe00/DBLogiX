@@ -560,7 +560,7 @@
                     </thead>
                     <tbody>
                         {% for ticket in tickets.items %}
-                        <tr data-url="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;" class="table-row">
+                        <tr data-href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;" class="clickable-row">
                             <td data-label="ID">
                                 <span class="badge bg-primary">{{ ticket.IdTicket }}</span>
                             </td>

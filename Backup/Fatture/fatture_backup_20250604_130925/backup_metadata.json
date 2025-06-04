@@ -1,0 +1,19 @@
+{
+  "backup_date": "2025-06-04T13:09:25.109591",
+  "total_fatture": 1,
+  "fatture_files": [
+    "IT12195720011_FPR12_2505301230.xml"
+  ],
+  "fatture_data": [
+    {
+      "filename": "IT12195720011_FPR12_2505301230.xml",
+      "file_size": 3279,
+      "creation_time": "2025-06-04T15:05:57.890315",
+      "invoice_number": "2505301230",
+      "client_name": "Bell e buon",
+      "total_amount": "208.00",
+      "ddt_reference": "3",
+      "invoice_date": "2025-05-30"
+    }
+  ]
+}

@@ -14,8 +14,10 @@
         --accent-blue: #3498db;
         --success-green: #27ae60;
         --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
         --light-gray: #ecf0f1;
-        --medium-gray: #bdc3c7;
+        --text-secondary: #34495e;
+        --text-info: #2980b9;
         --text-dark: #2c3e50;
         --white: #ffffff;
         --border-light: #e9ecef;
@@ -129,6 +131,21 @@
         cursor: pointer;
     }
     
+    .ticket-id-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: var(--accent-blue);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+        z-index: 10;
+        border: 2px solid white;
+    }
+    
     .ticket-card-enhanced:hover {
         border-color: var(--accent-blue);
         box-shadow: 0 4px 15px rgba(52, 152, 219, 0.15);
@@ -204,7 +221,7 @@
     
     .product-code {
         font-size: 0.85rem;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
         font-family: monospace;
     }
     
@@ -224,7 +241,7 @@
     
     .product-weight {
         font-size: 0.8rem;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
         background: var(--light-gray);
         padding: 2px 6px;
         border-radius: 8px;
@@ -238,7 +255,7 @@
         justify-content: between;
         align-items: center;
         font-size: 0.85rem;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
     }
     
     .more-products {
@@ -321,7 +338,7 @@
     .task-empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
     }
     
     .task-empty-state i {
@@ -350,7 +367,50 @@
     }
     
     .text-danger {
-        color: #e74c3c !important;
+        color: var(--danger-red) !important;
+    }
+
+    .form-floating label {
+        color: var(--text-secondary);
+        font-weight: 500;
+        pointer-events: none;
+        transform-origin: 0 0;
+        transition: all 0.1s ease-in-out;
+        border-radius: 4px;
+    }
+
+    .client-detail {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin: 2px 0;
+    }
+
+    .product-detail {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 2px 0;
+    }
+
+    .no-tickets-info {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 2px dashed #dee2e6;
+    }
+
+    .badge-unavailable {
+        background-color: rgba(231, 76, 60, 0.1);
+        color: var(--danger-red);
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 500;
+        opacity: 1;
     }
 </style>
 {% endblock %}
@@ -463,33 +523,106 @@
                     </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5 class="mb-1">{{ tickets|length if tickets else 0 }}</h5>
-                    <small>Ticket Disponibili</small>
+        <!-- Filtri e Ricerca Avanzata -->
+        {% if tickets %}
+        <div class="task-form-section">
+            <div class="task-form-section-header">
+                <i class="fas fa-filter"></i>
+                Filtri e Ricerca Ticket
+                <span class="badge bg-light text-dark ms-2" id="visibleTicketsCount">{{ tickets|length }} visibili</span>
+            </div>
+            
+            <div class="row g-3 mb-3">
+                <!-- Ricerca Generale -->
+                <div class="col-md-4">
+                    <label for="searchInput" class="form-label fw-bold">
+                        <i class="fas fa-search me-1"></i>Ricerca Generale
+                    </label>
+                    <input type="text" 
+                           class="form-control task-form-control" 
+                           id="searchInput" 
+                           placeholder="Cerca per ID ticket, nome prodotto, codice...">
+                    <small class="text-muted">Ricerca in tempo reale</small>
+                </div>
+                
+                <!-- Ordinamento -->
+                <div class="col-md-3">
+                    <label for="sortBy" class="form-label fw-bold">
+                        <i class="fas fa-sort me-1"></i>Ordina per
+                    </label>
+                    <select class="form-control task-form-control" id="sortBy">
+                        <option value="id_asc">ID Ticket (↑ Crescente)</option>
+                        <option value="id_desc">ID Ticket (↓ Decrescente)</option>
+                        <option value="date_asc">Data Creazione (↑ Recenti)</option>
+                        <option value="date_desc" selected>Data Creazione (↓ Meno Recenti)</option>
+                        <option value="quantity_asc">Quantità (↑ Minore)</option>
+                        <option value="quantity_desc">Quantità (↓ Maggiore)</option>
+                        <option value="expiry_asc">Scadenza (↑ Prima scade)</option>
+                        <option value="expiry_desc">Scadenza (↓ Ultima scade)</option>
+                    </select>
+                </div>
+                
+                <!-- Filtro Scadenza -->
+                <div class="col-md-3">
+                    <label for="expiryFilter" class="form-label fw-bold">
+                        <i class="fas fa-calendar-times me-1"></i>Filtro Scadenza
+                    </label>
+                    <select class="form-control task-form-control" id="expiryFilter">
+                        <option value="all">Tutti i ticket</option>
+                        <option value="expired">Solo scaduti</option>
+                        <option value="expiring">In scadenza (7 giorni)</option>
+                        <option value="valid">Solo validi</option>
+                    </select>
+                </div>
+                
+                <!-- Reset Filtri -->
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-secondary task-form-control" id="resetFilters">
+                            <i class="fas fa-undo me-1"></i>Reset
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-success">
-                    <h5 class="mb-1" id="selectedTicketCount">0</h5>
-                    <small>Ticket Selezionati</small>
-                </div>
+            
+            <!-- Filtri Avanzati (Collapsible) -->
+            <div class="mb-3">
+                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters" aria-expanded="false">
+                    <i class="fas fa-cog me-1"></i>Filtri Avanzati
+                </button>
             </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-warning">
-                    <h5 class="mb-1" id="selectedLineCount">0</h5>
-                    <small>Linee Prodotti</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card bg-info">
-                    <h5 class="mb-1" id="selectedProductCount">0</h5>
-                    <small>Articoli Totali</small>
+            
+            <div class="collapse" id="advancedFilters">
+                <div class="row g-3 p-3" style="background: #f8f9fa; border-radius: 10px; border: 1px solid #dee2e6;">
+                    <div class="col-md-3">
+                        <label for="minQuantity" class="form-label fw-bold">
+                            <i class="fas fa-arrow-up me-1"></i>Quantità Min
+                        </label>
+                        <input type="number" class="form-control task-form-control" id="minQuantity" min="0" placeholder="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="maxQuantity" class="form-label fw-bold">
+                            <i class="fas fa-arrow-down me-1"></i>Quantità Max
+                        </label>
+                        <input type="number" class="form-control task-form-control" id="maxQuantity" min="0" placeholder="∞">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateFrom" class="form-label fw-bold">
+                            <i class="fas fa-calendar-plus me-1"></i>Data Da
+                        </label>
+                        <input type="date" class="form-control task-form-control" id="dateFrom">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="dateTo" class="form-label fw-bold">
+                            <i class="fas fa-calendar-minus me-1"></i>Data A
+                        </label>
+                        <input type="date" class="form-control task-form-control" id="dateTo">
+                    </div>
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- Ticket Selection Section -->
         <div class="task-form-section">
@@ -527,6 +660,11 @@
                 <div class="ticket-grid">
                     {% for ticket in tickets %}
                 <div class="ticket-card-enhanced" data-ticket-id="{{ ticket.IdTicket }}">
+                    <!-- IdTicket Badge in alto a destra -->
+                    <div class="ticket-id-badge">
+                        ID: {{ ticket.IdTicket }}
+                    </div>
+                    
                     <div class="ticket-header">
                             <div class="ticket-selection">
                                 <input type="checkbox" 
@@ -569,7 +707,13 @@
                                         {{ line.FechaCaducidad.strftime('%d/%m/%Y') if line.FechaCaducidad.__class__.__name__ == 'datetime' else line.FechaCaducidad.strftime('%d/%m/%Y') }}
                                     </div>
                                         {% endif %}
-                                    <div class="product-weight">{{ line.Peso }}kg</div>
+                                    <div class="product-weight">
+                                        {% if line.comportamiento == 0 %}
+                                            {{ line.Peso|int if line.Peso == line.Peso|int else line.Peso }} unità
+                                        {% else %}
+                                            {{ "%.3f"|format(line.Peso) }} kg
+                                        {% endif %}
+                                    </div>
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -643,13 +787,213 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectAllBtn = document.getElementById('selectAllBtn');
     const deselectAllBtn = document.getElementById('deselectAllBtn');
     const createTaskBtn = document.getElementById('createTaskBtn');
-    const selectedTicketCount = document.getElementById('selectedTicketCount');
-    const selectedLineCount = document.getElementById('selectedLineCount');
-    const selectedProductCount = document.getElementById('selectedProductCount');
     const selectedBadge = document.getElementById('selectedBadge');
     const createBtnHelpText = document.getElementById('createBtnHelpText');
     const createTaskForm = document.getElementById('createTaskForm');
     const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    // Filtri e ricerca
+    const searchInput = document.getElementById('searchInput');
+    const sortBy = document.getElementById('sortBy');
+    const expiryFilter = document.getElementById('expiryFilter');
+    const resetFilters = document.getElementById('resetFilters');
+    const visibleTicketsCount = document.getElementById('visibleTicketsCount');
+    const minQuantity = document.getElementById('minQuantity');
+    const maxQuantity = document.getElementById('maxQuantity');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    
+    const ticketCards = document.querySelectorAll('.ticket-card-enhanced');
+    let originalOrder = Array.from(ticketCards);
+
+    // Funzione per ottenere i dati di un ticket per il filtro/ordinamento
+    function getTicketData(card) {
+        const ticketId = parseInt(card.dataset.ticketId);
+        const ticketNumber = card.querySelector('.ticket-number').textContent.replace('#', '');
+        const productRows = card.querySelectorAll('.product-row');
+        const productCount = productRows.length;
+        
+        // Estrai nomi prodotti per la ricerca
+        const productNames = Array.from(productRows).map(row => {
+            const nameEl = row.querySelector('.product-name');
+            const codeEl = row.querySelector('.product-code');
+            return (nameEl?.textContent || '') + ' ' + (codeEl?.textContent || '');
+        }).join(' ').toLowerCase();
+        
+        // Calcola quantità totale considerando comportamiento
+        let totalQuantity = 0;
+        Array.from(productRows).forEach(row => {
+            const weightEl = row.querySelector('.product-weight');
+            if (weightEl) {
+                const weightText = weightEl.textContent.trim();
+                // Estrai il numero dal testo (sia kg che unità)
+                const numberMatch = weightText.match(/(\d+(?:\.\d+)?)/);
+                if (numberMatch) {
+                    totalQuantity += parseFloat(numberMatch[1]);
+                }
+            }
+        });
+        
+        // Estrai date di scadenza
+        const expiryDates = Array.from(productRows).map(row => {
+            const expiryEl = row.querySelector('.product-expiry');
+            if (expiryEl && expiryEl.dataset.expiry) {
+                const [day, month, year] = expiryEl.dataset.expiry.split('/');
+                return new Date(year, month - 1, day);
+            }
+            return null;
+        }).filter(date => date !== null);
+        
+        // Data di creazione (dal footer del ticket)
+        const dateEl = card.querySelector('.ticket-footer span');
+        let creationDate = new Date();
+        if (dateEl) {
+            const dateText = dateEl.textContent.trim();
+            const dateMatch = dateText.match(/(\d{2}\/\d{2}\/\d{4})/);
+            if (dateMatch) {
+                const [day, month, year] = dateMatch[1].split('/');
+                creationDate = new Date(year, month - 1, day);
+            }
+        }
+        
+        // Calcola scadenza più vicina
+        const nearestExpiry = expiryDates.length > 0 ? 
+            new Date(Math.min(...expiryDates.map(d => d.getTime()))) : null;
+        
+        // Calcola stato scadenza
+        let expiryStatus = 'valid';
+        if (nearestExpiry) {
+            const today = new Date();
+            const diffDays = Math.ceil((nearestExpiry - today) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                expiryStatus = 'expired';
+            } else if (diffDays <= 7) {
+                expiryStatus = 'expiring';
+            } else {
+                expiryStatus = 'valid';
+            }
+        }
+        
+        return {
+            id: ticketId,
+            number: ticketNumber,
+            productCount: productCount,
+            totalQuantity: totalQuantity,  // Aggiunta quantità totale
+            productNames: productNames,
+            creationDate: creationDate,
+            nearestExpiry: nearestExpiry,
+            expiryStatus: expiryStatus,
+            element: card
+        };
+    }
+
+    // Funzione per applicare tutti i filtri
+    function applyFilters() {
+        const searchTerm = searchInput?.value.toLowerCase() || '';
+        const expiryFilterValue = expiryFilter?.value || 'all';
+        const minQty = minQuantity?.value ? parseInt(minQuantity.value) : null;
+        const maxQty = maxQuantity?.value ? parseInt(maxQuantity.value) : null;
+        const fromDate = dateFrom?.value ? new Date(dateFrom.value) : null;
+        const toDate = dateTo?.value ? new Date(dateTo.value) : null;
+        
+        let visibleCount = 0;
+        
+        ticketCards.forEach(card => {
+            const data = getTicketData(card);
+            let visible = true;
+            
+            // Filtro ricerca generale
+            if (searchTerm) {
+                const searchableText = (
+                    data.id.toString() + ' ' +
+                    data.number + ' ' +
+                    data.productNames
+                ).toLowerCase();
+                
+                if (!searchableText.includes(searchTerm)) {
+                    visible = false;
+                }
+            }
+            
+            // Filtro scadenza
+            if (expiryFilterValue !== 'all') {
+                if (data.expiryStatus !== expiryFilterValue) {
+                    visible = false;
+                }
+            }
+            
+            // Filtro quantità
+            if (minQty !== null && data.totalQuantity < minQty) {
+                visible = false;
+            }
+            
+            if (maxQty !== null && data.totalQuantity > maxQty) {
+                visible = false;
+            }
+            
+            // Filtro date
+            if (fromDate && data.creationDate < fromDate) {
+                visible = false;
+            }
+            
+            if (toDate && data.creationDate > toDate) {
+                visible = false;
+            }
+            
+            // Applica visibilità
+            card.style.display = visible ? 'block' : 'none';
+            if (visible) visibleCount++;
+        });
+        
+        // Aggiorna contatore
+        if (visibleTicketsCount) {
+            visibleTicketsCount.textContent = `${visibleCount} visibili`;
+        }
+        
+        // Aggiorna stats solo per i ticket visibili
+        updateStats();
+    }
+
+    // Funzione per ordinare i ticket
+    function sortTickets() {
+        const sortValue = sortBy?.value || 'date_desc';
+        const [field, direction] = sortValue.split('_');
+        
+        const ticketData = Array.from(ticketCards).map(card => getTicketData(card));
+        
+        ticketData.sort((a, b) => {
+            let comparison = 0;
+            
+            switch (field) {
+                case 'id':
+                    comparison = a.id - b.id;
+                    break;
+                case 'date':
+                    comparison = a.creationDate - b.creationDate;
+                    break;
+                case 'quantity':
+                    comparison = a.totalQuantity - b.totalQuantity;
+                    break;
+                case 'expiry':
+                    if (!a.nearestExpiry && !b.nearestExpiry) comparison = 0;
+                    else if (!a.nearestExpiry) comparison = 1;
+                    else if (!b.nearestExpiry) comparison = -1;
+                    else comparison = a.nearestExpiry - b.nearestExpiry;
+                    break;
+            }
+            
+            return direction === 'desc' ? -comparison : comparison;
+        });
+        
+        // Riordina gli elementi nel DOM
+        const container = document.querySelector('.ticket-grid');
+        if (container) {
+            ticketData.forEach(data => {
+                container.appendChild(data.element);
+            });
+        }
+    }
 
     function updateStats() {
         let selectedCount = 0;
@@ -657,14 +1001,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let uniqueProducts = new Set();
 
         checkboxes.forEach(function(checkbox) {
-            if (checkbox.checked) {
+            const card = checkbox.closest('.ticket-card-enhanced');
+            
+            // Solo conta i ticket visibili e selezionati
+            if (checkbox.checked && card.style.display !== 'none') {
                 selectedCount++;
                 const lines = parseInt(checkbox.dataset.lines) || 0;
                 totalLines += lines;
                 
                 // Get unique products from this ticket
-                const ticketCard = checkbox.closest('.ticket-card-enhanced');
-                const productRows = ticketCard.querySelectorAll('.product-row');
+                const productRows = card.querySelectorAll('.product-row');
                 productRows.forEach(function(row) {
                     const productCode = row.querySelector('.product-code');
                     if (productCode) {
@@ -676,9 +1022,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Update stats
-        selectedTicketCount.textContent = selectedCount;
-        selectedLineCount.textContent = totalLines;
-        selectedProductCount.textContent = uniqueProducts.size;
         selectedBadge.textContent = selectedCount + ' selezionati';
 
         // Update create button state
@@ -699,6 +1042,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Event listeners per filtri
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+    }
+    
+    if (sortBy) {
+        sortBy.addEventListener('change', function() {
+            sortTickets();
+            applyFilters();
+        });
+    }
+    
+    if (expiryFilter) {
+        expiryFilter.addEventListener('change', applyFilters);
+    }
+    
+    if (minQuantity) {
+        minQuantity.addEventListener('input', applyFilters);
+    }
+    
+    if (maxQuantity) {
+        maxQuantity.addEventListener('input', applyFilters);
+    }
+    
+    if (dateFrom) {
+        dateFrom.addEventListener('change', applyFilters);
+    }
+    
+    if (dateTo) {
+        dateTo.addEventListener('change', applyFilters);
+    }
+    
+    if (resetFilters) {
+        resetFilters.addEventListener('click', function() {
+            // Reset tutti i campi
+            if (searchInput) searchInput.value = '';
+            if (sortBy) sortBy.value = 'date_desc';
+            if (expiryFilter) expiryFilter.value = 'all';
+            if (minQuantity) minQuantity.value = '';
+            if (maxQuantity) maxQuantity.value = '';
+            if (dateFrom) dateFrom.value = '';
+            if (dateTo) dateTo.value = '';
+            
+            // Ripristina ordine originale
+            const container = document.querySelector('.ticket-grid');
+            if (container) {
+                originalOrder.forEach(card => {
+                    container.appendChild(card);
+                });
+            }
+            
+            applyFilters();
+        });
+    }
+
     // Event listeners for checkboxes
     checkboxes.forEach(function(checkbox) {
         checkbox.addEventListener('change', function() {
@@ -716,9 +1114,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', function() {
             checkboxes.forEach(function(checkbox) {
-                if (!checkbox.disabled) {
+                const card = checkbox.closest('.ticket-card-enhanced');
+                // Solo seleziona i ticket visibili
+                if (!checkbox.disabled && card.style.display !== 'none') {
                     checkbox.checked = true;
-                    checkbox.closest('.ticket-card-enhanced').classList.add('selected');
+                    card.classList.add('selected');
                 }
             });
             updateStats();
@@ -761,7 +1161,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Initial stats update
+    // Inizializzazione
+    sortTickets();
+    applyFilters();
     updateStats();
 });
 </script>

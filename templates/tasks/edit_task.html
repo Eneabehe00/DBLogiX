@@ -16,7 +16,8 @@
         --warning-orange: #f39c12;
         --danger-red: #e74c3c;
         --light-gray: #ecf0f1;
-        --medium-gray: #bdc3c7;
+        --text-secondary: #34495e;
+        --text-info: #2980b9;
         --text-dark: #2c3e50;
         --white: #ffffff;
         --border-light: #e9ecef;
@@ -139,7 +140,7 @@
     }
 
     .btn-secondary {
-        background: linear-gradient(135deg, var(--medium-gray) 0%, #95a5a6 100%);
+        background: linear-gradient(135deg, var(--text-secondary) 0%, #95a5a6 100%);
         color: var(--text-dark);
     }
 
@@ -211,23 +212,28 @@
         letter-spacing: 0.5px;
     }
 
-    .ticket-status-pending {
-        background: linear-gradient(135deg, var(--medium-gray) 0%, #95a5a6 100%);
+    .status-badge.status-pending {
+        background: linear-gradient(135deg, var(--text-secondary) 0%, #95a5a6 100%);
         color: var(--white);
     }
 
-    .ticket-status-assigned {
+    .status-badge.status-assigned {
         background: linear-gradient(135deg, var(--accent-blue) 0%, #2980b9 100%);
         color: var(--white);
     }
 
-    .ticket-status-in_progress {
+    .status-badge.status-in_progress {
         background: linear-gradient(135deg, var(--warning-orange) 0%, #e67e22 100%);
         color: var(--white);
     }
 
-    .ticket-status-completed {
+    .status-badge.status-completed {
         background: linear-gradient(135deg, var(--success-green) 0%, #229954 100%);
+        color: var(--white);
+    }
+
+    .status-badge.status-paused {
+        background: linear-gradient(135deg, var(--text-secondary) 0%, #95a5a6 100%);
         color: var(--white);
     }
 
@@ -349,7 +355,7 @@
     }
 
     .progress-none {
-        background: var(--medium-gray);
+        background: var(--text-secondary);
         width: 0%;
     }
 
@@ -391,7 +397,7 @@
         font-size: 1rem;
     }
 
-    .task-priority-badge {
+    .priority-badge {
         padding: 4px 8px;
         border-radius: 15px;
         font-size: 0.8rem;
@@ -400,17 +406,17 @@
         letter-spacing: 0.5px;
     }
 
-    .task-priority-low {
-        background: var(--medium-gray);
+    .priority-badge.priority-low {
+        background: var(--text-secondary);
         color: var(--white);
     }
 
-    .task-priority-medium {
+    .priority-badge.priority-medium {
         background: var(--warning-orange);
         color: var(--white);
     }
 
-    .task-priority-high {
+    .priority-badge.priority-high {
         background: var(--danger-red);
         color: var(--white);
     }
@@ -618,7 +624,7 @@
                 </div>
                 <div class="task-info-item">
                     <span class="task-info-label">Status</span>
-                            <span class="task-status-badge task-status-{{ task.status }}">
+                            <span class="status-badge task-status-{{ task.status }}">
                                 {{ task.status.replace('_', ' ').title() }}
                             </span>
                         </div>
@@ -655,7 +661,7 @@
                 <div class="task-info-item">
                     <span class="task-info-label">Priorità</span>
                     <div class="task-info-value">
-                        <span class="task-priority-badge task-priority-{{ task.priority }}">{{ task.priority.upper() }}</span>
+                        <span class="priority-badge task-priority-{{ task.priority }}">{{ task.priority.upper() }}</span>
                     </div>
                 </div>
             </div>
@@ -754,7 +760,11 @@
                                         </div>
                                         <div class="ticket-product-detail">
                                             <i class="fas fa-weight"></i>
-                                            <span>{{ main_line.Peso }}kg</span>
+                                            {% if main_line.comportamiento == 0 %}
+                                            <span>{{ main_line.Peso|int if main_line.Peso == main_line.Peso|int else main_line.Peso }} unità</span>
+                                            {% else %}
+                                            <span>{{ "%.3f"|format(main_line.Peso|float)|replace('.000', '') }} kg</span>
+                                            {% endif %}
                                         </div>
                                         {% if main_line.FechaCaducidad %}
                                         {% set expiry_date = main_line.FechaCaducidad.date() if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad %}

@@ -381,7 +381,7 @@ class AlbaranLinea(db.Model):
     IdArticulo = db.Column(db.Integer)
     Descripcion = db.Column(db.String(100))
     Descripcion1 = db.Column(db.String(100))
-    Comportamiento = db.Column(db.SmallInteger, default=1)
+    Comportamiento = db.Column(db.SmallInteger, default=0)
     ComportamientoDevolucion = db.Column(db.SmallInteger, default=0)
     EntradaManual = db.Column(db.Boolean, default=0)
     Tara = db.Column(db.Numeric(11, 3), default=0)

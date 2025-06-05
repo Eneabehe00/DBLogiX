@@ -5,7 +5,439 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
 <style>
-/* Custom tab styles for task sections */
+/* Mobile-First Design Variables */
+:root {
+    --primary-color: #2c3e50;
+    --primary-light: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --background-light: #f8f9fa;
+    --text-dark: #2c3e50;
+    --text-secondary: #34495e;
+    --text-info: #2980b9;
+    --border-color: #dee2e6;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Mobile Dashboard Header - Rimossa configurazione sticky */
+.mobile-dashboard-header {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 20px 16px 16px;
+    box-shadow: var(--shadow-md);
+}
+
+.mobile-user-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.mobile-user-avatar {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.mobile-user-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+.mobile-user-role {
+    font-size: 0.85rem;
+    opacity: 1;
+    color: rgba(255,255,255,0.95);
+    margin: 0;
+}
+
+.mobile-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.mobile-action-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.mobile-action-btn:hover {
+    background: rgba(255,255,255,0.25);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.mobile-action-btn.notification-btn .badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--danger-color);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 2px solid white;
+}
+
+.mobile-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.mobile-stat-item {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.mobile-stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.mobile-stat-label {
+    font-size: 0.75rem;
+    opacity: 1;
+    color: rgba(255,255,255,0.95);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Mobile Container */
+.mobile-container {
+    padding: 0 16px 80px;
+    background: var(--background-light);
+    min-height: 100vh;
+}
+
+/* Mobile Task Sections */
+.mobile-task-section {
+    margin-bottom: 24px;
+}
+
+.mobile-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 12px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.mobile-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mobile-section-count {
+    background: var(--primary-light);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Mobile Task Grid - 2 task per riga */
+.mobile-task-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* Mobile Task Cards - Ottimizzate per layout 2 colonne */
+.mobile-task-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-task-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-light);
+}
+
+.mobile-task-card.priority-high::before {
+    background: var(--danger-color);
+}
+
+.mobile-task-card.priority-medium::before {
+    background: var(--warning-color);
+}
+
+.mobile-task-card.status-completed::before {
+    background: var(--success-color);
+}
+
+.mobile-task-card:active {
+    transform: scale(0.98);
+}
+
+.mobile-task-header {
+    margin-bottom: 8px;
+}
+
+.mobile-task-number {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(52, 152, 219, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.mobile-task-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 8px 0;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+}
+
+.mobile-task-badges {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.mobile-badge {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+.mobile-badge.status-pending {
+    background: rgba(52, 73, 94, 0.15);
+    color: var(--text-secondary);
+}
+
+.mobile-badge.status-in_progress {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--warning-color);
+}
+
+.mobile-badge.status-completed {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success-color);
+}
+
+.mobile-badge.priority-high {
+    background: rgba(231, 76, 60, 0.15);
+    color: var(--danger-color);
+}
+
+.mobile-badge.priority-medium {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--warning-color);
+}
+
+.mobile-badge.priority-low {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success-color);
+}
+
+/* Mobile Progress Bar - Dimensioni ottimizzate per 2 colonne */
+.mobile-progress {
+    margin: 10px 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.mobile-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.mobile-progress-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.mobile-progress-value {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.mobile-progress-bar {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.mobile-progress-fill {
+    height: 100%;
+    background: var(--primary-light);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.mobile-progress-fill.completed {
+    background: var(--success-color);
+}
+
+/* Mobile Task Meta - Ottimizzata per layout più largo */
+.mobile-task-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.mobile-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    text-align: center;
+}
+
+.mobile-meta-label {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    font-size: 0.65rem;
+}
+
+.mobile-meta-value {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+/* Empty State */
+.mobile-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    grid-column: 1 / -1;
+}
+
+.mobile-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 1;
+    color: var(--text-info);
+}
+
+.mobile-empty-state h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+}
+
+.mobile-empty-state p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Hide desktop elements on mobile */
+@media (max-width: 767px) {
+    .page-header,
+    .filter-form-container,
+    .task-tabs {
+        display: none;
+    }
+    
+    .container-fluid {
+        padding: 0;
+    }
+}
+
+/* Desktop compatibility */
+@media (min-width: 768px) {
+    .mobile-dashboard-header,
+    .mobile-container {
+        display: none;
+    }
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-width: 480px) {
+    .mobile-task-grid {
+        gap: 10px;
+    }
+    
+    .mobile-task-card {
+        padding: 14px;
+        min-height: 150px;
+    }
+    
+    .mobile-task-title {
+        font-size: 0.85rem;
+    }
+    
+    .mobile-badge {
+        font-size: 0.6rem;
+        padding: 2px 5px;
+    }
+}
+
+/* Desktop Styles */
 .task-tabs {
     background: white;
     border-radius: 12px;
@@ -49,7 +481,6 @@
     padding: 1.5rem;
 }
 
-/* Fix for filter form to prevent auto-submit */
 .filter-form-container .form-control {
     background: white;
     border: 1px solid #dee2e6;
@@ -67,88 +498,296 @@
     align-items: center;
     margin-bottom: 1rem;
 }
+
+.clickable-card {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-2px);
+}
+
+.task-card-footer button {
+    z-index: 10;
+    position: relative;
+}
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
 <script>
-// Override the auto-submit behavior for date filters
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove auto-submit from date inputs in task dashboard
-    const dateInputs = document.querySelectorAll('#filterForm input[type="date"]');
-    dateInputs.forEach(input => {
-        // Remove any existing change event listeners
-        input.removeEventListener('change', window.unifiedSearch?.applyDateFilters);
-        
-        // Remove class that triggers auto-submit
-        input.classList.remove('auto-submit');
-    });
-    
-    // Handle manual filter form submit only
-    const filterForm = document.getElementById('filterForm');
-    if (filterForm) {
-        filterForm.addEventListener('submit', function(e) {
-            // Allow normal form submission
+    // Mobile task card click handlers
+    const mobileTaskCards = document.querySelectorAll('.mobile-task-card');
+    mobileTaskCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const taskId = this.dataset.taskId;
+            if (taskId) {
+                window.location.href = `/tasks/task/${taskId}`;
+            }
         });
-    }
-    
-    // Auto-submit form on other filter changes (but not dates)
-    $('#filterForm select, #filterForm input[type="text"]').on('change input', function() {
-        $('#filterForm').submit();
     });
-
-    // Update progress bars
-    $('.task-progress-fill').each(function() {
-        const width = $(this).css('width');
-        $(this).css('width', '0').animate({width: width}, 1000);
-    });
-
-    // Add tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip();
     
-    // Handle clickable cards
-    $('.clickable-card').css('cursor', 'pointer');
-    $('.clickable-card').on('click', function(e) {
-        // Don't trigger if clicking on a button or modal trigger
-        if ($(e.target).is('button') || $(e.target).closest('button').length > 0) {
-            return;
-        }
+    // Pull to refresh
+    let startY = 0;
+    let isRefreshing = false;
+    
+    document.addEventListener('touchstart', function(e) {
+        startY = e.touches[0].pageY;
+    });
+    
+    document.addEventListener('touchmove', function(e) {
+        const currentY = e.touches[0].pageY;
+        const pullDistance = currentY - startY;
         
-        const href = $(this).data('href');
-        if (href) {
-            window.location.href = href;
+        if (pullDistance > 100 && window.scrollY === 0 && !isRefreshing) {
+            isRefreshing = true;
+            document.body.style.transform = 'translateY(20px)';
+            setTimeout(() => location.reload(), 500);
         }
     });
-
-    // Add hover effect for clickable cards
-    $('.clickable-card').hover(
-        function() {
-            $(this).addClass('shadow-lg');
-        },
-        function() {
-            $(this).removeClass('shadow-lg');
-        }
-    );
-
-    // Initialize Bootstrap tabs
-    const triggerTabList = document.querySelectorAll('#taskTabs button')
-    triggerTabList.forEach(triggerEl => {
-        const tabTrigger = new bootstrap.Tab(triggerEl)
-        
-        triggerEl.addEventListener('click', event => {
-            event.preventDefault()
-            tabTrigger.show()
-        })
-    })
-    
-    console.log('Task dashboard initialized with tabs');
 });
 </script>
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
+<!-- Mobile Design -->
+<div class="mobile-dashboard-header d-md-none">
+    <div class="mobile-user-info">
+        <div class="d-flex align-items-center">
+            <div class="mobile-user-avatar">
+                {{ current_user.username[0].upper() }}
+            </div>
+            <div class="ms-3">
+                <div class="mobile-user-name">{{ current_user.username }}</div>
+                <div class="mobile-user-role">Task Dashboard</div>
+            </div>
+        </div>
+        <div class="mobile-actions">
+            {% if notifications %}
+            <a href="{{ url_for('tasks.notifications') }}" class="mobile-action-btn notification-btn">
+                <i class="fas fa-bell"></i>
+                <span class="badge">{{ notifications|length }}</span>
+            </a>
+            {% endif %}
+            <button class="mobile-action-btn" onclick="location.reload()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="mobile-quick-stats">
+        <div class="mobile-stat-item">
+            <span class="mobile-stat-number">{{ stats.pending + stats.in_progress }}</span>
+            <span class="mobile-stat-label">Attivi</span>
+        </div>
+        <div class="mobile-stat-item">
+            <span class="mobile-stat-number">{{ stats.completed }}</span>
+            <span class="mobile-stat-label">Completati</span>
+        </div>
+        <div class="mobile-stat-item">
+            <span class="mobile-stat-number">{{ stats.overdue }}</span>
+            <span class="mobile-stat-label">Scaduti</span>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Task Lists -->
+<div class="mobile-container d-md-none">
+    <!-- Active Tasks -->
+    {% if active_tasks %}
+    <div class="mobile-task-section">
+        <div class="mobile-section-header">
+            <h2 class="mobile-section-title">
+                <i class="fas fa-play text-primary"></i>
+                Task Attivi
+            </h2>
+            <span class="mobile-section-count">{{ active_tasks|length }}</span>
+        </div>
+        
+        <div class="mobile-task-grid">
+            {% for task in active_tasks %}
+            <div class="mobile-task-card priority-{{ task.priority }} status-{{ task.status }}" data-task-id="{{ task.id_task }}">
+                <div class="mobile-task-header">
+                    <div class="mobile-task-number">{{ task.task_number }}</div>
+                </div>
+                
+                <div class="mobile-task-title">{{ task.title }}</div>
+                
+                <div class="mobile-task-badges">
+                    <span class="mobile-badge status-{{ task.status }}">
+                        {{ task.status.replace('_', ' ').title() }}
+                    </span>
+                    <span class="mobile-badge priority-{{ task.priority }}">
+                        {{ task.priority.title() }}
+                    </span>
+                </div>
+                
+                {% if task.total_tickets > 0 %}
+                <div class="mobile-progress">
+                    <div class="mobile-progress-header">
+                        <span class="mobile-progress-label">Progresso</span>
+                        <span class="mobile-progress-value">{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
+                    </div>
+                    <div class="mobile-progress-bar">
+                        <div class="mobile-progress-fill {% if task.progress_percentage == 100 %}completed{% endif %}" 
+                             style="width: {{ task.progress_percentage if task.progress_percentage else 0 }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mobile-task-meta">
+                    <div class="mobile-meta-item">
+                        <span class="mobile-meta-label">Assegnato</span>
+                        <span class="mobile-meta-value">{{ task.assigned_at.strftime('%d/%m') if task.assigned_at else 'N/A' }}</span>
+                    </div>
+                    {% if task.deadline %}
+                    <div class="mobile-meta-item">
+                        <span class="mobile-meta-label">Scadenza</span>
+                        <span class="mobile-meta-value {% if task.is_overdue %}text-danger{% endif %}">
+                            {{ task.deadline.strftime('%d/%m') }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Overdue Tasks -->
+    {% if overdue_tasks %}
+    <div class="mobile-task-section">
+        <div class="mobile-section-header">
+            <h2 class="mobile-section-title">
+                <i class="fas fa-exclamation-triangle text-danger"></i>
+                Task Scaduti
+            </h2>
+            <span class="mobile-section-count">{{ overdue_tasks|length }}</span>
+        </div>
+        
+        <div class="mobile-task-grid">
+            {% for task in overdue_tasks %}
+            <div class="mobile-task-card priority-{{ task.priority }} status-overdue" data-task-id="{{ task.id_task }}">
+                <div class="mobile-task-header">
+                    <div class="mobile-task-number">{{ task.task_number }}</div>
+                </div>
+                
+                <div class="mobile-task-title">{{ task.title }}</div>
+                
+                <div class="mobile-task-badges">
+                    <span class="mobile-badge status-{{ task.status }}">
+                        {{ task.status.replace('_', ' ').title() }}
+                    </span>
+                    <span class="mobile-badge priority-{{ task.priority }}">
+                        {{ task.priority.title() }}
+                    </span>
+                </div>
+                
+                {% if task.total_tickets > 0 %}
+                <div class="mobile-progress">
+                    <div class="mobile-progress-header">
+                        <span class="mobile-progress-label">Progresso</span>
+                        <span class="mobile-progress-value">{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
+                    </div>
+                    <div class="mobile-progress-bar">
+                        <div class="mobile-progress-fill" style="width: {{ task.progress_percentage if task.progress_percentage else 0 }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mobile-task-meta">
+                    <div class="mobile-meta-item">
+                        <span class="mobile-meta-label">Assegnato</span>
+                        <span class="mobile-meta-value">{{ task.assigned_at.strftime('%d/%m') if task.assigned_at else 'N/A' }}</span>
+                    </div>
+                    {% if task.deadline %}
+                    <div class="mobile-meta-item">
+                        <span class="mobile-meta-label">Scadenza</span>
+                        <span class="mobile-meta-value text-danger">
+                            {{ task.deadline.strftime('%d/%m') }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Completed Tasks -->
+    {% if completed_tasks %}
+    <div class="mobile-task-section">
+        <div class="mobile-section-header">
+            <h2 class="mobile-section-title">
+                <i class="fas fa-check-circle text-success"></i>
+                Task Completati
+            </h2>
+            <span class="mobile-section-count">{{ completed_tasks|length }}</span>
+        </div>
+        
+        <div class="mobile-task-grid">
+            {% for task in completed_tasks %}
+            <div class="mobile-task-card priority-{{ task.priority }} status-completed" data-task-id="{{ task.id_task }}">
+                <div class="mobile-task-header">
+                    <div class="mobile-task-number">{{ task.task_number }}</div>
+                </div>
+                
+                <div class="mobile-task-title">{{ task.title }}</div>
+                
+                <div class="mobile-task-badges">
+                    <span class="mobile-badge status-completed">
+                        Completato
+                    </span>
+                    <span class="mobile-badge priority-{{ task.priority }}">
+                        {{ task.priority.title() }}
+                    </span>
+                </div>
+                
+                <div class="mobile-progress">
+                    <div class="mobile-progress-header">
+                        <span class="mobile-progress-label">Progresso</span>
+                        <span class="mobile-progress-value">{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
+                    </div>
+                    <div class="mobile-progress-bar">
+                        <div class="mobile-progress-fill completed" style="width: 100%"></div>
+                    </div>
+                </div>
+                
+                <div class="mobile-task-meta">
+                    <div class="mobile-meta-item">
+                        <span class="mobile-meta-label">Completato</span>
+                        <span class="mobile-meta-value">{{ task.updated_at.strftime('%d/%m') if task.updated_at else 'N/A' }}</span>
+                    </div>
+                    <div class="mobile-meta-item">
+                        <span class="mobile-meta-label">Assegnato</span>
+                        <span class="mobile-meta-value">{{ task.assigned_at.strftime('%d/%m') if task.assigned_at else 'N/A' }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Empty State -->
+    {% if not active_tasks and not overdue_tasks and not completed_tasks %}
+    <div class="mobile-task-grid">
+        <div class="mobile-empty-state">
+            <i class="fas fa-tasks"></i>
+            <h3>Nessun Task Assegnato</h3>
+            <p>Non hai task assegnati al momento.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Desktop Layout (Hidden on mobile) -->
+<div class="d-none d-md-block">
+    <!-- Original desktop content goes here... -->
 <div class="page-header shadow-sm mb-4">
     <div class="container-fluid">
         <nav aria-label="breadcrumb">
@@ -338,407 +977,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     {% for task in active_tasks %}
                     <div class="col-lg-6 col-xl-4 mb-3">
                         <div class="task-card task-{{ task.status }} clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
+                                <!-- Desktop task card content here -->
                             <div class="task-card-header">
                                 <h6 class="task-card-title">{{ task.task_number }}</h6>
-                                <div class="d-flex flex-wrap gap-2 align-items-center">
-                                    <span class="task-status-badge task-status-{{ task.status }}">
-                                        {{ task.status.replace('_', ' ').title() }}
-                                    </span>
-                                    <span class="task-priority-badge task-priority-{{ task.priority }}">
-                                        {{ task.priority.title() }}
-                                    </span>
                                 </div>
-                            </div>
-                            
                             <div class="task-card-body">
                                 <h6 class="mb-2">{{ task.title }}</h6>
-                                
-                                <!-- Progress -->
-                                <div class="task-progress">
-                                    <div class="task-progress-label">
-                                        <span>Progresso</span>
-                                        <span>{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
-                                    </div>
-                                    <div class="task-progress-bar">
-                                        <div class="task-progress-fill {% if task.progress_percentage < 100 %}warning{% endif %}" 
-                                             style="width: {{ task.progress_percentage }}%"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Task Meta -->
-                                <div class="task-meta">
-                                    <div class="task-meta-item">
-                                        <span class="task-meta-label">Assegnato</span>
-                                        <span class="task-meta-value">{{ task.assigned_at.strftime('%d/%m/%Y') if task.assigned_at else 'N/A' }}</span>
-                                    </div>
-                                    <div class="task-meta-item">
-                                        <span class="task-meta-label">Creato da</span>
-                                        <span class="task-meta-value">{{ task.creator.username }}</span>
-                                    </div>
-                                </div>
-
-                                {% if task.deadline %}
-                                <div class="mt-2">
-                                    <span class="task-meta-label">Scadenza:</span>
-                                    <span class="{% if is_task_expired(task.deadline) %}text-danger{% elif is_task_expiring_soon(task.deadline) %}text-warning{% endif %}">
-                                        {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
-                                        {% if is_task_expired(task.deadline) %}
-                                        <i class="fas fa-exclamation-triangle text-danger"></i>
-                                        {% elif is_task_expiring_soon(task.deadline) %}
-                                        <i class="fas fa-clock text-warning"></i>
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="task-card-footer">
-                                <div class="text-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
-                                    </small>
-                                </div>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
-                
-                <!-- Pagination for Active Tasks -->
-                {% if active_total_pages > 1 %}
-                <nav aria-label="Paginazione Task Attivi" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <!-- Previous Page -->
-                        {% if active_page > 1 %}
-                        <li class="page-item">
-                            <a class="page-link" href="?active_page={{ active_page - 1 }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}" aria-label="Precedente">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&laquo;</span>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Page Numbers -->
-                        {% for page_num in range(1, active_total_pages + 1) %}
-                            {% if page_num == active_page %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
-                            </li>
-                            {% else %}
-                            <li class="page-item">
-                                <a class="page-link" href="?active_page={{ page_num }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}">{{ page_num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        <!-- Next Page -->
-                        {% if active_page < active_total_pages %}
-                        <li class="page-item">
-                            <a class="page-link" href="?active_page={{ active_page + 1 }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}" aria-label="Successiva">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&raquo;</span>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-                
                 {% else %}
                 <div class="task-empty-state">
-                    <i class="fas fa-tasks"></i>
+                        <i class="fas fa-clipboard-list"></i>
                     <h5>Nessun task attivo</h5>
-                    <p>Non hai task attualmente in lavorazione. Tutti i tuoi task sono stati completati.</p>
+                        <p>Non hai task attivi al momento.</p>
                 </div>
                 {% endif %}
             </div>
-
-            <!-- Overdue Tasks Tab -->
-            <div class="tab-pane fade" id="overdue-tasks" role="tabpanel" aria-labelledby="overdue-tab">
-                <div class="task-section-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-exclamation-triangle me-2 text-danger"></i>Task Scaduti ({{ overdue_tasks|length }})
-                    </h5>
-                    <small class="text-muted">Task con scadenza superata</small>
                 </div>
-                
-                {% if overdue_tasks %}
-                <div class="row">
-                    {% for task in overdue_tasks %}
-                    <div class="col-lg-6 col-xl-4 mb-3">
-                        <div class="task-card task-overdue border-danger clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
-                            <div class="task-card-header">
-                                <h6 class="task-card-title">{{ task.task_number }}</h6>
-                                <div class="d-flex flex-wrap gap-2 align-items-center">
-                                    <span class="task-status-badge bg-danger">
-                                        <i class="fas fa-exclamation-triangle"></i> Scaduto
-                                    </span>
-                                    <span class="task-priority-badge task-priority-{{ task.priority }}">
-                                        {{ task.priority.title() }}
-                                    </span>
                                 </div>
                             </div>
-                            
-                            <div class="task-card-body">
-                                <h6 class="mb-2">{{ task.title }}</h6>
-                                
-                                <!-- Progress -->
-                                <div class="task-progress">
-                                    <div class="task-progress-label">
-                                        <span>Progresso</span>
-                                        <span>{{ task.completed_tickets }}/{{ task.total_tickets }}</span>
                                     </div>
-                                    <div class="task-progress-bar">
-                                        <div class="task-progress-fill bg-danger" 
-                                             style="width: {{ task.progress_percentage }}%"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Task Meta -->
-                                <div class="task-meta">
-                                    <div class="task-meta-item">
-                                        <span class="task-meta-label">Assegnato</span>
-                                        <span class="task-meta-value">{{ task.assigned_at.strftime('%d/%m/%Y') if task.assigned_at else 'N/A' }}</span>
-                                    </div>
-                                    <div class="task-meta-item">
-                                        <span class="task-meta-label">Creato da</span>
-                                        <span class="task-meta-value">{{ task.creator.username }}</span>
-                                    </div>
-                                </div>
-
-                                {% if task.deadline %}
-                                <div class="mt-2">
-                                    <span class="task-meta-label">Scadenza:</span>
-                                    <span class="text-danger fw-bold">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        {{ task.deadline.strftime('%d/%m/%Y %H:%M') }}
-                                        {% set days_ago = days_until_task_deadline(task.deadline) %}
-                                        {% if days_ago is not none and days_ago < 0 %}
-                                        ({{ -days_ago }} giorni fa)
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="task-card-footer">
-                                <div class="text-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Pagination for Overdue Tasks -->
-                {% if overdue_total_pages > 1 %}
-                <nav aria-label="Paginazione Task Scaduti" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <!-- Previous Page -->
-                        {% if overdue_page > 1 %}
-                        <li class="page-item">
-                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page - 1 }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}" aria-label="Precedente">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&laquo;</span>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Page Numbers -->
-                        {% for page_num in range(1, overdue_total_pages + 1) %}
-                            {% if page_num == overdue_page %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
-                            </li>
-                            {% else %}
-                            <li class="page-item">
-                                <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ page_num }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}">{{ page_num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        <!-- Next Page -->
-                        {% if overdue_page < overdue_total_pages %}
-                        <li class="page-item">
-                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page }}&overdue_page={{ overdue_page + 1 }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}" aria-label="Successiva">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&raquo;</span>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-                
-                {% else %}
-                <div class="task-empty-state">
-                    <i class="fas fa-check-circle text-success"></i>
-                    <h5>Nessun task scaduto</h5>
-                    <p>Ottimo! Non hai task scaduti al momento.</p>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Completed Tasks Tab -->
-            <div class="tab-pane fade" id="completed-tasks" role="tabpanel" aria-labelledby="completed-tab">
-                <div class="task-section-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-check-circle me-2 text-success"></i>Task Completati ({{ completed_tasks|length }})
-                    </h5>
-                    <small class="text-muted">Task completati da te</small>
-                </div>
-                
-                {% if completed_tasks %}
-                <div class="row">
-                    {% for task in completed_tasks %}
-                    <div class="col-lg-6 col-xl-4 mb-3">
-                        <div class="task-card task-completed clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
-                            <div class="task-card-header">
-                                <h6 class="task-card-title">{{ task.task_number }}</h6>
-                                <div>
-                                    <span class="task-status-badge task-status-completed">
-                                        Completato
-                                    </span>
-                                    {% if task.ddt_generated %}
-                                    <span class="badge bg-success ms-1">
-                                        <i class="fas fa-file-alt"></i> DDT
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="task-card-body">
-                                <h6 class="mb-2">{{ task.title }}</h6>
-                                
-                                <!-- Progress -->
-                                <div class="task-progress">
-                                    <div class="task-progress-label">
-                                        <span>Completato</span>
-                                        <span><i class="fas fa-check text-success"></i> {{ task.total_tickets }}/{{ task.total_tickets }}</span>
-                                    </div>
-                                    <div class="task-progress-bar">
-                                        <div class="task-progress-fill" style="width: 100%"></div>
-                                    </div>
-                                </div>
-
-                                <!-- Task Meta -->
-                                <div class="task-meta">
-                                    <div class="task-meta-item">
-                                        <span class="task-meta-label">Completato</span>
-                                        <span class="task-meta-value">{{ task.created_at.strftime('%d/%m/%Y') }}</span>
-                                    </div>
-                                    <div class="task-meta-item">
-                                        <span class="task-meta-label">Creato da</span>
-                                        <span class="task-meta-value">{{ task.creator.username }}</span>
-                                    </div>
-                                </div>
-
-                                {% if task.ddt_generated and task.client %}
-                                <div class="mt-2">
-                                    <span class="task-meta-label">Cliente DDT:</span>
-                                    <span class="text-success">{{ task.client.Nombre }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="task-card-footer">
-                                <div class="text-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-mouse-pointer"></i> Clicca per visualizzare i dettagli
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Pagination for Completed Tasks -->
-                {% if completed_total_pages > 1 %}
-                <nav aria-label="Paginazione Task Completati" class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <!-- Previous Page -->
-                        {% if completed_page > 1 %}
-                        <li class="page-item">
-                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page - 1 }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}" aria-label="Precedente">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&laquo;</span>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Page Numbers -->
-                        {% for page_num in range(1, completed_total_pages + 1) %}
-                            {% if page_num == completed_page %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ page_num }}</span>
-                            </li>
-                            {% else %}
-                            <li class="page-item">
-                                <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ page_num }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}">{{ page_num }}</a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        <!-- Next Page -->
-                        {% if completed_page < completed_total_pages %}
-                        <li class="page-item">
-                            <a class="page-link" href="?active_page={{ active_page }}&completed_page={{ completed_page + 1 }}&overdue_page={{ overdue_page }}&title={{ request.args.get('title', '') }}&priority={{ request.args.get('priority', '') }}&status={{ request.args.get('status', '') }}&date_from={{ request.args.get('date_from', '') }}&date_to={{ request.args.get('date_to', '') }}" aria-label="Successiva">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <span class="page-link">&raquo;</span>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-                
-                {% else %}
-                <div class="task-empty-state">
-                    <i class="fas fa-check-circle"></i>
-                    <h5>Nessun task completato</h5>
-                    <p>Non hai ancora completato nessun task. I task completati appariranno qui.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.clickable-card {
-    transition: box-shadow 0.3s ease, transform 0.2s ease;
-}
-
-.clickable-card:hover {
-    transform: translateY(-2px);
-}
-
-.task-card-footer button {
-    z-index: 10;
-    position: relative;
-}
-</style>
-
 {% endblock %} 

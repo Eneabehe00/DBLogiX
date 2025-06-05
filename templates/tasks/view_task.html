@@ -16,7 +16,8 @@
         --warning-orange: #f39c12;
         --danger-red: #e74c3c;
         --light-gray: #ecf0f1;
-        --medium-gray: #bdc3c7;
+        --text-secondary: #34495e;
+        --text-info: #2980b9;
         --text-dark: #2c3e50;
         --white: #ffffff;
         --border-light: #e9ecef;
@@ -63,7 +64,8 @@
     .mobile-scanner-section p {
         font-size: 1rem;
         margin-bottom: 25px;
-        opacity: 0.9;
+        opacity: 1;
+        color: rgba(255,255,255,0.95);
         position: relative;
         z-index: 2;
     }
@@ -130,7 +132,8 @@
 
     .scanner-stat-label {
         font-size: 0.9rem;
-        opacity: 0.9;
+        opacity: 1;
+        color: rgba(255,255,255,0.95);
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
@@ -510,7 +513,7 @@
     .task-empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
     }
 
     .task-empty-state i {
@@ -661,7 +664,7 @@
         gap: 12px;
         flex-wrap: wrap;
         font-size: 0.8rem;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
     }
     
     .ticket-simple-meta {
@@ -669,7 +672,7 @@
         justify-content: space-between;
         align-items: center;
         font-size: 0.8rem;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
     }
     
     .ticket-progress-simple {
@@ -695,7 +698,7 @@
     }
     
     .progress-none {
-        background-color: var(--medium-gray);
+        background-color: var(--text-secondary);
     }
     
     .btn-remove-ticket-simple {
@@ -705,7 +708,7 @@
         padding: 4px;
         border-radius: 4px;
         cursor: pointer;
-        opacity: 0.7;
+        opacity: 1;
         transition: all 0.2s ease;
     }
     
@@ -737,7 +740,7 @@
     .task-info-label-minimal {
         font-size: 0.8rem;
         font-weight: 500;
-        color: var(--medium-gray);
+        color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.3px;
     }
@@ -746,6 +749,150 @@
         font-size: 0.95rem;
         font-weight: 600;
         color: var(--text-dark);
+    }
+
+    /* Mobile Optimization - Hide desktop elements for users only */
+    @media (max-width: 767px) {
+        /* Hide desktop navbar elements for users (not admin) */
+        body.regular-user .page-header {
+            display: none;
+        }
+        
+        /* Hide desktop statistics cards for users on mobile */
+        body.regular-user .stats-card {
+            display: none;
+        }
+        
+        /* Hide desktop task info section for users on mobile */
+        body.regular-user .task-info-minimal {
+            display: none;
+        }
+        
+        /* Mobile Container Optimization for Users */
+        body.regular-user .container-fluid {
+            padding: 0;
+        }
+        
+        /* Mobile Task Detail Header - Only for Users */
+        .mobile-task-detail-header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--accent-blue) 100%);
+            color: white;
+            padding: 20px 16px 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            margin-bottom: 0;
+        }
+        
+        .mobile-task-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .mobile-task-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+            line-height: 1.3;
+        }
+        
+        .mobile-task-subtitle {
+            font-size: 0.9rem;
+            opacity: 1;
+            color: rgba(255,255,255,0.95);
+            margin: 4px 0 0 0;
+            line-height: 1.2;
+        }
+        
+        .mobile-back-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .mobile-back-btn:hover {
+            background: rgba(255,255,255,0.25);
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .mobile-task-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .mobile-task-stat {
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .mobile-task-stat-number {
+            font-size: 1.4rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .mobile-task-stat-label {
+            font-size: 0.75rem;
+            opacity: 1;
+            color: rgba(255,255,255,0.95);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Optimize mobile scanner section spacing */
+        body.regular-user .mobile-scanner-section {
+            margin: 0 0 20px 0;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        /* Mobile ticket section optimization */
+        body.regular-user .task-view-card {
+            margin: 16px 16px 20px 16px;
+            border-radius: 16px;
+        }
+        
+        /* Compact ticket cards for mobile users */
+        body.regular-user .ticket-simple-card {
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+        }
+        
+        body.regular-user .section-header {
+            padding: 12px 16px;
+            font-size: 0.95rem;
+        }
+        
+        body.regular-user .section-body {
+            padding: 16px;
+        }
+        
+        /* Better spacing for mobile content */
+        body.regular-user .row.mb-4 {
+            margin-bottom: 1rem !important;
+        }
+    }
+    
+    /* Admin users keep desktop layout on all screen sizes */
+    @media (max-width: 767px) {
+        body.admin-user .mobile-task-detail-header {
+            display: none;
+        }
     }
 </style>
 {% endblock %}
@@ -887,10 +1034,52 @@
             }
         });
     });
+
+    // Set user type class for mobile optimization
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if current_user.is_admin %}
+        document.body.classList.add('admin-user');
+        {% else %}
+        document.body.classList.add('regular-user');
+        {% endif %}
+    });
 </script>
 {% endblock %}
 
 {% block content %}
+<!-- Mobile Task Detail Header - Only for Users -->
+{% if not current_user.is_admin %}
+<div class="mobile-task-detail-header d-md-none">
+    <div class="mobile-task-info">
+        <div>
+            <div class="mobile-task-title">{{ task.task_number }}</div>
+            <div class="mobile-task-subtitle">{{ task.title }}</div>
+        </div>
+        <div>
+            <a href="{{ url_for('tasks.user_dashboard') }}" class="mobile-back-btn">
+                <i class="fas fa-arrow-left"></i>
+                Indietro
+            </a>
+        </div>
+    </div>
+    
+    <div class="mobile-task-stats">
+        <div class="mobile-task-stat">
+            <span class="mobile-task-stat-number">{{ task.total_tickets }}</span>
+            <span class="mobile-task-stat-label">Totali</span>
+        </div>
+        <div class="mobile-task-stat">
+            <span class="mobile-task-stat-number">{{ task.completed_tickets }}</span>
+            <span class="mobile-task-stat-label">Completati</span>
+        </div>
+        <div class="mobile-task-stat">
+            <span class="mobile-task-stat-number">{{ ((task.completed_tickets / task.total_tickets * 100) | round(0)) if task.total_tickets > 0 else 0 }}%</span>
+            <span class="mobile-task-stat-label">Progresso</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Page Header -->
 <div class="page-header shadow-sm mb-4">
     <div class="container-fluid">
@@ -957,7 +1146,7 @@
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="stats-card" style="background: {% if task.status == 'completed' %}var(--success-green){% elif task.status == 'in_progress' %}var(--warning-orange){% else %}var(--medium-gray){% endif %}">
+            <div class="stats-card" style="background: {% if task.status == 'completed' %}var(--success-green){% elif task.status == 'in_progress' %}var(--warning-orange){% else %}var(--text-secondary){% endif %}">
                 <div class="d-flex align-items-center justify-content-center mb-2">
                     <i class="fas {% if task.status == 'completed' %}fa-flag-checkered{% elif task.status == 'in_progress' %}fa-play{% else %}fa-pause{% endif %} fa-2x me-2"></i>
                     <h4 class="mb-0">{{ task.status.replace('_', ' ').title() }}</h4>
@@ -1146,7 +1335,11 @@
                                         Scade: {{ main_line.FechaCaducidad.strftime('%d/%m/%Y') if main_line.FechaCaducidad.__class__.__name__ == 'datetime' else main_line.FechaCaducidad.strftime('%d/%m/%Y') }}
                                     </span>
                                     {% endif %}
-                                    <span>{{ main_line.Peso }}kg</span>
+                                    {% if main_line.comportamiento == 0 %}
+                                    <span>{{ main_line.Peso|int if main_line.Peso == main_line.Peso|int else main_line.Peso }} unità</span>
+                                    {% else %}
+                                    <span>{{ "%.3f"|format(main_line.Peso|float)|replace('.000', '') }} kg</span>
+                                    {% endif %}
                                 </div>
                             {% else %}
                                 <div class="ticket-product-name text-muted">Prodotti non disponibili</div>

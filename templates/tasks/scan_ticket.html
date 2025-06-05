@@ -12,6 +12,38 @@
     .main-content { margin-left: 0 !important; padding-top: 0 !important; }
     body { overflow-x: hidden; }
 }
+
+/* Camera preference indicator */
+.camera-preference-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    animation: fadeInScale 0.5s ease-out;
+}
+
+.camera-preference-indicator i {
+    font-size: 1rem;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
 </style>
 {% endblock %}
 
@@ -92,6 +124,12 @@
                 <i class="fas fa-sync-alt"></i>
                 Cambia
             </button>
+        </div>
+        
+        <!-- Camera preference indicator -->
+        <div id="camera-preference-indicator" class="camera-preference-indicator" style="display: none;">
+            <i class="fas fa-memory"></i>
+            <span>Camera preferita in uso</span>
         </div>
     </div>
 
@@ -198,27 +236,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Enhanced feedback for mobile
     window.showMobileFeedback = function(message, type, icon) {
-        const iconMap = {
-            success: 'fas fa-check-circle feedback-success',
-            error: 'fas fa-exclamation-triangle feedback-error',
-            info: 'fas fa-info-circle feedback-info'
-        };
+        const feedback = $('#scan-feedback');
+        const feedbackContent = $('#feedback-content');
         
-        const feedbackIcon = icon || iconMap[type] || 'fas fa-info-circle feedback-info';
+        const iconHtml = icon ? `<i class="${icon}"></i>` : '';
+        const typeClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
         
-        $('#feedback-content').html(`
+        feedbackContent.html(`
             <div class="feedback-icon">
-                <i class="${feedbackIcon}"></i>
+                ${iconHtml}
             </div>
-            <div class="feedback-message">${message}</div>
+            <div class="feedback-message">${message.replace(/\n/g, '<br>')}</div>
         `);
         
-        $('#scan-feedback').fadeIn(300);
+        feedback.removeClass('success error info').addClass(typeClass).fadeIn();
         
-        // Auto-hide after 3 seconds for success/info messages
-        if (type === 'success' || type === 'info') {
+        if (type !== 'info') {
             setTimeout(function() {
-                $('#scan-feedback').fadeOut(300);
+                feedback.fadeOut();
             }, 3000);
         }
     };
@@ -266,6 +301,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 video.style.height = 'auto';
             }
         }, 500);
+    });
+    
+    // Add switch camera button functionality
+    $('#switch-camera').on('click', function() {
+        if (typeof switchCamera === 'function') {
+            switchCamera();
+        } else {
+            console.error('❌ switchCamera function not available');
+        }
+    });
+    
+    // Listen for camera started event to show preference indicator
+    $(document).on('cameraStarted', function() {
+        // Check if a saved preference was used
+        if (window.TasksJS && window.TasksJS.CameraPreferences) {
+            const savedPreference = window.TasksJS.CameraPreferences.getPreferredCamera();
+            if (savedPreference) {
+                $('#camera-preference-indicator').fadeIn(500);
+                console.log('📱 Showing camera preference indicator');
+            }
+        }
     });
 });
 </script>

@@ -648,7 +648,7 @@ def ticket_detail(ticket_id):
                 self.stock_status = "in_stock"
                 
                 # Recupera il comportamiento dal ticket line per determinare l'unità di misura
-                self.comportamiento = getattr(product_info, 'comportamiento', 1)  # Default a 1 (kg)
+                self.comportamiento = getattr(product_info, 'comportamiento', 0)  # Default a 0 (unità)
                 
                 # Determina unità di misura e display basato su comportamiento
                 # 0 = unità, 1 = kg
@@ -693,7 +693,7 @@ def ticket_detail(ticket_id):
             line_product = line.product  # Usa la relationship definita nel modello
             if line_product:
                 # Determina il display della quantità basato su comportamiento
-                comportamiento = getattr(line, 'comportamiento', 1)
+                comportamiento = getattr(line, 'comportamiento', 0)
                 peso = line.Peso if line.Peso else 0
                 
                 if comportamiento == 0:  # unità

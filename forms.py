@@ -460,4 +460,5 @@ class SystemConfigForm(FlaskForm):
         default='Backup/Fatture'
     )
     
+    # Submit buttons
     submit = SubmitField('Salva Configurazioni') 

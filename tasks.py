@@ -1756,40 +1756,53 @@ def task_screen():
         desc(Task.created_at)
     ).all()
     
+    # Get completed tasks (last 3) ordered by completion date
+    completed_tasks = Task.query.filter(
+        Task.status == 'completed'
+    ).order_by(desc(Task.completed_at)).limit(3).all()
+    
     # Update progress for all tasks
     for task in active_tasks:
         task.update_progress()
     
-    # Separate tasks by status for better visualization
-    pending_tasks = []
+    # Load ticket details with all articles for each task
+    for task in active_tasks + completed_tasks:
+        task_tickets = TaskTicket.query.filter_by(task_id=task.id_task).all()
+        task.loaded_tickets = []
+        
+        for task_ticket in task_tickets:
+            if task_ticket.ticket:
+                # Load all ticket lines with product information
+                ticket_lines = db.session.query(TicketLine).outerjoin(
+                    Product, TicketLine.IdArticulo == Product.IdArticulo
+                ).filter(TicketLine.IdTicket == task_ticket.ticket.IdTicket).all()
+                
+                # Attach lines to ticket object
+                task_ticket.ticket.loaded_lines = ticket_lines
+                task.loaded_tickets.append(task_ticket.ticket)
+    
+    # Separate active tasks by status including overdue in assigned
     assigned_tasks = []
     in_progress_tasks = []
-    overdue_tasks = []
     
     for task in active_tasks:
-        if task.is_overdue:
-            overdue_tasks.append(task)
-        elif task.status == 'pending':
-            pending_tasks.append(task)
-        elif task.status == 'assigned':
+        if task.status == 'assigned' or task.is_overdue:
+            # Add overdue tasks to assigned tasks with special status
+            if task.is_overdue:
+                task.is_overdue_status = True
             assigned_tasks.append(task)
         elif task.status == 'in_progress':
             in_progress_tasks.append(task)
     
-    # Get task statistics
+    # Get task statistics (remove overdue and in_progress from stats)
     stats = {
-        'total_pending': len(pending_tasks),
         'total_assigned': len(assigned_tasks),
-        'total_in_progress': len(in_progress_tasks),
-        'total_overdue': len(overdue_tasks),
-        'total_active': len(active_tasks)
+        'total_completed': len(completed_tasks)
     }
     
     return render_template('tasks/task_screen.html',
-                         pending_tasks=pending_tasks,
                          assigned_tasks=assigned_tasks,
-                         in_progress_tasks=in_progress_tasks,
-                         overdue_tasks=overdue_tasks,
+                         completed_tasks=completed_tasks,
                          stats=stats,
                          now=datetime.now)
 

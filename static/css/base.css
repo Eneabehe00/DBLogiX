@@ -615,7 +615,8 @@ body {
 
 /* Breadcrumbs */
 .breadcrumb-item + .breadcrumb-item::before {
-    content: "â€º";
+    content: "›";
+    font-weight: 500;
 }
 
 /* Card styles */

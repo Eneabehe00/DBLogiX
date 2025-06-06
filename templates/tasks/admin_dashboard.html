@@ -276,7 +276,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'delete':
                     if (confirm('Sei sicuro di voler eliminare questo task?')) {
-                        window.location.href = `/tasks/task/${taskId}/delete`;
+                        // Create and submit form for task deletion (POST method required)
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/tasks/task/${taskId}/delete`;
+                        
+                        // Add CSRF token
+                        const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+                        if (csrfMetaTag) {
+                            const csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = 'csrf_token';
+                            csrfInput.value = csrfMetaTag.getAttribute('content');
+                            form.appendChild(csrfInput);
+                        }
+                        
+                        // Append form to body and submit
+                        document.body.appendChild(form);
+                        form.submit();
                     }
                     break;
             }
@@ -363,8 +380,8 @@ function clearFilters() {
                     </a>
                     <a href="{{ url_for('tasks.notifications') }}" class="btn btn-light action-btn position-relative">
                         <i class="fas fa-bell me-1"></i>Notifiche
-                        {% if stats.pending_tasks > 0 %}
-                        <span class="badge bg-danger position-absolute" style="top: -8px; right: -8px; font-size: 0.7rem;">{{ stats.pending_tasks }}</span>
+                        {% if stats.completed_notifications_count > 0 %}
+                        <span class="badge bg-success position-absolute" style="top: -8px; right: -8px; font-size: 0.7rem;">{{ stats.completed_notifications_count }}</span>
                         {% endif %}
                     </a>
                 </div>
@@ -556,8 +573,8 @@ function clearFilters() {
                 <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
                     <i class="fas fa-sync-alt me-1"></i>Aggiorna
                 </button>
-                            </div>
-                        </div>
+            </div>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover mb-0" id="taskTable">
@@ -592,12 +609,12 @@ function clearFilters() {
                             <td data-label="Titolo">
                                 <div class="text-truncate" style="max-width: 200px;" title="{{ task.title }}">
                                     <strong>{{ task.title }}</strong>
-                </div>
+                                </div>
                                 {% if task.description %}
                                 <div class="text-muted small text-truncate" style="max-width: 200px;" title="{{ task.description }}">
                                     {{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}
-                </div>
-                {% endif %}
+                                </div>
+                                {% endif %}
                             </td>
                             <td data-label="Assegnato">
                                 {% if task.assignee %}
@@ -609,7 +626,7 @@ function clearFilters() {
                                 <div class="text-muted small">
                                     {{ task.assigned_at.strftime('%d/%m/%Y') }}
                                 </div>
-                {% endif %}
+                                {% endif %}
                                 {% else %}
                                 <span class="text-muted">Non assegnato</span>
                                 {% endif %}
@@ -648,7 +665,6 @@ function clearFilters() {
                                 </div>
                             </div>
                                     <small class="text-muted">{{ task.completed_tickets }}/{{ task.total_tickets }}</small>
-                        </div>
                             </td>
                             <td data-label="Priorità">
                                 {% if task.priority == 'high' %}
@@ -657,7 +673,7 @@ function clearFilters() {
                                 <span class="badge-soft badge-soft-warning">Media</span>
                                 {% else %}
                                 <span class="badge-soft badge-soft-success">Bassa</span>
-            {% endif %}
+                                {% endif %}
                             </td>
                             <td data-label="Stato">
                                 {% if task.status == 'pending' %}
@@ -671,37 +687,37 @@ function clearFilters() {
                                     <span class="badge-soft badge-soft-purple">Compl. + DDT</span>
                                     {% else %}
                                     <span class="badge-soft badge-soft-success">Completato</span>
-                    {% endif %}
-                    {% endif %}
+                                    {% endif %}
+                                {% endif %}
                             </td>
                             <td data-label="Azioni">
                                 <div class="d-flex flex-wrap gap-1">
                                     <a href="#" class="btn-task-action btn-view" 
                                        data-action="view" data-task-id="{{ task.id_task }}" title="Visualizza dettagli">
                                         <i class="fas fa-eye"></i>
-                    </a>
-                    {% if current_user.is_admin and task.status != 'completed' %}
+                                    </a>
+                                    {% if current_user.is_admin and task.status != 'completed' %}
                                     <a href="#" class="btn-task-action btn-edit" 
                                        data-action="edit" data-task-id="{{ task.id_task }}" title="Modifica task">
                                         <i class="fas fa-edit"></i>
-                    </a>
-                    {% endif %}
-                    {% if task.is_completed and not task.ddt_generated and current_user.is_admin %}
+                                    </a>
+                                    {% endif %}
+                                    {% if task.is_completed and not task.ddt_generated and current_user.is_admin %}
                                     <a href="#" class="btn-task-action btn-ddt" 
                                        data-action="ddt" data-task-id="{{ task.id_task }}" title="Genera DDT">
                                         <i class="fas fa-file-alt"></i>
-                    </a>
-            {% endif %}
+                                    </a>
+                                    {% endif %}
                                     {% if current_user.is_admin %}
                                     <a href="#" class="btn-task-action btn-delete" 
                                        data-action="delete" data-task-id="{{ task.id_task }}" title="Elimina task">
                                         <i class="fas fa-trash"></i>
                                     </a>
-    {% endif %}
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
-                {% endfor %}
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>

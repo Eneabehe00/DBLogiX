@@ -33,7 +33,7 @@ SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://user:dibal@192.168.1.32:3306/sys_dat
 def get_direct_connection_config():
     """Returns a dictionary for direct connection to MySQL without SQLAlchemy"""
     return {
-    'host': '192.168.1.32',
+    'host': '192.168.1.22',
         'user': REMOTE_DB_CONFIG['user'],
         'password': REMOTE_DB_CONFIG['password'],
         'database': REMOTE_DB_CONFIG['database'],

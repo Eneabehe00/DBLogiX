@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
-from models import db, Product, TicketHeader, TicketLine, ScanLog, Client, Company, SystemConfig, User
+from models import db, Product, TicketHeader, TicketLine, ScanLog, Client, Company, SystemConfig, User, Task
 from forms import SearchForm, FilterForm, ManualScanForm
 from sqlalchemy import func, or_, select
 from datetime import datetime, timedelta
@@ -126,25 +126,9 @@ def index():
         else:
             enhanced_ticket.formatted_date = 'N/D'
         
-        # Add status information - Updated with new logic
-        if ticket.Enviado == 10:
-            enhanced_ticket.status_text = 'Dentro Task'
-            enhanced_ticket.status_class = 'primary'
-        elif ticket.Enviado == 1:
-            enhanced_ticket.status_text = 'Processato'
-            enhanced_ticket.status_class = 'success'
-        elif ticket.Enviado == 4:
-            enhanced_ticket.status_text = 'Scaduto'
-            enhanced_ticket.status_class = 'danger'
-        elif ticket.Enviado == 2:
-            enhanced_ticket.status_text = 'DDT1'
-            enhanced_ticket.status_class = 'info'
-        elif ticket.Enviado == 3:
-            enhanced_ticket.status_text = 'DDT2'
-            enhanced_ticket.status_class = 'secondary'
-        else:
-            enhanced_ticket.status_text = 'Altro'
-            enhanced_ticket.status_class = 'secondary'
+        # Add status information - Use the model's status_text property for consistency
+        enhanced_ticket.status_text = ticket.status_text
+        enhanced_ticket.status_class = ticket.status_class
         
         enhanced_tickets.append(enhanced_ticket)
     
@@ -514,24 +498,9 @@ def reset_non_expired_tickets_to_giacenza():
             if not active_task_ticket:
                 # Ticket non è in un task attivo, può essere rimesso in giacenza
                 should_reset = True
-            else:
-                # Verifica se tutti i prodotti nel ticket non sono scaduti
-                # Un prodotto non è scaduto se la scadenza è oggi o futura
-                non_expired_lines = db.session.query(TicketLine).filter(
-                    TicketLine.IdTicket == ticket.IdTicket,
-                    TicketLine.FechaCaducidad.isnot(None),
-                    func.date(TicketLine.FechaCaducidad) >= today  # Scadenza oggi o futura
-                ).count()
-                
-                expired_lines = db.session.query(TicketLine).filter(
-                    TicketLine.IdTicket == ticket.IdTicket,
-                    TicketLine.FechaCaducidad.isnot(None),
-                    func.date(TicketLine.FechaCaducidad) < today  # Scadenza passata (non oggi)
-                ).count()
-                
-                # Se ci sono solo prodotti non scaduti, resetta il ticket
-                if non_expired_lines > 0 and expired_lines == 0:
-                    should_reset = True
+            # NON resettare mai i ticket che sono in task attivi
+            # Se un ticket è in un task attivo, deve rimanere con Enviado=10 
+            # indipendentemente dalla scadenza dei prodotti
             
             if should_reset:
                 ticket.Enviado = 0

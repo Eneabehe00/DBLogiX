@@ -146,7 +146,7 @@ class TicketHeader(db.Model):
         elif self.Enviado == 4:
             return "Scaduto"
         elif self.Enviado == 10:
-            return "Task"
+            return "Dentro Task"
         else:
             return "Sconosciuto"
     

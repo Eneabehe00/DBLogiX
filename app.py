@@ -163,6 +163,31 @@ def create_app():
         def utility_processor():
             from datetime import datetime
             from flask_wtf.csrf import generate_csrf
+            from flask_login import current_user
+            
+            def current_time():
+                return datetime.now()
+            
+            def get_user_active_tasks_count():
+                """Get count of active tasks for current user"""
+                if not current_user.is_authenticated or current_user.is_admin:
+                    return 0
+                from models import Task
+                return Task.query.filter(
+                    Task.assigned_to == current_user.id,
+                    Task.status.in_(['pending', 'assigned', 'in_progress'])
+                ).count()
+            
+            def get_admin_completed_notifications_count():
+                """Get count of unread task completion notifications for admin"""
+                if not current_user.is_authenticated or not current_user.is_admin:
+                    return 0
+                from models import TaskNotification
+                return TaskNotification.query.filter_by(
+                    user_id=current_user.id,
+                    is_read=False,
+                    notification_type='task_completed'
+                ).count()
             
             def is_task_expired(task_deadline):
                 """Check if task deadline has passed (only tomorrow counts as expired)"""
@@ -193,6 +218,8 @@ def create_app():
                 'current_time': current_time,
                 'now': lambda: datetime.now(),
                 'csrf_token': generate_csrf,
+                'user_active_tasks_count': get_user_active_tasks_count(),
+                'get_admin_completed_notifications_count': get_admin_completed_notifications_count,
                 'is_task_expired': is_task_expired,
                 'is_task_expiring_soon': is_task_expiring_soon,
                 'days_until_task_deadline': days_until_task_deadline

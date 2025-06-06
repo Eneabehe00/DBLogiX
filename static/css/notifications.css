@@ -1,0 +1,512 @@
+/* =======================================
+   CAMPANELLA NOTIFICHE - Stile Moderno
+   ======================================= */
+
+/* Campanella base */
+.notification-bell-btn {
+    position: relative;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.notification-bell-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--warning-color);
+    transform: scale(1.05);
+}
+
+.notification-bell-btn:active {
+    transform: scale(0.95);
+}
+
+/* Badge per il conteggio */
+.notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: linear-gradient(45deg, var(--danger-color), #ff6b6b);
+    color: white;
+    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--sidebar-bg);
+    animation: pulse 2s infinite;
+    z-index: 10;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Stili specifici per mobile */
+.mobile-notifications {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.mobile-notifications .notification-bell-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Stili specifici per sidebar */
+.sidebar-notifications {
+    position: absolute;
+    top: 15px;
+    right: 50px;
+    z-index: 1000;
+}
+
+.sidebar-bell {
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* =======================================
+   MODALE NOTIFICHE - Design Innovativo
+   ======================================= */
+
+.notification-modal-content {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+}
+
+.notification-modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    border: none;
+    padding: 20px 25px;
+    position: relative;
+}
+
+.notification-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.05"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.05"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    pointer-events: none;
+}
+
+.notification-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification-modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #fafbfc;
+}
+
+.notification-modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notification-modal-body::-webkit-scrollbar-track {
+    background: #f1f3f4;
+}
+
+.notification-modal-body::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 3px;
+}
+
+.notification-modal-footer {
+    background: white;
+    border-top: 1px solid #e9ecef;
+    padding: 15px 25px;
+}
+
+/* =======================================
+   CONTAINER NOTIFICHE
+   ======================================= */
+
+.notifications-container {
+    padding: 0;
+}
+
+.notification-item-modal {
+    background: white;
+    border-bottom: 1px solid #e9ecef;
+    padding: 20px 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.notification-item-modal:hover {
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+    transform: translateX(3px);
+}
+
+.notification-item-modal:last-child {
+    border-bottom: none;
+}
+
+.notification-item-modal.unread {
+    background: linear-gradient(135deg, #fff7e6 0%, #fef4e6 100%);
+    border-left: 4px solid var(--primary-color);
+}
+
+.notification-item-modal.unread::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 10px;
+    width: 8px;
+    height: 8px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    animation: glow 2s infinite;
+}
+
+@keyframes glow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 5px var(--primary-color); }
+    50% { opacity: 0.5; box-shadow: 0 0 10px var(--primary-color); }
+}
+
+/* Icona della notifica */
+.notification-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: white;
+    background: linear-gradient(135deg, var(--info-color), #0096c7);
+}
+
+.notification-icon.task-assigned {
+    background: linear-gradient(135deg, var(--success-color), #2d7d00);
+}
+
+.notification-icon.task-completed {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+}
+
+.notification-icon.task-reassigned {
+    background: linear-gradient(135deg, var(--warning-color), #f77f00);
+}
+
+/* Contenuto della notifica */
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 5px;
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.notification-message {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.notification-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.notification-action-btn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.notification-action-btn.mark-read {
+    background: var(--primary-color);
+    color: white;
+}
+
+.notification-action-btn.mark-read:hover {
+    background: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+.notification-action-btn.view-task {
+    background: var(--info-color);
+    color: white;
+}
+
+.notification-action-btn.view-task:hover {
+    background: #0077a3;
+    transform: scale(1.05);
+}
+
+/* =======================================
+   STATI DI CARICAMENTO E VUOTO
+   ======================================= */
+
+.notification-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.loading-spinner {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+.notification-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: #c6c6c6;
+}
+
+.notification-empty-state h6 {
+    margin-bottom: 10px;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.notification-empty-state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Stato di errore */
+.notification-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.error-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: var(--danger-color);
+}
+
+.notification-error-state h6 {
+    margin-bottom: 10px;
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+.notification-error-state p {
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+/* =======================================
+   RESPONSIVE DESIGN
+   ======================================= */
+
+@media (max-width: 768px) {
+    .notification-modal-content {
+        border-radius: 15px;
+        margin: 10px;
+    }
+    
+    .notification-modal-header {
+        padding: 15px 20px;
+    }
+    
+    .notification-modal-header h5 {
+        font-size: 1.1rem;
+    }
+    
+    .notification-header-actions {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .notification-header-actions .btn {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+    }
+    
+    .notification-item-modal {
+        padding: 15px 20px;
+        gap: 12px;
+    }
+    
+    .notification-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .notification-title {
+        font-size: 0.9rem;
+    }
+    
+    .notification-message {
+        font-size: 0.8rem;
+    }
+    
+    .notification-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .notification-actions {
+        align-self: stretch;
+    }
+    
+    .notification-action-btn {
+        flex: 1;
+        text-align: center;
+    }
+    
+    .notification-modal-body {
+        max-height: 50vh;
+    }
+    
+    .modal-dialog {
+        margin: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .notification-bell-btn {
+        font-size: 1.1rem;
+        min-width: 36px;
+        min-height: 36px;
+    }
+    
+    .notification-badge {
+        min-width: 16px;
+        height: 16px;
+        font-size: 0.65rem;
+    }
+    
+    .notification-item-modal {
+        padding: 12px 15px;
+    }
+    
+    .notification-modal-header {
+        padding: 12px 15px;
+    }
+    
+    .notification-modal-footer {
+        padding: 12px 15px;
+    }
+}
+
+/* =======================================
+   ANIMAZIONI E TRANSIZIONI
+   ======================================= */
+
+.notification-item-modal {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.modal.fade .modal-dialog {
+    transition: transform 0.4s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+/* Effetto hover migliorato */
+.notification-bell-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+}
+
+.notification-bell-btn:hover::after {
+    width: 100%;
+    height: 100%;
+}
+
+/* Effetto click */
+.notification-bell-btn:active::after {
+    width: 120%;
+    height: 120%;
+    background: rgba(255, 255, 255, 0.3);
+} 

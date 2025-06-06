@@ -561,8 +561,9 @@
 }
 
 .breadcrumb-custom .breadcrumb-item + .breadcrumb-item::before {
-    content: '>';
+    content: '›';
     color: var(--medium-gray);
+    font-weight: 500;
 }
 
 .breadcrumb-custom a {
@@ -823,9 +824,10 @@
 }
 
 .breadcrumb-custom .breadcrumb-item + .breadcrumb-item::before {
-    content: '>';
+    content: '›';
     color: rgba(255, 255, 255, 0.6);
     margin: 0 8px;
+    font-weight: 500;
 }
 
 .breadcrumb-custom a {

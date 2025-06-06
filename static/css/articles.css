@@ -42,7 +42,9 @@
 }
 
 .page-header .breadcrumb-item + .breadcrumb-item::before {
+    content: '›';
     color: rgba(255, 255, 255, 0.5);
+    font-weight: 500;
 }
 
 .page-header .page-title {

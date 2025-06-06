@@ -47,17 +47,17 @@
     }
     
     .stats-overview {
-        background-color: var(--light-gray);
-        border-radius: 15px;
-        padding: 25px;
+        background-color: transparent;
+        border-radius: 0;
+        padding: 0;
         margin-bottom: 25px;
-        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
-        border: 1px solid var(--border-light);
+        box-shadow: none;
+        border: none;
     }
     
     .stat-card {
         background-color: var(--primary-dark);
-        color: var(--white);
+        color: #ffffff !important;
         border-radius: 15px;
         padding: 25px;
         text-align: center;
@@ -68,43 +68,70 @@
         display: flex;
         flex-direction: column;
         justify-content: center;
+        position: relative;
+        overflow: hidden;
     }
     
     .stat-card:hover {
         transform: translateY(-3px);
-        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.2);
         background-color: var(--secondary-dark);
     }
     
     .stat-card.success {
-        background-color: var(--success-green);
+        background-color: var(--success-green) !important;
+    }
+    
+    .stat-card.success:hover {
+        background-color: #1e8449 !important;
     }
     
     .stat-card.warning {
-        background-color: var(--warning-orange);
+        background-color: var(--warning-orange) !important;
+    }
+    
+    .stat-card.warning:hover {
+        background-color: #d68910 !important;
     }
     
     .stat-card.info {
-        background-color: var(--info-blue);
+        background-color: var(--info-blue) !important;
+    }
+    
+    .stat-card.info:hover {
+        background-color: #2874a6 !important;
     }
     
     .stat-icon {
         font-size: 2.5rem;
-        margin-bottom: 10px;
-        opacity: 0.9;
+        margin-bottom: 15px;
+        color: #ffffff !important;
+        opacity: 1 !important;
+        display: block;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1);
+        opacity: 1 !important;
+        color: #ffffff !important;
     }
     
     .stat-number {
         font-size: 2rem;
         font-weight: 700;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        color: #ffffff !important;
+        line-height: 1;
     }
     
     .stat-label {
         font-size: 0.9rem;
-        opacity: 0.9;
+        color: #ffffff !important;
+        opacity: 0.95 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        font-weight: 500;
     }
     
     .quick-action-item {
@@ -159,6 +186,10 @@
     }
     
     .quick-action-icon.bg-dark-soft {
+        background-color: var(--secondary-dark);
+    }
+    
+    .quick-action-icon.bg-secondary-dark {
         background-color: var(--secondary-dark);
     }
     
@@ -245,49 +276,51 @@
     
     .badge.bg-primary {
         background-color: var(--primary-dark) !important;
-        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
     }
     
     .badge.bg-success {
         background-color: var(--success-green) !important;
-        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
     }
     
     .badge.bg-warning {
         background-color: var(--warning-orange) !important;
-        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
-        color: var(--white) !important;
     }
     
     .badge.bg-danger {
         background-color: var(--danger-red) !important;
-        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
     }
     
-    .badge.bg-secondary {
-        background-color: var(--secondary-dark) !important;
-        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    .badge.bg-info {
+        background-color: var(--info-blue) !important;
     }
     
-    .mobile-tabs .nav-link {
-        color: var(--text-dark);
-        border: none;
-        border-radius: 0;
-        padding: 15px 20px;
-        font-weight: 500;
-        transition: all 0.3s ease;
+    .ticket-number, .activity-number {
+        font-weight: 600;
+        color: var(--primary-dark);
     }
     
-    .mobile-tabs .nav-link.active {
-        background-color: var(--primary-dark);
-        color: var(--white);
+    .user-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: var(--light-gray);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: var(--medium-gray);
+    }
+    
+    .mobile-table-container {
+        max-height: 400px;
+        overflow-y: auto;
     }
     
     .mobile-table-row {
-        padding: 20px;
+        padding: 15px;
         border-bottom: 1px solid var(--border-light);
+        transition: background-color 0.2s ease;
         cursor: pointer;
-        transition: all 0.3s ease;
     }
     
     .mobile-table-row:hover {
@@ -295,50 +328,60 @@
     }
     
     .mobile-cell {
-        margin-bottom: 10px;
+        padding: 3px 0;
     }
     
     .mobile-label {
         font-size: 0.8rem;
         color: var(--medium-gray);
+        font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 5px;
+        letter-spacing: 0.3px;
     }
     
     .mobile-value {
-        font-weight: 500;
+        font-size: 0.95rem;
         color: var(--text-dark);
+        font-weight: 500;
     }
     
-    .ticket-number,
-    .activity-number {
-        color: var(--primary-dark);
-        font-weight: 600;
-    }
-    
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-        background-color: var(--light-gray);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .mobile-tabs .nav-link {
+        border-radius: 0;
+        border: none;
+        border-bottom: 3px solid transparent;
         color: var(--medium-gray);
+        font-weight: 500;
+        padding: 15px 20px;
+        background-color: transparent;
     }
     
+    .mobile-tabs .nav-link.active {
+        border-bottom-color: var(--primary-dark);
+        color: var(--primary-dark);
+        background-color: rgba(44, 62, 80, 0.05);
+    }
+    
+    .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .clickable-row:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+    
+    /* Badge variations for activities */
     .badge-soft {
+        font-weight: 500;
         padding: 4px 8px;
         border-radius: 6px;
         font-size: 0.7rem;
-        font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.2px;
     }
     
     .badge-soft-primary {
-        background-color: rgba(44, 62, 80, 0.15);
+        background-color: rgba(52, 152, 219, 0.15);
         color: var(--primary-dark);
     }
     
@@ -352,11 +395,6 @@
         color: var(--info-blue);
     }
     
-    .badge-soft-warning {
-        background-color: rgba(243, 156, 18, 0.15);
-        color: var(--warning-orange);
-    }
-    
     .badge-soft-danger {
         background-color: rgba(231, 76, 60, 0.15);
         color: var(--danger-red);
@@ -366,21 +404,80 @@
         background-color: rgba(52, 73, 94, 0.15);
         color: var(--secondary-dark);
     }
+    
+    /* Additional uniform color rules for user sections */
+    .quick-action-icon.bg-warning-soft {
+        background-color: var(--warning-orange) !important;
+    }
+    
+    .mobile-dashboard-header {
+        background: var(--primary-dark) !important;
+    }
+    
+    /* Reduce spacing when no stats are shown */
+    .dashboard-header.no-stats {
+        margin-bottom: 1rem;
+    }
+    
+    /* Force white text in stat cards to prevent inheritance issues */
+    .stat-card, .stat-card * {
+        color: #ffffff !important;
+    }
+    
+    .stat-card .stat-icon i {
+        color: #ffffff !important;
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    .stat-card:hover .stat-icon i {
+        color: #ffffff !important;
+        display: inline-block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Prevent any Bootstrap or other CSS from overriding */
+    .stats-overview .stat-card {
+        background-color: var(--primary-dark) !important;
+    }
+    
+    .stats-overview .stat-card.success {
+        background-color: var(--success-green) !important;
+    }
+    
+    .stats-overview .stat-card.warning {
+        background-color: var(--warning-orange) !important;
+    }
+    
+    .stats-overview .stat-card.info {
+        background-color: var(--info-blue) !important;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Dashboard Header -->
-    <div class="dashboard-header">
+    <div class="dashboard-header{% if not current_user.is_admin %} no-stats{% endif %}">
         <div class="row align-items-center">
             <div class="col-md-8">
+                {% if current_user.is_admin %}
                 <h1 class="dashboard-title">
                     <i class="fas fa-warehouse me-3"></i>DBLogiX Dashboard
                 </h1>
                 <p class="dashboard-subtitle mb-0">
                     Benvenuto nella piattaforma di gestione magazzino
                 </p>
+                {% else %}
+                <h1 class="dashboard-title">
+                    <i class="fas fa-home me-3"></i>Dashboard Operativo
+                </h1>
+                <p class="dashboard-subtitle mb-0">
+                    Accesso rapido alle funzioni principali
+                </p>
+                {% endif %}
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <div class="d-grid d-md-block gap-2">
@@ -393,34 +490,55 @@
     </div>
     
     <!-- Unified Stats Grid -->
-    {{ render_stats_grid([
-        {
-            'value': products_count,
-            'label': 'Prodotti',
-            'icon': 'fas fa-boxes',
-            'variant': ''
-        },
-        {
-            'value': task_tickets,
-            'label': 'Dentro Task',
-            'icon': 'fas fa-warehouse',
-            'variant': 'stat-warning'
-        },
-        {
-            'value': recent_tickets|length,
-            'label': 'Ticket Recenti',
-            'icon': 'fas fa-check-circle',
-            'variant': 'stat-success'
-        },
-        {
-            'value': recent_scans|length,
-            'label': 'Scansioni',
-            'icon': 'fas fa-qrcode',
-            'variant': 'stat-info'
-        }
-    ]) }}
+    {% if current_user.is_admin %}
+    <div class="stats-overview">
+        <div class="row g-4">
+            <div class="col-lg-3 col-6">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-boxes" aria-hidden="true"></i>
+                    </div>
+                    <div class="stat-number">{{ products_count or 0 }}</div>
+                    <div class="stat-label">Prodotti</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-tasks" aria-hidden="true"></i>
+                    </div>
+                    <div class="stat-number">{{ task_tickets or 0 }}</div>
+                    <div class="stat-label">Dentro Task</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock" aria-hidden="true"></i>
+                    </div>
+                    <div class="stat-number">{{ recent_tickets|length or 0 }}</div>
+                    <div class="stat-label">Ticket Recenti</div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-6">
+                <div class="stat-card info">
+                    <div class="stat-icon">
+                        <i class="fas fa-history" aria-hidden="true"></i>
+                    </div>
+                    <div class="stat-number">{{ recent_scans|length or 0 }}</div>
+                    <div class="stat-label">Attività Recenti</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Quick Actions -->
+    {% if current_user.is_admin %}
+    <!-- Admin Quick Actions (rimangono come prima) -->
     <div class="row g-4 mb-4">
         <div class="col-6 col-lg-3">
             <a href="{{ url_for('warehouse.scanner') }}" class="quick-action-item">
@@ -453,7 +571,6 @@
         </div>
         
         <div class="col-6 col-lg-3">
-            {% if current_user.is_admin %}
             <a href="{{ url_for('admin.dashboard') }}" class="quick-action-item">
                 <div class="quick-action-icon bg-dark-soft">
                     <i class="fas fa-tachometer-alt"></i>
@@ -461,19 +578,86 @@
                 <h3>Amministrazione</h3>
                 <p>Accedi alle funzioni avanzate di amministrazione del sistema</p>
             </a>
-            {% else %}
-            <a href="{{ url_for('warehouse.tickets') }}" class="quick-action-item">
-                <div class="quick-action-icon bg-info-soft">
-                    <i class="fas fa-list"></i>
+        </div>
+    </div>
+    {% else %}
+    <!-- User Quick Actions - Reorganized with Task and Scanner first -->
+    <!-- Main Actions Section - Task and Scanner as priority -->
+    <div class="row g-3 mb-4">
+        <!-- Tasks Section - PRIMO TASTO -->
+        <div class="col-6">
+            <a href="{{ url_for('tasks.user_dashboard') }}" class="quick-action-item" style="min-height: 120px; padding: 1.5rem; position: relative;">
+                <div class="quick-action-icon bg-primary-soft" style="width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-user-check"></i>
                 </div>
-                <h3>Tutti i Ticket</h3>
-                <p>Visualizza l'elenco completo di tutti i ticket nel sistema</p>
+                <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">I Miei Task</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 0;">Visualizza e gestisci i task assegnati</p>
+                {% if user_active_tasks_count > 0 %}
+                <span class="badge bg-danger position-absolute" style="top: 10px; right: 10px; font-size: 0.75rem; padding: 4px 8px; border-radius: 12px;">
+                    {{ user_active_tasks_count }}
+                </span>
+                {% endif %}
             </a>
-            {% endif %}
+        </div>
+        
+        <!-- Scanner Section - SECONDO TASTO -->
+        <div class="col-6">
+            <a href="{{ url_for('warehouse.scanner') }}" class="quick-action-item" style="min-height: 120px; padding: 1.5rem;">
+                <div class="quick-action-icon bg-success-soft" style="width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-qrcode"></i>
+                </div>
+                <h3 style="font-size: 1.1rem; margin-bottom: 0.25rem;">Scanner QR</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 0;">Scansiona codici QR per gestire i ticket</p>
+            </a>
         </div>
     </div>
     
-    <!-- Activity Sections -->
+    <!-- Other Quick Access Buttons -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('articles.index') }}" class="quick-action-item" style="padding: 1.5rem;">
+                <div class="quick-action-icon bg-info-soft" style="width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Prodotti</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 0;">Catalogo articoli</p>
+            </a>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('sections.index') }}" class="quick-action-item" style="padding: 1.5rem;">
+                <div class="quick-action-icon bg-warning-soft" style="width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem; background-color: var(--warning-orange);">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Sezioni</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 0;">Gestione sezioni</p>
+            </a>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('warehouse.tickets', status='in_task') }}" class="quick-action-item" style="padding: 1.5rem;">
+                <div class="quick-action-icon bg-secondary-dark" style="width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem; background-color: var(--secondary-dark);">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Dentro Task</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 0;">Ticket nei task</p>
+            </a>
+        </div>
+        
+        <div class="col-6 col-md-3">
+            <a href="{{ url_for('warehouse.tickets') }}" class="quick-action-item" style="padding: 1.5rem;">
+                <div class="quick-action-icon bg-primary-soft" style="width: 50px; height: 50px; font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <h3 style="font-size: 1rem; margin-bottom: 0.25rem;">Tutti i Ticket</h3>
+                <p style="font-size: 0.8rem; margin-bottom: 0;">Visualizza ticket</p>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Activity Sections - Only visible for admins -->
+    {% if current_user.is_admin %}
     <!-- Desktop View (2 columns) -->
     <div class="row g-4 d-none d-md-flex">
         <!-- Recent tickets -->
@@ -547,11 +731,9 @@
                     <h5 class="card-title">
                         <i class="fas fa-history text-primary me-2"></i>Attività Recenti
                     </h5>
-                    {% if current_user.is_admin %}
                     <a href="{{ url_for('admin.scan_logs') }}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-list-alt me-1"></i>Vedi tutte
                     </a>
-                    {% endif %}
                 </div>
                 <div class="card-body p-0">
                     {% if recent_scans %}
@@ -614,7 +796,7 @@
         </div>
     </div>
     
-    <!-- Mobile View (Tabs) -->
+    <!-- Mobile View (Tabs) - Only for admins -->
     <div class="d-block d-md-none">
         <div class="activity-card">
             <!-- Tab Navigation -->
@@ -690,11 +872,9 @@
                 <div class="tab-pane fade" id="activities-pane" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
                         <span class="fw-bold">Attività Recenti</span>
-                        {% if current_user.is_admin %}
                         <a href="{{ url_for('admin.scan_logs') }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-list-alt me-1"></i>Tutte
                         </a>
-                        {% endif %}
                     </div>
                     <div class="mobile-table-container">
                         {% if recent_scans %}
@@ -753,50 +933,21 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Make rows clickable to view detail
-    const ticketRows = document.querySelectorAll('.clickable-row');
-    ticketRows.forEach(function(row) {
-        const url = row.dataset.href;
-        if (url && url !== '#') {
-            row.style.cursor = 'pointer';
-            row.addEventListener('click', function(e) {
-                // Don't navigate if clicking on buttons or form elements
-                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
-                    e.target.tagName === 'INPUT') {
-                    return;
-                }
-                window.location.href = url;
-            });
-        }
+    // Handle clickable rows
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    clickableRows.forEach(row => {
+        row.addEventListener('click', function() {
+            const href = this.dataset.href;
+            if (href && href !== '#') {
+                window.location.href = href;
+            }
+        });
     });
-    
-    // Make mobile rows clickable
-    const mobileRows = document.querySelectorAll('.mobile-table-row');
-    mobileRows.forEach(function(row) {
-        const url = row.dataset.href;
-        if (url && url !== '#') {
-            row.style.cursor = 'pointer';
-            row.addEventListener('click', function(e) {
-                // Don't navigate if clicking on buttons or form elements
-                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
-                    e.target.tagName === 'INPUT') {
-                    return;
-                }
-                window.location.href = url;
-            });
-        }
-    });
-
-    // Console debugging
-    console.log('Warehouse dashboard loaded with enhanced features');
-    console.log('Recent tickets:', ticketRows.length);
 });
 </script>
 {% endblock %} 

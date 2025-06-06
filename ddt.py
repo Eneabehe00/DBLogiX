@@ -1369,6 +1369,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         Paragraph("<b>U.M.</b>", styles['TableHeader']),
         Paragraph("<b>QUANTITÀ</b>", styles['TableHeader']),
         Paragraph("<b>PREZZO</b>", styles['TableHeader']),
+        Paragraph("<b>SCONTO</b>", styles['TableHeader']),
         Paragraph("<b>IVA</b>", styles['TableHeader']),
         Paragraph("<b>IMPORTO</b>", styles['TableHeader']),
     ]
@@ -1389,6 +1390,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         unit = line.Medida2 or 'un'
         quantity = float(line.Peso or 0)
         price = float(line.PrecioSinIVA or 0)
+        discount_percent = float(line.Descuento or 0)
         vat_rate = float(line.PorcentajeIVA or 0)
         line_total_without_vat = float(line.ImporteSinIVASinDtoL or 0)
         line_vat = float(line.ImporteDelIVAConDtoL or 0)
@@ -1399,6 +1401,9 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         subtotal_without_vat += line_total_without_vat
         total_vat += line_vat
         
+        # Format discount display
+        discount_display = f"{discount_percent:.0f}%" if discount_percent > 0 else "-"
+        
         # Create elegant table rows
         products_data.append([
             Paragraph(code if code != '999' else '', styles['TableCell']),
@@ -1406,12 +1411,13 @@ def generate_ddt_pdf(ddt, cliente, empresa):
             Paragraph(unit, styles['TableCell']),
             Paragraph(f"{quantity:.2f}", styles['TableCellRight']),
             Paragraph(f"€ {price:.2f}", styles['TableCellRight']),
+            Paragraph(discount_display, styles['TableCell']),
             Paragraph(f"{vat_rate:.0f}%", styles['TableCell']),
             Paragraph(f"<b>€ {line_total:.2f}</b>", styles['TableCellRight']),
         ])
     
-    # Create sophisticated products table
-    col_widths = [18*mm, 88*mm, 12*mm, 20*mm, 20*mm, 12*mm, 22*mm]
+    # Create sophisticated products table with updated column widths
+    col_widths = [16*mm, 78*mm, 11*mm, 18*mm, 18*mm, 12*mm, 11*mm, 20*mm]
     products_table = Table(products_data, colWidths=col_widths, repeatRows=1)
     
     # Apply modern table styling
@@ -1434,8 +1440,9 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         ('ALIGN', (2, 1), (2, -1), 'CENTER'),   # Unit column
         ('ALIGN', (3, 1), (3, -1), 'RIGHT'),    # Quantity column
         ('ALIGN', (4, 1), (4, -1), 'RIGHT'),    # Price column
-        ('ALIGN', (5, 1), (5, -1), 'CENTER'),   # VAT column
-        ('ALIGN', (6, 1), (6, -1), 'RIGHT'),    # Total column
+        ('ALIGN', (5, 1), (5, -1), 'CENTER'),   # Discount column
+        ('ALIGN', (6, 1), (6, -1), 'CENTER'),   # VAT column
+        ('ALIGN', (7, 1), (7, -1), 'RIGHT'),    # Total column
         ('VALIGN', (0, 1), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 1), (-1, -1), 5),
         ('BOTTOMPADDING', (0, 1), (-1, -1), 5),
@@ -1458,6 +1465,69 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     products_table.setStyle(TableStyle(table_style))
     elements.append(products_table)
     elements.append(Spacer(1, 8*mm))
+    
+    # === DISCOUNT SUMMARY (if any discounts applied) ===
+    total_discount_amount = 0
+    lines_with_discount = 0
+    
+    # Calculate total discount savings
+    for line in lines:
+        discount_percent = float(line.Descuento or 0)
+        if discount_percent > 0:
+            lines_with_discount += 1
+            price = float(line.PrecioSinIVA or 0)
+            quantity = float(line.Peso or 0)
+            vat_rate = float(line.PorcentajeIVA or 0)
+            
+            # Calculate original amount (without discount)
+            original_subtotal = price * quantity
+            original_vat = original_subtotal * (vat_rate / 100)
+            original_total = original_subtotal + original_vat
+            
+            # Get actual discounted amount
+            discounted_subtotal = float(line.ImporteSinIVASinDtoL or 0)
+            discounted_vat = float(line.ImporteDelIVAConDtoL or 0)
+            discounted_total = discounted_subtotal + discounted_vat
+            
+            # Calculate discount amount
+            discount_amount = original_total - discounted_total
+            total_discount_amount += discount_amount
+    
+    # Add discount summary if there are discounts
+    if total_discount_amount > 0:
+        discount_summary_data = [
+            [
+                Paragraph(f"<b>Sconti applicati su {lines_with_discount} articoli</b>", styles['SummaryLabel']),
+                Paragraph(f"<b>- € {total_discount_amount:.2f}</b>", ParagraphStyle(
+                    name='DiscountValue',
+                    parent=styles['SummaryValue'],
+                    textColor=colors.HexColor('#e53e3e')  # Red color for discount
+                ))
+            ]
+        ]
+        
+        discount_summary_table = Table(discount_summary_data, colWidths=[40*mm, 30*mm])
+        discount_summary_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fff5f5')),  # Light red background
+            ('GRID', (0, 0), (-1, -1), 0.5, border_light),
+            ('ROUNDEDCORNERS', [3, 3, 3, 3]),
+        ]))
+        
+        # Right align the discount summary
+        discount_summary_container = Table([[discount_summary_table]], colWidths=[doc.width])
+        discount_summary_container.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
+            ('VALIGN', (0, 0), (0, 0), 'TOP'),
+        ]))
+        
+        elements.append(discount_summary_container)
+        elements.append(Spacer(1, 5*mm))
     
     # === IMPROVED FINANCIAL SUMMARY ===
     # Create a more prominent summary box

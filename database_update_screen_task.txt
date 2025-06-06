@@ -1,0 +1,18 @@
+-- Query SQL per aggiungere i campi mancanti alla tabella users
+-- Eseguire manualmente nel database
+
+-- Campo per utenti schermo task
+ALTER TABLE users ADD COLUMN screen_task BOOLEAN DEFAULT FALSE;
+
+-- Campo per disabilitare/abilitare utenti
+ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE;
+
+-- Commenti:
+-- screen_task: identifica gli utenti che sono configurati come "schermo task"
+-- Utilizzato per visualizzare un dashboard dedicato tipo McDonald's
+-- Valore predefinito: FALSE (utente normale)
+-- Per utenti tipo TASK: TRUE (modalità schermo)
+
+-- is_active: permette di disabilitare utenti senza eliminarli
+-- Valore predefinito: TRUE (utente attivo)
+-- Per disabilitare un utente: FALSE 

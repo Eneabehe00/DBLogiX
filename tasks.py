@@ -9,7 +9,7 @@ import io
 import base64
 import logging
 
-from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea, Company, Product
+from models import db, Task, TaskTicket, TaskTicketScan, TaskNotification, TicketHeader, TicketLine, User, Client, AlbaranCabecera, AlbaranLinea, Company, Product, Article
 from utils import admin_required
 from forms import DDTCreateForm
 
@@ -156,7 +156,13 @@ def admin_dashboard():
         # Keep old stats for compatibility
         'pending_tasks': Task.query.filter_by(status='pending').count(),
         'in_progress_tasks': Task.query.filter_by(status='in_progress').count(),
-        'completed_tasks': Task.query.filter_by(status='completed').count()
+        'completed_tasks': Task.query.filter_by(status='completed').count(),
+        # Add completed notifications count
+        'completed_notifications_count': TaskNotification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False,
+            notification_type='task_completed'
+        ).count()
     }
     
     # Apply category filter if specified
@@ -213,7 +219,13 @@ def admin_dashboard():
         # Keep old stats for compatibility
         'pending_tasks': Task.query.filter_by(status='pending').count(),
         'in_progress_tasks': Task.query.filter_by(status='in_progress').count(),
-        'completed_tasks': Task.query.filter_by(status='completed').count()
+        'completed_tasks': Task.query.filter_by(status='completed').count(),
+        # Add completed notifications count
+        'completed_notifications_count': TaskNotification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False,
+            notification_type='task_completed'
+        ).count()
     }
     
     # Get users for assignment
@@ -236,7 +248,7 @@ def admin_dashboard():
                          completed_no_ddt_total_pages=completed_no_ddt_total_pages,
                          completed_with_ddt_page=completed_with_ddt_page,
                          completed_with_ddt_total_pages=completed_with_ddt_total_pages,
-                         stats=original_stats,
+                         stats=stats,
                          users=users,
                          clients=clients,
                          search=search_query,  # Aggiungo search_query come search per il template
@@ -812,8 +824,8 @@ def process_scan(task_ticket_id):
                     task_id=task.id_task,
                     user_id=task.created_by,
                     notification_type='task_completed',
-                    title=f'Task Completato: {task.task_number}',
-                    message=f'Il task "{task.title}" è stato completato da {current_user.username}.'
+                    title=f'✅ Task Completato: {task.task_number}',
+                    message=f'Il task "{task.title}" è stato completato al 100% da {current_user.username} alle {datetime.utcnow().strftime("%H:%M")}.'
                 )
                 db.session.add(notification)
                 db.session.commit()
@@ -904,8 +916,8 @@ def scan_ticket(task_ticket_id):
                 task_id=task.id_task,
                 user_id=task.created_by,
                 notification_type='task_completed',
-                title=f'Task Completato: {task.task_number}',
-                message=f'Il task "{task.title}" è stato completato da {current_user.username}.'
+                title=f'✅ Task Completato: {task.task_number}',
+                message=f'Il task "{task.title}" è stato completato al 100% da {current_user.username} alle {datetime.utcnow().strftime("%H:%M")}.'
             )
             db.session.add(notification)
             db.session.commit()
@@ -1123,8 +1135,8 @@ def api_scan_product():
                         task_id=task_ticket.task.id_task,
                         user_id=task_ticket.task.created_by,
                         notification_type='task_completed',
-                        title=f'Task Completato: {task_ticket.task.task_number}',
-                        message=f'Il task "{task_ticket.task.title}" è stato completato da {current_user.username}.'
+                        title=f'✅ Task Completato: {task_ticket.task.task_number}',
+                        message=f'Il task "{task_ticket.task.title}" è stato completato al 100% da {current_user.username} alle {datetime.utcnow().strftime("%H:%M")}.'
                     )
                     db.session.add(notification)
         
@@ -1204,9 +1216,22 @@ def complete_task(task_id):
         flash('Seleziona un cliente per generare il DDT.', 'error')
         return redirect(url_for('tasks.view_task', task_id=task_id))
     
+    # Get additional data for manual tickets and discounts
+    manual_tickets_data = request.form.get('manual_tickets')
+    ticket_discounts_data = request.form.get('ticket_discounts')
+    note = request.form.get('note')
+    
+    # Parse manual tickets and discounts data
     try:
-        # Generate DDT
-        ddt_id = generate_ddt_from_task(task, int(client_id))
+        manual_tickets = json.loads(manual_tickets_data) if manual_tickets_data else []
+        ticket_discounts = json.loads(ticket_discounts_data) if ticket_discounts_data else {}
+    except json.JSONDecodeError:
+        flash('Formato dati ticket manuali non valido', 'error')
+        return redirect(url_for('tasks.view_task', task_id=task_id))
+    
+    try:
+        # Generate DDT with manual tickets and discounts
+        ddt_id = generate_ddt_from_task(task, int(client_id), manual_tickets, ticket_discounts, note)
         
         task.ddt_generated = True
         task.ddt_id = ddt_id
@@ -1223,11 +1248,22 @@ def complete_task(task_id):
         return redirect(url_for('tasks.view_task', task_id=task_id))
 
 
-def generate_ddt_from_task(task, client_id):
+def generate_ddt_from_task(task, client_id, manual_tickets=None, ticket_discounts=None, note=None):
     """Generate a DDT (Documento di Trasporto) from completed task"""
     client = Client.query.get(client_id)
     if not client:
         raise ValueError("Cliente non trovato")
+    
+    # Initialize default values
+    if manual_tickets is None:
+        manual_tickets = []
+    if ticket_discounts is None:
+        ticket_discounts = {}
+    
+    # Ensure custom product exists for manual tickets
+    if manual_tickets:
+        from ddt import ensure_custom_product_exists
+        ensure_custom_product_exists()
     
     # Create DDT header
     company = Company.query.first()
@@ -1273,7 +1309,7 @@ def generate_ddt_from_task(task, client_id):
         NombreVendedor="IL CAPO",
         TipoVenta=2,
         ReferenciaDocumento="",
-        ObservacionesDocumento="",
+        ObservacionesDocumento=note or "",  # Add note to DDT
         ImporteLineas=0.0,
         ImporteTotal=0.0,
         ImporteTotalSinIVAConDtoL=0.0,
@@ -1292,7 +1328,10 @@ def generate_ddt_from_task(task, client_id):
     # Add lines from all task tickets
     line_number = 1
     total_amount = 0
+    total_without_vat = 0
+    total_vat = 0
     
+    # PROCESS TASK TICKETS
     for task_ticket in task.task_tickets:
         for ticket_line in task_ticket.ticket.lines:
             # Only add successfully scanned items
@@ -1302,6 +1341,41 @@ def generate_ddt_from_task(task, client_id):
             ).first()
             
             if scan_result:
+                product = Product.query.get(ticket_line.IdArticulo)
+                
+                if not product:
+                    current_app.logger.warning(f"⚠️  Prodotto {ticket_line.IdArticulo} non trovato, riga saltata")
+                    continue
+                
+                # Determine VAT rate (same logic as ddt.py)
+                vat_rate = 0
+                if product.IdIva == 1:
+                    vat_rate = 0.04  # 4%
+                elif product.IdIva == 2:
+                    vat_rate = 0.10  # 10%
+                elif product.IdIva == 3:
+                    vat_rate = 0.22  # 22%
+                
+                # Calculate prices (same logic as ddt.py)
+                price_with_vat = float(product.PrecioConIVA) if product.PrecioConIVA is not None else 0.0
+                price_without_vat = price_with_vat / (1 + vat_rate) if vat_rate > 0 else price_with_vat
+                peso_value = float(ticket_line.Peso) if ticket_line.Peso is not None else 1.0
+                line_total = price_without_vat * peso_value
+                line_vat = line_total * vat_rate
+                
+                # Apply ticket discount if present
+                ticket_id_str = str(task_ticket.ticket_id)
+                ticket_discount = float(ticket_discounts.get(ticket_id_str, 0))
+                if ticket_discount > 0:
+                    discount_factor = 1 - (ticket_discount / 100)
+                    line_total = line_total * discount_factor
+                    line_vat = line_vat * discount_factor
+                    current_app.logger.info(f"💰 Applicato sconto {ticket_discount}% al ticket {task_ticket.ticket_id}")
+                    current_app.logger.info(f"   Totale scontato: {line_total:.2f}, IVA scontata: {line_vat:.2f}")
+                
+                # Get product article info
+                product_article = Article.query.get(product.IdArticulo)
+                
                 ddt_line = AlbaranLinea(
                     IdAlbaran=ddt_header.IdAlbaran,
                     IdLineaAlbaran=line_number,
@@ -1313,33 +1387,43 @@ def generate_ddt_from_task(task, client_id):
                     EstadoLinea=0,  # Default value
                     IdTicket=task_ticket.ticket_id,  # Reference to the original ticket
                     IdArticulo=ticket_line.IdArticulo,
-                    Descripcion=ticket_line.Descripcion,
-                    Comportamiento=getattr(ticket_line, 'comportamiento', 0),  # Usa il valore dal ticket
-                    ComportamientoDevolucion=0,  # Default value
+                    Descripcion=ticket_line.Descripcion or product.Descripcion,
+                    Descripcion1=getattr(product_article, 'Descripcion1', '') if product_article else '',
+                    Comportamiento=getattr(ticket_line, 'comportamiento', 0),
+                    ComportamientoDevolucion=getattr(ticket_line, 'comportamiento_devolucion', 0),
                     EntradaManual=0,  # Default value
                     Tara=0,  # Default value
-                    Peso=ticket_line.Peso,
+                    Peso=peso_value,
                     Medida2="un",  # Default unit
                     PrecioPorCienGramos=0,  # Default value
-                    Precio=ticket_line.product.PrecioConIVA if ticket_line.product else 0,
-                    PrecioSinIVA=0,  # Will be calculated if needed
-                    PorcentajeIVA=0,  # Default VAT
+                    Precio=0.0,  # Will be calculated if needed
+                    PrecioSinIVA=price_without_vat,  # FIXED: Calculate price without VAT
+                    IdIVA=product.IdIva,  # FIXED: Set VAT ID from product
+                    PorcentajeIVA=vat_rate * 100,  # FIXED: Calculate VAT percentage
                     RecargoEquivalencia=0,  # Default value
-                    Descuento=0,  # Default discount
+                    Descuento=ticket_discount if ticket_discount > 0 else 0.0,  # Apply discount
                     TipoDescuento=1,  # Default discount type
-                    Importe=float(ticket_line.Peso) * float(ticket_line.product.PrecioConIVA) if ticket_line.product else 0,
+                    Importe=line_total + line_vat,  # Total amount with VAT
                     ImporteSinOferta=None,
-                    ImporteSinIVASinDtoL=0,  # Will be calculated if needed
+                    ImporteSinIVASinDtoL=line_total,  # FIXED: Amount without VAT
                     ImporteConIVASinDtoL=None,
-                    ImporteSinIVAConDtoL=0,  # Will be calculated if needed
-                    ImporteDelIVAConDtoL=0,  # VAT amount
-                    ImporteSinIVAConDtoLConDtoTotal=0,
-                    ImporteDelIVAConDtoLConDtoTotal=0,
+                    ImporteSinIVAConDtoL=line_total,  # FIXED: Amount without VAT after discount
+                    ImporteDelIVAConDtoL=line_vat,  # FIXED: VAT amount
+                    ImporteSinIVAConDtoLConDtoTotal=line_total,
+                    ImporteDelIVAConDtoLConDtoTotal=line_vat,
                     ImporteDelRE=0,
-                    ImporteDelDescuento=0,
-                    ImporteConDtoTotal=0,
+                    ImporteDelDescuento=line_total * (ticket_discount / 100) if ticket_discount > 0 else 0,
+                    ImporteConDtoTotal=line_total + line_vat,
                     FechaCaducidad=ticket_line.FechaCaducidad,
+                    # Additional product info fields (same as ddt.py)
+                    IdClase=getattr(product_article, 'IdClase', None) if product_article else None,
                     NombreClase="ARTICOLI",  # Default class name
+                    IdFamilia=product.IdFamilia,
+                    NombreFamilia="",  # To be populated if available
+                    IdSeccion=getattr(product_article, 'IdSeccion', None) if product_article else None,
+                    IdSubFamilia=product.IdSubFamilia,
+                    IdDepartamento=getattr(product_article, 'IdDepartamento', None) if product_article else None,
+                    Texto1=getattr(ticket_line, 'Texto1', '') or (getattr(product_article, 'Texto1', '') if product_article else ''),
                     Facturada=0,  # Not invoiced yet
                     CantidadFacturada=0,  # Default value
                     CantidadFacturada2=0,  # Default value
@@ -1350,12 +1434,137 @@ def generate_ddt_from_task(task, client_id):
                     TimeStamp=datetime.utcnow()
                 )
                 db.session.add(ddt_line)
-                total_amount += ddt_line.Importe
+                
+                # Accumulate totals (same logic as ddt.py)
+                total_without_vat += line_total
+                total_vat += line_vat
+                total_amount += (line_total + line_vat)
                 line_number += 1
+                
+                current_app.logger.info(f"📝 DDT da Task - Linea {line_number-1}: {ticket_line.Descripcion}")
+                current_app.logger.info(f"   Prezzo senza IVA: €{price_without_vat:.2f}, IVA {vat_rate*100:.0f}%: €{line_vat:.2f}, Totale: €{line_total + line_vat:.2f}")
     
-    # Update DDT totals
+    # PROCESS MANUAL TICKETS (same logic as ddt.py)
+    for manual_ticket in manual_tickets:
+        current_app.logger.info(f"✋ DEBUG: Elaborazione ticket manuale {manual_ticket['id_ticket']}")
+        
+        # Create DDT lines directly for manual tickets
+        for ticket_line in manual_ticket['lines']:
+            line_number += 1
+            
+            # Calculate VAT rate
+            id_iva = ticket_line.get('id_iva', 3)  # Default 22%
+            vat_rate = 0
+            if id_iva == 1:
+                vat_rate = 0.04  # 4%
+            elif id_iva == 2:
+                vat_rate = 0.10  # 10%
+            elif id_iva == 3:
+                vat_rate = 0.22  # 22%
+            
+            # Calculate prices
+            price_with_vat = float(ticket_line['precio'])
+            price_without_vat = price_with_vat / (1 + vat_rate) if vat_rate > 0 else price_with_vat
+            peso_value = float(ticket_line['peso'])
+            line_total = price_without_vat * peso_value
+            line_vat = line_total * vat_rate
+            
+            # Apply discount for manual ticket if present
+            manual_ticket_id_str = str(manual_ticket['id_ticket'])
+            ticket_discount = float(ticket_discounts.get(manual_ticket_id_str, 0))
+            if ticket_discount > 0:
+                discount_factor = 1 - (ticket_discount / 100)
+                line_total = line_total * discount_factor
+                line_vat = line_vat * discount_factor
+                current_app.logger.info(f"💰 Applicato sconto {ticket_discount}% al ticket manuale {manual_ticket['id_ticket']}")
+                current_app.logger.info(f"   Totale scontato: {line_total:.2f}, IVA scontata: {line_vat:.2f}")
+            
+            # Create DDT line for manual ticket
+            albaran_line = AlbaranLinea()
+            albaran_line.IdLineaAlbaran = line_number
+            albaran_line.IdEmpresa = ddt_header.IdEmpresa
+            albaran_line.IdTienda = ddt_header.IdTienda
+            albaran_line.IdBalanzaMaestra = ddt_header.IdBalanzaMaestra
+            albaran_line.IdBalanzaEsclava = ddt_header.IdBalanzaEsclava
+            albaran_line.IdAlbaran = ddt_header.IdAlbaran
+            albaran_line.TipoVenta = ddt_header.TipoVenta
+            
+            # For manual tickets, use special ID or NULL
+            albaran_line.IdTicket = None  # Manual ticket has no real ticket ID
+            
+            # Product data from manual ticket
+            albaran_line.IdArticulo = 999  # Custom product ID
+            albaran_line.Descripcion = ticket_line['descripcion']
+            albaran_line.Descripcion1 = "Prodotto manuale"
+            albaran_line.Comportamiento = ticket_line.get('comportamiento', 1)
+            albaran_line.ComportamientoDevolucion = 0
+            
+            # Weights and quantities
+            albaran_line.Peso = peso_value
+            albaran_line.Medida2 = "un"  # Default unit
+            
+            # Prices and VAT
+            albaran_line.Precio = 0.0  # Will be calculated if needed
+            albaran_line.PrecioSinIVA = price_without_vat
+            albaran_line.IdIVA = id_iva
+            albaran_line.PorcentajeIVA = vat_rate * 100
+            albaran_line.RecargoEquivalencia = 0.0
+            
+            # Amounts
+            albaran_line.Importe = line_total + line_vat
+            albaran_line.ImporteSinIVASinDtoL = line_total
+            albaran_line.ImporteDelIVAConDtoL = line_vat
+            
+            # Additional info for manual tickets
+            albaran_line.IdClase = None
+            albaran_line.NombreClase = "ARTICOLI"  # Default like the example
+            albaran_line.IdFamilia = None
+            albaran_line.NombreFamilia = ""
+            albaran_line.IdSeccion = None
+            albaran_line.IdSubFamilia = None
+            albaran_line.IdDepartamento = None
+            albaran_line.Texto1 = ""
+            
+            # Default fields
+            albaran_line.EstadoLinea = 0
+            albaran_line.EntradaManual = 1  # Mark as manual entry
+            albaran_line.Tara = 0.0
+            albaran_line.PrecioPorCienGramos = 0
+            albaran_line.Descuento = ticket_discount if ticket_discount > 0 else 0.0
+            albaran_line.TipoDescuento = 1
+            albaran_line.Facturada = 0
+            albaran_line.CantidadFacturada = 0.0
+            albaran_line.CantidadFacturada2 = 0.0
+            albaran_line.HayTaraAplicada = 0
+            albaran_line.Modificado = 1
+            albaran_line.Operacion = "A"
+            albaran_line.Usuario = current_user.username
+            albaran_line.TimeStamp = datetime.utcnow()
+            
+            # Add calculated fields for manual ticket
+            albaran_line.ImporteSinIVAConDtoL = line_total
+            albaran_line.ImporteSinIVAConDtoLConDtoTotal = line_total
+            albaran_line.ImporteDelIVAConDtoLConDtoTotal = line_vat
+            albaran_line.ImporteDelRE = 0
+            albaran_line.ImporteDelDescuento = line_total * (ticket_discount / 100) if ticket_discount > 0 else 0
+            albaran_line.ImporteConDtoTotal = line_total + line_vat
+            
+            db.session.add(albaran_line)
+            
+            # Accumulate totals for manual tickets
+            total_without_vat += line_total
+            total_vat += line_vat
+            total_amount += (line_total + line_vat)
+            
+            current_app.logger.info(f"📝 DDT da Task - Linea manuale {line_number}: {ticket_line['descripcion']}")
+            current_app.logger.info(f"   Prezzo senza IVA: €{price_without_vat:.2f}, IVA {vat_rate*100:.0f}%: €{line_vat:.2f}, Totale: €{line_total + line_vat:.2f}")
+    
+    # Update DDT totals (using calculated values)
     ddt_header.ImporteLineas = total_amount
     ddt_header.ImporteTotal = total_amount
+    ddt_header.ImporteTotalSinIVAConDtoL = total_without_vat
+    ddt_header.ImporteTotalDelIVAConDtoLConDtoTotal = total_vat
+    ddt_header.ImporteTotalSinIVAConDtoLConDtoTotal = total_without_vat
     ddt_header.NumLineas = line_number - 1
     
     # Update all tickets in this task to Enviado = 1 (processed/sent)
@@ -1365,7 +1574,9 @@ def generate_ddt_from_task(task, client_id):
         ticket.Enviado = 1  # Set to processed/sent status
         current_app.logger.info(f"📦 Ticket #{ticket.NumTicket} impostato come inviato (Enviado = 1) via DDT #{ddt_header.IdAlbaran}")
     
-    current_app.logger.info(f"✅ DDT #{ddt_header.IdAlbaran} generato con {line_number - 1} linee, totale: €{total_amount:.2f}")
+    current_app.logger.info(f"✅ DDT #{ddt_header.IdAlbaran} generato da task con {line_number - 1} linee")
+    current_app.logger.info(f"   Ticket task: {task.task_tickets.count()}, Ticket manuali: {len(manual_tickets)}")
+    current_app.logger.info(f"   Totale senza IVA: €{total_without_vat:.2f}, IVA: €{total_vat:.2f}, Totale: €{total_amount:.2f}")
     
     return ddt_header.IdAlbaran
 
@@ -1783,9 +1994,8 @@ def task_screen():
     overdue_tasks = []     # overdue tasks (separate category)
     
     for task in active_tasks:
-        if task.is_overdue:
-            overdue_tasks.append(task)
-        elif task.priority == 'urgent':
+        # PRIMA categorizza per priorità, poi aggiungi flag scadenza
+        if task.priority == 'urgent':
             urgent_tasks.append(task)
         elif task.priority == 'high':
             high_tasks.append(task)
@@ -1793,6 +2003,11 @@ def task_screen():
             medium_tasks.append(task)
         else:  # low priority
             low_tasks.append(task)
+        
+        # Se è scaduta, aggiungila ANCHE alle scadute (per statistiche)
+        # ma mantienila nella sua categoria di priorità principale
+        if task.is_overdue:
+            overdue_tasks.append(task)
     
     # Combine for assigned_tasks display in priority order
     assigned_tasks = urgent_tasks + high_tasks + medium_tasks + low_tasks
@@ -1825,6 +2040,7 @@ def task_screen():
                          overdue_tasks=overdue_tasks,
                          stats=stats,
                          now=datetime.now)
+
 
 
 @tasks_bp.route('/api/remove-ticket', methods=['POST'])
@@ -1899,3 +2115,82 @@ def api_remove_ticket_from_task():
         db.session.rollback()
         current_app.logger.error(f"Error removing ticket from task via API: {str(e)}")
         return jsonify({'success': False, 'message': f'Errore durante la rimozione del ticket: {str(e)}'}) 
+
+
+@tasks_bp.route('/api/notifications/unread')
+@login_required
+def api_get_unread_notifications():
+    """Get unread notifications for the current user"""
+    try:
+        # Get unread notifications for current user ordered by creation date
+        notifications = TaskNotification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False
+        ).order_by(desc(TaskNotification.created_at)).limit(10).all()
+        
+        notifications_data = []
+        for notification in notifications:
+            notifications_data.append({
+                'id': notification.id,
+                'title': notification.title,
+                'message': notification.message,
+                'type': notification.notification_type,
+                'task_id': notification.task_id,
+                'created_at': notification.created_at.strftime('%d/%m/%Y %H:%M'),
+                'created_at_relative': get_relative_time(notification.created_at),
+                'is_read': notification.is_read
+            })
+        
+        return jsonify({
+            'success': True,
+            'notifications': notifications_data,
+            'unread_count': len(notifications_data)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching unread notifications: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@tasks_bp.route('/api/notifications/completed-count')
+@login_required
+def api_get_completed_notifications_count():
+    """Get count of unread task completion notifications for admin"""
+    try:
+        if not current_user.is_admin:
+            return jsonify({'success': False, 'error': 'Admin access required'}), 403
+            
+        count = TaskNotification.query.filter_by(
+            user_id=current_user.id,
+            is_read=False,
+            notification_type='task_completed'
+        ).count()
+        
+        return jsonify({
+            'success': True,
+            'completed_count': count
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching completed notifications count: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+def get_relative_time(datetime_obj):
+    """Get relative time string (e.g., '2 min fa', '1 ora fa')"""
+    from datetime import datetime, timedelta
+    
+    now = datetime.utcnow()
+    diff = now - datetime_obj
+    
+    if diff.total_seconds() < 60:
+        return 'Ora'
+    elif diff.total_seconds() < 3600:
+        minutes = int(diff.total_seconds() / 60)
+        return f'{minutes} min fa'
+    elif diff.total_seconds() < 86400:
+        hours = int(diff.total_seconds() / 3600)
+        return f'{hours} ora{"" if hours == 1 else "e"} fa'
+    else:
+        days = diff.days
+        return f'{days} giorno{"" if days == 1 else "i"} fa'

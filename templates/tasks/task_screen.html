@@ -28,27 +28,27 @@
         }
 
         .main-container {
-            display: grid;
-            grid-template-rows: auto 1fr;
+            display: flex;
+            flex-direction: column;
             height: 100vh;
-            padding: 20px;
-            gap: 20px;
+            padding: 15px;
+            gap: 15px;
         }
 
-        /* Header Section */
+        /* Enhanced Header with integrated stats */
         .header-section {
             display: grid;
-            grid-template-columns: 1fr auto 1fr;
+            grid-template-columns: 1fr auto 1fr auto;
             align-items: center;
-            background: linear-gradient(135deg, #2c3e50);
+            background: linear-gradient(135deg, #2c3e50, #34495e);
             border-radius: 20px;
-            padding: 30px 40px;
+            padding: 25px 40px;
             box-shadow: 0 8px 32px rgba(25, 118, 210, 0.3);
             border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
         .logo-section h1 {
-            font-size: 2.8rem;
+            font-size: 2.5rem;
             font-weight: 800;
             color: #ffffff;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
@@ -62,11 +62,11 @@
 
         .clock-section {
             text-align: center;
-            padding: 0 40px;
+            padding: 0 30px;
         }
 
         .current-time {
-            font-size: 4.5rem;
+            font-size: 3.8rem;
             font-weight: 900;
             color: #ff7043;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
@@ -76,7 +76,7 @@
         }
 
         .current-date {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.9);
             font-weight: 500;
             text-transform: uppercase;
@@ -88,95 +88,81 @@
         }
 
         .user-info {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             color: #ffffff;
             font-weight: 600;
         }
 
         .user-role {
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: rgba(255, 255, 255, 0.8);
             margin-top: 5px;
         }
 
-        /* Main Dashboard */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            grid-template-rows: auto 1fr 450px;
-            gap: 15px;
-            height: 100%;
+        /* Integrated Stats in Header */
+        .header-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-left: 30px;
         }
 
-        /* Stats Overview - Smaller */
-        .stats-overview {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 5px;
+        .stat-mini {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .stat-card {
-            background: #ffffff;
-            border-radius: 16px;
-            padding: 20px;
+        .stat-mini-icon {
+            font-size: 1.2rem;
+            width: 24px;
             text-align: center;
-            border: 1px solid #e5e7eb;
-            position: relative;
+        }
+
+        .stat-mini.assigned .stat-mini-icon { color: #64b5f6; }
+        .stat-mini.completed .stat-mini-icon { color: #81c784; }
+
+        .stat-mini-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-mini-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .stat-mini-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        /* Main Dashboard Content */
+        .dashboard-content {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 15px;
             overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
         }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        /* Right Column - Split into two sections */
+        .right-column {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--accent-color);
-        }
-
-        .stat-card.assigned {
-            --accent-color: #1976d2;
-            border-color: rgba(25, 118, 210, 0.15);
-        }
-
-        .stat-card.completed {
-            --accent-color: #10b981;
-            border-color: rgba(16, 185, 129, 0.15);
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 900;
-            color: var(--accent-color);
-            line-height: 1;
-            margin: 5px 0;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #2c3e50;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-icon {
-            font-size: 1.1rem;
-            color: var(--accent-color);
-            margin-bottom: 5px;
-        }
-
-        /* Task Sections - Design moderno */
-        .task-section {
+        /* Task Assegnati Section - Single Flexible Row */
+        .assigned-section {
             background: #ffffff;
             border-radius: 16px;
             border: 1px solid #e5e7eb;
@@ -186,344 +172,481 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         }
 
-        .task-section.full-width {
-            width: 100%;
-        }
-
-        .task-section.completed-section {
-            height: 450px;
-        }
-
         .section-header {
-            background: var(--section-color);
-            padding: 20px 24px;
+            background: linear-gradient(135deg, #1976d2, #1565c0);
+            padding: 15px 24px;
             color: #ffffff;
             font-weight: 600;
             font-size: 1.1rem;
-            text-transform: none;
-            letter-spacing: -0.025em;
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-shrink: 0;
         }
 
-        .section-header.assigned {
-            --section-color: linear-gradient(135deg, #1976d2, #1565c0);
+        .cards-container {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
-        .section-header.completed {
-            --section-color: linear-gradient(135deg, #10b981, #059669);
+        .cards-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            justify-content: start;
+            align-items: start;
+            max-height: none;
         }
 
-        .section-content {
+        /* Right Column - Split into two sections */
+        .right-column {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* Expired Tasks Section - Top Right */
+        .expired-section {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .expired-header {
+            background: linear-gradient(135deg, #d32f2f, #b71c1c);
+            padding: 12px 16px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .expired-content {
             flex: 1;
             padding: 10px;
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 8px;
-            align-content: start;
-        }
-
-        .section-content.completed-content {
-            grid-template-columns: repeat(6, 1fr);
-            max-height: 400px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        /* Task Cards - Design moderno e pulito */
+        .expired-card {
+            background: linear-gradient(135deg, #ffebee, #ffffff);
+            border: 1px solid #ffcdd2;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-left: 4px solid #d32f2f;
+            animation: pulse-expired 3s infinite;
+        }
+
+        .expired-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expired-number {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #d32f2f;
+        }
+
+        .expired-date {
+            font-size: 0.65rem;
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 3px 6px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .expired-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .expired-assignee {
+            font-size: 0.65rem;
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+        @keyframes pulse-expired {
+            0%, 100% { 
+                border-left-color: #d32f2f;
+                box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+            }
+            50% { 
+                border-left-color: #f44336;
+                box-shadow: 0 2px 8px rgba(244, 67, 54, 0.5);
+            }
+        }
+
+        @keyframes pulse-urgent {
+            0%, 100% { 
+                border-left-color: #d32f2f;
+                box-shadow: 0 4px 16px rgba(211, 47, 47, 0.3);
+            }
+            50% { 
+                border-left-color: #f44336;
+                box-shadow: 0 4px 16px rgba(244, 67, 54, 0.5);
+            }
+        }
+
+        /* Completed Tasks Section - Bottom Right */
+        .completed-section {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .completed-header {
+            background: linear-gradient(135deg, #10b981, #059669);
+            padding: 12px 16px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .completed-content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .completed-card {
+            background: linear-gradient(135deg, #f0fdf4, #ffffff);
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-left: 4px solid #10b981;
+        }
+
+        .completed-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .completed-number {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .completed-date {
+            font-size: 0.65rem;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 3px 6px;
+            border-radius: 8px;
+        }
+
+        .completed-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .completed-assignee {
+            font-size: 0.65rem;
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        /* Task Cards - Always show articles, no tabs */
         .task-card {
             background: #ffffff;
             border-radius: 12px;
             position: relative;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-            border: 1px solid #e5e7eb;
-            overflow: hidden;
-            min-height: 280px;
-            max-height: none;
-            height: auto;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            border: 2px solid #e5e7eb;
+            overflow: visible;
             display: flex;
             flex-direction: column;
-            font-family: 'Inter', 'Segoe UI', sans-serif;
-            margin: 8px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            min-width: 350px;
+            width: 100%;
+            min-height: 300px;
         }
 
-        /* Rimuovo i bordi seghettati */
-        .task-card::before,
-        .task-card::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            right: 0;
-            height: 12px;
-            background-repeat: repeat-x;
-            background-size: 16px 12px;
-            background-position: center;
-            z-index: 1;
-        }
+        /* Torn paper effect */
         
-        .task-card::before {
-            top: -12px;
-            background-image: url('data:image/svg+xml;utf8,<svg width="16" height="12" xmlns="http://www.w3.org/2000/svg"><path d="M0 12 Q4 0 8 12 T16 12" fill="white" stroke="%23e0e0e0" stroke-width="1"/></svg>');
-        }
-        
-        .task-card::after {
-            bottom: -12px;
-            background-image: url('data:image/svg+xml;utf8,<svg width="16" height="12" xmlns="http://www.w3.org/2000/svg"><path d="M0 0 Q4 12 8 0 T16 0" fill="white" stroke="%23e0e0e0" stroke-width="1"/></svg>');
-        }
 
-        .task-card.assigned {
-            --card-color: #1976d2;
-            --card-color-rgb: 25, 118, 210;
-            border-left: 4px solid #1976d2;
-        }
-
-        .task-card.overdue {
-            --card-color: #ef4444;
-            --card-color-rgb: 239, 68, 68;
-            background: linear-gradient(135deg, #fff1f2, #ffffff);
-            border-left: 4px solid #ef4444;
-        }
-
-        .task-card.completed {
-            --card-color: #10b981;
-            --card-color-rgb: 16, 185, 129;
-            background: linear-gradient(135deg, #f0fdf4, #ffffff);
-            border-left: 4px solid #10b981;
-        }
-
-        .task-card.low {
-            --card-color: #10b981;
-            --card-color-rgb: 16, 185, 129;
-            border-left: 4px solid #10b981;
-        }
-
-        .task-card.medium {
-            --card-color: #f59e0b;
-            --card-color-rgb: 245, 158, 11;
-            border-left: 4px solid #f59e0b;
+        /* Priority Colors */
+        .task-card.urgent {
+            border-left: 5px solid #d32f2f;
+            background: linear-gradient(135deg, #ffebee, #ffffff);
+            animation: pulse-urgent 2s infinite;
         }
 
         .task-card.high {
-            --card-color: #ef4444;
-            --card-color-rgb: 239, 68, 68;
-            border-left: 4px solid #ef4444;
+            border-left: 5px solid #f57c00;
+            background: linear-gradient(135deg, #fff3e0, #ffffff);
         }
 
-        .task-card.urgent {
-            --card-color: #dc2626;
-            --card-color-rgb: 220, 38, 38;
-            border-left: 4px solid #dc2626;
-            background: linear-gradient(135deg, #fff1f2, #ffffff);
+        .task-card.medium {
+            border-left: 5px solid #fbc02d;
+            background: linear-gradient(135deg, #fffde7, #ffffff);
+        }
+
+        .task-card.low {
+            border-left: 5px solid #388e3c;
+            background: linear-gradient(135deg, #e8f5e8, #ffffff);
         }
 
         .task-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            border-color: var(--card-color);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
         }
 
-        /* Header della card - Design pulito */
-        .ticket-header {
-            padding: 20px 20px 15px 20px;
+        /* Card Header */
+        .card-header {
+            padding: 12px 16px;
             border-bottom: 1px solid #f1f5f9;
+            background: rgba(255, 255, 255, 0.8);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(135deg, #f8fafc, #ffffff);
         }
 
-        .ticket-title {
-            font-size: 1.5rem;
+        .task-number {
+            font-size: 1.1rem;
             font-weight: 700;
-            color: var(--card-color);
-            line-height: 1;
-            margin: 0;
-            letter-spacing: -0.025em;
+            color: #1976d2;
         }
 
-        .ticket-deadline {
-            font-size: 0.9rem;
+        .task-deadline {
+            font-size: 0.75rem;
             font-weight: 600;
             color: #64748b;
-            background: #f1f5f9;
-            padding: 6px 12px;
-            border-radius: 20px;
-            white-space: nowrap;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 12px;
         }
 
-        /* Body della card */
-        .ticket-body {
-            padding: 20px;
+        /* Card Body */
+        .card-body {
             flex: 1;
+            padding: 12px 16px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 10px;
             overflow: hidden;
         }
 
-        /* Sezione descrizione e utente */
-        .ticket-desc-user {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .ticket-description {
-            font-size: 1rem;
+        .task-title {
+            font-size: 0.9rem;
+            font-weight: 600;
             color: #1e293b;
-            line-height: 1.4;
-            flex: 1;
-            margin-right: 16px;
-            font-weight: 500;
-        }
-
-        .ticket-user {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--card-color);
-            white-space: nowrap;
-            background: rgba(var(--card-color-rgb), 0.1);
-            padding: 6px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(var(--card-color-rgb), 0.2);
-        }
-
-        /* Sezione articoli */
-        .ticket-articles {
-            flex: 1;
-            margin-bottom: 16px;
-            overflow: visible;
-        }
-
-        .ticket-article-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #f8fafc;
-            font-size: 0.85rem;
-        }
-
-        .ticket-article-item:last-child {
-            border-bottom: none;
-        }
-
-        .ticket-article-name {
-            flex: 1;
-            color: #374151;
-            font-weight: 600;
-            margin-right: 12px;
             line-height: 1.3;
+            margin-bottom: 8px;
         }
 
-        .ticket-article-details {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-            white-space: nowrap;
-        }
-
-        .ticket-article-weight {
-            color: #6b7280;
+        .task-assignee {
+            font-size: 0.75rem;
             font-weight: 600;
-            background: #f9fafb;
-            padding: 4px 10px;
+            color: #1976d2;
+            background: rgba(25, 118, 210, 0.1);
+            padding: 4px 8px;
             border-radius: 12px;
-            font-size: 0.8rem;
-            border: 1px solid #e5e7eb;
+            align-self: flex-start;
         }
 
-        /* Footer della card */
-        .ticket-footer {
-            padding: 15px 20px 20px 20px;
+        /* Articles Container - Always visible, no tabs */
+        .articles-container {
+            flex: 1;
+            position: relative;
+            min-height: fit-content;
+            padding: 8px 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* Progress Section */
+        .progress-section {
+            padding: 10px 16px;
             border-top: 1px solid #f1f5f9;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: linear-gradient(135deg, #f8fafc, #ffffff);
+            background: rgba(255, 255, 255, 0.8);
             margin-top: auto;
         }
 
-        .ticket-progress-label {
-            font-size: 0.9rem;
-            color: #64748b;
-            font-weight: 600;
+        .progress-bar-container {
+            margin-bottom: 8px;
         }
 
-        .ticket-total {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--card-color);
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1976d2, #42a5f5);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 8px;
-        }
-
-        .ticket-total-percentage {
-            background: var(--card-color);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            min-width: 50px;
-            text-align: center;
-        }
-
-        /* Badge di stato - Design moderno */
-        .ticket-status-badge {
-            position: absolute;
-            top: 16px;
-            right: 16px;
             font-size: 0.75rem;
-            padding: 6px 12px;
-            border-radius: 20px;
-            background: #ef4444;
-            color: white;
+        }
+
+        .progress-percentage {
             font-weight: 700;
+            color: #1976d2;
+        }
+
+        .progress-count {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .article-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 0.7rem;
+            border-bottom: 1px solid #f8fafc;
+        }
+
+        .article-item:last-child {
+            border-bottom: none;
+        }
+
+        .article-name {
+            flex: 1;
+            color: #374151;
+            font-weight: 500;
+            margin-right: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .article-weight {
+            color: #6b7280;
+            font-weight: 600;
+            background: #f9fafb;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            white-space: nowrap;
+        }
+
+        /* Tab Indicators */
+        .tab-indicators {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
             z-index: 2;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 1800px) {
-            .section-content {
-                grid-template-columns: repeat(5, 1fr);
-            }
+        .tab-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            transition: all 0.3s ease;
         }
 
-        @media (max-width: 1500px) {
-            .section-content {
-                grid-template-columns: repeat(4, 1fr);
-            }
+        .tab-dot.active {
+            background: #1976d2;
+            transform: scale(1.2);
         }
 
-        @media (max-width: 1200px) {
-            .section-content {
-                grid-template-columns: repeat(3, 1fr);
-            }
+        /* Progress Section */
+        .progress-section {
+            padding: 10px 16px;
+            border-top: 1px solid #f1f5f9;
+            background: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
         }
 
-        @media (max-width: 900px) {
-            .section-content {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .progress-bar-container {
+            margin-bottom: 8px;
         }
 
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1976d2, #42a5f5);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+        }
+
+        .progress-percentage {
+            font-weight: 700;
+            color: #1976d2;
+        }
+
+        .progress-count {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        /* Empty States */
         .no-tasks {
             text-align: center;
             padding: 40px 20px;
             color: #9ca3af;
             font-style: italic;
             grid-column: 1 / -1;
-            font-family: 'Roboto', sans-serif;
         }
 
         .no-tasks i {
@@ -532,27 +655,19 @@
             opacity: 0.5;
         }
 
-        /* Custom scrollbar for articles */
-        .task-articles::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .task-articles::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 2px;
-        }
-
-        .task-articles::-webkit-scrollbar-thumb {
-            background: rgba(25, 118, 210, 0.3);
-            border-radius: 2px;
-        }
-
         /* Animations */
         @keyframes pulse-urgent {
-            0%, 100% { background: #ef4444; }
-            50% { background: #dc2626; }
+            0%, 100% { 
+                border-left-color: #d32f2f;
+                box-shadow: 0 4px 16px rgba(211, 47, 47, 0.3);
+            }
+            50% { 
+                border-left-color: #f44336;
+                box-shadow: 0 4px 16px rgba(244, 67, 54, 0.5);
+            }
         }
 
+        /* Auto-refresh indicator */
         .refresh-indicator {
             position: fixed;
             bottom: 20px;
@@ -565,6 +680,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            backdrop-filter: blur(10px);
         }
 
         .refresh-icon {
@@ -576,17 +692,66 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Fullscreen styles */
-        body.fullscreen-mode {
-            overflow: hidden;
+        /* Responsive adjustments */
+        @media (max-width: 1400px) {
+            .cards-row {
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            }
         }
 
-        /* Hide scrollbars in fullscreen */
+        @media (max-width: 1200px) {
+            .dashboard-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            
+            .right-column {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr;
+            }
+            
+            .cards-row {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+            
+            .task-card {
+                min-width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cards-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .task-card {
+                min-width: 280px;
+                width: 100%;
+            }
+            
+            .header-section {
+                grid-template-columns: 1fr;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .header-stats {
+                flex-direction: row;
+                justify-content: center;
+                padding-left: 0;
+            }
+            
+            .right-column {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+        }
+
+        /* Hide scrollbars */
         ::-webkit-scrollbar {
             display: none;
         }
 
-        /* Firefox */
         html {
             scrollbar-width: none;
         }
@@ -594,11 +759,11 @@
 </head>
 <body>
     <div class="main-container">
-        <!-- Header Section -->
+        <!-- Enhanced Header Section with integrated stats -->
         <div class="header-section">
             <div class="logo-section">
                 <h1><i class="fas fa-desktop"></i>DBLogiX</h1>
-                </div>
+            </div>
             
             <div class="clock-section">
                 <div class="current-time" id="currentTime">--:--:--</div>
@@ -606,176 +771,62 @@
             </div>
             
             <div class="user-section">
-                        <div class="user-info">
-                    <i class="fas fa-user-circle me-2"></i>{{ current_user.username }}
-                        </div>
+                <div class="user-info">
+                    <i class="fas fa-user-circle me-2"></i>{{ current_user.username|default('Utente') }}
+                </div>
                 <div class="user-role">Dashboard Operativo</div>
+            </div>
+
+            <!-- Integrated Stats -->
+            <div class="header-stats">
+                <div class="stat-mini assigned">
+                    <div class="stat-mini-icon"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="stat-mini-content">
+                        <div class="stat-mini-number">{{ stats.total_assigned|default(0) }}</div>
+                        <div class="stat-mini-label">Assegnati</div>
+                    </div>
+                </div>
+                <div class="stat-mini completed">
+                    <div class="stat-mini-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-mini-content">
+                        <div class="stat-mini-number">{{ stats.total_completed|default(0) }}</div>
+                        <div class="stat-mini-label">Completati</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-        <!-- Dashboard Grid -->
-        <div class="dashboard-grid">
-            <!-- Stats Overview - Only 2 cards -->
-            <div class="stats-overview">
-                <div class="stat-card assigned">
-                    <div class="stat-icon"><i class="fas fa-user-check"></i></div>
-                    <div class="stat-number">{{ stats.total_assigned }}</div>
-                    <div class="stat-label">Assegnati</div>
-                </div>
-                <div class="stat-card completed">
-                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-number">{{ stats.total_completed }}</div>
-                    <div class="stat-label">Completati</div>
-                </div>
-            </div>
-
-            <!-- Task Assegnati - Full Width -->
-            <div class="task-section full-width">
-                <div class="section-header assigned">
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Task Assegnati - Single Flexible Row -->
+            <div class="assigned-section">
+                <div class="section-header">
                     <i class="fas fa-clipboard-list"></i>
-                    <span>Task Assegnati ({{ assigned_tasks|length }})</span>
+                    <span>Task Assegnati per Priorità ({{ stats.total_assigned|default(0) }})</span>
                 </div>
-                <div class="section-content">
-                    {% if assigned_tasks %}
-                        {% for task in assigned_tasks|sort(attribute='deadline') %}
-                        <div class="task-card assigned {{ task.priority }} {% if task.is_overdue_status %}overdue{% endif %}">
-                            {% if task.is_overdue_status %}
-                                <div class="ticket-status-badge">SCADUTO</div>
-                            {% endif %}
-                            
-                            <!-- Header: Solo numero task e scadenza -->
-                            <div class="ticket-header">
-                                <div class="ticket-title">#{{ task.task_number }}</div>
-                                <div class="ticket-deadline">
-                                    {% if task.deadline %}{{ task.deadline.strftime('%d/%m %H:%M') }}{% else %}No deadline{% endif %}
-                                </div>
-                            </div>
-                            
-                            <!-- Body -->
-                            <div class="ticket-body">
-                                <!-- Description and User -->
-                                <div class="ticket-desc-user">
-                                    <div class="ticket-description">{{ task.title }}</div>
-                                    <div class="ticket-user">{% if task.assignee %}{{ task.assignee.username }}{% else %}Unassigned{% endif %}</div>
-                                </div>
-                                
-                                <!-- Articles -->
-                                <div class="ticket-articles">
-                                    {% if task.loaded_tickets %}
-                                        {% for ticket in task.loaded_tickets %}
-                                            {% for line in ticket.loaded_lines %}
-                                                <div class="ticket-article-item">
-                                                    <div class="ticket-article-name">{{ line.Descripcion or 'Article' }}</div>
-                                                    <div class="ticket-article-details">
-                                                        <span class="ticket-article-weight">
-                                                            {% if line.comportamiento == 0 %}
-                                                                {{ line.Peso|int if line.Peso == line.Peso|int else line.Peso }}u N{{ ticket.id_ticket }}
-                                                            {% else %}
-                                                                {% set peso_formatted = "%.2f"|format(line.Peso) %}
-                                                                {{ peso_formatted.rstrip('0').rstrip('.') }}kg N{{ ticket.id_ticket }}
-                                                            {% endif %}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="ticket-article-item">
-                                            <div class="ticket-article-name">Nessun articolo</div>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <!-- Footer: Progress and Total -->
-                            <div class="ticket-footer">
-                                <div class="ticket-progress-label">Progresso</div>
-                                <div class="ticket-total">
-                                    <span class="ticket-total-percentage">{{ "%.0f"|format(task.progress_percentage) }}%</span>
-                                    <span>({{ task.completed_tickets }}/{{ task.total_tickets }})</span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="no-tasks">
-                            <i class="fas fa-clipboard-check"></i>
-                            <div>Nessun task assegnato</div>
-                        </div>
-                    {% endif %}
+                <div class="cards-container">
+                    <div class="cards-row" id="main-row"></div>
                 </div>
             </div>
 
-            <!-- Ultimi Completati - Full Width -->
-            <div class="task-section full-width completed-section">
-                <div class="section-header completed">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Ultimi Completati ({{ completed_tasks|length }})</span>
+            <!-- Right Column with two sections -->
+            <div class="right-column">
+                <!-- Expired Tasks - Top -->
+                <div class="expired-section">
+                    <div class="expired-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span id="expired-header-text">Task Scadute (0)</span>
+                    </div>
+                    <div class="expired-content" id="expired-container"></div>
                 </div>
-                <div class="section-content completed-content">
-                    {% if completed_tasks %}
-                        {% for task in completed_tasks %}
-                        <div class="task-card completed {{ task.priority }}">
-                            <!-- Header: Solo numero task e data completamento -->
-                            <div class="ticket-header">
-                                <div class="ticket-title">#{{ task.task_number }}</div>
-                                <div class="ticket-deadline">
-                                    {{ task.completed_at.strftime('%d/%m %H:%M') if task.completed_at else 'Completed' }}
-                                </div>
-                            </div>
-                            
-                            <!-- Body -->
-                            <div class="ticket-body">
-                                <!-- Description and User -->
-                                <div class="ticket-desc-user">
-                                    <div class="ticket-description">{{ task.title }}</div>
-                                    <div class="ticket-user">{% if task.assignee %}{{ task.assignee.username }}{% else %}Unassigned{% endif %}</div>
-                                </div>
-                                
-                                <!-- Articles -->
-                                <div class="ticket-articles">
-                                    {% if task.loaded_tickets %}
-                                        {% for ticket in task.loaded_tickets %}
-                                            {% for line in ticket.loaded_lines %}
-                                                <div class="ticket-article-item">
-                                                    <div class="ticket-article-name">{{ line.Descripcion or 'Article' }}</div>
-                                                    <div class="ticket-article-details">
-                                                        <span class="ticket-article-weight">
-                                                            {% if line.comportamiento == 0 %}
-                                                                {{ line.Peso|int if line.Peso == line.Peso|int else line.Peso }}u N{{ ticket.id_ticket }}
-                                                            {% else %}
-                                                                {% set peso_formatted = "%.2f"|format(line.Peso) %}
-                                                                {{ peso_formatted.rstrip('0').rstrip('.') }}kg N{{ ticket.id_ticket }}
-                                                            {% endif %}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            {% endfor %}
-                                        {% endfor %}
-                                    {% else %}
-                                        <div class="ticket-article-item">
-                                            <div class="ticket-article-name">Nessun articolo</div>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <!-- Footer: Progress and Total -->
-                            <div class="ticket-footer">
-                                <div class="ticket-progress-label">Completato</div>
-                                <div class="ticket-total">
-                                    <span class="ticket-total-percentage">100%</span>
-                                    <span>({{ task.total_tickets }}/{{ task.total_tickets }})</span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="no-tasks">
-                            <i class="fas fa-check-circle"></i>
-                            <div>Nessun task completato</div>
-                        </div>
-                    {% endif %}
+
+                <!-- Completed Tasks - Bottom -->
+                <div class="completed-section">
+                    <div class="completed-header">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="completed-header-text">Ultime Completate (0)</span>
+                    </div>
+                    <div class="completed-content" id="completed-container"></div>
                 </div>
             </div>
         </div>
@@ -791,16 +842,335 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Kiosk Mode Management - Professional Dashboard
-        let isKioskMode = true; // Always in kiosk mode
+        // Global variables
+        let allTasks = [];
+        let allCompletedTasks = [];
+        let allExpiredTasks = [];
+        let displayedTasks = [];
+        let currentRotationIndex = 0;
+        let rotationTimer = null;
+        let isKioskMode = true;
         let refreshTimer = null;
-        let isAutoRefreshInProgress = false; // Flag to track automatic refresh
+        let isAutoRefreshInProgress = false;
 
+        // Priority order for sorting
+        const priorityOrder = {
+            'urgent': 1,
+            'high': 2,
+            'medium': 3,
+            'low': 4
+        };
+
+        // Initialize tasks data from backend
+        function initializeTasks() {
+            console.log('Initializing tasks...');
+            
+            // Load assigned tasks organized by priority order (urgent, high, medium, low)
+            allTasks = [];
+            
+            // Add urgent tasks
+            {% if urgent_tasks|default([]) %}
+                {% for task in urgent_tasks %}
+                allTasks.push({
+                    id: {{ task.id_task|default('null') }},
+                    task_number: '{{ task.task_number|default("N/A") }}',
+                    title: '{{ task.title|default("No Title") }}',
+                    assignee: '{{ task.assignee.username|default("Unassigned") if task.assignee else "Unassigned" }}',
+                    deadline: '{{ task.deadline.strftime("%d/%m %H:%M") if task.deadline else "No deadline" }}',
+                    priority: 'urgent',
+                    status: '{{ task.status|default("pending") }}',
+                    progress_percentage: {{ task.progress_percentage|default(0) }},
+                    completed_tickets: {{ task.completed_tickets|default(0) }},
+                    total_tickets: {{ task.total_tickets|default(0) }},
+                    articles: [
+                        {% if task.loaded_tickets|default([]) %}
+                            {% for ticket in task.loaded_tickets %}
+                                {% if ticket.loaded_lines|default([]) %}
+                                    {% for line in ticket.loaded_lines %}
+                                    {
+                                        name: '{{ line.Descripcion|default("Articolo " ~ line.IdArticulo|default("N/A"))|e }}',
+                                        weight: '{{ line.Peso|default(1) }}{% if line.comportamiento|default(0) == 0 %}u{% else %}kg{% endif %}',
+                                        ticket_id: '{{ ticket.IdTicket|default("?") }}'
+                                    },
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+                });
+                {% endfor %}
+            {% endif %}
+            
+            // Add high priority tasks
+            {% if high_tasks|default([]) %}
+                {% for task in high_tasks %}
+                allTasks.push({
+                    id: {{ task.id_task|default('null') }},
+                    task_number: '{{ task.task_number|default("N/A") }}',
+                    title: '{{ task.title|default("No Title") }}',
+                    assignee: '{{ task.assignee.username|default("Unassigned") if task.assignee else "Unassigned" }}',
+                    deadline: '{{ task.deadline.strftime("%d/%m %H:%M") if task.deadline else "No deadline" }}',
+                    priority: 'high',
+                    status: '{{ task.status|default("pending") }}',
+                    progress_percentage: {{ task.progress_percentage|default(0) }},
+                    completed_tickets: {{ task.completed_tickets|default(0) }},
+                    total_tickets: {{ task.total_tickets|default(0) }},
+                    articles: [
+                        {% if task.loaded_tickets|default([]) %}
+                            {% for ticket in task.loaded_tickets %}
+                                {% if ticket.loaded_lines|default([]) %}
+                                    {% for line in ticket.loaded_lines %}
+                                    {
+                                        name: '{{ line.Descripcion|default("Articolo " ~ line.IdArticulo|default("N/A"))|e }}',
+                                        weight: '{{ line.Peso|default(1) }}{% if line.comportamiento|default(0) == 0 %}u{% else %}kg{% endif %}',
+                                        ticket_id: '{{ ticket.IdTicket|default("?") }}'
+                                    },
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+                });
+                {% endfor %}
+            {% endif %}
+            
+            // Add medium priority tasks
+            {% if medium_tasks|default([]) %}
+                {% for task in medium_tasks %}
+                allTasks.push({
+                    id: {{ task.id_task|default('null') }},
+                    task_number: '{{ task.task_number|default("N/A") }}',
+                    title: '{{ task.title|default("No Title") }}',
+                    assignee: '{{ task.assignee.username|default("Unassigned") if task.assignee else "Unassigned" }}',
+                    deadline: '{{ task.deadline.strftime("%d/%m %H:%M") if task.deadline else "No deadline" }}',
+                    priority: 'medium',
+                    status: '{{ task.status|default("pending") }}',
+                    progress_percentage: {{ task.progress_percentage|default(0) }},
+                    completed_tickets: {{ task.completed_tickets|default(0) }},
+                    total_tickets: {{ task.total_tickets|default(0) }},
+                    articles: [
+                        {% if task.loaded_tickets|default([]) %}
+                            {% for ticket in task.loaded_tickets %}
+                                {% if ticket.loaded_lines|default([]) %}
+                                    {% for line in ticket.loaded_lines %}
+                                    {
+                                        name: '{{ line.Descripcion|default("Articolo " ~ line.IdArticulo|default("N/A"))|e }}',
+                                        weight: '{{ line.Peso|default(1) }}{% if line.comportamiento|default(0) == 0 %}u{% else %}kg{% endif %}',
+                                        ticket_id: '{{ ticket.IdTicket|default("?") }}'
+                                    },
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+                });
+                {% endfor %}
+            {% endif %}
+            
+            // Add low priority tasks
+            {% if low_tasks|default([]) %}
+                {% for task in low_tasks %}
+                allTasks.push({
+                    id: {{ task.id_task|default('null') }},
+                    task_number: '{{ task.task_number|default("N/A") }}',
+                    title: '{{ task.title|default("No Title") }}',
+                    assignee: '{{ task.assignee.username|default("Unassigned") if task.assignee else "Unassigned" }}',
+                    deadline: '{{ task.deadline.strftime("%d/%m %H:%M") if task.deadline else "No deadline" }}',
+                    priority: 'low',
+                    status: '{{ task.status|default("pending") }}',
+                    progress_percentage: {{ task.progress_percentage|default(0) }},
+                    completed_tickets: {{ task.completed_tickets|default(0) }},
+                    total_tickets: {{ task.total_tickets|default(0) }},
+                    articles: [
+                        {% if task.loaded_tickets|default([]) %}
+                            {% for ticket in task.loaded_tickets %}
+                                {% if ticket.loaded_lines|default([]) %}
+                                    {% for line in ticket.loaded_lines %}
+                                    {
+                                        name: '{{ line.Descripcion|default("Articolo " ~ line.IdArticulo|default("N/A"))|e }}',
+                                        weight: '{{ line.Peso|default(1) }}{% if line.comportamiento|default(0) == 0 %}u{% else %}kg{% endif %}',
+                                        ticket_id: '{{ ticket.IdTicket|default("?") }}'
+                                    },
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    ]
+                });
+                {% endfor %}
+            {% endif %}
+            
+            // Load completed tasks
+            allCompletedTasks = [];
+            {% if completed_tasks|default([]) %}
+                {% for task in completed_tasks %}
+                allCompletedTasks.push({
+                    id: {{ task.id_task|default('null') }},
+                    task_number: '{{ task.task_number|default("N/A") }}',
+                    title: '{{ task.title|default("No Title") }}',
+                    assignee: '{{ task.assignee.username|default("Unassigned") if task.assignee else "Unassigned" }}',
+                    completed_at: '{{ task.completed_at.strftime("%d/%m %H:%M") if task.completed_at else "Completed" }}'
+                });
+                {% endfor %}
+            {% endif %}
+
+            // Simulate expired tasks (in real implementation, get from backend)
+            allExpiredTasks = [];
+            // Add logic to identify expired tasks from allTasks or get from backend
+            const now = new Date();
+            allTasks.forEach(task => {
+                if (task.deadline && task.deadline !== "No deadline") {
+                    const deadlineDate = new Date(task.deadline.replace(/(\d{2})\/(\d{2}) (\d{2}):(\d{2})/, '2024/$2/$1 $3:$4'));
+                    if (deadlineDate < now) {
+                        allExpiredTasks.push(task);
+                    }
+                }
+            });
+
+            console.log('Loaded', allTasks.length, 'assigned tasks,', allCompletedTasks.length, 'completed tasks, and', allExpiredTasks.length, 'expired tasks');
+            
+            renderTasks();
+            renderExpiredTasks();
+            renderCompletedTasks();
+            startTaskRotation();
+        }
+
+        // Render assigned tasks in the flexible grid
+        function renderTasks() {
+            const mainRow = document.getElementById('main-row');
+            
+            mainRow.innerHTML = '';
+
+            // Filter out expired tasks from display and sort by priority
+            const availableTasks = allTasks.filter(task => !allExpiredTasks.some(expiredTask => expiredTask.id === task.id));
+            
+            // Sort by priority: urgent, high, medium, low
+            const sortedTasks = availableTasks.sort((a, b) => {
+                return priorityOrder[a.priority] - priorityOrder[b.priority];
+            });
+
+            if (sortedTasks.length === 0) {
+                mainRow.innerHTML = '<div class="no-tasks"><i class="fas fa-clipboard-check"></i><div>Nessun task assegnato</div></div>';
+                return;
+            }
+
+            // Display all available tasks in priority order
+            sortedTasks.forEach((task) => {
+                const card = createTaskCard(task);
+                mainRow.appendChild(card);
+            });
+        }
+
+        // Create task card element
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            card.className = `task-card ${task.priority}`;
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="task-number">#${task.task_number}</div>
+                    <div class="task-deadline">${task.deadline}</div>
+                </div>
+                
+                <div class="card-body">
+                    <div class="task-title">${task.title}</div>
+                    <div class="task-assignee">${task.assignee}</div>
+                    
+                    <div class="articles-container">
+                        ${task.articles.length > 0 ? task.articles.map(article => `
+                            <div class="article-item">
+                                <div class="article-name">${article.name}</div>
+                                <div class="article-weight">${article.weight} T${article.ticket_id}</div>
+                            </div>
+                        `).join('') : `
+                            <div class="article-item">
+                                <div class="article-name">Nessun articolo trovato</div>
+                            </div>
+                        `}
+                    </div>
+                </div>
+                
+                <div class="progress-section">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${task.progress_percentage}%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-text">
+                        <div class="progress-percentage">${Math.round(task.progress_percentage)}%</div>
+                        <div class="progress-count">(${task.completed_tickets}/${task.total_tickets})</div>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Render expired tasks (latest 2)
+        function renderExpiredTasks() {
+            const container = document.getElementById('expired-container');
+            const headerText = document.getElementById('expired-header-text');
+            
+            // Update header count
+            headerText.textContent = `Task Scadute (${Math.min(allExpiredTasks.length, 2)})`;
+            
+            if (allExpiredTasks.length === 0) {
+                container.innerHTML = '<div class="no-tasks"><i class="fas fa-exclamation-triangle"></i><div>Nessun task scaduto</div></div>';
+                return;
+            }
+
+            // Show latest 2 expired tasks
+            const latestExpired = allExpiredTasks.slice(0, 2);
+            container.innerHTML = latestExpired.map(task => `
+                <div class="expired-card">
+                    <div class="expired-card-header">
+                        <div class="expired-number">#${task.task_number}</div>
+                        <div class="expired-date">${task.deadline}</div>
+                    </div>
+                    <div class="expired-title">${task.title}</div>
+                    <div class="expired-assignee">${task.assignee}</div>
+                </div>
+            `).join('');
+        }
+
+        // Render completed tasks (latest 2)
+        function renderCompletedTasks() {
+            const container = document.getElementById('completed-container');
+            const headerText = document.getElementById('completed-header-text');
+            
+            // Update header count
+            headerText.textContent = `Ultime Completate (${Math.min(allCompletedTasks.length, 2)})`;
+            
+            if (allCompletedTasks.length === 0) {
+                container.innerHTML = '<div class="no-tasks"><i class="fas fa-check-circle"></i><div>Nessun task completato</div></div>';
+                return;
+            }
+
+            // Show latest 2 completed tasks
+            const latestCompleted = allCompletedTasks.slice(0, 2);
+            container.innerHTML = latestCompleted.map(task => `
+                <div class="completed-card">
+                    <div class="completed-card-header">
+                        <div class="completed-number">#${task.task_number}</div>
+                        <div class="completed-date">${task.completed_at}</div>
+                    </div>
+                    <div class="completed-title">${task.title}</div>
+                    <div class="completed-assignee">${task.assignee}</div>
+                </div>
+            `).join('');
+        }
+
+        // Start task rotation system (simplified - no rotation needed now)
+        function startTaskRotation() {
+            // No rotation needed since we show all tasks that fit
+            // Tasks are displayed in priority order and don't rotate
+            console.log('Task rotation disabled - showing all tasks that fit by priority');
+        }
+
+        // Kiosk Mode Management
         function initializeKiosk() {
-            // Set kiosk mode immediately
             document.body.classList.add('fullscreen-mode');
             
-            // Try to enter fullscreen automatically (works in kiosk mode)
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(err => {
                     console.log('Fullscreen not available, running in kiosk window mode');
@@ -811,22 +1181,12 @@
         }
 
         function startAutoRefresh() {
-            stopAutoRefresh(); // Clear any existing timer
+            if (refreshTimer) clearInterval(refreshTimer);
             refreshTimer = setInterval(() => {
-                // Set flag to indicate automatic refresh is happening
                 isAutoRefreshInProgress = true;
-                
-                // Mantieni lo stato kiosk durante il refresh
                 localStorage.setItem('dblogix_kiosk_active', 'true');
                 location.reload();
             }, 30000);
-        }
-
-        function stopAutoRefresh() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
-            }
         }
 
         // Update clock
@@ -848,67 +1208,17 @@
             document.getElementById('currentDate').textContent = dateString.toUpperCase();
         }
 
-        // Initialize clock
-        updateClock();
-        setInterval(updateClock, 1000);
-
-        // Prevent common browser shortcuts and interactions for kiosk mode
-        document.addEventListener('keydown', function(e) {
-            // Block common shortcuts that could exit kiosk mode
-            if (
-                e.key === 'F11' ||                    // Fullscreen toggle
-                (e.ctrlKey && e.key === 'r') ||       // Reload
-                (e.ctrlKey && e.key === 'R') ||       // Hard reload
-                (e.ctrlKey && e.shiftKey && e.key === 'R') || // Hard reload
-                (e.ctrlKey && e.key === 'w') ||       // Close tab
-                (e.ctrlKey && e.key === 'W') ||       // Close tab
-                (e.ctrlKey && e.key === 't') ||       // New tab
-                (e.ctrlKey && e.key === 'T') ||       // New tab
-                (e.ctrlKey && e.key === 'n') ||       // New window
-                (e.ctrlKey && e.key === 'N') ||       // New window
-                (e.ctrlKey && e.shiftKey && e.key === 'I') || // Dev tools
-                (e.ctrlKey && e.shiftKey && e.key === 'J') || // Console
-                (e.ctrlKey && e.key === 'u') ||       // View source
-                (e.ctrlKey && e.key === 'U') ||       // View source
-                (e.altKey && e.key === 'F4') ||       // Alt+F4
-                e.key === 'F5'                        // Refresh
-            ) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        });
-
-        // Prevent right-click context menu
-        document.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Prevent text selection in kiosk mode
-        document.addEventListener('selectstart', e => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Prevent drag and drop
-        document.addEventListener('dragstart', e => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Page load handler - Initialize kiosk mode immediately
+        // Initialize everything
         document.addEventListener('DOMContentLoaded', function() {
-            // Set kiosk mode flag
             localStorage.setItem('dblogix_kiosk_active', 'true');
             
-            // Initialize kiosk mode immediately
             setTimeout(() => {
                 initializeKiosk();
+                initializeTasks();
             }, 100);
             
             // Entrance animations
-            const elements = document.querySelectorAll('.task-card, .stat-card');
+            const elements = document.querySelectorAll('.task-card, .completed-card');
             elements.forEach((element, index) => {
                 element.style.opacity = '0';
                 element.style.transform = 'translateY(20px)';
@@ -916,52 +1226,68 @@
                     element.style.transition = 'all 0.6s ease';
                     element.style.opacity = '1';
                     element.style.transform = 'translateY(0)';
-                }, index * 100);
+                }, index * 50);
             });
         });
 
-        // Handle visibility change (keep kiosk active)
+        // Initialize clock
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // Kiosk mode event handlers
+        document.addEventListener('keydown', function(e) {
+            if (
+                e.key === 'F11' || (e.ctrlKey && e.key === 'r') || (e.ctrlKey && e.key === 'R') ||
+                (e.ctrlKey && e.shiftKey && e.key === 'R') || (e.ctrlKey && e.key === 'w') ||
+                (e.ctrlKey && e.key === 'W') || (e.ctrlKey && e.key === 't') || (e.ctrlKey && e.key === 'T') ||
+                (e.ctrlKey && e.key === 'n') || (e.ctrlKey && e.key === 'N') ||
+                (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+                (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.key === 'U') ||
+                (e.altKey && e.key === 'F4') || e.key === 'F5'
+            ) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+        document.addEventListener('dragstart', e => e.preventDefault());
+
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
-                // Tab is active again, ensure kiosk mode
                 document.body.classList.add('fullscreen-mode');
             }
         });
 
-        // Prevent page unload/navigation
         window.addEventListener('beforeunload', function(e) {
-            // Allow automatic refresh when our flag is set
-            if (isAutoRefreshInProgress) {
-                // This is our automatic refresh, allow it without confirmation
-                return;
-            }
-            
-            // This is manual navigation or browser action, prevent it in kiosk mode
+            if (isAutoRefreshInProgress) return;
             e.preventDefault();
             e.returnValue = '';
             return '';
         });
 
-        // Auto-focus management to prevent focus loss
         window.addEventListener('blur', function() {
-            setTimeout(() => {
-                window.focus();
-            }, 100);
+            setTimeout(() => window.focus(), 100);
         });
 
-        // Handle fullscreen change events
         document.addEventListener('fullscreenchange', function() {
             if (!document.fullscreenElement) {
-                // Try to re-enter fullscreen if we exit accidentally
                 setTimeout(() => {
                     if (document.documentElement.requestFullscreen) {
                         document.documentElement.requestFullscreen().catch(() => {
-                            // Fallback to kiosk window mode
                             console.log('Running in kiosk window mode');
                         });
                     }
                 }, 1000);
             }
+        });
+
+        // Cleanup timers
+        window.addEventListener('beforeunload', function() {
+            if (rotationTimer) clearInterval(rotationTimer);
+            if (refreshTimer) clearInterval(refreshTimer);
         });
     </script>
 </body>

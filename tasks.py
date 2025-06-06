@@ -1756,39 +1756,72 @@ def task_screen():
         desc(Task.created_at)
     ).all()
     
-    # Update progress for all tasks
+    # Update progress and load ticket lines for all tasks
     for task in active_tasks:
         task.update_progress()
+        
+        # Load tickets and their lines for each task
+        task_tickets = TaskTicket.query.filter_by(task_id=task.id_task).all()
+        task.loaded_tickets = []
+        
+        for task_ticket in task_tickets:
+            if task_ticket.ticket:
+                # Load product lines for each ticket using LEFT JOIN to handle missing products gracefully
+                ticket_lines = db.session.query(TicketLine).outerjoin(
+                    Product, TicketLine.IdArticulo == Product.IdArticulo
+                ).filter(TicketLine.IdTicket == task_ticket.ticket.IdTicket).all()
+                
+                # Attach lines to ticket object for template access
+                task_ticket.ticket.loaded_lines = ticket_lines
+                task.loaded_tickets.append(task_ticket.ticket)
     
-    # Separate tasks by status for better visualization
-    pending_tasks = []
-    assigned_tasks = []
-    in_progress_tasks = []
-    overdue_tasks = []
+    # Separate tasks by status and priority for better visualization
+    urgent_tasks = []      # urgent priority (regardless of status)
+    high_tasks = []        # high priority (regardless of status)
+    medium_tasks = []      # medium priority (regardless of status)
+    low_tasks = []         # low priority (regardless of status)
+    overdue_tasks = []     # overdue tasks (separate category)
     
     for task in active_tasks:
         if task.is_overdue:
             overdue_tasks.append(task)
-        elif task.status == 'pending':
-            pending_tasks.append(task)
-        elif task.status == 'assigned':
-            assigned_tasks.append(task)
-        elif task.status == 'in_progress':
-            in_progress_tasks.append(task)
+        elif task.priority == 'urgent':
+            urgent_tasks.append(task)
+        elif task.priority == 'high':
+            high_tasks.append(task)
+        elif task.priority == 'medium':
+            medium_tasks.append(task)
+        else:  # low priority
+            low_tasks.append(task)
+    
+    # Combine for assigned_tasks display in priority order
+    assigned_tasks = urgent_tasks + high_tasks + medium_tasks + low_tasks
+    
+    # Get completed tasks for the display (last 3-5 completed tasks)
+    completed_tasks = Task.query.filter_by(status='completed').order_by(desc(Task.completed_at)).limit(5).all()
+    for task in completed_tasks:
+        # Load basic info for completed tasks too
+        task_tickets = TaskTicket.query.filter_by(task_id=task.id_task).all()
+        task.loaded_tickets = [task_ticket.ticket for task_ticket in task_tickets if task_ticket.ticket]
     
     # Get task statistics
     stats = {
-        'total_pending': len(pending_tasks),
         'total_assigned': len(assigned_tasks),
-        'total_in_progress': len(in_progress_tasks),
-        'total_overdue': len(overdue_tasks),
-        'total_active': len(active_tasks)
+        'total_completed': len(completed_tasks),
+        'total_urgent': len(urgent_tasks),
+        'total_high': len(high_tasks),
+        'total_medium': len(medium_tasks),
+        'total_low': len(low_tasks),
+        'total_overdue': len(overdue_tasks)
     }
     
     return render_template('tasks/task_screen.html',
-                         pending_tasks=pending_tasks,
                          assigned_tasks=assigned_tasks,
-                         in_progress_tasks=in_progress_tasks,
+                         completed_tasks=completed_tasks,
+                         urgent_tasks=urgent_tasks,
+                         high_tasks=high_tasks,
+                         medium_tasks=medium_tasks,
+                         low_tasks=low_tasks,
                          overdue_tasks=overdue_tasks,
                          stats=stats,
                          now=datetime.now)

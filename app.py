@@ -599,7 +599,7 @@ def set_db_ip():
         ip = data['ip']
         
         # Import here to avoid circular imports
-        from app.config import REMOTE_DB_CONFIG
+        from app.config import REMOTE_DB_CONFIG, update_db_config
         
         # Debug logging
         logger.info(f"Current DB config before update: host={REMOTE_DB_CONFIG['host']}")
@@ -609,10 +609,14 @@ def set_db_ip():
         old_config = REMOTE_DB_CONFIG.copy()
         old_ip = REMOTE_DB_CONFIG['host']
         
-        # Update ALL config references to the IP
-        REMOTE_DB_CONFIG['host'] = ip
+        # Prepara la nuova configurazione
+        new_config = REMOTE_DB_CONFIG.copy()
+        new_config['host'] = ip
         
-        # Update SQLAlchemy URI
+        # Update ALL config references to the IP using the centralized function
+        update_db_config(new_config)
+        
+        # Update SQLAlchemy URI in Flask app
         app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}@{ip}:{REMOTE_DB_CONFIG['port']}/{REMOTE_DB_CONFIG['database']}?charset=utf8"
         
         logger.info(f"Updated SQLALCHEMY_DATABASE_URI to: {app.config['SQLALCHEMY_DATABASE_URI']}")
@@ -639,52 +643,8 @@ def set_db_ip():
                 # che potrebbe fallire per altri motivi
                 logger.info(f"Skipping SQLAlchemy test since direct connection was successful")
                 
-                # Update the config.py file
-                try:
-                    config_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'config.py')
-                    with open(config_file_path, 'r') as f:
-                        config_content = f.read()
-                    
-                    # Scrittura più sicura senza regex
-                    lines = config_content.splitlines()
-                    new_lines = []
-                    in_remote_config = False
-                    uri_line = None
-                    
-                    for i, line in enumerate(lines):
-                        if "REMOTE_DB_CONFIG = {" in line:
-                            in_remote_config = True
-                            new_lines.append(line)
-                            continue
-                        
-                        if in_remote_config and "'host':" in line:
-                            new_lines.append(f"    'host': '{ip}',")
-                            continue
-                        
-                        if "SQLALCHEMY_DATABASE_URI" in line and "=" in line:
-                            uri_line = i
-                            continue  # Saltiamo questa riga, la aggiungeremo dopo
-                        
-                        new_lines.append(line)
-                    
-                    # Aggiungiamo la stringa di connessione SQLAlchemy aggiornata
-                    if uri_line is not None:
-                        uri_str = f"SQLALCHEMY_DATABASE_URI = f\"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}@{ip}:{REMOTE_DB_CONFIG['port']}/{REMOTE_DB_CONFIG['database']}?charset=utf8\""
-                        new_lines.insert(uri_line, uri_str)
-                    
-                    # Scrittura sicura del file
-                    with open(config_file_path, 'w') as f:
-                        f.write('\n'.join(new_lines))
-                    
-                    logger.info(f"Config file updated with new IP: {ip}")
-                except Exception as config_error:
-                    logger.error(f"Failed to update config file with IP {ip}: {str(config_error)}")
-                    # Continue even if config file update fails
-                
-                # Write the new config to a file for persistence
-                config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db_config.txt')
-                with open(config_path, 'w') as f:
-                    f.write(ip)
+                # La configurazione è già stata aggiornata dalla funzione update_db_config
+                logger.info(f"Database configuration updated successfully to {ip}")
                 
                 logger.info(f"Database connection updated to {ip}")
                 return jsonify({
@@ -704,7 +664,7 @@ def set_db_ip():
         except Exception as db_error:
             # Rollback to old config if connection fails
             logger.error(f"Rolling back configuration to {old_ip}")
-            REMOTE_DB_CONFIG.update(old_config)
+            update_db_config(old_config)
             app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}@{old_ip}:{REMOTE_DB_CONFIG['port']}/{REMOTE_DB_CONFIG['database']}?charset=utf8"
             
             # Create a custom error message that clearly indicates both IPs

@@ -2,170 +2,299 @@ import os
 from datetime import timedelta
 import pymysql.cursors
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
-# Importa il ConfigManager
+# Importa il ConfigManager - OBBLIGATORIO
 try:
     from app.config_manager import get_config_manager
     config_manager = get_config_manager()
     logger.info("External configuration loaded successfully")
 except Exception as e:
-    logger.warning(f"Could not load external configuration: {str(e)}. Using default values.")
-    config_manager = None
+    logger.critical(f"FATAL: Could not load external configuration: {str(e)}")
+    logger.critical("La configurazione esterna è obbligatoria. Verifica che il file DBLogix.exe.config esista e sia valido.")
+    sys.exit(1)
 
-# Flask application configuration
+# Flask application configuration - basata completamente sul file .config
 class Config:
-    # Usa il config manager se disponibile, altrimenti usa i valori di default
-    if config_manager:
-        SECRET_KEY = config_manager.get_setting('SECRET_KEY', os.environ.get('SECRET_KEY', 'dev-key-for-dblogix'))
-        DEBUG = config_manager.get_setting('FLASK_DEBUG', os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1', 't'])
-        PERMANENT_SESSION_LIFETIME = timedelta(hours=config_manager.get_setting('SESSION_TIMEOUT_HOURS', 2))
-    else:
-        SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-for-dblogix'
-        DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
-        PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
+    """Configurazione Flask basata esclusivamente sul file .config"""
     
+    SECRET_KEY = config_manager.get_setting('SECRET_KEY')
+    if not SECRET_KEY:
+        logger.critical("SECRET_KEY non trovato nel file di configurazione")
+        sys.exit(1)
+    
+    DEBUG = config_manager.get_setting('FLASK_DEBUG', False)
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=config_manager.get_setting('SESSION_TIMEOUT_HOURS', 2))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-# Remote database configuration (Bilancia)
-# Usa il config manager se disponibile, altrimenti usa i valori di default
-if config_manager:
+# Configurazione database remoto - completamente basata sul file .config
+try:
     REMOTE_DB_CONFIG = config_manager.get_db_config()
-    logger.info(f"Database configuration loaded from external config: {REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}")
-else:
-    REMOTE_DB_CONFIG = {
-        'host': os.environ.get('DB_HOST', '192.168.1.32'),
-        'user': os.environ.get('DB_USER', 'user'),
-        'password': os.environ.get('DB_PASSWORD', 'dibal'),
-        'database': os.environ.get('DB_DATABASE', 'sys_datos'),
-        'port': int(os.environ.get('DB_PORT', 3306)),
-        'connect_timeout': 10,
-        'read_timeout': 30,
-        'write_timeout': 30,
-        'charset': 'utf8',
-        'use_unicode': True,
-        'ssl_disabled': True,
-        'cursorclass': 'pymysql.cursors.DictCursor',
-    }
+    logger.info(f"Database configuration loaded: {REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}")
+    
+    # Verifica che i parametri essenziali siano presenti
+    required_db_params = ['host', 'user', 'password', 'database', 'port']
+    missing_params = [param for param in required_db_params if not REMOTE_DB_CONFIG.get(param)]
+    
+    if missing_params:
+        logger.critical(f"Parametri database mancanti nel file di configurazione: {missing_params}")
+        sys.exit(1)
+        
+except Exception as e:
+    logger.critical(f"FATAL: Errore nel caricamento della configurazione database: {str(e)}")
+    sys.exit(1)
 
-# SQLAlchemy URI for the local database
-SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}@{REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}/{REMOTE_DB_CONFIG['database']}?charset=utf8"
+# SQLAlchemy URI per il database locale
+try:
+    SQLALCHEMY_DATABASE_URI = (
+        f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}"
+        f"@{REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}"
+        f"/{REMOTE_DB_CONFIG['database']}?charset=utf8"
+    )
+    logger.info("SQLAlchemy URI creato con successo")
+except Exception as e:
+    logger.critical(f"FATAL: Errore nella creazione dell'URI SQLAlchemy: {str(e)}")
+    sys.exit(1)
 
-# Optional easier-to-use configuration without SQLAlchemy for direct connections
 def get_direct_connection_config():
-    """Returns a dictionary for direct connection to MySQL without SQLAlchemy"""
-    return {
-        'host': REMOTE_DB_CONFIG['host'],
-        'user': REMOTE_DB_CONFIG['user'],
-        'password': REMOTE_DB_CONFIG['password'],
-        'database': REMOTE_DB_CONFIG['database'],
-        'port': REMOTE_DB_CONFIG['port'],
-        'charset': REMOTE_DB_CONFIG['charset'],
-        'cursorclass': REMOTE_DB_CONFIG['cursorclass'],
-        'ssl_disabled': REMOTE_DB_CONFIG.get('ssl_disabled', True)
-    }
+    """Restituisce un dizionario per la connessione diretta a MySQL senza SQLAlchemy"""
+    try:
+        return {
+            'host': REMOTE_DB_CONFIG['host'],
+            'user': REMOTE_DB_CONFIG['user'],
+            'password': REMOTE_DB_CONFIG['password'],
+            'database': REMOTE_DB_CONFIG['database'],
+            'port': REMOTE_DB_CONFIG['port'],
+            'charset': REMOTE_DB_CONFIG['charset'],
+            'cursorclass': REMOTE_DB_CONFIG['cursorclass'],
+            'connect_timeout': REMOTE_DB_CONFIG.get('connect_timeout', 10),
+            'read_timeout': REMOTE_DB_CONFIG.get('read_timeout', 30),
+            'write_timeout': REMOTE_DB_CONFIG.get('write_timeout', 30),
+            'ssl_disabled': REMOTE_DB_CONFIG.get('ssl_disabled', True),
+            'use_unicode': REMOTE_DB_CONFIG.get('use_unicode', True)
+        }
+    except Exception as e:
+        logger.error(f"Errore nella creazione della configurazione di connessione diretta: {str(e)}")
+        raise
 
-# Funzione per aggiornare la configurazione del database dall'esterno
 def update_db_config(new_config):
-    """Aggiorna la configurazione del database"""
+    """Aggiorna la configurazione del database nel file .config"""
     global REMOTE_DB_CONFIG, SQLALCHEMY_DATABASE_URI
     
-    if config_manager:
+    try:
         # Aggiorna usando il config manager
         config_manager.update_db_config(new_config)
         REMOTE_DB_CONFIG = config_manager.get_db_config()
-    else:
-        # Fallback: aggiorna solo in memoria
-        REMOTE_DB_CONFIG.update(new_config)
-    
-    # Aggiorna anche l'URI di SQLAlchemy
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}@{REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}/{REMOTE_DB_CONFIG['database']}?charset=utf8"
-    
-    logger.info(f"Database configuration updated: {REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}")
+        
+        # Aggiorna l'URI di SQLAlchemy
+        SQLALCHEMY_DATABASE_URI = (
+            f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}"
+            f"@{REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}"
+            f"/{REMOTE_DB_CONFIG['database']}?charset=utf8"
+        )
+        
+        logger.info(f"Database configuration updated: {REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}")
+        
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento della configurazione database: {str(e)}")
+        raise
 
-# Funzione per ricaricare la configurazione
 def reload_config():
-    """Ricarica la configurazione dal file esterno"""
+    """Ricarica la configurazione dal file .config"""
     global config_manager, REMOTE_DB_CONFIG, SQLALCHEMY_DATABASE_URI
     
-    if config_manager:
+    try:
         from app.config_manager import reload_config as reload_external_config
         config_manager = reload_external_config()
+        
+        if not config_manager:
+            logger.critical("FATAL: Impossibile ricaricare il config manager")
+            sys.exit(1)
+        
         REMOTE_DB_CONFIG = config_manager.get_db_config()
-        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}@{REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}/{REMOTE_DB_CONFIG['database']}?charset=utf8"
+        SQLALCHEMY_DATABASE_URI = (
+            f"mysql+pymysql://{REMOTE_DB_CONFIG['user']}:{REMOTE_DB_CONFIG['password']}"
+            f"@{REMOTE_DB_CONFIG['host']}:{REMOTE_DB_CONFIG['port']}"
+            f"/{REMOTE_DB_CONFIG['database']}?charset=utf8"
+        )
+        
         logger.info("Configuration reloaded from external file")
+        
+    except Exception as e:
+        logger.error(f"Errore nel ricaricamento della configurazione: {str(e)}")
+        raise
 
 # Funzioni helper per accedere alle configurazioni specifiche
 def get_company_config_from_file():
-    """Ottiene la configurazione azienda dal file esterno"""
-    if config_manager:
+    """Ottiene la configurazione azienda dal file .config"""
+    try:
         return config_manager.get_company_config()
-    return {}
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione azienda: {str(e)}")
+        return {}
 
 def get_system_config_from_file():
-    """Ottiene le configurazioni sistema dal file esterno"""
-    if config_manager:
+    """Ottiene le configurazioni sistema dal file .config"""
+    try:
         return config_manager.get_system_config()
-    return {}
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazioni sistema: {str(e)}")
+        return {}
 
 def get_chat_config_from_file():
-    """Ottiene la configurazione chat dal file esterno"""
-    if config_manager:
+    """Ottiene la configurazione chat dal file .config"""
+    try:
         return config_manager.get_chat_config()
-    return {}
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione chat: {str(e)}")
+        return {}
 
 def get_clienti_config_from_file():
-    """Ottiene la configurazione clienti dal file esterno"""
-    if config_manager:
+    """Ottiene la configurazione clienti dal file .config"""
+    try:
         return config_manager.get_clienti_config()
-    return {}
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione clienti: {str(e)}")
+        return {}
 
 def get_ddt_config_from_file():
-    """Ottiene la configurazione DDT dal file esterno"""
-    if config_manager:
+    """Ottiene la configurazione DDT dal file .config"""
+    try:
         return config_manager.get_ddt_config()
-    return {}
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione DDT: {str(e)}")
+        return {}
 
 def get_fatture_config_from_file():
-    """Ottiene la configurazione fatture dal file esterno"""
-    if config_manager:
+    """Ottiene la configurazione fatture dal file .config"""
+    try:
         return config_manager.get_fatture_config()
-    return {}
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione fatture: {str(e)}")
+        return {}
 
-# Funzioni per aggiornare le configurazioni
+# Funzioni per aggiornare le configurazioni nel file .config
 def update_company_config(company_config):
-    """Aggiorna la configurazione azienda"""
-    if config_manager:
+    """Aggiorna la configurazione azienda nel file .config"""
+    try:
         config_manager.update_company_config(company_config)
         logger.info("Company configuration updated in external file")
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento configurazione azienda: {str(e)}")
+        raise
 
 def update_system_config(system_config):
-    """Aggiorna le configurazioni sistema"""
-    if config_manager:
+    """Aggiorna le configurazioni sistema nel file .config"""
+    try:
         config_manager.update_system_config(system_config)
         logger.info("System configuration updated in external file")
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento configurazioni sistema: {str(e)}")
+        raise
 
 def update_chat_config(chat_config):
-    """Aggiorna la configurazione chat"""
-    if config_manager:
+    """Aggiorna la configurazione chat nel file .config"""
+    try:
         config_manager.update_chat_config(chat_config)
         logger.info("Chat configuration updated in external file")
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento configurazione chat: {str(e)}")
+        raise
 
 def update_clienti_config(clienti_config):
-    """Aggiorna la configurazione clienti"""
-    if config_manager:
+    """Aggiorna la configurazione clienti nel file .config"""
+    try:
         config_manager.update_clienti_config(clienti_config)
         logger.info("Clienti configuration updated in external file")
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento configurazione clienti: {str(e)}")
+        raise
 
 def update_ddt_config(ddt_config):
-    """Aggiorna la configurazione DDT"""
-    if config_manager:
+    """Aggiorna la configurazione DDT nel file .config"""
+    try:
         config_manager.update_ddt_config(ddt_config)
         logger.info("DDT configuration updated in external file")
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento configurazione DDT: {str(e)}")
+        raise
 
 def update_fatture_config(fatture_config):
-    """Aggiorna la configurazione fatture"""
-    if config_manager:
+    """Aggiorna la configurazione fatture nel file .config"""
+    try:
         config_manager.update_fatture_config(fatture_config)
-        logger.info("Fatture configuration updated in external file") 
+        logger.info("Fatture configuration updated in external file")
+    except Exception as e:
+        logger.error(f"Errore nell'aggiornamento configurazione fatture: {str(e)}")
+        raise
+
+# Funzioni di utilità per ottenere configurazioni specifiche
+def get_app_config():
+    """Ottiene la configurazione dell'applicazione Flask"""
+    try:
+        return {
+            'host': config_manager.get_setting('APP_HOST', '0.0.0.0'),
+            'port': config_manager.get_setting('APP_PORT', 5000),
+            'debug': config_manager.get_setting('FLASK_DEBUG', False),
+            'use_ssl': config_manager.get_setting('USE_SSL', False)
+        }
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione app: {str(e)}")
+        return {'host': '0.0.0.0', 'port': 5000, 'debug': False, 'use_ssl': False}
+
+def get_network_config():
+    """Ottiene la configurazione di rete"""
+    try:
+        return {
+            'scan_timeout': config_manager.get_setting('NETWORK_SCAN_TIMEOUT', 5),
+            'network_prefix': config_manager.get_setting('NETWORK_PREFIX', '192.168.1')
+        }
+    except Exception as e:
+        logger.error(f"Errore nel caricamento configurazione di rete: {str(e)}")
+        return {'scan_timeout': 5, 'network_prefix': '192.168.1'}
+
+def test_db_connection():
+    """Testa la connessione al database utilizzando la configurazione dal file .config"""
+    try:
+        import pymysql
+        connection = pymysql.connect(**get_direct_connection_config())
+        connection.close()
+        logger.info("Test connessione database: SUCCESSO")
+        return True
+    except Exception as e:
+        logger.error(f"Test connessione database: FALLITO - {str(e)}")
+        return False
+
+# Verifica iniziale della configurazione
+def verify_config():
+    """Verifica che la configurazione sia valida e completa"""
+    try:
+        # Verifica config manager
+        if not config_manager:
+            raise Exception("Config manager non disponibile")
+        
+        # Verifica configurazione database
+        db_config = get_direct_connection_config()
+        required_fields = ['host', 'user', 'password', 'database', 'port']
+        missing_fields = [field for field in required_fields if not db_config.get(field)]
+        
+        if missing_fields:
+            raise Exception(f"Campi database mancanti: {missing_fields}")
+        
+        # Verifica SECRET_KEY
+        if not config_manager.get_setting('SECRET_KEY'):
+            raise Exception("SECRET_KEY non configurato")
+        
+        logger.info("Verifica configurazione: SUCCESSO")
+        return True
+        
+    except Exception as e:
+        logger.critical(f"Verifica configurazione: FALLITA - {str(e)}")
+        return False
+
+# Esegui verifica all'import
+if not verify_config():
+    logger.critical("FATAL: Configurazione non valida. L'applicazione non può continuare.")
+    sys.exit(1) 

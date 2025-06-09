@@ -143,6 +143,8 @@
         overflow: hidden;
         background-color: var(--white);
         cursor: pointer;
+        position: relative;
+        height: 100%;
     }
     
     .article-card:hover {
@@ -178,6 +180,335 @@
         color: var(--primary-dark);
         transform: translateY(-1px);
     }
+
+    /* Tablet view improvements */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        .article-card {
+            min-height: 180px;
+            border-radius: 18px;
+        }
+        
+        .mobile-grid-container {
+            padding: 25px 20px;
+        }
+    }
+
+         /* Container width optimization for mobile */
+     @media (max-width: 767.98px) {
+         .container-fluid {
+             padding-left: 5px !important;
+             padding-right: 5px !important;
+         }
+     }
+
+          /* Mobile card improvements */
+     @media (max-width: 767.98px) {
+         .row.g-3 {
+             --bs-gutter-x: 0.5rem;
+             --bs-gutter-y: 0.75rem;
+         }
+         
+         .article-card {
+             border-radius: 20px;
+             box-shadow: 0 4px 15px rgba(44, 62, 80, 0.08);
+             background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+             border: 1px solid rgba(52, 152, 219, 0.1);
+             min-height: 200px;
+             display: flex;
+             flex-direction: column;
+         }
+        
+        .article-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(44, 62, 80, 0.15);
+            border-color: var(--accent-blue);
+        }
+        
+        .article-image-container {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .article-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .article-placeholder {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .article-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .article-header {
+            margin-bottom: 12px;
+        }
+        
+        .article-id {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            background: rgba(52, 152, 219, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .article-price {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--success-green);
+            background: rgba(39, 174, 96, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            float: right;
+            margin-top: -32px;
+        }
+        
+        .article-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.3;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .article-subtitle {
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .article-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: auto;
+        }
+        
+        .article-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .badge-active {
+            background: linear-gradient(135deg, var(--success-green), #2ecc71);
+            color: white;
+        }
+        
+        .badge-inactive {
+            background: linear-gradient(135deg, var(--medium-gray), #95a5a6);
+            color: white;
+        }
+        
+        .badge-quantity-positive {
+            background: linear-gradient(135deg, var(--accent-blue), #5dade2);
+            color: white;
+        }
+        
+        .badge-quantity-negative {
+            background: linear-gradient(135deg, var(--danger-red), #ec7063);
+            color: white;
+        }
+        
+        .badge-quantity-zero {
+            background: linear-gradient(135deg, var(--medium-gray), #95a5a6);
+            color: white;
+        }
+        
+                 .mobile-grid-container {
+             padding: 15px 5px;
+             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+         }
+        
+        .mobile-grid-title {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        }
+        
+        .mobile-grid-title h5 {
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+                 .mobile-section-divider {
+             height: 20px;
+             background: transparent;
+         }
+     }
+     
+           /* Extra small devices */
+      @media (max-width: 575.98px) {
+          .container-fluid {
+              padding-left: 2px !important;
+              padding-right: 2px !important;
+          }
+          
+          .mobile-grid-container {
+              padding: 8px 2px;
+          }
+          
+          .row.g-3 {
+              --bs-gutter-x: 0.25rem;
+              --bs-gutter-y: 0.5rem;
+          }
+         
+         .article-card {
+             min-height: 180px;
+         }
+         
+         .article-content {
+             padding: 15px;
+         }
+         
+         .article-image-container {
+             height: 80px;
+         }
+         
+         .article-image {
+             width: 60px;
+             height: 60px;
+         }
+         
+         .article-placeholder {
+             width: 50px;
+             height: 50px;
+         }
+         
+         .article-title {
+             font-size: 0.9rem;
+         }
+         
+         .article-id, .article-price {
+             font-size: 0.8rem;
+         }
+     }
+     
+     /* Animation improvements */
+     .article-card {
+         animation: fadeInUp 0.6s ease-out;
+     }
+     
+     .article-card:nth-child(even) {
+         animation-delay: 0.1s;
+     }
+     
+     .article-badge {
+         animation: pulse 2s infinite;
+     }
+     
+     @keyframes fadeInUp {
+         from {
+             opacity: 0;
+             transform: translateY(30px);
+         }
+         to {
+             opacity: 1;
+             transform: translateY(0);
+         }
+     }
+     
+     @keyframes pulse {
+         0% {
+             box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.4);
+         }
+         70% {
+             box-shadow: 0 0 0 10px rgba(52, 152, 219, 0);
+         }
+         100% {
+             box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+         }
+     }
+     
+     /* Click ripple effect */
+     .click-ripple {
+         position: absolute;
+         border-radius: 50%;
+         background: rgba(52, 152, 219, 0.3);
+         pointer-events: none;
+         animation: ripple-animation 0.6s ease-out;
+         z-index: 1;
+     }
+     
+     @keyframes ripple-animation {
+         0% {
+             transform: scale(0);
+             opacity: 1;
+         }
+         100% {
+             transform: scale(1);
+             opacity: 0;
+         }
+     }
+     
+     /* Card visibility animation */
+     .article-card {
+         opacity: 0;
+         transform: translateY(20px);
+         transition: all 0.4s ease-out;
+     }
+     
+     .article-card.card-visible {
+         opacity: 1;
+         transform: translateY(0);
+     }
+     
+     /* Loading shimmer effect */
+     .article-card:not(.card-visible) .article-image-container {
+         background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+         background-size: 200% 100%;
+         animation: shimmer 1.5s infinite;
+     }
+     
+     @keyframes shimmer {
+         0% {
+             background-position: -200% 0;
+         }
+         100% {
+             background-position: 200% 0;
+         }
+     }
 </style>
 {% endblock %}
 
@@ -277,9 +608,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Initialize tooltips for mobile cards
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Add loading animation for mobile cards
+    const mobileCards = document.querySelectorAll('.article-card');
+    mobileCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        // Add click ripple effect
+        card.addEventListener('click', function(e) {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            this.appendChild(ripple);
+            
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Mobile card lazy loading effect
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('card-visible');
+                cardObserver.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    mobileCards.forEach(card => {
+        cardObserver.observe(card);
+    });
+
     // Console debugging
-    console.log('Articles page loaded with enhanced features');
+    console.log('Articles page loaded with enhanced mobile features');
     console.log('Total articles on page:', productRows.length);
+    console.log('Mobile cards initialized:', mobileCards.length);
     console.log('Active search:', hasActiveSearch);
 });
 </script>
@@ -484,50 +865,79 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <!-- Mobile Grid View -->
             <div class="d-block d-md-none">
-                <div class="row g-3 p-3">
-                    {% for article in articles.items %}
-                    <div class="col-12">
-                        <div class="article-card p-3" onclick="window.location.href='{{ url_for('articles.view', id=article.IdArticulo) }}'">
-                            <div class="d-flex align-items-start">
-                                <div class="flex-shrink-0 me-3">
+                <div class="mobile-grid-container">
+                    <div class="mobile-grid-title">
+                        <h5>
+                            <i class="fas fa-grip-horizontal me-2 text-primary"></i>Articoli
+                        </h5>
+                        <small class="text-muted">{{ articles.items|length }} di {{ articles.total }} articoli</small>
+                    </div>
+                    
+                    <div class="row g-3">
+                        {% for article in articles.items %}
+                        <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                            <div class="article-card" onclick="window.location.href='{{ url_for('articles.view', id=article.IdArticulo) }}'" data-bs-toggle="tooltip" data-bs-placement="top" title="Clicca per visualizzare i dettagli">
+                                <!-- Article Image Header -->
+                                <div class="article-image-container">
                                     {% if article.LogoPantalla %}
-                                    <img src="{{ article.LogoPantalla }}" alt="{{ article.Descripcion }}" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                    <img src="{{ article.LogoPantalla }}" alt="{{ article.Descripcion }}" class="article-image">
                                     {% else %}
-                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                                        <i class="fas fa-box fa-2x text-muted"></i>
+                                    <div class="article-placeholder">
+                                        <i class="fas fa-box fa-2x text-white"></i>
                                     </div>
                                     {% endif %}
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="mb-0 fw-bold text-primary">#{{ article.IdArticulo }}</h6>
-                                        <span class="fw-bold text-success">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</span>
-                                    </div>
-                                    <div class="fw-semibold mb-1">{{ article.Descripcion }}</div>
-                                    {% if article.Descripcion1 %}
-                                    <div class="text-muted small mb-2">{{ article.Descripcion1 }}</div>
-                                    {% endif %}
-                                    <div class="d-flex flex-wrap gap-1">
+                                    
+                                    <!-- Status indicator -->
+                                    <div class="position-absolute top-0 end-0 m-2">
                                         {% if article.EnVenta %}
-                                        <span class="badge bg-success">Attivo</span>
+                                        <i class="fas fa-circle text-success" style="font-size: 0.8rem;" title="Articolo attivo"></i>
                                         {% else %}
-                                        <span class="badge bg-secondary">Inattivo</span>
+                                        <i class="fas fa-circle text-secondary" style="font-size: 0.8rem;" title="Articolo inattivo"></i>
                                         {% endif %}
-                                        
+                                    </div>
+                                </div>
+                                
+                                <!-- Article Content -->
+                                <div class="article-content">
+                                    <div class="article-header">
+                                        <div class="article-id">#{{ article.IdArticulo }}</div>
+                                        <div class="article-price">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    
+                                    <div class="article-title" title="{{ article.Descripcion }}">{{ article.Descripcion }}</div>
+                                    {% if article.Descripcion1 %}
+                                    <div class="article-subtitle" title="{{ article.Descripcion1 }}">{{ article.Descripcion1 }}</div>
+                                    {% endif %}
+                                    
+                                    <div class="article-badges">
                                         {% set quantity = article_quantities.get(article.IdArticulo, 0) %}
                                         {% if quantity > 0 %}
-                                        <span class="badge bg-primary">{{ quantity }} PZ</span>
+                                        <span class="article-badge badge-quantity-positive" title="Scorta disponibile">{{ quantity }} PZ</span>
                                         {% elif quantity < 0 %}
-                                        <span class="badge bg-danger">{{ quantity }} PZ</span>
+                                        <span class="article-badge badge-quantity-negative" title="Scorta negativa">{{ quantity }} PZ</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">0 PZ</span>
+                                        <span class="article-badge badge-quantity-zero" title="Scorta esaurita">0 PZ</span>
+                                        {% endif %}
+                                        
+                                        {% if section_info.get(article.IdArticulo) != 'N/A' %}
+                                        <span class="article-badge" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white;" title="Sezione: {{ section_info.get(article.IdArticulo) }}">
+                                            {{ section_info.get(article.IdArticulo)[:3] }}
+                                        </span>
                                         {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {% if loop.index is divisibleby(2) and loop.index < articles.items|length %}
+                        <div class="mobile-section-divider col-12 d-block d-sm-none"></div>
+                        {% elif loop.index is divisibleby(3) and loop.index < articles.items|length %}
+                        <div class="mobile-section-divider col-12 d-none d-md-block d-lg-none"></div>
+                        {% elif loop.index is divisibleby(4) and loop.index < articles.items|length %}
+                        <div class="mobile-section-divider col-12 d-none d-lg-block"></div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
 

@@ -143,12 +143,277 @@
         overflow: hidden;
         background-color: var(--white);
         cursor: pointer;
+        position: relative;
+        height: 100%;
     }
     
     .section-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
     }
+
+    /* Container width optimization for mobile */
+    @media (max-width: 767.98px) {
+        .container-fluid {
+            padding-left: 5px !important;
+            padding-right: 5px !important;
+        }
+    }
+
+    /* Mobile card improvements */
+    @media (max-width: 767.98px) {
+        .row.g-3 {
+            --bs-gutter-x: 0.5rem;
+            --bs-gutter-y: 0.75rem;
+        }
+        
+        .section-card {
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.08);
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(44, 62, 80, 0.15);
+            border-color: var(--accent-blue);
+        }
+        
+        .section-image-container {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .section-icon {
+            color: white;
+            font-size: 3rem;
+            opacity: 0.9;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .section-header {
+            margin-bottom: 12px;
+        }
+        
+        .section-id {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            background: rgba(52, 152, 219, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .section-count {
+            font-size: 0.9rem;
+            font-weight: 600;
+            float: right;
+            margin-top: -32px;
+        }
+        
+        .section-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.3;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .section-meta {
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .section-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: auto;
+        }
+        
+        .section-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .badge-articles-positive {
+            background: linear-gradient(135deg, var(--accent-blue), #5dade2);
+            color: white;
+        }
+        
+        .badge-articles-empty {
+            background: linear-gradient(135deg, var(--medium-gray), #95a5a6);
+            color: white;
+        }
+        
+        .mobile-grid-container {
+            padding: 15px 5px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .mobile-grid-title {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        }
+        
+        .mobile-grid-title h5 {
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .mobile-section-divider {
+            height: 20px;
+            background: transparent;
+        }
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 575.98px) {
+        .container-fluid {
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+        }
+        
+        .mobile-grid-container {
+            padding: 8px 2px;
+        }
+        
+        .row.g-3 {
+            --bs-gutter-x: 0.25rem;
+            --bs-gutter-y: 0.5rem;
+        }
+        
+        .section-card {
+            min-height: 180px;
+        }
+        
+        .section-content {
+            padding: 15px;
+        }
+        
+        .section-image-container {
+            height: 80px;
+        }
+        
+        .section-icon {
+            font-size: 2.5rem;
+        }
+        
+        .section-name {
+            font-size: 1rem;
+        }
+        
+        .section-id {
+            font-size: 0.8rem;
+        }
+    }
+    
+    /* Animation improvements */
+    .section-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .section-card:nth-child(even) {
+        animation-delay: 0.1s;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Click ripple effect */
+    .click-ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(39, 174, 96, 0.3);
+        pointer-events: none;
+        animation: ripple-animation 0.6s ease-out;
+        z-index: 1;
+    }
+    
+         @keyframes ripple-animation {
+         0% {
+             transform: scale(0);
+             opacity: 1;
+         }
+         100% {
+             transform: scale(1);
+             opacity: 0;
+         }
+     }
+     
+     /* Card visibility animation */
+     .section-card {
+         opacity: 0;
+         transform: translateY(20px);
+         transition: all 0.4s ease-out;
+     }
+     
+     .section-card.card-visible {
+         opacity: 1;
+         transform: translateY(0);
+     }
+     
+     /* Loading shimmer effect */
+     .section-card:not(.card-visible) .section-image-container {
+         background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+         background-size: 200% 100%;
+         animation: shimmer 1.5s infinite;
+     }
+     
+     @keyframes shimmer {
+         0% {
+             background-position: -200% 0;
+         }
+         100% {
+             background-position: 200% 0;
+         }
+     }
     
     .table-hover tbody tr:hover {
         background-color: rgba(52, 152, 219, 0.05);
@@ -253,6 +518,58 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.backgroundColor = '';
         });
     });
+    
+    // Initialize tooltips for mobile cards
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Add loading animation for mobile cards
+    const mobileCards = document.querySelectorAll('.section-card');
+    mobileCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        // Add click ripple effect
+        card.addEventListener('click', function(e) {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            this.appendChild(ripple);
+            
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Mobile card lazy loading effect
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('card-visible');
+                cardObserver.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    mobileCards.forEach(card => {
+        cardObserver.observe(card);
+    });
+
+    console.log('Sections page loaded with enhanced mobile features');
+    console.log('Mobile cards initialized:', mobileCards.length);
 });
 </script>
 {% endblock %}
@@ -447,35 +764,79 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <!-- Mobile Grid View -->
             <div class="d-block d-md-none">
-                <div class="row g-3 p-3">
-                    {% for section in sections.items %}
-                    <div class="col-12">
-                        <div class="section-card p-3" data-section-url="{{ url_for('sections.view', id=section.IdSeccion) }}">
-                            <div class="d-flex align-items-start">
-                                <div class="flex-shrink-0 me-3">
-                                    <div class="bg-primary rounded d-flex align-items-center justify-content-center text-white" style="width: 60px; height: 60px;">
-                                        <i class="fas fa-tag fa-2x"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="mb-0 fw-bold text-primary">#{{ section.IdSeccion }}</h6>
-                                        {% set count = section_counts.get(section.IdSeccion, 0) %}
+                <div class="mobile-grid-container">
+                    <div class="mobile-grid-title">
+                        <h5>
+                            <i class="fas fa-tags me-2 text-primary"></i>Sezioni
+                        </h5>
+                        <small class="text-muted">{{ sections.items|length }} di {{ sections.total }} sezioni</small>
+                    </div>
+                    
+                    <div class="row g-3">
+                        {% for section in sections.items %}
+                        <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                            <div class="section-card" onclick="window.location.href='{{ url_for('sections.view', id=section.IdSeccion) }}'" data-bs-toggle="tooltip" data-bs-placement="top" title="Clicca per visualizzare i dettagli">
+                                <!-- Section Image Header -->
+                                <div class="section-image-container">
+                                    <i class="fas fa-tag section-icon"></i>
+                                    
+                                    <!-- Status indicator -->
+                                    {% set count = section_counts.get(section.IdSeccion, 0) %}
+                                    <div class="position-absolute top-0 end-0 m-2">
                                         {% if count > 0 %}
-                                        <span class="badge bg-primary">{{ count }} articoli</span>
+                                        <i class="fas fa-circle text-success" style="font-size: 0.8rem;" title="Sezione con articoli"></i>
                                         {% else %}
-                                        <span class="badge bg-secondary">Vuota</span>
+                                        <i class="fas fa-circle text-warning" style="font-size: 0.8rem;" title="Sezione vuota"></i>
                                         {% endif %}
                                     </div>
-                                    <div class="fw-semibold mb-1">{{ section.NombreSeccion }}</div>
-                                    <div class="text-muted small">
-                                        Modificata: {{ section.TimeStamp.strftime('%d/%m/%Y') if section.TimeStamp else 'N/A' }}
+                                </div>
+                                
+                                <!-- Section Content -->
+                                <div class="section-content">
+                                    <div class="section-header">
+                                        <div class="section-id">#{{ section.IdSeccion }}</div>
+                                        <div class="section-count">
+                                            {% if count > 0 %}
+                                            <span class="section-badge badge-articles-positive" title="Numero articoli">{{ count }} ART</span>
+                                            {% else %}
+                                            <span class="section-badge badge-articles-empty" title="Sezione vuota">VUOTA</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    
+                                    <div class="section-name" title="{{ section.NombreSeccion }}">{{ section.NombreSeccion }}</div>
+                                    
+                                    <div class="section-meta">
+                                        {% if section.TimeStamp %}
+                                        <i class="fas fa-clock me-1"></i>{{ section.TimeStamp.strftime('%d/%m/%Y') }}
+                                        {% if section.Usuario %}
+                                        <br><i class="fas fa-user me-1"></i>{{ section.Usuario }}
+                                        {% endif %}
+                                        {% else %}
+                                        <i class="fas fa-info-circle me-1"></i>Nessuna modifica registrata
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="section-badges">
+                                        {% if section.TimeStamp %}
+                                        <span class="section-badge" style="background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white;" title="Ultima modifica">
+                                            {{ section.TimeStamp.strftime('%H:%M') }}
+                                        </span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {% if loop.index is divisibleby(2) and loop.index < sections.items|length %}
+                        <div class="mobile-section-divider col-12 d-block d-sm-none"></div>
+                        {% elif loop.index is divisibleby(3) and loop.index < sections.items|length %}
+                        <div class="mobile-section-divider col-12 d-none d-md-block d-lg-none"></div>
+                        {% elif loop.index is divisibleby(4) and loop.index < sections.items|length %}
+                        <div class="mobile-section-divider col-12 d-none d-lg-block"></div>
+                        {% endif %}
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
 

@@ -39,7 +39,7 @@ try:
     from app import app
     
     # Import db directly from models now for database operations
-    from models import db
+    from app.models import db
     
     # Create tables if they don't exist
     with app.app_context():

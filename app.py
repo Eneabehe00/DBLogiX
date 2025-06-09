@@ -17,8 +17,8 @@ from sqlalchemy.sql import text
 logger = logging.getLogger(__name__)
 
 # Import db from models directly - this avoids circular imports
-from models import db
-from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, Company, Article, AlbaranCabecera, AlbaranLinea
+from app.models import db
+from app.models import User, Product, TicketHeader, TicketLine, ScanLog, Client, Company, Article, AlbaranCabecera, AlbaranLinea
 
 def create_app():
     app = Flask(__name__)
@@ -28,7 +28,7 @@ def create_app():
     
     # Load configuration
     try:
-        app.config.from_object('config.Config')
+        app.config.from_object('app.config.Config')
         
         # Override config with environment variables if present
         app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', app.config.get('SECRET_KEY', 'dev-key-for-dblogix'))
@@ -44,7 +44,7 @@ def create_app():
         db_port = os.environ.get('DB_PORT')
         
         # Import here to avoid circular imports
-        from config import REMOTE_DB_CONFIG
+        from app.config import REMOTE_DB_CONFIG
         
         # Update config from environment variables if provided
         if db_host: REMOTE_DB_CONFIG['host'] = db_host
@@ -82,20 +82,20 @@ def create_app():
         
         @login_manager.user_loader
         def load_user(id):
-            from models import User
+            from app.models import User
             return User.query.get(int(id))
         
         # Register blueprints
-        from warehouse import warehouse_bp
-        from auth import auth_bp
-        from admin import admin_bp
-        from ddt import ddt_bp
-        from clients import clients_bp
-        from articles import articles_bp
-        from sections import sections_bp
-        from fattura_pa import fattura_pa_bp
-        from chat import chat_bp
-        from tasks import tasks_bp
+        from modules.warehouse import warehouse_bp
+        from app.auth import auth_bp
+        from modules.admin import admin_bp
+        from modules.ddt import ddt_bp
+        from modules.clients import clients_bp
+        from modules.articles import articles_bp
+        from modules.sections import sections_bp
+        from modules.fattura_pa import fattura_pa_bp
+        from services.chat import chat_bp
+        from modules.tasks import tasks_bp
         
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(warehouse_bp, url_prefix='/warehouse')
@@ -109,7 +109,7 @@ def create_app():
         app.register_blueprint(tasks_bp, url_prefix='/tasks')
         
         # Register template filters
-        from utils import format_price, format_weight, current_time, b64encode
+        from services.utils import format_price, format_weight, current_time, b64encode
         
         # Configurazione Flask-DebugToolbar (solo se in modalità debug)
         if app.debug:
@@ -172,7 +172,7 @@ def create_app():
                 """Get count of active tasks for current user"""
                 if not current_user.is_authenticated or current_user.is_admin:
                     return 0
-                from models import Task
+                from app.models import Task
                 return Task.query.filter(
                     Task.assigned_to == current_user.id,
                     Task.status.in_(['pending', 'assigned', 'in_progress'])
@@ -182,7 +182,7 @@ def create_app():
                 """Get count of unread task completion notifications for admin"""
                 if not current_user.is_authenticated or not current_user.is_admin:
                     return 0
-                from models import TaskNotification
+                from app.models import TaskNotification
                 return TaskNotification.query.filter_by(
                     user_id=current_user.id,
                     is_read=False,
@@ -318,7 +318,7 @@ app = create_app()
 
 @app.shell_context_processor
 def make_shell_context():
-    from models import User, Product, TicketHeader, TicketLine, ScanLog, Client, Company, Article, AlbaranCabecera, AlbaranLinea
+    from app.models import User, Product, TicketHeader, TicketLine, ScanLog, Client, Company, Article, AlbaranCabecera, AlbaranLinea
     return {
         'db': db, 
         'User': User, 
@@ -599,7 +599,7 @@ def set_db_ip():
         ip = data['ip']
         
         # Import here to avoid circular imports
-        from config import REMOTE_DB_CONFIG
+        from app.config import REMOTE_DB_CONFIG
         
         # Debug logging
         logger.info(f"Current DB config before update: host={REMOTE_DB_CONFIG['host']}")
@@ -641,7 +641,7 @@ def set_db_ip():
                 
                 # Update the config.py file
                 try:
-                    config_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.py')
+                    config_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app', 'config.py')
                     with open(config_file_path, 'r') as f:
                         config_content = f.read()
                     
@@ -731,7 +731,7 @@ def test_db_connection():
         ip = data['ip']
         
         # Import here to avoid circular imports
-        from config import REMOTE_DB_CONFIG
+        from app.config import REMOTE_DB_CONFIG
         
         logger.info(f"Testing connection to database at {ip}")
         
@@ -774,7 +774,7 @@ def uploaded_file(filename):
 # Run application if this file is executed directly
 if __name__ == '__main__':
     # Log current database configuration
-    from config import REMOTE_DB_CONFIG
+    from app.config import REMOTE_DB_CONFIG
     logger.info(f"Starting application with database configuration: host={REMOTE_DB_CONFIG['host']}, database={REMOTE_DB_CONFIG['database']}")
     
     # Using HTTPS with self-signed certificates for camera access

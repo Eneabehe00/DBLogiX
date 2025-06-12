@@ -1,98 +1,68 @@
-; DBLogiX Installer Script for Inno Setup
-; Crea un installer .exe completo per distribuzione ai clienti
-
-#define MyAppName "DBLogiX"
-#define MyAppVersion "2.0"
-#define MyAppPublisher "DBLogiX Solutions"
-#define MyAppURL "https://www.dblogix.com"
-#define MyAppServiceName "DBLogiXEmbedded"
-
 [Setup]
-; Nome e versione applicazione
-AppId={{B8F12345-ABCD-4567-8901-123456789ABC}
-AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
-
-; Directory installazione
-DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
-DisableProgramGroupPage=yes
-
-; File di output
+AppName=DBLogiX
+AppVersion=1.0
+AppPublisher=DBLogiX Team
+AppPublisherURL=https://dblogix.com
+DefaultDirName={autopf}\DBLogiX
+DefaultGroupName=DBLogiX
 OutputDir=..\installer_output
 OutputBaseFilename=DBLogiX_Setup
-
-; Compressione
 Compression=lzma
 SolidCompression=yes
-
-; Interfaccia utente
-WizardStyle=modern
-
-; Privilegi amministratore RICHIESTI AUTOMATICAMENTE
 PrivilegesRequired=admin
-
-; Configurazioni avanzate
-DisableDirPage=yes
-AllowNoIcons=yes
+SetupIconFile=..\static\favicon.ico
+WizardStyle=modern
+UninstallDisplayIcon={app}\favicon.ico
 
 [Languages]
-Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
-
-[Tasks]
-Name: "desktopicon"; Description: "Crea icona sul desktop"; GroupDescription: "Icone aggiuntive:"
-Name: "windowsservice"; Description: "Installa come servizio Windows (raccomandato)"; GroupDescription: "Opzioni servizio:"
-Name: "firewall"; Description: "Configura firewall Windows automaticamente"; GroupDescription: "Opzioni rete:"
-Name: "autostart"; Description: "Avvia servizio automaticamente"; GroupDescription: "Opzioni servizio:"
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 
 [Files]
-; File applicazione Python Embedded
-Source: "..\installer_output\DBLogiX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; File di configurazione
-Source: "..\DBLogix.exe.config"; DestDir: "{app}\config"; Flags: ignoreversion
-
-; Certificati SSL se esistono
-Source: "..\cert.pem"; DestDir: "{app}\certs"; Flags: ignoreversion external skipifsourcedoesntexist
-Source: "..\key.pem"; DestDir: "{app}\certs"; Flags: ignoreversion external skipifsourcedoesntexist
+Source: "..\build\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\static\favicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\start_dblogix.bat"; WorkingDir: "{app}"
-Name: "{group}\Disinstalla {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\start_dblogix.bat"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\DBLogiX"; Filename: "https://localhost:5000"; IconFilename: "{app}\favicon.ico"; Comment: "Open DBLogiX Web Application"
+Name: "{group}\DBLogiX (Manual Start)"; Filename: "{app}\start_dblogix.bat"; WorkingDir: "{app}"; IconFilename: "{app}\favicon.ico"; Comment: "Start DBLogiX manually (for debugging)"
+Name: "{group}\Service Control\Install Service"; Filename: "{app}\install_service.bat"; WorkingDir: "{app}"; Comment: "Install DBLogiX Windows Service"
+Name: "{group}\Service Control\Uninstall Service"; Filename: "{app}\uninstall_service.bat"; WorkingDir: "{app}"; Comment: "Uninstall DBLogiX Windows Service"
+Name: "{group}\Service Control\Start Service"; Filename: "net"; Parameters: "start DBLogiXEmbedded"; Comment: "Start DBLogiX Service"
+Name: "{group}\Service Control\Stop Service"; Filename: "net"; Parameters: "stop DBLogiXEmbedded"; Comment: "Stop DBLogiX Service"
+Name: "{group}\Service Control\Service Status"; Filename: "{app}\status_service.bat"; WorkingDir: "{app}"; Comment: "Check DBLogiX Service Status"
+Name: "{group}\Service Control\View Service Logs"; Filename: "{app}\view_service_logs.bat"; WorkingDir: "{app}"; Comment: "View DBLogiX Service Logs"
+Name: "{group}\Service Control\Debug Launcher"; Filename: "{app}\debug_launcher.bat"; WorkingDir: "{app}"; Comment: "Debug DBLogiX Launcher (troubleshooting)"
+Name: "{group}\{cm:UninstallProgram,DBLogiX}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\DBLogiX"; Filename: "https://localhost:5000"; Tasks: desktopicon; IconFilename: "{app}\favicon.ico"; Comment: "Open DBLogiX Web Application"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "installservice"; Description: "Install Windows Service"; GroupDescription: "Service Options"; Flags: checkedonce
+Name: "startservice"; Description: "Start Windows Service automatically"; GroupDescription: "Service Options"; Flags: checkedonce
+Name: "configurefirewall"; Description: "Configure Windows Firewall"; GroupDescription: "Security Options"; Flags: checkedonce
+Name: "openbrowser"; Description: "Open DBLogiX in browser after installation"; GroupDescription: "Launch Options"; Flags: checkedonce
 
 [Run]
-; Installa servizio Windows
-Filename: "{app}\python\python.exe"; Parameters: """{app}\DBLogiX_Service.py"" install"; WorkingDir: "{app}"; StatusMsg: "Installando servizio Windows..."; Flags: runhidden waituntilterminated; Tasks: windowsservice
-
-; Configura firewall
-Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""DBLogiX HTTP"" dir=in action=allow protocol=TCP localport=5000 enable=yes"; StatusMsg: "Configurando firewall per HTTP..."; Flags: runhidden waituntilterminated; Tasks: firewall
-Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""DBLogiX HTTPS"" dir=in action=allow protocol=TCP localport=5000 enable=yes"; StatusMsg: "Configurando firewall per HTTPS..."; Flags: runhidden waituntilterminated; Tasks: firewall
-
-; Avvia servizio
-Filename: "net"; Parameters: "start {#MyAppServiceName}"; StatusMsg: "Avviando servizio DBLogiX..."; Flags: runhidden waituntilterminated; Tasks: windowsservice and autostart
-
-; Apri browser alla fine (opzionale)
-Filename: "https://localhost:5000"; Description: "Apri DBLogiX nel browser"; Flags: nowait postinstall skipifsilent shellexec
+Filename: "{app}\python\python.exe"; Parameters: """DBLogiX_Service.py"" install"; WorkingDir: "{app}"; StatusMsg: "Installing Windows Service..."; Tasks: installservice; Flags: runhidden
+Filename: "net"; Parameters: "start DBLogiXEmbedded"; StatusMsg: "Starting DBLogiX Service..."; Tasks: startservice; Flags: runhidden waituntilterminated
+Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""DBLogiX HTTP"" dir=in action=allow protocol=TCP localport=5000 enable=yes"; StatusMsg: "Configuring Firewall..."; Tasks: configurefirewall; Flags: runhidden
+Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""DBLogiX HTTPS"" dir=in action=allow protocol=TCP localport=5000 enable=yes"; StatusMsg: "Configuring Firewall..."; Tasks: configurefirewall; Flags: runhidden
+Filename: "timeout"; Parameters: "/t 5 /nobreak"; StatusMsg: "Waiting for service to start..."; Tasks: openbrowser; Flags: runhidden waituntilterminated
+Filename: "https://localhost:5000"; StatusMsg: "Opening DBLogiX in browser..."; Tasks: openbrowser; Flags: shellexec postinstall skipifsilent
 
 [UninstallRun]
-; Ferma servizio
-Filename: "net"; Parameters: "stop {#MyAppServiceName}"; RunOnceId: "StopService"; Flags: runhidden waituntilterminated
+Filename: "net"; Parameters: "stop DBLogiXEmbedded"; StatusMsg: "Stopping Service..."; Flags: runhidden
+Filename: "{app}\python\python.exe"; Parameters: """DBLogiX_Service.py"" remove"; WorkingDir: "{app}"; StatusMsg: "Removing Windows Service..."; Flags: runhidden
+Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""DBLogiX HTTP"""; StatusMsg: "Removing Firewall Rules..."; Flags: runhidden
+Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""DBLogiX HTTPS"""; StatusMsg: "Removing Firewall Rules..."; Flags: runhidden
 
-; Rimuovi servizio
-Filename: "{app}\python\python.exe"; Parameters: """{app}\DBLogiX_Service.py"" remove"; RunOnceId: "RemoveService"; Flags: runhidden waituntilterminated
-
-; Rimuovi regole firewall
-Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""DBLogiX HTTP"""; RunOnceId: "RemoveFirewallHTTP"; Flags: runhidden waituntilterminated
-Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""DBLogiX HTTPS"""; RunOnceId: "RemoveFirewallHTTPS"; Flags: runhidden waituntilterminated
-
-[Messages]
-; Messaggi personalizzati in italiano
-italian.WelcomeLabel2=Questo installer configurerà [name/ver] sul tuo computer.%n%nDBLogiX è un sistema di gestione completo che verrà installato come servizio Windows.%n%nSi raccomanda di chiudere tutte le altre applicazioni prima di continuare.
-italian.FinishedHeadingLabel=Completamento installazione di [name]
-italian.ClickFinish=Clicca Fine per completare l'installazione e avviare DBLogiX. 
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    MsgBox('Installation completed successfully!' + #13#10 + 
+           'You can start DBLogiX from the Start Menu or Desktop icon.' + #13#10 +
+           'Access the web interface at: https://localhost:5000', mbInformation, MB_OK);
+  end;
+end;

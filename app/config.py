@@ -26,7 +26,7 @@ class Config:
         sys.exit(1)
     
     DEBUG = config_manager.get_setting('FLASK_DEBUG', False)
-    PERMANENT_SESSION_LIFETIME = timedelta(hours=config_manager.get_setting('SESSION_TIMEOUT_HOURS', 2))
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=int(config_manager.get_setting('SESSION_TIMEOUT_HOURS', 2)))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # SQLAlchemy Database URI - deve essere un attributo della classe per PyInstaller

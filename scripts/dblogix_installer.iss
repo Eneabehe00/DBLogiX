@@ -1,204 +1,98 @@
-;******************************************************************************
-; DBLogiX Installer Script per InnoSetup
-; Questo script crea un installer Windows per DBLogiX con configurazione automatica
-;******************************************************************************
+; DBLogiX Installer Script for Inno Setup
+; Crea un installer .exe completo per distribuzione ai clienti
 
 #define MyAppName "DBLogiX"
-#define MyAppVersion "1.0.0"
-#define MyAppPublisher "DBLogiX Team"
-#define MyAppURL "https://github.com/dblogix/dblogix"
-#define MyAppExeName "DBLogiX.exe"
-#define MyServiceName "DBLogiX"
+#define MyAppVersion "2.0"
+#define MyAppPublisher "DBLogiX Solutions"
+#define MyAppURL "https://www.dblogix.com"
+#define MyAppServiceName "DBLogiXEmbedded"
 
 [Setup]
-; Informazioni base dell'applicazione
-AppId={{A1B2C3D4-E5F6-7890-ABCD-123456789ABC}
+; Nome e versione applicazione
+AppId={{B8F12345-ABCD-4567-8901-123456789ABC}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+
+; Directory installazione
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-AllowNoIcons=yes
-LicenseFile=
-InfoBeforeFile=
-InfoAfterFile=
-OutputDir=installer_output
-OutputBaseFilename=DBLogiX_Setup_{#MyAppVersion}
-SetupIconFile=
+DisableProgramGroupPage=yes
+
+; File di output
+OutputDir=..\installer_output
+OutputBaseFilename=DBLogiX_Setup
+
+; Compressione
 Compression=lzma
 SolidCompression=yes
+
+; Interfaccia utente
 WizardStyle=modern
 
-; Privilegi amministratore richiesti
+; Privilegi amministratore RICHIESTI AUTOMATICAMENTE
 PrivilegesRequired=admin
-PrivilegesRequiredOverridesAllowed=dialog
 
-; Architettura supportata
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+; Configurazioni avanzate
+DisableDirPage=yes
+AllowNoIcons=yes
 
 [Languages]
 Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 6.1
-Name: "firewall"; Description: "Configura automaticamente il Firewall Windows"; GroupDescription: "Configurazione Sistema";
-Name: "autostart"; Description: "Avvia automaticamente il servizio all'avvio del sistema"; GroupDescription: "Configurazione Sistema";
+Name: "desktopicon"; Description: "Crea icona sul desktop"; GroupDescription: "Icone aggiuntive:"
+Name: "windowsservice"; Description: "Installa come servizio Windows (raccomandato)"; GroupDescription: "Opzioni servizio:"
+Name: "firewall"; Description: "Configura firewall Windows automaticamente"; GroupDescription: "Opzioni rete:"
+Name: "autostart"; Description: "Avvia servizio automaticamente"; GroupDescription: "Opzioni servizio:"
 
 [Files]
-; File principali dell'applicazione
-Source: "dist\DBLogiX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Nota: aggiungi qui altri file se necessario
+; File applicazione Python Embedded
+Source: "..\installer_output\DBLogiX\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; File di configurazione
+Source: "..\DBLogix.exe.config"; DestDir: "{app}\config"; Flags: ignoreversion
+
+; Certificati SSL se esistono
+Source: "..\cert.pem"; DestDir: "{app}\certs"; Flags: ignoreversion external skipifsourcedoesntexist
+Source: "..\key.pem"; DestDir: "{app}\certs"; Flags: ignoreversion external skipifsourcedoesntexist
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "https://localhost:5000"; IconFilename: "{app}\{#MyAppExeName}"
-Name: "{group}\Gestione Servizio {#MyAppName}"; Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py status && pause"; WorkingDir: "{app}"; IconFilename: "{sys}\shell32.dll"; IconIndex: 21
-Name: "{group}\Stop Servizio {#MyAppName}"; Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py stop && pause"; WorkingDir: "{app}"; IconFilename: "{sys}\shell32.dll"; IconIndex: 27
-Name: "{group}\Start Servizio {#MyAppName}"; Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py start && pause"; WorkingDir: "{app}"; IconFilename: "{sys}\shell32.dll"; IconIndex: 22
-Name: "{group}\Logs {#MyAppName}"; Filename: "{app}\logs"; IconFilename: "{sys}\shell32.dll"; IconIndex: 126
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "https://localhost:5000"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "https://localhost:5000"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\start_dblogix.bat"; WorkingDir: "{app}"
+Name: "{group}\Disinstalla {#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\start_dblogix.bat"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-; Installa e configura il servizio
-Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py install"; StatusMsg: "Installazione servizio Windows..."; Flags: runhidden waituntilterminated; Check: ShouldInstallService
-Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py firewall"; StatusMsg: "Configurazione firewall..."; Flags: runhidden waituntilterminated; Tasks: firewall
-Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py start"; StatusMsg: "Avvio servizio DBLogiX..."; Flags: runhidden waituntilterminated; Tasks: autostart
-; Apri il browser alla fine dell'installazione
-Filename: "https://localhost:5000"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent shellexec; Check: IsServiceRunning
+; Installa servizio Windows
+Filename: "{app}\python\python.exe"; Parameters: """{app}\DBLogiX_Service.py"" install"; WorkingDir: "{app}"; StatusMsg: "Installando servizio Windows..."; Flags: runhidden waituntilterminated; Tasks: windowsservice
+
+; Configura firewall
+Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""DBLogiX HTTP"" dir=in action=allow protocol=TCP localport=5000 enable=yes"; StatusMsg: "Configurando firewall per HTTP..."; Flags: runhidden waituntilterminated; Tasks: firewall
+Filename: "netsh"; Parameters: "advfirewall firewall add rule name=""DBLogiX HTTPS"" dir=in action=allow protocol=TCP localport=5000 enable=yes"; StatusMsg: "Configurando firewall per HTTPS..."; Flags: runhidden waituntilterminated; Tasks: firewall
+
+; Avvia servizio
+Filename: "net"; Parameters: "start {#MyAppServiceName}"; StatusMsg: "Avviando servizio DBLogiX..."; Flags: runhidden waituntilterminated; Tasks: windowsservice and autostart
+
+; Apri browser alla fine (opzionale)
+Filename: "https://localhost:5000"; Description: "Apri DBLogiX nel browser"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallRun]
-; Ferma e disinstalla il servizio durante la disinstallazione
-Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py stop"; Flags: runhidden waituntilterminated; RunOnceId: "StopService"
-Filename: "{cmd}"; Parameters: "/c cd ""{app}"" && python dblogix_service.py uninstall"; Flags: runhidden waituntilterminated; RunOnceId: "UninstallService"
+; Ferma servizio
+Filename: "net"; Parameters: "stop {#MyAppServiceName}"; RunOnceId: "StopService"; Flags: runhidden waituntilterminated
 
-[UninstallDelete]
-Type: filesandordirs; Name: "{app}\logs"
-Type: filesandordirs; Name: "{app}\cert.pem"
-Type: filesandordirs; Name: "{app}\key.pem"
+; Rimuovi servizio
+Filename: "{app}\python\python.exe"; Parameters: """{app}\DBLogiX_Service.py"" remove"; RunOnceId: "RemoveService"; Flags: runhidden waituntilterminated
 
-[Code]
-var
-  PythonPage: TInputOptionWizardPage;
-  PythonPath: String;
-
-function IsPythonInstalled(): Boolean;
-var
-  ResultCode: Integer;
-begin
-  Result := Exec('python', '--version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
-end;
-
-function GetPythonPath(): String;
-var
-  TempFile: String;
-  Lines: TArrayOfString;
-  ResultCode: Integer;
-begin
-  Result := '';
-  TempFile := ExpandConstant('{tmp}\python_path.txt');
-  if Exec('cmd', '/c python -c "import sys; print(sys.executable)" > "' + TempFile + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-  begin
-    if LoadStringsFromFile(TempFile, Lines) and (GetArrayLength(Lines) > 0) then
-      Result := Trim(Lines[0]);
-    DeleteFile(TempFile);
-  end;
-end;
-
-procedure InitializeWizard;
-begin
-  PythonPage := CreateInputOptionPage(wpWelcome,
-    'Controllo Python', 'Verifico l''installazione di Python sul sistema',
-    'DBLogiX richiede Python 3.8 o superiore per funzionare correttamente.',
-    True, False);
-  PythonPage.Add('Python è installato e configurato correttamente');
-  PythonPage.Add('Python non è installato o non è accessibile');
-end;
-
-function NextButtonClick(CurPageID: Integer): Boolean;
-var
-  ErrorCode: Integer;
-begin
-  Result := True;
-  
-  if CurPageID = PythonPage.ID then
-  begin
-    if IsPythonInstalled() then
-    begin
-      PythonPath := GetPythonPath();
-      PythonPage.SelectedValueIndex := 0;
-      Log('Python trovato in: ' + PythonPath);
-    end
-    else
-    begin
-      PythonPage.SelectedValueIndex := 1;
-      if MsgBox('Python non è installato o non è accessibile dal PATH di sistema.' + #13#10 + 
-                'DBLogiX richiede Python 3.8 o superiore per funzionare.' + #13#10 + #13#10 +
-                'Vuoi continuare comunque? (Dovrai installare Python manualmente)',
-                mbConfirmation, MB_YESNO) = IDNO then
-      begin
-        Result := False;
-      end;
-    end;
-  end;
-end;
-
-function ShouldInstallService(): Boolean;
-begin
-  Result := IsPythonInstalled();
-end;
-
-function IsServiceRunning(): Boolean;
-var
-  ResultCode: Integer;
-begin
-  Result := False;
-  if IsPythonInstalled() then
-  begin
-    Exec('cmd', '/c cd "' + ExpandConstant('{app}') + '" && python dblogix_service.py status | findstr "RUNNING"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Result := (ResultCode = 0);
-  end;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  ResultCode: Integer;
-begin
-  if CurStep = ssPostInstall then
-  begin
-    // Genera i certificati SSL se non esistono
-    if IsPythonInstalled() then
-    begin
-      if not FileExists(ExpandConstant('{app}\cert.pem')) then
-      begin
-        Exec('cmd', '/c cd "' + ExpandConstant('{app}') + '" && python generate_certs.py', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      end;
-    end;
-  end;
-end;
+; Rimuovi regole firewall
+Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""DBLogiX HTTP"""; RunOnceId: "RemoveFirewallHTTP"; Flags: runhidden waituntilterminated
+Filename: "netsh"; Parameters: "advfirewall firewall delete rule name=""DBLogiX HTTPS"""; RunOnceId: "RemoveFirewallHTTPS"; Flags: runhidden waituntilterminated
 
 [Messages]
 ; Messaggi personalizzati in italiano
-italian.BeveledLabel=DBLogiX - Sistema di gestione database
-italian.SetupAppTitle=Installazione {#MyAppName}
-italian.SetupWindowTitle=Installazione {#MyAppName} {#MyAppVersion}
-italian.WelcomeLabel1=Benvenuto nell'installazione di [name]
-italian.WelcomeLabel2=Questo programma installerà [name/ver] sul tuo computer come servizio Windows.%n%nL'applicazione sarà accessibile tramite browser web all'indirizzo https://localhost:5000%n%nÈ consigliabile chiudere tutte le altre applicazioni prima di continuare.
-
-; Messaggi personalizzati in inglese  
-english.BeveledLabel=DBLogiX - Database Management System
-english.SetupAppTitle={#MyAppName} Setup
-english.SetupWindowTitle={#MyAppName} {#MyAppVersion} Setup
-english.WelcomeLabel1=Welcome to the [name] Setup Wizard
-english.WelcomeLabel2=This will install [name/ver] on your computer as a Windows service.%n%nThe application will be accessible through web browser at https://localhost:5000%n%nIt is recommended that you close all other applications before continuing.
-
-[CustomMessages]
-; Messaggi personalizzati
-italian.LaunchProgram=Apri %1 nel browser
-english.LaunchProgram=Launch %1 in browser 
+italian.WelcomeLabel2=Questo installer configurerà [name/ver] sul tuo computer.%n%nDBLogiX è un sistema di gestione completo che verrà installato come servizio Windows.%n%nSi raccomanda di chiudere tutte le altre applicazioni prima di continuare.
+italian.FinishedHeadingLabel=Completamento installazione di [name]
+italian.ClickFinish=Clicca Fine per completare l'installazione e avviare DBLogiX. 

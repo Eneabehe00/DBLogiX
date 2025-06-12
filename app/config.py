@@ -28,6 +28,19 @@ class Config:
     DEBUG = config_manager.get_setting('FLASK_DEBUG', False)
     PERMANENT_SESSION_LIFETIME = timedelta(hours=config_manager.get_setting('SESSION_TIMEOUT_HOURS', 2))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # SQLAlchemy Database URI - deve essere un attributo della classe per PyInstaller
+    try:
+        _remote_db_config = config_manager.get_db_config()
+        SQLALCHEMY_DATABASE_URI = (
+            f"mysql+pymysql://{_remote_db_config['user']}:{_remote_db_config['password']}"
+            f"@{_remote_db_config['host']}:{_remote_db_config['port']}"
+            f"/{_remote_db_config['database']}?charset=utf8"
+        )
+        logger.info("SQLAlchemy URI added to Config class for PyInstaller compatibility")
+    except Exception as e:
+        logger.critical(f"FATAL: Errore nella creazione dell'URI SQLAlchemy per Config class: {str(e)}")
+        sys.exit(1)
 
 # Configurazione database remoto - completamente basata sul file .config
 try:

@@ -1,461 +1,434 @@
 import os
+import sys
 import xml.etree.ElementTree as ET
-from typing import Dict, Any, Optional
+from pathlib import Path
 import logging
 
+# Configurazione del logger
 logger = logging.getLogger(__name__)
 
 class ConfigManager:
-    """Gestisce la lettura e scrittura del file di configurazione XML"""
+    """Gestisce la configurazione esterna di DBLogiX"""
     
-    def __init__(self, config_file_path: str = "DBLogix.exe.config"):
-        self.config_file_path = config_file_path
-        self.config_data = {}
-        self.connection_strings = {}
+    def __init__(self):
+        self.config_file_path = self._find_config_file()
+        self.config = None
         self._load_config()
     
-    def _load_config(self):
-        """Carica il file di configurazione XML"""
-        try:
-            if not os.path.exists(self.config_file_path):
-                logger.warning(f"Config file {self.config_file_path} not found. Using default values.")
-                return
+    def _find_config_file(self):
+        """Trova il file di configurazione in base all'ambiente"""
+        # Possibili percorsi del file di configurazione
+        possible_paths = [
+            # Per ambiente di sviluppo
+            Path(__file__).parent.parent / "DBLogix.exe.config",
             
-            tree = ET.parse(self.config_file_path)
-            root = tree.getroot()
+            # Per PyInstaller
+            Path(sys.executable).parent / "DBLogix.exe.config",
             
-            # Carica le impostazioni dell'applicazione
-            app_settings = root.find('appSettings')
-            if app_settings is not None:
-                for setting in app_settings.findall('add'):
-                    key = setting.get('key')
-                    value = setting.get('value')
-                    if key and value is not None:
-                        self.config_data[key] = self._convert_value(value)
+            # Per Python Embedded
+            Path(__file__).parent.parent.parent / "config" / "DBLogix.exe.config",
             
-            # Carica le stringhe di connessione
-            connection_strings = root.find('connectionStrings')
-            if connection_strings is not None:
-                for conn in connection_strings.findall('add'):
-                    name = conn.get('name')
-                    conn_string = conn.get('connectionString')
-                    if name and conn_string:
-                        self.connection_strings[name] = self._parse_connection_string(conn_string)
+            # Percorso assoluto per Python Embedded
+            Path("C:/Program Files/DBLogiX/config/DBLogix.exe.config"),
             
-            logger.info(f"Configuration loaded from {self.config_file_path}")
-            logger.info(f"Database host: {self.get_db_config().get('host', 'NOT SET')}")
-            
-        except Exception as e:
-            logger.error(f"Error loading configuration: {str(e)}")
-    
-    def _convert_value(self, value: str) -> Any:
-        """Converte i valori stringa nei tipi appropriati"""
-        if value.lower() in ('true', 'false'):
-            return value.lower() == 'true'
-        try:
-            # Prova a convertire in intero
-            return int(value)
-        except ValueError:
-            try:
-                # Prova a convertire in float
-                return float(value)
-            except ValueError:
-                # Ritorna come stringa
-                return value
-    
-    def _parse_connection_string(self, conn_string: str) -> Dict[str, str]:
-        """Analizza una stringa di connessione e restituisce un dizionario"""
-        parts = {}
-        for part in conn_string.split(';'):
-            if '=' in part:
-                key, value = part.split('=', 1)
-                parts[key.strip().lower()] = value.strip()
-        return parts
-    
-    def get_setting(self, key: str, default: Any = None) -> Any:
-        """Ottiene un'impostazione dal file di configurazione"""
-        return self.config_data.get(key, default)
-    
-    def get_company_config(self) -> Dict[str, Any]:
-        """Ottiene la configurazione dell'azienda"""
-        return {
-            'nombre_empresa': self.get_setting('COMPANY_NAME', ''),
-            'cif_vat': self.get_setting('COMPANY_CIF_VAT', ''),
-            'telefono': self.get_setting('COMPANY_PHONE', ''),
-            'direccion': self.get_setting('COMPANY_ADDRESS', ''),
-            'cod_postal': self.get_setting('COMPANY_POSTAL_CODE', ''),
-            'poblacion': self.get_setting('COMPANY_CITY', ''),
-            'provincia': self.get_setting('COMPANY_PROVINCE', ''),
-            'logo_path': self.get_setting('COMPANY_LOGO_PATH', '')
-        }
-    
-    def get_system_config(self) -> Dict[str, Any]:
-        """Ottiene tutte le configurazioni del sistema"""
-        return {
-            # Basic system
-            'expiry_warning_days': self.get_setting('EXPIRY_WARNING_DAYS', 7),
-            'articles_per_package': self.get_setting('ARTICLES_PER_PACKAGE', 5),
-            'timezone': self.get_setting('TIMEZONE', 'Europe/Rome'),
-            'date_format': self.get_setting('DATE_FORMAT', '%d/%m/%Y'),
-            
-            # Email
-            'smtp_server': self.get_setting('SMTP_SERVER', ''),
-            'smtp_port': self.get_setting('SMTP_PORT', 587),
-            'smtp_username': self.get_setting('SMTP_USERNAME', ''),
-            'smtp_password': self.get_setting('SMTP_PASSWORD', ''),
-            'smtp_use_tls': self.get_setting('SMTP_USE_TLS', True),
-            'admin_email': self.get_setting('ADMIN_EMAIL', ''),
-            'enable_email_notifications': self.get_setting('ENABLE_EMAIL_NOTIFICATIONS', False),
-            
-            # Backup
-            'backup_frequency_hours': self.get_setting('BACKUP_FREQUENCY_HOURS', 24),
-            'backup_retention_days': self.get_setting('BACKUP_RETENTION_DAYS', 7),
-            'backup_path': self.get_setting('BACKUP_PATH', 'backups'),
-            
-            # Database timeouts
-            'db_connect_timeout': self.get_setting('DB_CONNECT_TIMEOUT', 10),
-            'db_read_timeout': self.get_setting('DB_READ_TIMEOUT', 30),
-            'db_write_timeout': self.get_setting('DB_WRITE_TIMEOUT', 30),
-            
-            # Alerts
-            'enable_stock_alerts': self.get_setting('ENABLE_STOCK_ALERTS', True),
-            'stock_alert_threshold': self.get_setting('STOCK_ALERT_THRESHOLD', 10),
-            'expiry_check_frequency_hours': self.get_setting('EXPIRY_CHECK_FREQUENCY_HOURS', 6),
-            
-            # Logging
-            'log_level': self.get_setting('LOG_LEVEL', 'INFO'),
-            'log_max_size_mb': self.get_setting('LOG_MAX_SIZE_MB', 10),
-            
-            # Session
-            'session_timeout_hours': self.get_setting('SESSION_TIMEOUT_HOURS', 2),
-            'session_inactivity_minutes': self.get_setting('SESSION_INACTIVITY_MINUTES', 30),
-        }
-    
-    def get_chat_config(self) -> Dict[str, Any]:
-        """Ottiene la configurazione chat"""
-        return {
-            'enable_chat_auto_cleanup': self.get_setting('ENABLE_CHAT_AUTO_CLEANUP', False),
-            'chat_cleanup_frequency_days': self.get_setting('CHAT_CLEANUP_FREQUENCY_DAYS', 7),
-            'enable_chat_auto_backup': self.get_setting('ENABLE_CHAT_AUTO_BACKUP', True),
-            'chat_backup_retention_days': self.get_setting('CHAT_BACKUP_RETENTION_DAYS', 30),
-            'chat_backup_path': self.get_setting('CHAT_BACKUP_PATH', 'Backup/Chat')
-        }
-    
-    def get_clienti_config(self) -> Dict[str, Any]:
-        """Ottiene la configurazione clienti"""
-        return {
-            'enable_clienti_auto_backup': self.get_setting('ENABLE_CLIENTI_AUTO_BACKUP', True),
-            'clienti_backup_frequency_days': self.get_setting('CLIENTI_BACKUP_FREQUENCY_DAYS', 7),
-            'clienti_backup_retention_days': self.get_setting('CLIENTI_BACKUP_RETENTION_DAYS', 30),
-            'clienti_backup_path': self.get_setting('CLIENTI_BACKUP_PATH', 'Backup/Clienti')
-        }
-    
-    def get_ddt_config(self) -> Dict[str, Any]:
-        """Ottiene la configurazione DDT"""
-        return {
-            'enable_ddt_auto_backup': self.get_setting('ENABLE_DDT_AUTO_BACKUP', True),
-            'ddt_backup_frequency_days': self.get_setting('DDT_BACKUP_FREQUENCY_DAYS', 7),
-            'ddt_backup_retention_days': self.get_setting('DDT_BACKUP_RETENTION_DAYS', 30),
-            'ddt_backup_path': self.get_setting('DDT_BACKUP_PATH', 'Backup/DDT')
-        }
-    
-    def get_fatture_config(self) -> Dict[str, Any]:
-        """Ottiene la configurazione fatture"""
-        return {
-            'enable_fatture_auto_backup': self.get_setting('ENABLE_FATTURE_AUTO_BACKUP', True),
-            'fatture_backup_frequency_days': self.get_setting('FATTURE_BACKUP_FREQUENCY_DAYS', 7),
-            'fatture_backup_retention_days': self.get_setting('FATTURE_BACKUP_RETENTION_DAYS', 30),
-            'fatture_backup_path': self.get_setting('FATTURE_BACKUP_PATH', 'Backup/Fatture')
-        }
-    
-    def get_db_config(self) -> Dict[str, Any]:
-        """Ottiene la configurazione del database"""
-        # Prima prova con la stringa di connessione
-        if 'RemoteDatabase' in self.connection_strings:
-            conn_data = self.connection_strings['RemoteDatabase']
-            return {
-                'host': conn_data.get('server', self.get_setting('DB_HOST', '192.168.1.32')),
-                'port': int(conn_data.get('port', self.get_setting('DB_PORT', 3306))),
-                'user': conn_data.get('uid', self.get_setting('DB_USER', 'user')),
-                'password': conn_data.get('pwd', self.get_setting('DB_PASSWORD', 'dibal')),
-                'database': conn_data.get('database', self.get_setting('DB_DATABASE', 'sys_datos')),
-                'charset': conn_data.get('charset', self.get_setting('DB_CHARSET', 'utf8')),
-                'connect_timeout': self.get_setting('DB_CONNECT_TIMEOUT', 10),
-                'read_timeout': self.get_setting('DB_READ_TIMEOUT', 30),
-                'write_timeout': self.get_setting('DB_WRITE_TIMEOUT', 30),
-                'use_unicode': True,
-                'ssl_disabled': True,
-                'cursorclass': 'pymysql.cursors.DictCursor'
-            }
+            # Percorso nella directory di installazione locale
+            Path("C:/Users") / os.getenv('USERNAME', 'Default') / "AppData/Local/Programs/DBLogiX/DBLogix.exe.config"
+        ]
         
-        # Fallback alle impostazioni individuali
-        return {
-            'host': self.get_setting('DB_HOST', '192.168.1.32'),
-            'port': self.get_setting('DB_PORT', 3306),
-            'user': self.get_setting('DB_USER', 'user'),
-            'password': self.get_setting('DB_PASSWORD', 'dibal'),
-            'database': self.get_setting('DB_DATABASE', 'sys_datos'),
-            'charset': self.get_setting('DB_CHARSET', 'utf8'),
-            'connect_timeout': self.get_setting('DB_CONNECT_TIMEOUT', 10),
-            'read_timeout': self.get_setting('DB_READ_TIMEOUT', 30),
-            'write_timeout': self.get_setting('DB_WRITE_TIMEOUT', 30),
-            'use_unicode': True,
-            'ssl_disabled': True,
-            'cursorclass': 'pymysql.cursors.DictCursor'
-        }
+        for path in possible_paths:
+            if path.exists():
+                logger.info(f"Configuration file found: {path}")
+                return path
+        
+        # Se nessun file è trovato, usa il primo percorso come default
+        default_path = possible_paths[0]
+        logger.warning(f"Configuration file not found, using default: {default_path}")
+        return default_path
     
-    def update_setting(self, key: str, value: Any):
-        """Aggiorna un'impostazione nel file di configurazione"""
+    def _load_config(self):
+        """Carica la configurazione dal file XML"""
         try:
-            if not os.path.exists(self.config_file_path):
+            if not self.config_file_path.exists():
+                logger.warning(f"Configuration file not found: {self.config_file_path}")
                 self._create_default_config()
             
             tree = ET.parse(self.config_file_path)
-            root = tree.getroot()
+            self.config = tree.getroot()
+            logger.info(f"Configuration loaded from {self.config_file_path}")
             
-            app_settings = root.find('appSettings')
-            if app_settings is None:
-                app_settings = ET.SubElement(root, 'appSettings')
+        except ET.ParseError as e:
+            logger.error(f"Error parsing configuration file: {e}")
+            self._create_default_config()
+        except Exception as e:
+            logger.error(f"Error loading configuration: {e}")
+            self._create_default_config()
+    
+    def get_setting(self, key, default=None):
+        """Ottiene un'impostazione dalla configurazione"""
+        if self.config is None:
+            return default
+        
+        try:
+            # Cerca in appSettings
+            app_settings = self.config.find('appSettings')
+            if app_settings is not None:
+                for setting in app_settings.findall('add'):
+                    if setting.get('key') == key:
+                        value = setting.get('value')
+                        logger.debug(f"Setting {key} = {value}")
+                        return value
             
-            # Trova l'impostazione esistente o creane una nuova
-            setting = None
-            for setting_elem in app_settings.findall('add'):
-                if setting_elem.get('key') == key:
-                    setting = setting_elem
-                    break
-            
-            if setting is None:
-                setting = ET.SubElement(app_settings, 'add')
-                setting.set('key', key)
-            
-            setting.set('value', str(value))
-            
-            # Salva il file
-            tree.write(self.config_file_path, encoding='utf-8', xml_declaration=True)
-            
-            # Aggiorna anche la cache locale
-            self.config_data[key] = self._convert_value(str(value))
-            
-            logger.info(f"Updated setting {key} = {value}")
+            logger.debug(f"Setting {key} not found, using default: {default}")
+            return default
             
         except Exception as e:
-            logger.error(f"Error updating setting {key}: {str(e)}")
+            logger.error(f"Error getting setting {key}: {e}")
+            return default
+    
+    def get_db_config(self):
+        """Ottiene la configurazione del database"""
+        try:
+            config = {
+                'host': self.get_setting('DB_HOST', '192.168.1.32'),
+                'port': int(self.get_setting('DB_PORT', 3306)),
+                'user': self.get_setting('DB_USER', 'user'),
+                'password': self.get_setting('DB_PASSWORD', 'dibal'),
+                'database': self.get_setting('DB_DATABASE', 'sys_datos'),
+                'charset': self.get_setting('DB_CHARSET', 'utf8'),
+                'connect_timeout': int(self.get_setting('DB_CONNECT_TIMEOUT', 10)),
+                'read_timeout': int(self.get_setting('DB_READ_TIMEOUT', 30)),
+                'write_timeout': int(self.get_setting('DB_WRITE_TIMEOUT', 30)),
+                'ssl_disabled': True,
+                'use_unicode': True,
+                'cursorclass': None  # Sarà impostato in runtime
+            }
+            
+            # Importa pymysql solo quando necessario
+            try:
+                import pymysql.cursors
+                config['cursorclass'] = pymysql.cursors.DictCursor
+            except ImportError:
+                logger.warning("PyMySQL not available, using default cursor")
+            
+            logger.info(f"Database host: {config['host']}")
+            return config
+            
+        except Exception as e:
+            logger.error(f"Error getting database configuration: {e}")
             raise
     
-    def update_db_config(self, db_config: Dict[str, Any]):
+    def get_company_config(self):
+        """Ottiene la configurazione dell'azienda"""
+        return {
+            'name': self.get_setting('COMPANY_NAME', 'DBLogiX Company'),
+            'cif_vat': self.get_setting('COMPANY_CIF_VAT', ''),
+            'phone': self.get_setting('COMPANY_PHONE', ''),
+            'address': self.get_setting('COMPANY_ADDRESS', ''),
+            'postal_code': self.get_setting('COMPANY_POSTAL_CODE', ''),
+            'city': self.get_setting('COMPANY_CITY', ''),
+            'province': self.get_setting('COMPANY_PROVINCE', ''),
+            'logo_path': self.get_setting('COMPANY_LOGO_PATH', '')
+        }
+    
+    def get_system_config(self):
+        """Ottiene le configurazioni di sistema"""
+        return {
+            'expiry_warning_days': int(self.get_setting('EXPIRY_WARNING_DAYS', 7)),
+            'articles_per_package': int(self.get_setting('ARTICLES_PER_PACKAGE', 5)),
+            'timezone': self.get_setting('TIMEZONE', 'Europe/Rome'),
+            'date_format': self.get_setting('DATE_FORMAT', '%d/%m/%Y'),
+            'backup_frequency_hours': int(self.get_setting('BACKUP_FREQUENCY_HOURS', 24)),
+            'backup_retention_days': int(self.get_setting('BACKUP_RETENTION_DAYS', 7))
+        }
+    
+    def get_email_config(self):
+        """Ottiene la configurazione email"""
+        return {
+            'smtp_server': self.get_setting('SMTP_SERVER', ''),
+            'smtp_port': int(self.get_setting('SMTP_PORT', 587)),
+            'smtp_username': self.get_setting('SMTP_USERNAME', ''),
+            'smtp_password': self.get_setting('SMTP_PASSWORD', ''),
+            'smtp_use_tls': self.get_setting('SMTP_USE_TLS', 'True').lower() == 'true',
+            'admin_email': self.get_setting('ADMIN_EMAIL', ''),
+            'enable_notifications': self.get_setting('ENABLE_EMAIL_NOTIFICATIONS', 'False').lower() == 'true'
+        }
+    
+    def get_chat_config(self):
+        """Ottiene la configurazione chat"""
+        return {
+            'enabled': self.get_setting('CHAT_ENABLED', 'True').lower() == 'true',
+            'max_messages': int(self.get_setting('CHAT_MAX_MESSAGES', 100)),
+            'auto_delete_days': int(self.get_setting('CHAT_AUTO_DELETE_DAYS', 30))
+        }
+    
+    def get_clienti_config(self):
+        """Ottiene la configurazione clienti"""
+        return {
+            'enable_loyalty_points': self.get_setting('CLIENTI_ENABLE_LOYALTY_POINTS', 'True').lower() == 'true',
+            'default_discount': float(self.get_setting('CLIENTI_DEFAULT_DISCOUNT', 0.0)),
+            'require_email': self.get_setting('CLIENTI_REQUIRE_EMAIL', 'False').lower() == 'true'
+        }
+    
+    def get_ddt_config(self):
+        """Ottiene la configurazione DDT"""
+        return {
+            'auto_number': self.get_setting('DDT_AUTO_NUMBER', 'True').lower() == 'true',
+            'default_payment_terms': int(self.get_setting('DDT_DEFAULT_PAYMENT_TERMS', 30)),
+            'include_prices': self.get_setting('DDT_INCLUDE_PRICES', 'True').lower() == 'true'
+        }
+    
+    def get_fatture_config(self):
+        """Ottiene la configurazione fatture"""
+        return {
+            'auto_number': self.get_setting('FATTURE_AUTO_NUMBER', 'True').lower() == 'true',
+            'default_payment_terms': int(self.get_setting('FATTURE_DEFAULT_PAYMENT_TERMS', 30)),
+            'include_discount': self.get_setting('FATTURE_INCLUDE_DISCOUNT', 'True').lower() == 'true'
+        }
+    
+    def update_setting(self, key, value):
+        """Aggiorna un'impostazione"""
+        try:
+            if self.config is None:
+                return False
+            
+            # Trova appSettings
+            app_settings = self.config.find('appSettings')
+            if app_settings is None:
+                app_settings = ET.SubElement(self.config, 'appSettings')
+            
+            # Cerca l'impostazione esistente
+            for setting in app_settings.findall('add'):
+                if setting.get('key') == key:
+                    setting.set('value', str(value))
+                    break
+            else:
+                # Crea nuova impostazione
+                new_setting = ET.SubElement(app_settings, 'add')
+                new_setting.set('key', key)
+                new_setting.set('value', str(value))
+            
+            # Salva il file
+            self._save_config()
+            logger.info(f"Setting updated: {key} = {value}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating setting {key}: {e}")
+            return False
+    
+    def update_db_config(self, db_config):
         """Aggiorna la configurazione del database"""
         try:
-            # Aggiorna le impostazioni individuali
-            self.update_setting('DB_HOST', db_config.get('host', '192.168.1.32'))
-            self.update_setting('DB_PORT', db_config.get('port', 3306))
-            self.update_setting('DB_USER', db_config.get('user', 'user'))
-            self.update_setting('DB_PASSWORD', db_config.get('password', 'dibal'))
-            self.update_setting('DB_DATABASE', db_config.get('database', 'sys_datos'))
-            self.update_setting('DB_CHARSET', db_config.get('charset', 'utf8'))
-            self.update_setting('DB_CONNECT_TIMEOUT', db_config.get('connect_timeout', 10))
-            self.update_setting('DB_READ_TIMEOUT', db_config.get('read_timeout', 30))
-            self.update_setting('DB_WRITE_TIMEOUT', db_config.get('write_timeout', 30))
+            settings_to_update = {
+                'DB_HOST': db_config.get('host'),
+                'DB_PORT': str(db_config.get('port')),
+                'DB_USER': db_config.get('user'),
+                'DB_PASSWORD': db_config.get('password'),
+                'DB_DATABASE': db_config.get('database'),
+                'DB_CHARSET': db_config.get('charset', 'utf8')
+            }
             
-            # Aggiorna anche la stringa di connessione
-            self._update_connection_string('RemoteDatabase', db_config)
+            for key, value in settings_to_update.items():
+                if value is not None:
+                    self.update_setting(key, value)
             
-            # Ricarica la configurazione per assicurarsi che sia aggiornata
-            self._load_config()
+            # Aggiorna anche la connection string
+            self._update_connection_string(db_config)
             
-            logger.info(f"Database configuration updated: {db_config['host']}:{db_config['port']}/{db_config['database']}")
+            logger.info("Database configuration updated")
+            return True
             
         except Exception as e:
-            logger.error(f"Error updating database configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating database configuration: {e}")
+            return False
     
-    def update_company_config(self, company_config: Dict[str, Any]):
+    def update_company_config(self, company_config):
         """Aggiorna la configurazione dell'azienda"""
         try:
-            self.update_setting('COMPANY_NAME', company_config.get('nombre_empresa', ''))
-            self.update_setting('COMPANY_CIF_VAT', company_config.get('cif_vat', ''))
-            self.update_setting('COMPANY_PHONE', company_config.get('telefono', ''))
-            self.update_setting('COMPANY_ADDRESS', company_config.get('direccion', ''))
-            self.update_setting('COMPANY_POSTAL_CODE', company_config.get('cod_postal', ''))
-            self.update_setting('COMPANY_CITY', company_config.get('poblacion', ''))
-            self.update_setting('COMPANY_PROVINCE', company_config.get('provincia', ''))
-            if 'logo_path' in company_config:
-                self.update_setting('COMPANY_LOGO_PATH', company_config.get('logo_path', ''))
+            settings_map = {
+                'name': 'COMPANY_NAME',
+                'cif_vat': 'COMPANY_CIF_VAT',
+                'phone': 'COMPANY_PHONE',
+                'address': 'COMPANY_ADDRESS',
+                'postal_code': 'COMPANY_POSTAL_CODE',
+                'city': 'COMPANY_CITY',
+                'province': 'COMPANY_PROVINCE',
+                'logo_path': 'COMPANY_LOGO_PATH'
+            }
+            
+            for config_key, setting_key in settings_map.items():
+                if config_key in company_config:
+                    self.update_setting(setting_key, company_config[config_key])
             
             logger.info("Company configuration updated")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error updating company configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating company configuration: {e}")
+            return False
     
-    def update_system_config(self, system_config: Dict[str, Any]):
-        """Aggiorna le configurazioni del sistema"""
+    def update_system_config(self, system_config):
+        """Aggiorna le configurazioni di sistema"""
         try:
-            # Basic system settings
-            if 'expiry_warning_days' in system_config:
-                self.update_setting('EXPIRY_WARNING_DAYS', system_config['expiry_warning_days'])
-            if 'articles_per_package' in system_config:
-                self.update_setting('ARTICLES_PER_PACKAGE', system_config['articles_per_package'])
-            if 'timezone' in system_config:
-                self.update_setting('TIMEZONE', system_config['timezone'])
-            if 'date_format' in system_config:
-                self.update_setting('DATE_FORMAT', system_config['date_format'])
+            settings_map = {
+                'expiry_warning_days': 'EXPIRY_WARNING_DAYS',
+                'articles_per_package': 'ARTICLES_PER_PACKAGE',
+                'timezone': 'TIMEZONE',
+                'date_format': 'DATE_FORMAT',
+                'backup_frequency_hours': 'BACKUP_FREQUENCY_HOURS',
+                'backup_retention_days': 'BACKUP_RETENTION_DAYS'
+            }
             
-            # Email settings
-            if 'smtp_server' in system_config:
-                self.update_setting('SMTP_SERVER', system_config['smtp_server'])
-            if 'smtp_port' in system_config:
-                self.update_setting('SMTP_PORT', system_config['smtp_port'])
-            if 'smtp_username' in system_config:
-                self.update_setting('SMTP_USERNAME', system_config['smtp_username'])
-            if 'smtp_password' in system_config:
-                self.update_setting('SMTP_PASSWORD', system_config['smtp_password'])
-            if 'smtp_use_tls' in system_config:
-                self.update_setting('SMTP_USE_TLS', system_config['smtp_use_tls'])
-            if 'admin_email' in system_config:
-                self.update_setting('ADMIN_EMAIL', system_config['admin_email'])
-            if 'enable_email_notifications' in system_config:
-                self.update_setting('ENABLE_EMAIL_NOTIFICATIONS', system_config['enable_email_notifications'])
-            
-            # Backup settings
-            if 'backup_frequency_hours' in system_config:
-                self.update_setting('BACKUP_FREQUENCY_HOURS', system_config['backup_frequency_hours'])
-            if 'backup_retention_days' in system_config:
-                self.update_setting('BACKUP_RETENTION_DAYS', system_config['backup_retention_days'])
-            if 'backup_path' in system_config:
-                self.update_setting('BACKUP_PATH', system_config['backup_path'])
-            
-            # Database timeouts
-            if 'db_connect_timeout' in system_config:
-                self.update_setting('DB_CONNECT_TIMEOUT', system_config['db_connect_timeout'])
-            if 'db_read_timeout' in system_config:
-                self.update_setting('DB_READ_TIMEOUT', system_config['db_read_timeout'])
-            if 'db_write_timeout' in system_config:
-                self.update_setting('DB_WRITE_TIMEOUT', system_config['db_write_timeout'])
-            
-            # Alert settings
-            if 'enable_stock_alerts' in system_config:
-                self.update_setting('ENABLE_STOCK_ALERTS', system_config['enable_stock_alerts'])
-            if 'stock_alert_threshold' in system_config:
-                self.update_setting('STOCK_ALERT_THRESHOLD', system_config['stock_alert_threshold'])
-            if 'expiry_check_frequency_hours' in system_config:
-                self.update_setting('EXPIRY_CHECK_FREQUENCY_HOURS', system_config['expiry_check_frequency_hours'])
-            
-            # Logging settings
-            if 'log_level' in system_config:
-                self.update_setting('LOG_LEVEL', system_config['log_level'])
-            if 'log_max_size_mb' in system_config:
-                self.update_setting('LOG_MAX_SIZE_MB', system_config['log_max_size_mb'])
-            
-            # Session settings
-            if 'session_timeout_hours' in system_config:
-                self.update_setting('SESSION_TIMEOUT_HOURS', system_config['session_timeout_hours'])
-            if 'session_inactivity_minutes' in system_config:
-                self.update_setting('SESSION_INACTIVITY_MINUTES', system_config['session_inactivity_minutes'])
+            for config_key, setting_key in settings_map.items():
+                if config_key in system_config:
+                    self.update_setting(setting_key, system_config[config_key])
             
             logger.info("System configuration updated")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error updating system configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating system configuration: {e}")
+            return False
     
-    def update_chat_config(self, chat_config: Dict[str, Any]):
+    def update_chat_config(self, chat_config):
         """Aggiorna la configurazione chat"""
         try:
-            if 'enable_chat_auto_cleanup' in chat_config:
-                self.update_setting('ENABLE_CHAT_AUTO_CLEANUP', chat_config['enable_chat_auto_cleanup'])
-            if 'chat_cleanup_frequency_days' in chat_config:
-                self.update_setting('CHAT_CLEANUP_FREQUENCY_DAYS', chat_config['chat_cleanup_frequency_days'])
-            if 'enable_chat_auto_backup' in chat_config:
-                self.update_setting('ENABLE_CHAT_AUTO_BACKUP', chat_config['enable_chat_auto_backup'])
-            if 'chat_backup_retention_days' in chat_config:
-                self.update_setting('CHAT_BACKUP_RETENTION_DAYS', chat_config['chat_backup_retention_days'])
-            if 'chat_backup_path' in chat_config:
-                self.update_setting('CHAT_BACKUP_PATH', chat_config['chat_backup_path'])
+            settings_map = {
+                'enabled': 'CHAT_ENABLED',
+                'max_messages': 'CHAT_MAX_MESSAGES',
+                'auto_delete_days': 'CHAT_AUTO_DELETE_DAYS'
+            }
+            
+            for config_key, setting_key in settings_map.items():
+                if config_key in chat_config:
+                    value = chat_config[config_key]
+                    if isinstance(value, bool):
+                        value = 'True' if value else 'False'
+                    self.update_setting(setting_key, value)
             
             logger.info("Chat configuration updated")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error updating chat configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating chat configuration: {e}")
+            return False
     
-    def update_clienti_config(self, clienti_config: Dict[str, Any]):
+    def update_clienti_config(self, clienti_config):
         """Aggiorna la configurazione clienti"""
         try:
-            if 'enable_clienti_auto_backup' in clienti_config:
-                self.update_setting('ENABLE_CLIENTI_AUTO_BACKUP', clienti_config['enable_clienti_auto_backup'])
-            if 'clienti_backup_frequency_days' in clienti_config:
-                self.update_setting('CLIENTI_BACKUP_FREQUENCY_DAYS', clienti_config['clienti_backup_frequency_days'])
-            if 'clienti_backup_retention_days' in clienti_config:
-                self.update_setting('CLIENTI_BACKUP_RETENTION_DAYS', clienti_config['clienti_backup_retention_days'])
-            if 'clienti_backup_path' in clienti_config:
-                self.update_setting('CLIENTI_BACKUP_PATH', clienti_config['clienti_backup_path'])
+            settings_map = {
+                'enable_loyalty_points': 'CLIENTI_ENABLE_LOYALTY_POINTS',
+                'default_discount': 'CLIENTI_DEFAULT_DISCOUNT',
+                'require_email': 'CLIENTI_REQUIRE_EMAIL'
+            }
+            
+            for config_key, setting_key in settings_map.items():
+                if config_key in clienti_config:
+                    value = clienti_config[config_key]
+                    if isinstance(value, bool):
+                        value = 'True' if value else 'False'
+                    self.update_setting(setting_key, value)
             
             logger.info("Clienti configuration updated")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error updating clienti configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating clienti configuration: {e}")
+            return False
     
-    def update_ddt_config(self, ddt_config: Dict[str, Any]):
+    def update_ddt_config(self, ddt_config):
         """Aggiorna la configurazione DDT"""
         try:
-            if 'enable_ddt_auto_backup' in ddt_config:
-                self.update_setting('ENABLE_DDT_AUTO_BACKUP', ddt_config['enable_ddt_auto_backup'])
-            if 'ddt_backup_frequency_days' in ddt_config:
-                self.update_setting('DDT_BACKUP_FREQUENCY_DAYS', ddt_config['ddt_backup_frequency_days'])
-            if 'ddt_backup_retention_days' in ddt_config:
-                self.update_setting('DDT_BACKUP_RETENTION_DAYS', ddt_config['ddt_backup_retention_days'])
-            if 'ddt_backup_path' in ddt_config:
-                self.update_setting('DDT_BACKUP_PATH', ddt_config['ddt_backup_path'])
+            settings_map = {
+                'auto_number': 'DDT_AUTO_NUMBER',
+                'default_payment_terms': 'DDT_DEFAULT_PAYMENT_TERMS',
+                'include_prices': 'DDT_INCLUDE_PRICES'
+            }
+            
+            for config_key, setting_key in settings_map.items():
+                if config_key in ddt_config:
+                    value = ddt_config[config_key]
+                    if isinstance(value, bool):
+                        value = 'True' if value else 'False'
+                    self.update_setting(setting_key, value)
             
             logger.info("DDT configuration updated")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error updating DDT configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating DDT configuration: {e}")
+            return False
     
-    def update_fatture_config(self, fatture_config: Dict[str, Any]):
+    def update_fatture_config(self, fatture_config):
         """Aggiorna la configurazione fatture"""
         try:
-            if 'enable_fatture_auto_backup' in fatture_config:
-                self.update_setting('ENABLE_FATTURE_AUTO_BACKUP', fatture_config['enable_fatture_auto_backup'])
-            if 'fatture_backup_frequency_days' in fatture_config:
-                self.update_setting('FATTURE_BACKUP_FREQUENCY_DAYS', fatture_config['fatture_backup_frequency_days'])
-            if 'fatture_backup_retention_days' in fatture_config:
-                self.update_setting('FATTURE_BACKUP_RETENTION_DAYS', fatture_config['fatture_backup_retention_days'])
-            if 'fatture_backup_path' in fatture_config:
-                self.update_setting('FATTURE_BACKUP_PATH', fatture_config['fatture_backup_path'])
+            settings_map = {
+                'auto_number': 'FATTURE_AUTO_NUMBER',
+                'default_payment_terms': 'FATTURE_DEFAULT_PAYMENT_TERMS',
+                'include_discount': 'FATTURE_INCLUDE_DISCOUNT'
+            }
+            
+            for config_key, setting_key in settings_map.items():
+                if config_key in fatture_config:
+                    value = fatture_config[config_key]
+                    if isinstance(value, bool):
+                        value = 'True' if value else 'False'
+                    self.update_setting(setting_key, value)
             
             logger.info("Fatture configuration updated")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error updating fatture configuration: {str(e)}")
-            raise
+            logger.error(f"Error updating fatture configuration: {e}")
+            return False
     
-    def _update_connection_string(self, name: str, db_config: Dict[str, Any]):
-        """Aggiorna la stringa di connessione nel file XML"""
+    def _update_connection_string(self, db_config):
+        """Aggiorna la connection string nel file di configurazione"""
         try:
-            tree = ET.parse(self.config_file_path)
-            root = tree.getroot()
+            # Trova connectionStrings
+            conn_strings = self.config.find('connectionStrings')
+            if conn_strings is None:
+                conn_strings = ET.SubElement(self.config, 'connectionStrings')
             
-            connection_strings = root.find('connectionStrings')
-            if connection_strings is None:
-                connection_strings = ET.SubElement(root, 'connectionStrings')
-            
-            # Trova la connessione esistente o creane una nuova
-            conn = None
-            for conn_elem in connection_strings.findall('add'):
-                if conn_elem.get('name') == name:
-                    conn = conn_elem
+            # Cerca la connection string esistente
+            for conn in conn_strings.findall('add'):
+                if conn.get('name') == 'RemoteDatabase':
+                    # Aggiorna la connection string esistente
+                    new_conn_str = (f"Server={db_config.get('host')};"
+                                   f"Port={db_config.get('port')};"
+                                   f"Database={db_config.get('database')};"
+                                   f"Uid={db_config.get('user')};"
+                                   f"Pwd={db_config.get('password')};"
+                                   f"Charset={db_config.get('charset', 'utf8')};")
+                    conn.set('connectionString', new_conn_str)
                     break
-            
-            if conn is None:
-                conn = ET.SubElement(connection_strings, 'add')
-                conn.set('name', name)
-            
-            # Costruisci la stringa di connessione
-            conn_string = f"Server={db_config['host']};Port={db_config['port']};Database={db_config['database']};Uid={db_config['user']};Pwd={db_config['password']};Charset={db_config['charset']};"
-            conn.set('connectionString', conn_string)
-            
-            # Salva il file
-            tree.write(self.config_file_path, encoding='utf-8', xml_declaration=True)
+            else:
+                # Crea nuova connection string
+                new_conn = ET.SubElement(conn_strings, 'add')
+                new_conn.set('name', 'RemoteDatabase')
+                new_conn_str = (f"Server={db_config.get('host')};"
+                               f"Port={db_config.get('port')};"
+                               f"Database={db_config.get('database')};"
+                               f"Uid={db_config.get('user')};"
+                               f"Pwd={db_config.get('password')};"
+                               f"Charset={db_config.get('charset', 'utf8')};")
+                new_conn.set('connectionString', new_conn_str)
             
         except Exception as e:
-            logger.error(f"Error updating connection string: {str(e)}")
+            logger.error(f"Error updating connection string: {e}")
+    
+    def _save_config(self):
+        """Salva la configurazione nel file"""
+        try:
+            # Assicurati che la directory parent esista
+            self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            tree = ET.ElementTree(self.config)
+            tree.write(self.config_file_path, encoding='utf-8', xml_declaration=True)
+            logger.info(f"Configuration saved to {self.config_file_path}")
+            
+        except Exception as e:
+            logger.error(f"Error saving configuration: {e}")
             raise
     
     def _create_default_config(self):
@@ -489,20 +462,22 @@ class ConfigManager:
         
         tree = ET.ElementTree(root)
         tree.write(self.config_file_path, encoding='utf-8', xml_declaration=True)
+        
+        self.config = root
+        logger.info(f"Default configuration created: {self.config_file_path}")
 
+# Singleton pattern per il config manager
+_config_manager = None
 
-# Istanza globale del config manager
-config_manager = None
-
-def get_config_manager() -> ConfigManager:
-    """Ottiene l'istanza globale del config manager"""
-    global config_manager
-    if config_manager is None:
-        config_manager = ConfigManager()
-    return config_manager
+def get_config_manager():
+    """Ottiene l'istanza singleton del config manager"""
+    global _config_manager
+    if _config_manager is None:
+        _config_manager = ConfigManager()
+    return _config_manager
 
 def reload_config():
     """Ricarica la configurazione"""
-    global config_manager
-    config_manager = ConfigManager()
-    return config_manager 
+    global _config_manager
+    _config_manager = ConfigManager()
+    return _config_manager 

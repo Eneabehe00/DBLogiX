@@ -19,18 +19,24 @@ SERVICE_DESCRIPTION = "Sistema di gestione database e scanner barcode per magazz
 def get_service_path():
     """Ottiene il path dell'eseguibile del servizio"""
     if getattr(sys, 'frozen', False):
-        # Running as compiled executable
-        return Path(sys.executable).parent / "DBLogiX.exe"
+        # Running as compiled executable - usa l'eseguibile principale con flag service
+        return f'"{Path(sys.executable).parent / "DBLogiX.exe"}" --service'
     else:
-        # Running as Python script
-        return Path(__file__).parent / "main_service.py"
+        # Running as Python script - usa il main_service direttamente
+        return f'"{sys.executable}" "{Path(__file__).parent / "main_service.py"}"'
 
 def install_service():
     """Installa il servizio Windows"""
     service_path = get_service_path()
     
-    if not service_path.exists():
-        print(f"ERRORE: File del servizio non trovato: {service_path}")
+    # Estrai il path dell'eseguibile dalla stringa completa del comando
+    if getattr(sys, 'frozen', False):
+        exe_path = Path(sys.executable).parent / "DBLogiX.exe"
+    else:
+        exe_path = Path(__file__).parent / "main_service.py"
+    
+    if not exe_path.exists():
+        print(f"ERRORE: File del servizio non trovato: {exe_path}")
         return False
     
     print(f"Installazione servizio {SERVICE_NAME}...")
@@ -47,7 +53,7 @@ def install_service():
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode == 0:
-            print(f"✅ Servizio {SERVICE_NAME} installato con successo")
+            print(f"[OK] Servizio {SERVICE_NAME} installato con successo")
             
             # Configura la descrizione del servizio
             desc_cmd = ["sc", "description", SERVICE_NAME, SERVICE_DESCRIPTION]
@@ -62,10 +68,10 @@ def install_service():
             
             return True
         else:
-            print(f"❌ Errore nell'installazione del servizio: {result.stderr}")
+            print(f"[ERROR] Errore nell'installazione del servizio: {result.stderr}")
             return False
     except Exception as e:
-        print(f"❌ Errore durante l'installazione: {e}")
+        print(f"[ERROR] Errore durante l'installazione: {e}")
         return False
 
 def uninstall_service():
@@ -79,13 +85,13 @@ def uninstall_service():
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode == 0:
-            print(f"✅ Servizio {SERVICE_NAME} disinstallato con successo")
+            print(f"[OK] Servizio {SERVICE_NAME} disinstallato con successo")
             return True
         else:
-            print(f"❌ Errore nella disinstallazione del servizio: {result.stderr}")
+            print(f"[ERROR] Errore nella disinstallazione del servizio: {result.stderr}")
             return False
     except Exception as e:
-        print(f"❌ Errore durante la disinstallazione: {e}")
+        print(f"[ERROR] Errore durante la disinstallazione: {e}")
         return False
 
 def start_service():
@@ -96,13 +102,13 @@ def start_service():
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode == 0:
-            print(f"✅ Servizio {SERVICE_NAME} avviato con successo")
+            print(f"[OK] Servizio {SERVICE_NAME} avviato con successo")
             return True
         else:
-            print(f"❌ Errore nell'avvio del servizio: {result.stderr}")
+            print(f"[ERROR] Errore nell'avvio del servizio: {result.stderr}")
             return False
     except Exception as e:
-        print(f"❌ Errore durante l'avvio: {e}")
+        print(f"[ERROR] Errore durante l'avvio: {e}")
         return False
 
 def stop_service():
@@ -113,17 +119,17 @@ def stop_service():
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode == 0:
-            print(f"✅ Servizio {SERVICE_NAME} arrestato con successo")
+            print(f"[OK] Servizio {SERVICE_NAME} arrestato con successo")
             return True
         else:
             # Il servizio potrebbe essere già fermo
             if "1062" in result.stderr:  # Service not running
-                print(f"ℹ️ Servizio {SERVICE_NAME} non era in esecuzione")
+                print(f"[INFO] Servizio {SERVICE_NAME} non era in esecuzione")
                 return True
-            print(f"❌ Errore nell'arresto del servizio: {result.stderr}")
+            print(f"[ERROR] Errore nell'arresto del servizio: {result.stderr}")
             return False
     except Exception as e:
-        print(f"❌ Errore durante l'arresto: {e}")
+        print(f"[ERROR] Errore durante l'arresto: {e}")
         return False
 
 def get_service_status():
@@ -144,7 +150,7 @@ def get_service_status():
         else:
             return "NOT_INSTALLED"
     except Exception as e:
-        print(f"❌ Errore nel controllo dello stato: {e}")
+        print(f"[ERROR] Errore nel controllo dello stato: {e}")
         return "ERROR"
 
 def configure_firewall():
@@ -171,13 +177,13 @@ def configure_firewall():
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
         if result.returncode == 0:
-            print("✅ Regola firewall creata con successo")
+            print("[OK] Regola firewall creata con successo")
             return True
         else:
-            print(f"❌ Errore nella configurazione del firewall: {result.stderr}")
+            print(f"[ERROR] Errore nella configurazione del firewall: {result.stderr}")
             return False
     except Exception as e:
-        print(f"❌ Errore nella configurazione del firewall: {e}")
+        print(f"[ERROR] Errore nella configurazione del firewall: {e}")
         return False
 
 def check_admin_privileges():
@@ -217,18 +223,18 @@ Esempi:
     # Controlla i privilegi di amministratore per alcuni comandi
     admin_commands = ['install', 'uninstall', 'start', 'stop', 'restart', 'firewall']
     if command in admin_commands and not check_admin_privileges():
-        print("❌ ERRORE: Questo comando richiede privilegi di amministratore.")
+        print("[ERROR] ERRORE: Questo comando richiede privilegi di amministratore.")
         print("   Esegui il prompt dei comandi come amministratore e riprova.")
         return 1
     
     if command == "install":
         success = install_service()
         if success:
-            print("\n🔥 Configurazione firewall...")
+            print("\n[INFO] Configurazione firewall...")
             configure_firewall()
-            print(f"\n🚀 Per avviare il servizio: {sys.argv[0]} start")
-            print(f"📊 Per controllare lo stato: {sys.argv[0]} status")
-            print(f"🌐 Accesso web: https://localhost:5000")
+            print(f"\n[INFO] Per avviare il servizio: {sys.argv[0]} start")
+            print(f"[INFO] Per controllare lo stato: {sys.argv[0]} status")
+            print(f"[INFO] Accesso web: https://localhost:5000")
         return 0 if success else 1
     
     elif command == "uninstall":
@@ -251,9 +257,9 @@ Esempi:
         print(f"Stato servizio {SERVICE_NAME}: {status}")
         
         if status == "RUNNING":
-            print("🌐 Il servizio è accessibile su: https://localhost:5000")
+            print("[INFO] Il servizio è accessibile su: https://localhost:5000")
         elif status == "NOT_INSTALLED":
-            print(f"💡 Per installare il servizio: {sys.argv[0]} install")
+            print(f"[INFO] Per installare il servizio: {sys.argv[0]} install")
         
         return 0
     
@@ -261,7 +267,7 @@ Esempi:
         return 0 if configure_firewall() else 1
     
     else:
-        print(f"❌ Comando sconosciuto: {command}")
+        print(f"[ERROR] Comando sconosciuto: {command}")
         return 1
 
 if __name__ == "__main__":

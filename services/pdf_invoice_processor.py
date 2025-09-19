@@ -451,12 +451,15 @@ class PDFInvoiceProcessor:
             supplier_names = [s.nome for s in all_suppliers]
             
             if supplier_names:
-                match, score = process.extractOne(nome, supplier_names)
-                if score >= 85:  # Soglia di similarità alta
-                    matching_supplier = next(s for s in all_suppliers if s.nome == match)
-                    logger.info(f"🔍 Trovato fornitore simile tramite fuzzy matching: {match} (score: {score}) - ID: {matching_supplier.id}")
-                    self._update_supplier_info(matching_supplier, supplier_info)
-                    return matching_supplier
+                # rapidfuzz.process.extractOne restituisce (match, score, index) o None
+                result = process.extractOne(nome, supplier_names)
+                if result is not None:
+                    match, score, _ = result  # Ignoriamo l'index (terzo valore)
+                    if score >= 85:  # Soglia di similarità alta
+                        matching_supplier = next(s for s in all_suppliers if s.nome == match)
+                        logger.info(f"🔍 Trovato fornitore simile tramite fuzzy matching: {match} (score: {score}) - ID: {matching_supplier.id}")
+                        self._update_supplier_info(matching_supplier, supplier_info)
+                        return matching_supplier
             
         except Exception as query_error:
             logger.error(f"❌ Errore durante la query del fornitore: {query_error}")
@@ -700,7 +703,7 @@ class PDFInvoiceProcessor:
         }
         
         logger.info(f"🔍 Inizio matching ingredienti per fornitore: {supplier.nome}")
-        logger.info(f"📦 Articoli da processare: {len(items_json)} (di cui alimentari: {len([i for i in items_json if i.get('is_food_ingredient', False)])})") 
+        logger.info(f"📦 Articoli da processare: {len(items_json)} (TUTTI verranno inseriti)")
         
         # Ottieni tutti gli ingredienti esistenti
         all_ingredients = Ingrediente.query.filter_by(attivo=True).all()
@@ -711,10 +714,8 @@ class PDFInvoiceProcessor:
         for idx, item in enumerate(items_json, 1):
             logger.info(f"🔄 Processing item {idx}/{len(items_json)}: {item['descrizione']}")
             
-            if not item.get('is_food_ingredient', False):
-                logger.info(f"   ⏭️ Saltato (non alimentare): {item['descrizione']}")
-                results['skipped'] += 1
-                continue
+            # 🚨 RIMOSSO IL FILTRO ALIMENTARE - TUTTI GLI ARTICOLI VENGONO PROCESSATI
+            # Il sistema è specifico per fatture ingredienti
             
             if item.get('prezzo_unitario', 0) <= 0:
                 logger.info(f"   ⏭️ Saltato (prezzo non valido): {item['descrizione']} - €{item.get('prezzo_unitario', 0)}")
@@ -817,6 +818,14 @@ class PDFInvoiceProcessor:
             quantita = item.get('quantita', 0)
             confidence = item.get('confidence', 0.9)
             
+            # Controlla se dobbiamo cambiare fornitore preferito
+            old_preferred_supplier = None
+            if ingredient.fornitore_preferito_id and ingredient.fornitore_preferito_id != supplier.id:
+                # Trova il nome del fornitore preferito attuale per il logging
+                old_preferred = Fornitore.query.get(ingredient.fornitore_preferito_id)
+                if old_preferred:
+                    old_preferred_supplier = old_preferred.nome
+
             if existing_association:
                 # Aggiorna associazione esistente
                 old_price = existing_association.prezzo_unitario
@@ -846,12 +855,29 @@ class PDFInvoiceProcessor:
                 )
                 db.session.add(new_association)
                 logger.info(f"🆕 Creata associazione {ingredient.nome} ↔ {supplier.nome}: €{prezzo_unitario}")
+            
+            # 🌟 SEMPRE aggiorna il fornitore preferito all'ultimo fornitore che ha fornito l'ingrediente
+            if ingredient.fornitore_preferito_id != supplier.id:
+                if old_preferred_supplier:
+                    logger.info(f"🔄 Cambio fornitore preferito per {ingredient.nome}: {old_preferred_supplier} → {supplier.nome}")
+                else:
+                    logger.info(f"🌟 Impostato {supplier.nome} come primo fornitore preferito per {ingredient.nome}")
                 
-                # Se questo è il primo fornitore per questo ingrediente, impostalo come preferito
-                if not ingredient.fornitore_preferito_id:
-                    ingredient.fornitore_preferito_id = supplier.id
-                    ingredient.updated_at = datetime.utcnow()
-                    logger.info(f"🌟 Impostato {supplier.nome} come fornitore preferito per {ingredient.nome}")
+                # Aggiorna fornitore preferito
+                ingredient.fornitore_preferito_id = supplier.id
+                ingredient.updated_at = datetime.utcnow()
+                
+                # Aggiorna/crea note sull'ingrediente per tracciare il cambio
+                cambio_note = f"Fornitore preferito cambiato a {supplier.nome} il {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                if old_preferred_supplier:
+                    cambio_note = f"Fornitore preferito: {old_preferred_supplier} → {supplier.nome} il {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+                
+                if ingredient.note:
+                    ingredient.note += f"\n• {cambio_note}"
+                else:
+                    ingredient.note = cambio_note
+            else:
+                logger.info(f"✅ {supplier.nome} confermato come fornitore preferito per {ingredient.nome}")
             
             return True
             
@@ -936,11 +962,12 @@ class PDFInvoiceProcessor:
             }
             logger.info(f"✅ Fornitore gestito: {supplier.nome} (ID: {supplier.id})")
             
-            # Filtra solo gli articoli alimentari per il matching
-            food_items = [item for item in items_data if item.get('is_food_ingredient', False)]
+            # 🚨 IMPORTANTE: Processa TUTTI gli articoli (non solo alimentari)
+            # Il sistema è specifico per fatture ingredienti, quindi tutto deve essere inserito
+            all_items = items_data  # Non filtrare più per is_food_ingredient
             result['items_processed'] = len(items_data)
             
-            logger.info(f"🍽️ Articoli alimentari identificati: {len(food_items)}/{len(items_data)}")
+            logger.info(f"📦 TUTTI gli articoli verranno processati: {len(all_items)}/{len(items_data)}")
             
             # Log quality checks dal parser
             doc_checks = parsed_data.get('doc_checks', {})
@@ -949,10 +976,10 @@ class PDFInvoiceProcessor:
             else:
                 logger.warning(f"⚠️ Controllo totali: differenza di €{doc_checks.get('totale_diff', 0)}")
             
-            # Fai matching e aggiorna ingredienti
-            if food_items:
-                logger.info("🔄 Avvio matching e aggiornamento ingredienti dal JSON...")
-                matching_results = self.match_and_update_ingredients(food_items, supplier)
+            # Fai matching e aggiorna ingredienti per TUTTI gli articoli
+            if all_items:
+                logger.info("🔄 Avvio matching e aggiornamento di TUTTI gli ingredienti dal JSON...")
+                matching_results = self.match_and_update_ingredients(all_items, supplier)
                 result['matching_results'] = matching_results
                 
                 logger.info("💾 Commit modifiche al database...")
@@ -964,7 +991,7 @@ class PDFInvoiceProcessor:
                     db.session.rollback()
                     raise commit_error
             else:
-                logger.warning("⚠️ Nessun ingrediente alimentare trovato da processare")
+                logger.warning("⚠️ Nessun articolo trovato da processare")
                 matching_results = {
                     'matched': 0,
                     'created': 0,
@@ -979,9 +1006,10 @@ class PDFInvoiceProcessor:
             logger.info(f"📊 Riepilogo finale:")
             logger.info(f"   • Fornitore: {supplier.nome} (confidence: {supplier_data.get('confidence', 'N/A')})")
             logger.info(f"   • Articoli processati: {len(items_data)}")
-            logger.info(f"   • Ingredienti trovati: {matching_results.get('matched', 0)}")
+            logger.info(f"   • Ingredienti trovati/aggiornati: {matching_results.get('matched', 0)}")
             logger.info(f"   • Ingredienti creati: {matching_results.get('created', 0)}")
             logger.info(f"   • Associazioni aggiornate: {matching_results.get('updated', 0)}")
+            logger.info(f"   • Articoli saltati: {matching_results.get('skipped', 0)}")
             logger.info(f"   • Totali documento: €{parsed_data.get('riepilogo', {}).get('totale', 0)} (match: {doc_checks.get('totale_match', False)})")
             
         except Exception as e:

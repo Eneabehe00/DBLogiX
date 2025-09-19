@@ -63,15 +63,56 @@ class InvoiceParserService:
                 for page_num, page in enumerate(pdf.pages):
                     page_tables = page.extract_tables()
                     if page_tables:
-                        for table in page_tables:
-                            if table and len(table) > 1:  # Almeno header + 1 riga
+                        for table_idx, table in enumerate(page_tables):
+                            if not table:
+                                continue
+                            
+                            # Tabelle multi-riga (almeno header + 1 riga)
+                            if len(table) > 1:
                                 tables.append(table)
+                                logger.info(f"✅ Aggiunta tabella pagina {page_num+1}:{table_idx+1} - {len(table)} righe")
+                            
+                            # Tabelle a riga singola se sembrano contenere dati strutturati
+                            elif len(table) == 1 and table[0]:
+                                row = table[0]
+                                # Verifica se la riga contiene almeno 3 colonne con dati significativi
+                                valid_columns = [col for col in row if col and str(col).strip()]
+                                if len(valid_columns) >= 3:
+                                    # Verifica se contiene numeri (prezzi/quantità)
+                                    has_numbers = any(self._contains_number(str(col)) for col in row)
+                                    if has_numbers:
+                                        # Crea una pseudo-tabella con header semplice per compatibilità
+                                        pseudo_table = [
+                                            ['Descrizione', 'Quantità', 'U.M.', 'Prezzo', 'Totale'],  # Header standard
+                                            row  # Dati
+                                        ]
+                                        tables.append(pseudo_table)
+                                        logger.info(f"✅ Aggiunta tabella a riga singola pagina {page_num+1}:{table_idx+1} - dati: {row}")
             
             logger.info(f"Trovate {len(tables)} tabelle nel PDF")
             return tables
         except Exception as e:
             logger.error(f"Errore nell'estrazione delle tabelle: {str(e)}")
             return []
+    
+    def _contains_number(self, text: str) -> bool:
+        """Verifica se una stringa contiene numeri (per prezzi, quantità, ecc.)"""
+        if not text:
+            return False
+        
+        # Pattern per numeri con possibili simboli di valuta e formati EU
+        number_patterns = [
+            r'\d+[,.]?\d*',  # Numeri semplici: 123, 12.5, 12,5
+            r'€\s*\d+[,.]?\d*',  # Con euro: € 12,50
+            r'\d+[,.]?\d*\s*€',  # Euro dopo: 12,50 €
+            r'\$\s*\d+[,.]?\d*'   # Con dollaro
+        ]
+        
+        for pattern in number_patterns:
+            if re.search(pattern, text):
+                return True
+        
+        return False
     
     def _normalize_piva(self, piva: str) -> str:
         """Normalizza P.IVA al formato standard"""
@@ -126,56 +167,108 @@ class InvoiceParserService:
         
         lines = text.split('\n')
         
-        # Pattern più robusti per P.IVA e CF
-        piva_pattern = r'(?:P\.?\s*IVA|PARTITA\s*IVA)[:\s]*([A-Z]{2}\s?\d{11}|\d{11})'
-        cf_pattern = r'(?:C\.?\s*F\.|CODICE\s*FISCALE)[:\s]*([A-Z0-9]{11,16})'
+        # Pattern più robusti e flessibili per P.IVA e CF
+        piva_patterns = [
+            r'(?:P\.?\s*IVA|PARTITA\s*IVA)[:\s]*([A-Z]{2}\s?\d{11}|\d{11})',  # Standard: P.IVA: IT12345678901 o P.IVA: 12345678901
+            r'(?:P\.?\s*I\.?\s*V\.?\s*A\.?)[:\s]*([A-Z]{2}\s?\d{11}|\d{11})',  # Varianti: P.I.V.A., PIV.A, etc.
+            r'\b([A-Z]{2}\d{11})\b',  # Solo codice: IT12345678901
+            r'\b(\d{11})\b(?=\s*(?:Roma|Milano|Firenze|Bologna|Napoli|\w+\s*\([A-Z]{2}\)))',  # 11 cifre + città
+            r'VAT[:\s]*([A-Z]{2}\d{11}|\d{11})',  # VAT Number
+        ]
+        
+        cf_patterns = [
+            r'(?:C\.?\s*F\.|CODICE\s*FISCALE)[:\s]*([A-Z0-9]{11,16})',  # Standard
+            r'(?:COD\.?\s*FISC\.?)[:\s]*([A-Z0-9]{11,16})',  # Abbreviato
+            r'(?:TAX\s*CODE)[:\s]*([A-Z0-9]{11,16})',  # Inglese
+        ]
+        
         email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        phone_pattern = r'(?:\+39\s?)?(?:\d{3}\s?\d{3}\s?\d{4}|\d{3}\.\d{3}\.\d{4}|\d{10})'
+        
+        # Pattern telefono più flessibili
+        phone_patterns = [
+            r'(?:Tel\.?|Telefono|Phone)[:\s]*(\+39\s?)?(\d{2,3}[\s\-\.]?\d{3,4}[\s\-\.]?\d{3,4})',
+            r'(?:\+39\s?)?(\d{3}\s?\d{3}\s?\d{4}|\d{3}\.\d{3}\.\d{4}|\d{10})',
+            r'(\d{2,3}[\s\-\/]\d{6,8})',  # Formati locali: 06-12345678
+        ]
         
         confidence_scores = []
         
-        # Estrazione dati
+        # Estrazione dati con pattern multipli
         for line in lines:
             line_upper = line.upper()
             
-            # P.IVA
-            piva_match = re.search(piva_pattern, line_upper)
-            if piva_match and not supplier_info['partita_iva']:
-                supplier_info['partita_iva'] = self._normalize_piva(piva_match.group(1))
-                confidence_scores.append(0.95)  # Alta confidence per P.IVA
+            # P.IVA - prova tutti i pattern
+            if not supplier_info['partita_iva']:
+                for pattern in piva_patterns:
+                    piva_match = re.search(pattern, line_upper)
+                    if piva_match:
+                        supplier_info['partita_iva'] = self._normalize_piva(piva_match.group(1))
+                        confidence_scores.append(0.95)  # Alta confidence per P.IVA
+                        logger.info(f"📋 P.IVA trovata: {supplier_info['partita_iva']} usando pattern: {pattern}")
+                        break
             
-            # Codice Fiscale
-            cf_match = re.search(cf_pattern, line_upper)
-            if cf_match and not supplier_info['codice_fiscale']:
-                supplier_info['codice_fiscale'] = cf_match.group(1).replace(' ', '')
-                confidence_scores.append(0.9)
+            # Codice Fiscale - prova tutti i pattern
+            if not supplier_info['codice_fiscale']:
+                for pattern in cf_patterns:
+                    cf_match = re.search(pattern, line_upper)
+                    if cf_match:
+                        supplier_info['codice_fiscale'] = cf_match.group(1).replace(' ', '')
+                        confidence_scores.append(0.9)
+                        logger.info(f"📋 CF trovato: {supplier_info['codice_fiscale']}")
+                        break
             
             # Email
-            email_match = re.search(email_pattern, line)
-            if email_match and not supplier_info['email']:
-                supplier_info['email'] = email_match.group(0)
-                confidence_scores.append(0.9)
+            if not supplier_info['email']:
+                email_match = re.search(email_pattern, line)
+                if email_match:
+                    supplier_info['email'] = email_match.group(0)
+                    confidence_scores.append(0.9)
+                    logger.info(f"📧 Email trovata: {supplier_info['email']}")
             
-            # Telefono
-            phone_match = re.search(phone_pattern, line)
-            if phone_match and not supplier_info['telefono']:
-                supplier_info['telefono'] = phone_match.group(0)
-                confidence_scores.append(0.85)
+            # Telefono - prova tutti i pattern
+            if not supplier_info['telefono']:
+                for pattern in phone_patterns:
+                    phone_match = re.search(pattern, line)
+                    if phone_match:
+                        # Estrai il numero completo
+                        if phone_match.lastindex and phone_match.lastindex > 1:
+                            # Pattern con gruppi multipli (es. Tel: +39 06-1234567)
+                            phone_parts = [g for g in phone_match.groups() if g]
+                            supplier_info['telefono'] = ''.join(phone_parts).replace(' ', '').replace('-', '').replace('.', '')
+                        else:
+                            # Pattern singolo
+                            supplier_info['telefono'] = phone_match.group(0)
+                        
+                        confidence_scores.append(0.85)
+                        logger.info(f"📞 Telefono trovato: {supplier_info['telefono']}")
+                        break
             
             # Indirizzo (linee con CAP o numeri civici)
             if not supplier_info['indirizzo'] and re.search(r'\d{5}|\b\d{1,4}\s+[A-Za-z]', line):
                 supplier_info['indirizzo'] = line.strip()
                 confidence_scores.append(0.7)
         
-        # Estrazione denominazione sociale (più conservativa)
+        # Estrazione denominazione sociale (più conservativa e precisa)
         ignore_keywords = [
             'cedente', 'prestatore', 'fornitore', 'supplier', 'venditore', 'seller',
-            'fattura', 'invoice', 'ragione sociale', 'denominazione', 'data'
+            'fattura', 'invoice', 'ragione sociale', 'denominazione', 'data',
+            'documento', 'number', 'numero', 'doc', 'n.', 'nr'
         ]
         
-        for i, line in enumerate(lines[:20]):  # Solo prime 20 righe
+        # Pattern per identificare numeri di fattura/documenti
+        document_patterns = [
+            r'fattura\s*n\.?\s*\d+',
+            r'invoice\s*n\.?\s*\d+', 
+            r'doc\s*n\.?\s*\d+',
+            r'n\.?\s*\d{4}[\/\-]\d+',
+            r'^\d{4}[\/\-]\d+',
+            r'data\s*[:]*\s*\d+[\/\-]\d+',
+            r'del\s+\d+[\/\-]\d+'
+        ]
+        
+        for i, line in enumerate(lines[:25]):  # Cerca nelle prime 25 righe
             line_clean = line.strip()
-            if len(line_clean) < 3 or len(line_clean) > 100:
+            if len(line_clean) < 3 or len(line_clean) > 150:
                 continue
             
             line_upper = line.upper()
@@ -184,37 +277,158 @@ class InvoiceParserService:
             if any(ignore_word in line_upper for ignore_word in ignore_keywords):
                 continue
             
+            # Salta righe che sono documenti/numeri fattura
+            is_document = False
+            for pattern in document_patterns:
+                if re.search(pattern, line_upper):
+                    is_document = True
+                    break
+            if is_document:
+                continue
+            
             # Salta righe che sono solo numeri, date o codici
-            if re.match(r'^[\d\s\-\/\.]+$', line_clean):
+            if re.match(r'^[\d\s\-\/\.:]+$', line_clean):
                 continue
             
             # Salta righe con P.IVA o CF
             if re.search(r'P\.?\s*IVA|PARTITA\s*IVA|C\.?\s*F\.|CODICE\s*FISCALE', line_upper):
                 continue
             
-            # Candidato con forma societaria (alta priorità)
-            if any(form in line_upper for form in ['S.R.L.', 'S.P.A.', 'S.N.C.', 'S.A.S.', 'SRL', 'SPA', 'SNC', 'SAS']):
-                supplier_info['denominazione'] = line_clean
-                confidence_scores.append(0.95)
-                break
+            # Salta righe che iniziano con giorni della settimana o mesi
+            if re.match(r'^(LUNEDI|MARTEDI|MERCOLEDI|GIOVEDI|VENERDI|SABATO|DOMENICA|GENNAIO|FEBBRAIO|MARZO|APRILE|MAGGIO|GIUGNO|LUGLIO|AGOSTO|SETTEMBRE|OTTOBRE|NOVEMBRE|DICEMBRE)', line_upper):
+                continue
+                
+            # Salta righe che sono chiaramente indirizzi (iniziano con via, corso, etc)
+            if re.match(r'^(VIA|V\.LE|CORSO|C\.SO|PIAZZA|P\.ZA|VIALE|STRADA)\s', line_upper):
+                continue
             
-            # Candidato nelle prime righe (priorità media)
-            elif i < 10 and 5 < len(line_clean) < 60:
-                word_count = len(line_clean.split())
-                if 2 <= word_count <= 6 and not line_clean.isdigit():
-                    supplier_info['denominazione'] = line_clean
-                    confidence_scores.append(0.8)
+            # PRIORITÀ ALTA: Candidato con forma societaria
+            if any(form in line_upper for form in ['S.R.L.', 'S.P.A.', 'S.N.C.', 'S.A.S.', 'SRL', 'SPA', 'SNC', 'SAS', 'S.R.L', 'S.P.A', 'S.N.C', 'S.A.S']):
+                # Pulisce nome fornitore da tag HTML e parti non necessarie
+                cleaned_name = self._clean_supplier_name(line_clean)
+                if cleaned_name:
+                    supplier_info['denominazione'] = cleaned_name
+                    confidence_scores.append(0.95)
+                    logger.info(f"📍 Nome fornitore trovato e pulito (forma societaria): '{cleaned_name}' alla riga {i+1}")
                     break
+            
+            # PRIORITÀ MEDIA: Candidato che sembra nome aziendale (non nelle primissime righe per evitare intestazioni)
+            elif 3 <= i < 15 and 10 < len(line_clean) < 120:
+                word_count = len(line_clean.split())
+                # Deve avere almeno 2 parole e non essere solo numeri
+                if 2 <= word_count <= 10 and not line_clean.isdigit():
+                    # Verifica che non sia un indirizzo o info di contatto
+                    if not re.search(r'@|\+39|\d{5}|www\.|http', line_clean.lower()):
+                        # Verifica che contenga almeno una lettera maiuscola (tipico di nomi aziendali)
+                        if any(c.isupper() for c in line_clean):
+                            cleaned_name = self._clean_supplier_name(line_clean)
+                            if cleaned_name:
+                                supplier_info['denominazione'] = cleaned_name
+                                confidence_scores.append(0.75)
+                                logger.info(f"📍 Nome fornitore trovato e pulito (candidato valido): '{cleaned_name}' alla riga {i+1}")
+                                break
         
         # Calcola confidence media
         supplier_info['confidence'] = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.3
         
         return supplier_info
     
+    def _clean_supplier_name(self, raw_name: str) -> str:
+        """Pulisce il nome fornitore da tag HTML, SPETT.LE e altre parti non necessarie"""
+        if not raw_name:
+            return ""
+        
+        # Rimuovi tag HTML (es. <b>, </b>)
+        cleaned = re.sub(r'<[^>]+>', '', raw_name)
+        
+        # Rimuovi "SPETT.LE:" e varianti
+        cleaned = re.sub(r'\b(?:SPETT\.?LE?\.?:?|EGREGIO|GENTILE|GENT\.?|ALLA\s+CORTESE\s+ATTENZIONE)\b', '', cleaned, flags=re.IGNORECASE)
+        
+        # Gestisce fatture elettroniche con più denominazioni
+        # Es: "Denominazione: MAVIC RICAMBI SRL Denominazione: DB COMPANY SRL A SOCIO UNICO"
+        if 'denominazione:' in cleaned.lower():
+            # Estrai tutte le denominazioni
+            denominations = re.findall(r'denominazione:\s*([^d]*?)(?=\s*denominazione:|$)', cleaned, re.IGNORECASE)
+            if denominations:
+                # Prendi la prima (fornitore) e scarta la seconda (cliente)
+                cleaned = denominations[0].strip()
+                logger.info(f"   🔧 Estratta denominazione da fattura elettronica: '{cleaned}'")
+        
+        # Rimuovi doppi spazi e normalizza
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+        
+        # Rimuovi caratteri di punteggiatura all'inizio e fine
+        cleaned = cleaned.strip('.,;:-')
+        
+        # Se rimane solo spazio o troppo corto, return vuoto
+        if len(cleaned.strip()) < 3:
+            return ""
+        
+        return cleaned.strip()
+    
+    def _is_total_or_tax_row(self, description: str) -> bool:
+        """Verifica intelligente se una riga è un totale/IVA o contiene articoli validi"""
+        if not description:
+            return True
+        
+        desc_lower = description.lower()
+        desc_words = desc_lower.split()
+        
+        # Pattern che indicano chiaramente righe di totale/IVA
+        clear_total_patterns = [
+            r'^(?:totale|total|subtotale|subtotal|imponibile|importo\s+totale)',  # Inizia con totale
+            r'^(?:iva|imposta|tax)[\s\d%]+$',  # Solo IVA + percentuale
+            r'^(?:sconto|discount|maggiorazione)',  # Sconti
+            r'^\s*€?\s*[\d.,]+\s*$',  # Solo importo numerico
+            r'^(?:esigibilità|riferimenti\s+normativi)',  # Termini fiscali
+            r'^(?:bollo|contributo|conai)',  # Tasse aggiuntive
+        ]
+        
+        # Se corrisponde a pattern chiari di totale, è sicuramente da saltare
+        for pattern in clear_total_patterns:
+            if re.search(pattern, desc_lower):
+                return True
+        
+        # Pattern che indicano presenza di articoli/prodotti
+        product_indicators = [
+            r'\b(?:cod[._]?\s*[a-z0-9]+|art[._]?\s*[a-z0-9]+)',  # Codici articolo
+            r'\b(?:mod[._]?\s*[a-z0-9]+)',  # Modelli
+            r'\b(?:ricambi|ricambio|spare|part)',  # Ricambi
+            r'\b(?:resistenza|interruttore|disco|smeriglio|guarnizione)',  # Nomi prodotti tecnici
+            r'\b(?:kg|lt|pz|nr|conf|mt|cm)\b',  # Unità di misura
+            r'\d+[,.]?\d*\s+[\d,]+\s+[a-z]+',  # Pattern prezzo quantità
+        ]
+        
+        # Se contiene indicatori di prodotti, anche se ha "22,00" (IVA %), è probabilmente un articolo
+        for pattern in product_indicators:
+            if re.search(pattern, desc_lower):
+                logger.info(f"   🔍 Riga riconosciuta come articolo (pattern: {pattern[:30]}...)")
+                return False
+        
+        # Controllo lunghezza: righe molto lunghe spesso contengono articoli multipli
+        if len(description) > 200:
+            # Verifica se contiene più righe (fatture elettroniche compresse)
+            if '\n' in description or re.search(r'[A-Z0-9]+\s+[A-Z].*?\d+[,.]?\d+.*?\d+[,.]?\d+', description):
+                logger.info(f"   🔍 Riga lunga riconosciuta come articoli multipli")
+                return False
+        
+        # Filtri tradizionali per IVA/totali semplici
+        simple_tax_words = ['iva', 'imposta', 'totale', 'subtotale', 'sconto', 'trasporto']
+        return any(word in desc_words for word in simple_tax_words)
+    
     def _split_multiple_items(self, description: str) -> List[str]:
-        """Split descrizioni più conservativo - solo per liste chiaramente identificabili"""
+        """Split descrizioni più conservativo - con supporto per fatture elettroniche compresse"""
         if not description:
             return []
+        
+        # SUPPORTO FATTURE ELETTRONICHE COMPRESSE
+        # Pattern per fatture elettroniche con articoli compressi in una cella
+        if len(description) > 200 and '\n' in description:
+            # Cerca pattern articoli: "NOME ARTICOLO quantità prezzo ... importo"
+            electronic_items = self._extract_electronic_invoice_items(description)
+            if len(electronic_items) > 1:
+                logger.info(f"🔍 Estratti {len(electronic_items)} articoli da fattura elettronica compressa")
+                return electronic_items[:15]  # Limite per fatture complesse
         
         # Pattern per liste numerate (1) ... 2) ...)
         if re.search(r'\d+\)\s*\S', description):
@@ -238,6 +452,115 @@ class InvoiceParserService:
         
         # Default: non splittare
         return [description]
+    
+    def _extract_electronic_invoice_items(self, compressed_text: str) -> List[str]:
+        """Estrae articoli da fatture elettroniche con contenuto compresso"""
+        items = []
+        
+        # Pattern per riconoscere articoli in fatture elettroniche
+        # Esempio: "RESISTENZA TAGLIAFILM DISPENSER SIRMAN 2,00 25,60 NR -50.00% 22,00 24,83"
+        item_patterns = [
+            # Pattern principale: NOME ARTICOLO + quantità + prezzo + altri dati
+            r'([A-Z][A-Z\s]+?)\s+(\d+[,.]?\d*)\s+(\d+[,.]?\d*)\s+[A-Z]*\s*.*?(\d+[,.]?\d*)\s*\n',
+            # Pattern alternativo per articoli con codici
+            r'([A-Z][A-Z\s]+?)\s+(\d+[,.]?\d*)\s+(\d+[,.]?\d*)\s+.*?(\d+[,.]?\d*)',
+            # Pattern per articoli con MOD./COD.
+            r'([A-Z][A-Z\s]+?)\s*\n(?:MOD\.|COD_BUS).*?\n',
+        ]
+        
+        # Split per linee e cerca articoli
+        lines = compressed_text.split('\n')
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+            
+            # Salta linee vuote o troppo corte
+            if not line or len(line) < 10:
+                i += 1
+                continue
+            
+            # Salta linee che sono chiaramente note o condizioni
+            if any(keyword in line.lower() for keyword in ['documento emesso', 'condizioni', 'contributo', 'articolo', 'comma', 'codice civile']):
+                i += 1
+                continue
+            
+            # Pattern per articoli: cerca linee che iniziano con nome prodotto e hanno numeri
+            # Es: "RESISTENZA TAGLIAFILM DISPENSER SIRMAN 2,00 25,60 NR -50.00% 22,00 24,83"
+            if re.match(r'^[A-Z][A-Z\s]{10,}.*\d+[,.]?\d+.*\d+[,.]?\d+', line):
+                # Estrai il nome del prodotto (prima parte prima dei numeri)
+                name_match = re.match(r'^([A-Z][A-Z\s]+?)(?=\s+\d)', line)
+                if name_match:
+                    product_name = name_match.group(1).strip()
+                    
+                    # Se c'è una linea successiva con MOD./COD., includila nel nome
+                    if i + 1 < len(lines) and re.match(r'MOD\.|COD_BUS', lines[i + 1]):
+                        items.append(product_name)
+                        i += 2  # Salta la linea MOD./COD.
+                        continue
+                    else:
+                        items.append(product_name)
+                
+            # Pattern alternativo: cerca linee che iniziano con nomi prodotti tecnici
+            elif re.match(r'^(?:RESISTENZA|INTERRUTTORE|DISCO|SMERIGLIO|GUARNIZIONE|MOTORE|VALVOLA|FILTRO|POMPA|CUSCINETTO)', line, re.IGNORECASE):
+                # Estrai il nome completo fino ai numeri
+                name_match = re.match(r'^([A-Z][^0-9]+?)(?=\s+\d|\s*$)', line, re.IGNORECASE)
+                if name_match:
+                    product_name = name_match.group(1).strip()
+                    items.append(product_name)
+            
+            i += 1
+        
+        # Pulisci i nomi dei prodotti
+        cleaned_items = []
+        for item in items:
+            # Rimuovi caratteri extra e normalizza
+            cleaned = re.sub(r'\s+', ' ', item).strip()
+            
+            # Rimuovi parti che sono chiaramente dati numerici residui
+            cleaned = re.sub(r'\d+[,.]?\d*\s*[€%]*\s*$', '', cleaned).strip()
+            
+            # Deve essere lungo almeno 5 caratteri per essere valido
+            if len(cleaned) >= 5:
+                cleaned_items.append(cleaned)
+        
+        # Rimuovi duplicati mantenendo l'ordine
+        seen = set()
+        unique_items = []
+        for item in cleaned_items:
+            if item not in seen:
+                seen.add(item)
+                unique_items.append(item)
+        
+        logger.info(f"   🔧 Parser elettronico ha trovato {len(unique_items)} articoli: {unique_items}")
+        
+        return unique_items
+    
+    def _parse_quantity_and_unit(self, qty_str: str) -> Tuple[Optional[float], Optional[str]]:
+        """Parsing intelligente di quantità e unità di misura da stringhe come '25 kg', '5 lt'"""
+        if not qty_str:
+            return None, None
+        
+        # Pattern per catturare numero + unità di misura
+        # Es: "25 kg", "5.5 lt", "10,5 pz", "1 conf"
+        pattern = r'([\d.,]+)\s*([a-zA-Z]+)'
+        match = re.search(pattern, qty_str.strip())
+        
+        if match:
+            quantity_str = match.group(1)
+            unit_str = match.group(2)
+            
+            # Parse quantità in formato EU
+            quantity = self._parse_eu_number(quantity_str)
+            
+            # Normalizza unità di misura
+            unit = self._normalize_unit(unit_str)
+            
+            return quantity, unit
+        else:
+            # Se non trova pattern, prova solo il numero
+            quantity = self._parse_eu_number(qty_str)
+            return quantity, None
     
     def _normalize_unit(self, unit_text: str) -> Optional[str]:
         """Normalizza unità di misura"""
@@ -385,8 +708,15 @@ class InvoiceParserService:
             logger.info(f"   Tabella {table_idx+1}: desc={desc_idx}, qty={qty_idx}, uom={uom_idx}, price={price_idx}, total={total_idx}")
             
             # Processa righe
+            processed_rows = 0
+            skipped_rows = 0
+            
             for row_idx, row in enumerate(table[1:], 1):
+                logger.info(f"   🔄 Processando riga {row_idx}/{len(table)-1}: {row}")
+                
                 if not row or len(row) == 0:
+                    logger.info(f"   ⏭️ Riga {row_idx} saltata: vuota")
+                    skipped_rows += 1
                     continue
                 
                 # Estrae descrizione
@@ -397,28 +727,35 @@ class InvoiceParserService:
                 
                 # Valida descrizione
                 if not description or len(description) < 3:
+                    logger.info(f"   ⏭️ Riga {row_idx} saltata: descrizione troppo corta ('{description}')")
+                    skipped_rows += 1
                     continue
                 
-                # Salta totali e intestazioni
-                if any(word in description.lower() for word in ['totale', 'total', 'iva', 'imposta', 'sconto', 'trasporto']):
+                # Verifica se è davvero una riga di totale/IVA o se contiene articoli validi
+                if self._is_total_or_tax_row(description):
+                    logger.info(f"   ⏭️ Riga {row_idx} saltata: sembra totale/IVA ('{description[:100]}...')")
+                    skipped_rows += 1
                     continue
                 
                 # Split descrizioni se necessario
                 split_descriptions = self._split_multiple_items(description)
                 
                 for single_desc in split_descriptions:
-                    # Estrai dati numerici
+                    # Estrai dati numerici con parsing intelligente di quantità e UOM
                     quantity = None
+                    unit_of_measure = None
+                    
                     if qty_idx is not None and qty_idx < len(row):
                         qty_str = str(row[qty_idx]).strip() if row[qty_idx] is not None else ''
-                        quantity = self._parse_eu_number(qty_str)
+                        # Parsing intelligente di "25 kg", "5 lt", etc.
+                        quantity, unit_of_measure = self._parse_quantity_and_unit(qty_str)
                     
-                    unit_of_measure = None
-                    if uom_idx is not None and uom_idx < len(row):
+                    # Se non ha trovato UOM nella quantità, cerca in colonna separata
+                    if not unit_of_measure and uom_idx is not None and uom_idx < len(row):
                         uom_str = str(row[uom_idx]).strip() if row[uom_idx] is not None else ''
                         unit_of_measure = self._normalize_unit(uom_str)
                     
-                    # Se UOM non trovata in colonna, prova a indovinare dalla descrizione
+                    # Se UOM ancora non trovata, prova a indovinare dalla descrizione
                     if not unit_of_measure:
                         unit_of_measure = self._guess_unit_from_description(single_desc)
                     
@@ -483,8 +820,11 @@ class InvoiceParserService:
                     }
                     
                     items.append(item)
+                    processed_rows += 1
+            
+            logger.info(f"   📊 Tabella {table_idx+1} completata: {processed_rows} righe processate, {skipped_rows} saltate")
         
-        logger.info(f"✅ Estratti {len(items)} articoli dalle tabelle")
+        logger.info(f"✅ Estratti {len(items)} articoli dalle {len(tables)} tabelle")
         return items
     
     def _find_column_index(self, header: List[str], keywords: List[str]) -> Optional[int]:

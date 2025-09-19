@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block title %}I Miei Task{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+<style>
+/* Mobile-First Design Variables */
+:root {
+    --primary-color: #2c3e50;
+    --primary-light: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --background-light: #f8f9fa;
+    --text-dark: #2c3e50;
+    --text-secondary: #34495e;
+    --text-info: #2980b9;
+    --border-color: #dee2e6;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Mobile Dashboard Header - Rimossa configurazione sticky */
+.mobile-dashboard-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 20px 16px 16px;
+    box-shadow: var(--shadow-md);
+}
+
+.mobile-user-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.mobile-user-avatar {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.mobile-user-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+.mobile-user-role {
+    font-size: 0.85rem;
+    opacity: 1;
+    color: rgba(255,255,255,0.95);
+    margin: 0;
+}
+
+.mobile-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.mobile-action-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.mobile-action-btn:hover {
+    background: rgba(255,255,255,0.25);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.mobile-action-btn.notification-btn .badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: var(--danger-color);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 2px solid white;
+}
+
+.mobile-quick-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.mobile-stat-item {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.mobile-stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.mobile-stat-label {
+    font-size: 0.75rem;
+    opacity: 1;
+    color: rgba(255,255,255,0.95);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Mobile Container */
+.mobile-container {
+    padding: 0 16px 80px;
+    background: var(--background-light);
+    min-height: 100vh;
+}
+
+/* Mobile Task Sections */
+.mobile-task-section {
+    margin-bottom: 24px;
+}
+
+.mobile-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 12px;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.mobile-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mobile-section-count {
+    background: var(--primary-light);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Mobile Task Grid - 2 task per riga */
+.mobile-task-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* Mobile Task Cards - Ottimizzate per layout 2 colonne */
+.mobile-task-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-task-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-light);
+}
+
+.mobile-task-card.priority-high::before {
+    background: var(--danger-color);
+}
+
+.mobile-task-card.priority-medium::before {
+    background: var(--warning-color);
+}
+
+.mobile-task-card.status-completed::before {
+    background: var(--success-color);
+}
+
+.mobile-task-card:active {
+    transform: scale(0.98);
+}
+
+.mobile-task-header {
+    margin-bottom: 8px;
+}
+
+.mobile-task-number {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    background: rgba(52, 152, 219, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.mobile-task-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin: 8px 0;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+}
+
+.mobile-task-badges {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.mobile-badge {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+.mobile-badge.status-pending {
+    background: rgba(52, 73, 94, 0.15);
+    color: var(--text-secondary);
+}
+
+.mobile-badge.status-in_progress {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--warning-color);
+}
+
+.mobile-badge.status-completed {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success-color);
+}
+
+.mobile-badge.priority-high {
+    background: rgba(231, 76, 60, 0.15);
+    color: var(--danger-color);
+}
+
+.mobile-badge.priority-medium {
+    background: rgba(243, 156, 18, 0.15);
+    color: var(--warning-color);
+}
+
+.mobile-badge.priority-low {
+    background: rgba(39, 174, 96, 0.15);
+    color: var(--success-color);
+}
+
+/* Mobile Progress Bar - Dimensioni ottimizzate per 2 colonne */
+.mobile-progress {
+    margin: 10px 0;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.mobile-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.mobile-progress-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.mobile-progress-value {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.mobile-progress-bar {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.mobile-progress-fill {
+    height: 100%;
+    background: var(--primary-light);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.mobile-progress-fill.completed {
+    background: var(--success-color);
+}
+
+/* Mobile Task Meta - Ottimizzata per layout più largo */
+.mobile-task-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.mobile-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    text-align: center;
+}
+
+.mobile-meta-label {
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    font-size: 0.65rem;
+}
+
+.mobile-meta-value {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+/* Empty State */
+.mobile-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    grid-column: 1 / -1;
+}
+
+.mobile-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    opacity: 1;
+    color: var(--text-info);
+}
+
+.mobile-empty-state h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+}
+
+.mobile-empty-state p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Hide desktop elements on mobile */
+@media (max-width: 767px) {
+    .page-header,
+    .filter-form-container,
+    .task-tabs {
+        display: none;
+    }
+    
+    .container-fluid {
+        padding: 0;
+    }
+}
+
+/* Desktop compatibility */
+@media (min-width: 768px) {
+    .mobile-dashboard-header,
+    .mobile-container {
+        display: none;
+    }
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-width: 480px) {
+    .mobile-task-grid {
+        gap: 10px;
+    }
+    
+    .mobile-task-card {
+        padding: 14px;
+        min-height: 150px;
+    }
+    
+    .mobile-task-title {
+        font-size: 0.85rem;
+    }
+    
+    .mobile-badge {
+        font-size: 0.6rem;
+        padding: 2px 5px;
+    }
+}
+
+/* Desktop Styles */
+.task-tabs {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.task-tabs .nav-tabs {
+    border-bottom: 2px solid #f8f9fa;
+    padding: 0 1rem;
+}
+
+.task-tabs .nav-tabs .nav-link {
+    border: none;
+    border-radius: 0;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.task-tabs .nav-tabs .nav-link:hover {
+    background: none;
+    color: #495057;
+    border-color: transparent;
+}
+
+.task-tabs .nav-tabs .nav-link.active {
+    background: none;
+    color: #007bff;
+    border-color: transparent;
+    border-bottom: 2px solid #007bff;
+}
+
+.task-tabs .nav-tabs .nav-link .badge {
+    margin-left: 0.5rem;
+}
+
+.tab-content {
+    padding: 1.5rem;
+}
+
+.filter-form-container .form-control {
+    background: white;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.filter-form-container .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.task-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.clickable-card {
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-2px);
+}
+
+.task-card-footer button {
+    z-index: 10;
+    position: relative;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mobile task card click handlers
+    const mobileTaskCards = document.querySelectorAll('.mobile-task-card');
+    mobileTaskCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const taskId = this.dataset.taskId;
+            if (taskId) {
+                window.location.href = `/tasks/task/${taskId}`;
+            }
+        });
+    });
+    
+    // Pull to refresh
+    let startY = 0;
+    let isRefreshing = false;
+    
+    document.addEventListener('touchstart', function(e) {
+        startY = e.touches[0].pageY;
+    });
+    
+    document.addEventListener('touchmove', function(e) {
+        const currentY = e.touches[0].pageY;
+        const pullDistance = currentY - startY;
+        
+        if (pullDistance > 100 && window.scrollY === 0 && !isRefreshing) {
+            isRefreshing = true;
+            document.body.style.transform = 'translateY(20px)';
+            setTimeout(() => location.reload(), 500);
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+
+
+
+
+<!-- Unified Layout -->
+    <!-- Original desktop content goes here... -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">I Miei Task</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-user-check me-2"></i>I Miei Task
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Task assegnati a {{ current_user.username }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('tasks.notifications') }}" class="action-btn position-relative">
+                        <i class="fas fa-bell"></i> Notifiche
+                        {% if notifications %}
+                        <span class="badge bg-danger position-absolute" style="top: -8px; right: -8px; font-size: 0.7rem;">{{ notifications|length }}</span>
+                        {% endif %}
+                    </a>
+                    <button class="action-btn" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i> Aggiorna
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="stats-card primary">
+                <div class="stats-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div class="stats-number">{{ stats.total_assigned }}</div>
+                <div class="stats-label">Task Assegnati</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="stats-card warning">
+                <div class="stats-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stats-number">{{ stats.pending }}</div>
+                <div class="stats-label">In Attesa</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="stats-card info">
+                <div class="stats-icon">
+                    <i class="fas fa-play"></i>
+                </div>
+                <div class="stats-number">{{ stats.in_progress }}</div>
+                <div class="stats-label">In Corso</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="stats-card success">
+                <div class="stats-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="stats-number">{{ stats.completed }}</div>
+                <div class="stats-label">Completati</div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="stats-card danger">
+                <div class="stats-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stats-number">{{ stats.overdue }}</div>
+                <div class="stats-label">Scaduti</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow-sm mb-4 filter-form-container">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Filtri</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" id="filterForm">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" 
+                               class="form-control" 
+                               id="title" 
+                               name="title" 
+                               value="{{ request.args.get('title', '') }}"
+                               placeholder="Cerca per titolo...">
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-control" id="priority" name="priority">
+                            <option value="">Tutte le priorità</option>
+                            <option value="low" {% if request.args.get('priority') == 'low' %}selected{% endif %}>Bassa</option>
+                            <option value="medium" {% if request.args.get('priority') == 'medium' %}selected{% endif %}>Media</option>
+                            <option value="high" {% if request.args.get('priority') == 'high' %}selected{% endif %}>Alta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-control" id="status" name="status">
+                            <option value="">Tutti gli stati</option>
+                            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>In Attesa</option>
+                            <option value="assigned" {% if request.args.get('status') == 'assigned' %}selected{% endif %}>Assegnato</option>
+                            <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Corso</option>
+                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completato</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" 
+                               class="form-control" 
+                               id="date_from" 
+                               name="date_from" 
+                               value="{{ request.args.get('date_from', '') }}"
+                               title="Data inizio">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" 
+                               class="form-control" 
+                               id="date_to" 
+                               name="date_to" 
+                               value="{{ request.args.get('date_to', '') }}"
+                               title="Data fine">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-search"></i> Applica Filtri
+                        </button>
+                        <a href="{{ url_for('tasks.user_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Reset Filtri
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Tabs -->
+    <div class="task-tabs">
+        <ul class="nav nav-tabs" id="taskTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-tasks" 
+                        type="button" role="tab" aria-controls="active-tasks" aria-selected="true">
+                    <i class="fas fa-play me-2"></i>Task Attivi
+                    <span class="badge bg-primary">{{ active_tasks|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="overdue-tab" data-bs-toggle="tab" data-bs-target="#overdue-tasks" 
+                        type="button" role="tab" aria-controls="overdue-tasks" aria-selected="false">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Task Scaduti
+                    <span class="badge bg-danger">{{ overdue_tasks|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-tasks" 
+                        type="button" role="tab" aria-controls="completed-tasks" aria-selected="false">
+                    <i class="fas fa-check-circle me-2"></i>Task Completati
+                    <span class="badge bg-success">{{ completed_tasks|length }}</span>
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="taskTabsContent">
+            <!-- Active Tasks Tab -->
+            <div class="tab-pane fade show active" id="active-tasks" role="tabpanel" aria-labelledby="active-tab">
+                <div class="task-section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2 text-primary"></i>Task Attivi ({{ active_tasks|length }})
+                    </h5>
+                    <small class="text-muted">Task in corso di lavorazione</small>
+                </div>
+                
+                {% if active_tasks %}
+                <div class="row">
+                    {% for task in active_tasks %}
+                    <div class="col-lg-6 col-xl-4 mb-3">
+                        <div class="task-card task-{{ task.status }} clickable-card" data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}">
+                                <!-- Desktop task card content here -->
+                            <div class="task-card-header">
+                                <h6 class="task-card-title">{{ task.task_number }}</h6>
+                                </div>
+                            <div class="task-card-body">
+                                <h6 class="mb-2">{{ task.title }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="task-empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                    <h5>Nessun task attivo</h5>
+                        <p>Non hai task attivi al momento.</p>
+                </div>
+                {% endif %}
+            </div>
+                </div>
+                                </div>
+                            </div>
+                                    </div>
+{% endblock %} 

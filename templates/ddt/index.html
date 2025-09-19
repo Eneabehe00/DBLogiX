@@ -1,0 +1,962 @@
+{% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
+
+{% block title %}Documenti di Trasporto{% endblock %}
+
+{% block header_title %}Documenti di Trasporto{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">DDT</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Documenti di Trasporto (DDT)
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ ddts.total if ddts else 0 }} documenti nel database</span>
+                    {% if search_query %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ddt.new') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-plus me-1"></i>Nuovo DDT
+                    </a>
+                    <button type="button" class="btn btn-warning action-btn" data-bs-toggle="modal" data-bs-target="#renumberDDTModal">
+                        <i class="fas fa-sort-numeric-up me-1"></i>Rinumera DDT
+                    </button>
+                    <button type="button" class="btn btn-danger action-btn" data-bs-toggle="modal" data-bs-target="#resetDDTModal">
+                        <i class="fas fa-trash-alt me-1"></i>Azzera DDT
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca DDT',
+        'action': url_for('ddt.index'),
+        'search_param': 'search',
+        'placeholder': 'Cerca per cliente o ID DDT...',
+        'current_value': search_query or '',
+        'show_help': true,
+        'help_text': 'Ricerca per nome cliente o ID del DDT',
+        'preserve_params': {},
+        'advanced_filters': [
+            {
+                'id': 'startDate',
+                'name': 'start_date',
+                'label': '📅 Data inizio',
+                'type': 'date',
+                'value': request.args.get('start_date', '')
+            },
+            {
+                'id': 'endDate',
+                'name': 'end_date',
+                'label': '📅 Data fine',
+                'type': 'date',
+                'value': request.args.get('end_date', '')
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': ddts.total if ddts else 0,
+            'label': 'Totale DDT',
+            'icon': 'fas fa-file-invoice',
+            'variant': ''
+        },
+        {
+            'value': ddts.items|length if ddts else 0,
+            'label': 'DDT visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': ddts.page if ddts else 1,
+            'label': 'Pagina corrente',
+            'icon': 'fas fa-bookmark',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': ddts.pages if ddts else 1,
+            'label': 'Totale pagine',
+            'icon': 'fas fa-copy',
+            'variant': 'stat-info'
+        }
+    ]) }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Search Results Info -->
+    {{ render_search_results_info({
+        'search_query': search_query,
+        'total_results': ddts.total if ddts else 0,
+        'visible_results': ddts.items|length if ddts else 0,
+        'current_page': ddts.page if ddts else 1,
+        'total_pages': ddts.pages if ddts else 1,
+        'clear_url': url_for('ddt.index'),
+        'entity_name': 'DDT'
+    }) }}
+
+    <!-- Enhanced DDT List -->
+    <div class="ddt-card card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Documenti</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportDDTs()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if ddts.items %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="ddtTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable-header {% if sort_by == 'id' %}sort-{{ sort_order }}{% endif %}"
+                                data-sort="id">
+                                <i class="fas fa-hashtag me-1"></i>ID
+                            </th>
+                            <th class="sortable-header {% if sort_by == 'cliente_nome' %}sort-{{ sort_order }}{% endif %}"
+                                data-sort="cliente_nome">
+                                <i class="fas fa-user me-1"></i>Cliente
+                            </th>
+                            <th class="sortable-header {% if sort_by == 'date' %}sort-{{ sort_order }}{% endif %}"
+                                data-sort="date">
+                                <i class="fas fa-calendar me-1"></i>Data
+                            </th>
+                            <th class="sortable-header {% if sort_by == 'num_linee' %}sort-{{ sort_order }}{% endif %}"
+                                data-sort="num_linee">
+                                <i class="fas fa-boxes me-1"></i>Articoli
+                            </th>
+                            <th class="sortable-header {% if sort_by == 'totale' %}sort-{{ sort_order }}{% endif %}"
+                                data-sort="totale">
+                                <i class="fas fa-euro-sign me-1"></i>Totale
+                            </th>
+                            <th class="sortable-header {% if sort_by == 'created_by' %}sort-{{ sort_order }}{% endif %}"
+                                data-sort="created_by">
+                                <i class="fas fa-tag me-1"></i>Origine
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ddt in ddts.items %}
+                        <tr data-href="{{ url_for('ddt.detail', ddt_id=ddt.internal_id) }}" style="cursor: pointer;" class="clickable-row">
+                            <td data-label="ID">
+                                <span class="badge bg-primary">{{ ddt.id }}</span>
+                            </td>
+                            <td data-label="Cliente">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-circle text-muted me-2"></i>
+                                    <div class="text-truncate" style="max-width: 160px;" title="{{ ddt.cliente_nome }}">
+                                        {{ ddt.cliente_nome }}
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Data">
+                                <span class="text-muted">{{ ddt.formatted_date }}</span>
+                            </td>
+                            <td data-label="Articoli">
+                                <span class="badge bg-info">{{ ddt.num_linee }}</span>
+                            </td>
+                            <td data-label="Totale">
+                                <strong class="text-success">€ {{ "%.2f"|format(ddt.totale) }}</strong>
+                            </td>
+                            <td data-label="Origine">
+                                {% if ddt.created_by == 'DBLogiX' %}
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-desktop me-1"></i>DBLogiX
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-weight me-1"></i>Bilancia
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Enhanced Pagination -->
+            {% if ddts.pages > 1 %}
+            <div class="p-3 border-top bg-light">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if ddts.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('ddt.index', page=ddts.prev_num, search=search_query) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in ddts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == ddts.page %}
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('ddt.index', page=page_num, search=search_query) }}">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if ddts.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('ddt.index', page=ddts.next_num, search=search_query) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Pagina {{ ddts.page }} di {{ ddts.pages }} - {{ ddts.total }} elementi totali
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-file-invoice text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessun DDT trovato</h5>
+                <p class="text-muted">Non ci sono documenti di trasporto nel sistema. Clicca su "Nuovo DDT" per crearne uno.</p>
+                <a href="{{ url_for('ddt.new') }}" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-plus me-2"></i>Crea Nuovo DDT
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Rinumerazione DDT (SEMPLIFICATA) -->
+<div class="modal fade" id="renumberDDTModal" tabindex="-1" aria-labelledby="renumberDDTModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="renumberDDTModalLabel">
+                    <i class="fas fa-sort-numeric-up me-2"></i>Imposta Numero di Partenza DDT
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Come funziona:</strong> Imposta il numero da cui partiranno i prossimi DDT. Se imposti 150, il prossimo DDT avrà ID 150.
+                </div>
+                <form id="renumberDDTForm">
+                    <div class="mb-3">
+                        <label for="newStartNumber" class="form-label">
+                            <i class="fas fa-hashtag me-1"></i>Prossimo numero DDT
+                        </label>
+                        <input type="number" class="form-control" id="newStartNumber" name="new_start_number" 
+                               min="1" required placeholder="Es. 150">
+                        <div class="form-text">
+                            Il prossimo DDT creato avrà questo numero come ID.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmRenumber" required>
+                            <label class="form-check-label" for="confirmRenumber">
+                                Confermo di voler impostare questa numerazione
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-warning" id="confirmRenumberBtn" disabled>
+                    <i class="fas fa-sort-numeric-up me-1"></i>Imposta Numerazione
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Azzeramento DDT (SEMPLIFICATA) -->
+<div class="modal fade" id="resetDDTModal" tabindex="-1" aria-labelledby="resetDDTModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="resetDDTModalLabel">
+                    <i class="fas fa-trash-alt me-2"></i>Azzera tutti i DDT
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>ATTENZIONE OPERAZIONE IRREVERSIBILE!</strong>
+                </div>
+                
+                <h6><i class="fas fa-info-circle me-2"></i>Cosa succederà:</h6>
+                <ul>
+                    <li><strong>Eliminazione totale:</strong> Tutti i DDT verranno cancellati dal database</li>
+                    <li><strong>Reset numerazione:</strong> Il prossimo DDT partirà da ID 1</li>
+                    <li><strong>Nessun backup:</strong> L'operazione è immediata e irreversibile</li>
+                </ul>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-database me-2"></i>
+                    <strong>DDT da eliminare:</strong> {{ ddts.total if ddts else 0 }} documenti
+                </div>
+                
+                <form id="resetDDTForm">
+                    <div class="mb-3">
+                        <label for="confirmText" class="form-label">
+                            <i class="fas fa-keyboard me-1"></i>Per confermare, digita: <strong>ELIMINA TUTTO</strong>
+                        </label>
+                        <input type="text" class="form-control" id="confirmText" name="confirm_text" 
+                               placeholder="Digita esattamente: ELIMINA TUTTO" required>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                            <label class="form-check-label" for="confirmDelete">
+                                Ho compreso che tutti i DDT verranno eliminati definitivamente senza backup
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-danger" id="confirmResetBtn" disabled>
+                    <i class="fas fa-trash-alt me-1"></i>ELIMINA TUTTI I DDT
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Enhanced search functionality - prioritize server-side search
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('.clickable-row');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const searchForm = document.getElementById('searchForm');
+        
+        // Check if we have an active server search
+        const hasActiveSearch = searchInput && searchInput.value.trim().length > 0;
+        
+        function updateVisibleCount() {
+            if (tableRows && visibleCountEl) {
+                const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+                visibleCountEl.textContent = visibleRows.length;
+            }
+        }
+        
+        // Server-side search with auto-submit
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                // If search term is long enough, use server-side search
+                if (searchTerm.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit form for server-side search
+                        if (searchForm) {
+                            searchForm.submit();
+                        }
+                    }, 800); // Longer delay for server search
+                } else if (searchTerm.length === 0) {
+                    // Clear search immediately if input is empty
+                    if (searchForm) {
+                        searchForm.submit();
+                    }
+                } else {
+                    // For very short terms, use client-side search on current page only
+                searchTimeout = setTimeout(function() {
+                        performClientSideSearch(searchTerm);
+                    }, 200);
+                }
+            });
+            
+            // Handle Enter key for immediate search
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    if (this.value.trim().length > 0) {
+                        if (searchForm) {
+                            searchForm.submit();
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Client-side search function (only for short terms or as fallback)
+        function performClientSideSearch(searchTerm) {
+            if (hasActiveSearch) {
+                // Don't perform client-side search if server search is active
+                return;
+            }
+            
+                    if (tableRows) {
+                        tableRows.forEach(function(row) {
+                            const clientName = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                            const ddtId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                
+                // Search both in client name and DDT ID
+                if (clientName.includes(searchTerm) || ddtId.includes(searchTerm)) {
+                            row.style.display = '';
+                    /* row.classList.add('animate__animated', 'animate__fadeIn'); - RIMOSSA */
+                            } else {
+                                row.style.display = 'none';
+                        /* row.classList.remove('animate__animated', 'animate__fadeIn'); - RIMOSSA */
+                            }
+                        });
+                    }
+                    updateVisibleCount();
+        }
+        
+        // Clear search functionality
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                window.location.href = '{{ url_for("ddt.index") }}';
+            });
+        }
+        
+        // Add search hints
+        if (searchInput && !hasActiveSearch) {
+            const originalPlaceholder = searchInput.placeholder;
+            searchInput.addEventListener('focus', function() {
+                this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+            });
+            searchInput.addEventListener('blur', function() {
+                this.placeholder = originalPlaceholder;
+            });
+        }
+        
+        // Show search status
+        if (hasActiveSearch) {
+            // Add visual indicator that server search is active
+            const searchIcon = document.querySelector('#searchForm .input-group-text i');
+            if (searchIcon) {
+                searchIcon.className = 'fas fa-search text-success';
+                searchIcon.title = 'Ricerca attiva su tutti i DDT';
+            }
+            
+            // Add search status message
+            const searchStatus = document.createElement('div');
+            searchStatus.className = 'alert alert-info mt-2 mb-0';
+            searchStatus.innerHTML = '<i class="fas fa-info-circle me-2"></i>Ricerca attiva per: <strong>"{{ search_query }}"</strong> - Cercando in tutti i DDT del database';
+            if (searchForm && searchForm.parentNode) {
+                searchForm.parentNode.insertBefore(searchStatus, searchForm.nextSibling);
+            }
+        }
+        
+        // Enhanced date filter functionality
+        const applyDateFilter = document.getElementById('applyDateFilter');
+        if (applyDateFilter) {
+            applyDateFilter.addEventListener('click', function() {
+                const startDate = startDateInput && startDateInput.value ? new Date(startDateInput.value) : null;
+                const endDate = endDateInput && endDateInput.value ? new Date(endDateInput.value) : null;
+                
+                if (!startDate && !endDate) {
+                    if (tableRows) {
+                        tableRows.forEach(function(row) {
+                            row.style.display = '';
+                        });
+                    }
+                    updateVisibleCount();
+                    return;
+                }
+                
+                if (tableRows) {
+                    tableRows.forEach(function(row) {
+                        const dateText = row.querySelector('td:nth-child(3)').textContent.trim();
+                        const dateParts = dateText.split(' ')[0].split('/'); // Get only date part, ignore time
+                        const rowDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                        
+                        let show = true;
+                        if (startDate && rowDate < startDate) show = false;
+                        if (endDate && rowDate > endDate) show = false;
+                        
+                        row.style.display = show ? '' : 'none';
+                    });
+                }
+                updateVisibleCount();
+            });
+        }
+        
+        // Print functionality (legacy support)
+        window.printDDT = function(id) {
+            event.stopPropagation();
+            window.open('{{ url_for("ddt.export", ddt_id=0) }}'.replace('0', id), '_blank');
+        };
+        
+        // Export functionality
+        window.exportDDTs = function() {
+            // Implement export functionality
+            alert('Funzionalità di esportazione in sviluppo');
+        };
+        
+        // Refresh table
+        window.refreshTable = function() {
+            window.location.reload();
+        };
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }
+        });
+        
+        // Initialize visible count
+        updateVisibleCount();
+
+        // ==== GESTIONE ORDINAMENTO TABELLA ====
+
+        let currentSortBy = '{{ sort_by or "id" }}';
+        let currentSortOrder = '{{ sort_order or "desc" }}';
+        let currentSearchQuery = '{{ search_query or "" }}';
+        let currentPage = parseInt('{{ ddts.page if ddts else 1 }}') || 1;
+        let isSorting = false;
+
+        // Funzione per mostrare/nascondere il loading
+        function showTableLoading(show) {
+            const tableBody = document.querySelector('#ddtTable tbody');
+            if (!tableBody) return;
+
+            if (show) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="d-flex justify-content-center align-items-center">
+                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                    <span class="visually-hidden">Caricamento...</span>
+                                </div>
+                                <span>Ordinamento in corso...</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Funzione per aggiornare gli indicatori di ordinamento nelle intestazioni
+        function updateSortIndicators(newSortBy, newSortOrder) {
+            // Rimuovi tutte le classi di ordinamento esistenti
+            document.querySelectorAll('.sortable-header').forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+            });
+
+            // Aggiungi la classe corretta alla colonna ordinata
+            const activeHeader = document.querySelector(`[data-sort="${newSortBy}"]`);
+            if (activeHeader) {
+                activeHeader.classList.add(`sort-${newSortOrder}`);
+            }
+        }
+
+        // Funzione per aggiornare la tabella con i nuovi dati
+        function updateTable(data) {
+            const tableBody = document.querySelector('#ddtTable tbody');
+            if (!tableBody || !data.ddts) return;
+
+            // Funzione per sanitizzare l'HTML
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Aggiorna il corpo della tabella
+            tableBody.innerHTML = data.ddts.map(ddt => `
+                <tr data-href="{{ url_for('ddt.detail', ddt_id=0) }}".replace('0', ddt.internal_id) style="cursor: pointer;" class="clickable-row">
+                    <td data-label="ID">
+                        <span class="badge bg-primary">${ddt.id}</span>
+                    </td>
+                    <td data-label="Cliente">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle text-muted me-2"></i>
+                            <div class="text-truncate" style="max-width: 160px;" title="${escapeHtml(ddt.cliente_nome)}">
+                                ${escapeHtml(ddt.cliente_nome)}
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Data">
+                        <span class="text-muted">${ddt.formatted_date}</span>
+                    </td>
+                    <td data-label="Articoli">
+                        <span class="badge bg-info">${ddt.num_linee}</span>
+                    </td>
+                    <td data-label="Totale">
+                        <strong class="text-success">€ ${ddt.totale.toFixed(2)}</strong>
+                    </td>
+                    <td data-label="Origine">
+                        ${ddt.created_by === 'DBLogiX' ?
+                            '<span class="badge bg-primary"><i class="fas fa-desktop me-1"></i>DBLogiX</span>' :
+                            '<span class="badge bg-secondary"><i class="fas fa-weight me-1"></i>Bilancia</span>'
+                        }
+                    </td>
+                </tr>
+            `).join('');
+
+            // Riattiva i click sulle righe
+            document.querySelectorAll('.clickable-row').forEach(row => {
+                row.addEventListener('click', function() {
+                    const href = this.dataset.href;
+                    if (href) {
+                        window.location.href = href;
+                    }
+                });
+            });
+
+            // Aggiorna gli indicatori di ordinamento
+            updateSortIndicators(data.sort_by, data.sort_order);
+
+            // Aggiorna le statistiche
+            updateStats(data.pagination);
+
+            // Aggiorna la paginazione
+            updatePagination(data.pagination);
+
+            // Aggiorna gli URL delle righe con il nuovo formato
+            document.querySelectorAll('.clickable-row').forEach((row, index) => {
+                if (data.ddts[index]) {
+                    row.dataset.href = "{{ url_for('ddt.detail', ddt_id=0) }}".replace('0', data.ddts[index].internal_id);
+                }
+            });
+        }
+
+        // Funzione per aggiornare le statistiche
+        function updateStats(pagination) {
+            const totalElement = document.querySelector('.stat-value');
+            const visibleElement = document.querySelectorAll('.stat-value')[1];
+
+            if (totalElement) totalElement.textContent = pagination.total;
+            if (visibleElement) visibleElement.textContent = pagination.per_page;
+        }
+
+        // Funzione per aggiornare la paginazione
+        function updatePagination(pagination) {
+            // Questo è complesso, per ora aggiorniamo solo i numeri essenziali
+            const pageInfo = document.querySelector('.text-muted');
+            if (pageInfo && pageInfo.textContent.includes('Pagina')) {
+                pageInfo.innerHTML = `Pagina ${pagination.page} di ${pagination.pages} - ${pagination.total} elementi totali`;
+            }
+        }
+
+        // Gestione click sulle intestazioni ordinabili con AJAX
+        function initializeTableSorting() {
+            const sortableHeaders = document.querySelectorAll('.sortable-header');
+
+            sortableHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    if (isSorting) return; // Previene click multipli durante l'ordinamento
+
+                    const sortBy = this.dataset.sort;
+                    let newSortOrder = 'asc';
+
+                    // Se clicco sulla stessa colonna, inverto l'ordine
+                    if (sortBy === currentSortBy) {
+                        newSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                    }
+                    // Altrimenti ordino ascendente per default
+
+                    // Prepara i parametri per la chiamata AJAX
+                    const params = new URLSearchParams({
+                        sort_by: sortBy,
+                        sort_order: newSortOrder,
+                        page: '1', // Reset alla prima pagina quando si cambia ordinamento
+                        per_page: '15',
+                        search: currentSearchQuery || ''
+                    });
+
+                    // Mostra loading
+                    isSorting = true;
+                    showTableLoading(true);
+
+                    // Fai la chiamata AJAX
+                    fetch(`{{ url_for('ddt.api_sort_ddts') }}?${params}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Aggiorna le variabili globali
+                            currentSortBy = data.sort_by;
+                            currentSortOrder = data.sort_order;
+                            currentPage = data.pagination.page;
+
+                            // Aggiorna la tabella con i nuovi dati
+                            updateTable(data);
+
+                            // Aggiorna l'URL senza ricaricare la pagina
+                            const url = new URL(window.location);
+                            url.searchParams.set('sort_by', data.sort_by);
+                            url.searchParams.set('sort_order', data.sort_order);
+                            url.searchParams.set('page', '1');
+                            window.history.pushState({}, '', url);
+
+                        } else {
+                            console.error('Errore nell\'ordinamento:', data);
+                            alert('Errore durante l\'ordinamento. Riprova.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Errore AJAX:', error);
+                        alert('Errore di connessione. Riprova.');
+                    })
+                    .finally(() => {
+                        isSorting = false;
+                        showTableLoading(false);
+                    });
+                });
+            });
+        }
+
+        // Inizializza l'ordinamento della tabella
+        initializeTableSorting();
+
+        // Gestione navigazione browser (back/forward)
+        window.addEventListener('popstate', function(event) {
+            // Ricarica la pagina quando l'utente usa back/forward per mantenere consistenza
+            window.location.reload();
+        });
+
+        // ==== GESTIONE MODALI DDT ====
+        
+        // Funzione per inizializzare i modali DDT
+        function initializeDDTModals() {
+            // Modal Rinumerazione DDT
+            const newStartNumberInput = document.getElementById('newStartNumber');
+            const confirmRenumberCheck = document.getElementById('confirmRenumber');
+            const confirmRenumberBtn = document.getElementById('confirmRenumberBtn');
+            
+            // Controllo form rinumerazione
+            function checkRenumberForm() {
+                if (!newStartNumberInput || !confirmRenumberCheck || !confirmRenumberBtn) {
+                    return;
+                }
+                
+                const numberValid = newStartNumberInput.value && parseInt(newStartNumberInput.value) > 0;
+                const checkboxValid = confirmRenumberCheck.checked;
+                const shouldEnable = numberValid && checkboxValid;
+                
+                confirmRenumberBtn.disabled = !shouldEnable;
+            }
+            
+            if (newStartNumberInput && confirmRenumberCheck && confirmRenumberBtn) {
+                newStartNumberInput.addEventListener('input', checkRenumberForm);
+                confirmRenumberCheck.addEventListener('change', checkRenumberForm);
+                
+                // Conferma rinumerazione
+                confirmRenumberBtn.addEventListener('click', function() {
+                    const newNumber = parseInt(newStartNumberInput.value);
+                    
+                    if (!newNumber || !confirmRenumberCheck.checked) {
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Impostando...';
+                    
+                    fetch('{{ url_for("ddt.renumber_ddts") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ new_start_number: newNumber })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('✅ ' + data.message);
+                            window.location.reload();
+                        } else {
+                            alert('❌ ' + data.message);
+                            this.disabled = false;
+                            this.innerHTML = '<i class="fas fa-sort-numeric-up me-1"></i>Imposta Numerazione';
+                        }
+                    })
+                    .catch(error => {
+                        alert('❌ Errore di rete durante l\'operazione');
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-sort-numeric-up me-1"></i>Imposta Numerazione';
+                    });
+                });
+            }
+        
+            // Modal Azzeramento DDT
+            const confirmTextInput = document.getElementById('confirmText');
+            const confirmDeleteCheck = document.getElementById('confirmDelete');
+            const confirmResetBtn = document.getElementById('confirmResetBtn');
+            
+            // Controllo form azzeramento
+            function checkResetForm() {
+                if (!confirmTextInput || !confirmDeleteCheck || !confirmResetBtn) {
+                    return;
+                }
+                
+                // Usa trim() per evitare problemi con spazi
+                const textValid = confirmTextInput.value.trim() === 'ELIMINA TUTTO';
+                const deleteValid = confirmDeleteCheck.checked;
+                const shouldEnable = textValid && deleteValid;
+                
+                confirmResetBtn.disabled = !shouldEnable;
+            }
+            
+            if (confirmTextInput && confirmDeleteCheck && confirmResetBtn) {
+                confirmTextInput.addEventListener('input', checkResetForm);
+                confirmDeleteCheck.addEventListener('change', checkResetForm);
+                
+                // Conferma azzeramento
+                confirmResetBtn.addEventListener('click', function() {
+                    if (confirmTextInput.value.trim() !== 'ELIMINA TUTTO' || !confirmDeleteCheck.checked) {
+                        return;
+                    }
+                    
+                    // Conferma finale
+                    if (!confirm('⚠️ SEI SICURO? Questa operazione eliminerà TUTTI i DDT senza possibilità di recupero!')) {
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Eliminando...';
+                    
+                    fetch('{{ url_for("ddt.reset_all_ddts") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('✅ ' + data.message);
+                            window.location.reload();
+                        } else {
+                            alert('❌ ' + data.message);
+                            this.disabled = false;
+                            this.innerHTML = '<i class="fas fa-trash-alt me-1"></i>ELIMINA TUTTI I DDT';
+                        }
+                    })
+                    .catch(error => {
+                        alert('❌ Errore di rete durante l\'operazione');
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-trash-alt me-1"></i>ELIMINA TUTTI I DDT';
+                    });
+                });
+            }
+        
+            // Event listener per apertura modali
+            const renumberModal = document.getElementById('renumberDDTModal');
+            const resetModal = document.getElementById('resetDDTModal');
+            
+            if (renumberModal) {
+                renumberModal.addEventListener('shown.bs.modal', function() {
+                    setTimeout(checkRenumberForm, 50);
+                });
+                
+                renumberModal.addEventListener('hidden.bs.modal', function() {
+                    if (newStartNumberInput) newStartNumberInput.value = '';
+                    if (confirmRenumberCheck) confirmRenumberCheck.checked = false;
+                    setTimeout(checkRenumberForm, 50);
+                });
+            }
+            
+            if (resetModal) {
+                resetModal.addEventListener('shown.bs.modal', function() {
+                    setTimeout(checkResetForm, 50);
+                });
+                
+                resetModal.addEventListener('hidden.bs.modal', function() {
+                    if (confirmTextInput) confirmTextInput.value = '';
+                    if (confirmDeleteCheck) confirmDeleteCheck.checked = false;
+                    setTimeout(checkResetForm, 50);
+                });
+            }
+        }
+        
+        // Inizializza i modali al caricamento della pagina
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDDTModals);
+        } else {
+            initializeDDTModals();
+        }
+    });
+</script>
+{% endblock %}

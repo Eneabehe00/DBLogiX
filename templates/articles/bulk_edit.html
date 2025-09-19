@@ -1,0 +1,780 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica di Massa Articoli - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+<style>
+    /* Stili specifici per la modifica di massa */
+    .bulk-edit-container {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+    }
+    
+    .articles-selection-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 4px solid var(--accent-blue);
+    }
+    
+    .edit-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 4px solid #27ae60;
+        display: none;
+    }
+    
+    .edit-section.active {
+        display: block;
+    }
+    
+    .article-item {
+        padding: 12px;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .article-item:hover {
+        background-color: #f8f9fa;
+        border-color: var(--accent-blue);
+    }
+    
+    .article-item.selected {
+        background-color: rgba(52, 152, 219, 0.1);
+        border-color: var(--accent-blue);
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+    }
+    
+    .selected-count {
+        position: sticky;
+        top: 20px;
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        z-index: 100;
+    }
+    
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .form-section h6 {
+        color: var(--primary-dark);
+        font-weight: 600;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .current-values {
+        background: #e8f4fd;
+        border: 1px solid #b8daff;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 5px;
+        font-size: 0.85rem;
+    }
+    
+    .btn-apply {
+        background: linear-gradient(135deg, #27ae60, #2ecc71);
+        border: none;
+        padding: 12px 30px;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-apply:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+    }
+    
+    .search-box {
+        margin-bottom: 20px;
+    }
+    
+    .articles-grid {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+    }
+    
+    .warning-note {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        border: 1px solid #ffc107;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}" class="text-white">Gestione Articoli</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Modifica di Massa</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Modifica di Massa Articoli
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Seleziona gli articoli e modifica i campi desiderati</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('articles.index') }}" class="btn btn-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+
+    <div class="row">
+        <!-- Sezione Modifica Campi -->
+        <div class="col-md-4">
+            <div id="editSection" class="edit-section active">
+                <h5 class="mb-3">
+                    <i class="fas fa-edit me-2 text-success"></i>
+                    Campi da Modificare
+                </h5>
+                
+                <!-- Warning Note -->
+                <div class="warning-note">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-exclamation-triangle text-warning me-2 mt-1"></i>
+                        <div>
+                            <strong>Attenzione:</strong> I campi lasciati vuoti non verranno modificati. 
+                            Solo i campi con valori inseriti verranno applicati a tutti gli articoli selezionati.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contatore articoli selezionati -->
+                <div id="selectedCounter" class="selected-count" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="fas fa-check-circle me-2"></i>
+                            <span id="selectedCount">0</span> articoli selezionati
+                        </span>
+                        <button type="button" class="btn btn-light btn-sm" id="clearSelection">
+                            <i class="fas fa-times me-1"></i>Deseleziona tutto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form di Modifica -->
+                <form method="POST" action="{{ url_for('articles.bulk_edit') }}" id="bulkEditForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="apply_changes" value="1">
+                    <div id="selectedArticlesInputs"></div>
+
+                    <!-- Informazioni Generali -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-info-circle me-2"></i>Informazioni Generali</h6>
+                        
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descrizione</label>
+                            <input type="text" class="form-control" id="descripcion" name="descripcion">
+                            <div id="descripcionCurrent" class="current-values"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descripcion1" class="form-label">Descrizione Secondaria</label>
+                            <input type="text" class="form-control" id="descripcion1" name="descripcion1">
+                            <div id="descripcion1Current" class="current-values"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ean_scanner" class="form-label">Codice EAN</label>
+                            <input type="text" class="form-control" id="ean_scanner" name="ean_scanner">
+                        </div>
+                    </div>
+
+                    <!-- Prezzi e IVA -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-euro-sign me-2"></i>Prezzi e IVA</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="precio_con_iva" class="form-label">Prezzo con IVA</label>
+                                    <input type="number" step="0.01" class="form-control" id="precio_con_iva" name="precio_con_iva">
+                                    <div id="precioCurrent" class="current-values"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="precio_sin_iva" class="form-label">Prezzo senza IVA</label>
+                                    <input type="number" step="0.01" class="form-control" id="precio_sin_iva" name="precio_sin_iva">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_iva" class="form-label">Aliquota IVA</label>
+                            <select class="form-select" id="id_iva" name="id_iva">
+                                <option value="">-- Non modificare --</option>
+                                {% for iva_id, iva_label in iva_rates %}
+                                <option value="{{ iva_id }}">{{ iva_label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="ivaCurrent" class="current-values"></div>
+                        </div>
+                    </div>
+
+                    <!-- Categorizzazione -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-tags me-2"></i>Categorizzazione</h6>
+                        
+                        <div class="mb-3">
+                            <label for="id_seccion" class="form-label">Sezione</label>
+                            <select class="form-select" id="id_seccion" name="id_seccion">
+                                <option value="">-- Non modificare --</option>
+                                {% for section_id, section_name in sections %}
+                                <option value="{{ section_id }}">{{ section_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="sectionCurrent" class="current-values"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_familia" class="form-label">Famiglia</label>
+                            <select class="form-select" id="id_familia" name="id_familia">
+                                <option value="">-- Non modificare --</option>
+                                {% for family_id, family_name in families %}
+                                <option value="{{ family_id }}">{{ family_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="familyCurrent" class="current-values"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_departamento" class="form-label">Dipartimento</label>
+                            <select class="form-select" id="id_departamento" name="id_departamento">
+                                <option value="">-- Non modificare --</option>
+                                {% for dept_id, dept_name in departments %}
+                                <option value="{{ dept_id }}">{{ dept_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="departmentCurrent" class="current-values"></div>
+                        </div>
+                    </div>
+
+                    <!-- Gestione Pesi -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-weight me-2"></i>Gestione Pesi</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="peso_minimo" class="form-label">Peso Minimo</label>
+                                    <input type="number" step="0.001" class="form-control" id="peso_minimo" name="peso_minimo">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="peso_maximo" class="form-label">Peso Massimo</label>
+                                    <input type="number" step="0.001" class="form-control" id="peso_maximo" name="peso_maximo">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="peso_objetivo" class="form-label">Peso Obiettivo</label>
+                                    <input type="number" step="0.001" class="form-control" id="peso_objetivo" name="peso_objetivo">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="tara_fija" class="form-label">Tara Fissa</label>
+                            <input type="number" step="0.001" class="form-control" id="tara_fija" name="tara_fija">
+                        </div>
+                    </div>
+
+                    <!-- Stock e Inventario -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-boxes me-2"></i>Stock e Inventario</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="stock_actual" class="form-label">Stock Attuale</label>
+                                    <input type="number" step="0.001" class="form-control" id="stock_actual" name="stock_actual">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tecla_directa" class="form-label">Tasto Diretto</label>
+                                    <input type="number" class="form-control" id="tecla_directa" name="tecla_directa">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="incluir_gestion_stock" name="incluir_gestion_stock" value="1">
+                                    <label class="form-check-label" for="incluir_gestion_stock">
+                                        Includi in Gestione Stock
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date e Scadenze -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-calendar me-2"></i>Date e Scadenze</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="dias_caducidad" class="form-label">Giorni Scadenza</label>
+                                    <input type="number" class="form-control" id="dias_caducidad" name="dias_caducidad">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3 pt-4">
+                                    <input type="checkbox" class="form-check-input" id="fecha_caducidad_activada" name="fecha_caducidad_activada" value="1">
+                                    <label class="form-check-label" for="fecha_caducidad_activada">
+                                        Data Scadenza Attivata
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testi Aggiuntivi -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-font me-2"></i>Testi Aggiuntivi</h6>
+                        
+                        <div class="mb-3">
+                            <label for="texto1" class="form-label">Testo 1</label>
+                            <textarea class="form-control" id="texto1" name="texto1" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="texto_libre" class="form-label">Testo Libero</label>
+                            <textarea class="form-control" id="texto_libre" name="texto_libre" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Stato e Configurazione -->
+                    <div class="form-section">
+                        <h6><i class="fas fa-toggle-on me-2"></i>Stato e Configurazione</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="en_venta" name="en_venta" value="1">
+                                    <label class="form-check-label" for="en_venta">
+                                        In Vendita
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" class="form-check-input" id="favorito" name="favorito" value="1">
+                                    <label class="form-check-label" for="favorito">
+                                        Preferito
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_tipo" class="form-label">Tipo Articolo</label>
+                                    <select class="form-select" id="id_tipo" name="id_tipo">
+                                        <option value="">-- Non modificare --</option>
+                                        <option value="1">Normale</option>
+                                        <option value="2">Peso Variabile</option>
+                                        <option value="3">Servizio</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="id_classe" class="form-label">Classe</label>
+                                    <input type="number" class="form-control" id="id_classe" name="id_classe">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="marca" class="form-label">Marca</label>
+                            <input type="number" class="form-control" id="marca" name="marca">
+                        </div>
+                    </div>
+
+                    <!-- Pulsanti di Azione -->
+                    <div class="form-section">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Le modifiche verranno applicate a <span id="applyCount">0</span> articoli
+                                </small>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" id="resetForm">
+                                    <i class="fas fa-undo me-1"></i>Reset Form
+                                </button>
+                                <button type="submit" class="btn btn-success btn-apply">
+                                    <i class="fas fa-check me-1"></i>Applica Modifiche
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Selezione Articoli -->
+        <div class="col-md-8">
+            <div class="articles-selection-section">
+                <h5 class="mb-3">
+                    <i class="fas fa-list-check me-2 text-primary"></i>
+                    Seleziona Articoli 
+                    <span class="badge bg-secondary ms-2">{{ articles|length }} articoli</span>
+                </h5>
+
+                <!-- Barra di ricerca -->
+                <div class="search-box">
+                    <form method="GET" class="d-flex">
+                        <input type="text" name="query" class="form-control me-2" 
+                               placeholder="Cerca articoli..." value="{{ query or '' }}">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        {% if query %}
+                        <a href="{{ url_for('articles.bulk_edit') }}" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+
+                <!-- Lista articoli semplificata -->
+                <div class="articles-grid" style="max-height: 600px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 1rem; background-color: #fff;">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="selectAll">
+                            <label class="form-check-label fw-bold" for="selectAll">
+                                Seleziona tutti gli articoli visibili
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Intestazione tabella -->
+                    <div class="d-none d-md-block">
+                        <div class="row fw-bold text-muted border-bottom pb-2 mb-2">
+                            <div class="col-1"></div>
+                            <div class="col-2">ID</div>
+                            <div class="col-3">Nome</div>
+                            <div class="col-2">Sezione</div>
+                            <div class="col-2">Peso</div>
+                            <div class="col-2">Prezzo</div>
+                        </div>
+                    </div>
+
+                    {% for article in articles %}
+                    <div class="article-item-simple" data-article-id="{{ article.IdArticulo }}">
+                        <!-- Desktop view -->
+                        <div class="d-none d-md-block">
+                            <div class="row align-items-center py-2 border-bottom">
+                                <div class="col-1">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input article-checkbox" 
+                                               value="{{ article.IdArticulo }}" 
+                                               data-description="{{ article.Descripcion }}"
+                                               data-price="{{ article.PrecioConIVA or '' }}"
+                                               data-iva="{{ article.IdIva or '' }}"
+                                               data-section="{{ article.IdSeccion or '' }}"
+                                               data-family="{{ article.IdFamilia or '' }}"
+                                               data-department="{{ article.IdDepartamento or '' }}">
+                                    </div>
+                                </div>
+                                <div class="col-2">
+                                    <strong>{{ article.IdArticulo }}</strong>
+                                </div>
+                                <div class="col-3">
+                                    <span class="text-truncate d-block">{{ article.Descripcion }}</span>
+                                </div>
+                                <div class="col-2">
+                                    <span class="text-muted">{{ section_info.get(article.IdArticulo, 'N/A') }}</span>
+                                </div>
+                                <div class="col-2">
+                                    <span class="text-muted">{{ '%.3f'|format(article.PesoObjetivo) if article.PesoObjetivo else 'N/A' }}</span>
+                                </div>
+                                <div class="col-2">
+                                    <span class="badge bg-primary">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mobile view -->
+                        <div class="d-md-none">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input article-checkbox" 
+                                               value="{{ article.IdArticulo }}" 
+                                               data-description="{{ article.Descripcion }}"
+                                               data-price="{{ article.PrecioConIVA or '' }}"
+                                               data-iva="{{ article.IdIva or '' }}"
+                                               data-section="{{ article.IdSeccion or '' }}"
+                                               data-family="{{ article.IdFamilia or '' }}"
+                                               data-department="{{ article.IdDepartamento or '' }}">
+                                        <label class="form-check-label w-100">
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <strong>#{{ article.IdArticulo }}</strong>
+                                                    <div class="small">{{ article.Descripcion }}</div>
+                                                    <div class="small text-muted">
+                                                        Sezione: {{ section_info.get(article.IdArticulo, 'N/A') }} | 
+                                                        Peso: {{ '%.3f'|format(article.PesoObjetivo) if article.PesoObjetivo else 'N/A' }}
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-primary">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</span>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const articleCheckboxes = document.querySelectorAll('.article-checkbox');
+    const selectedCounter = document.getElementById('selectedCounter');
+    const selectedCount = document.getElementById('selectedCount');
+    const editSection = document.getElementById('editSection');
+    const clearSelectionBtn = document.getElementById('clearSelection');
+    const resetFormBtn = document.getElementById('resetForm');
+    const bulkEditForm = document.getElementById('bulkEditForm');
+    const selectedArticlesInputs = document.getElementById('selectedArticlesInputs');
+    const applyCount = document.getElementById('applyCount');
+
+    // Mappa per i dati degli articoli
+    const articlesData = new Map();
+    
+    // Inizializza mappa dati articoli
+    articleCheckboxes.forEach(checkbox => {
+        const id = checkbox.value;
+        articlesData.set(id, {
+            description: checkbox.dataset.description,
+            price: checkbox.dataset.price,
+            iva: checkbox.dataset.iva,
+            section: checkbox.dataset.section,
+            family: checkbox.dataset.family,
+            department: checkbox.dataset.department
+        });
+    });
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.article-checkbox:checked');
+        const count = selected.length;
+        
+        selectedCount.textContent = count;
+        applyCount.textContent = count;
+        
+        if (count > 0) {
+            selectedCounter.style.display = 'block';
+            editSection.classList.add('active');
+            updateSelectedArticlesInputs();
+            updateCurrentValuesDisplay(selected);
+        } else {
+            selectedCounter.style.display = 'none';
+            editSection.classList.remove('active');
+        }
+        
+        // Aggiorna stato "Seleziona tutto"
+        const totalVisible = articleCheckboxes.length;
+        selectAllCheckbox.checked = count === totalVisible;
+        selectAllCheckbox.indeterminate = count > 0 && count < totalVisible;
+    }
+
+    function updateSelectedArticlesInputs() {
+        selectedArticlesInputs.innerHTML = '';
+        document.querySelectorAll('.article-checkbox:checked').forEach(checkbox => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selected_articles';
+            input.value = checkbox.value;
+            selectedArticlesInputs.appendChild(input);
+        });
+    }
+
+    function updateCurrentValuesDisplay(selectedCheckboxes) {
+        // Raccogli i valori attuali
+        const values = {
+            descriptions: new Set(),
+            prices: new Set(),
+            ivas: new Set(),
+            sections: new Set(),
+            families: new Set(),
+            departments: new Set()
+        };
+
+        selectedCheckboxes.forEach(checkbox => {
+            const data = articlesData.get(checkbox.value);
+            if (data.description) values.descriptions.add(data.description);
+            if (data.price) values.prices.add(data.price);
+            if (data.iva) values.ivas.add(data.iva);
+            if (data.section) values.sections.add(data.section);
+            if (data.family) values.families.add(data.family);
+            if (data.department) values.departments.add(data.department);
+        });
+
+        // Aggiorna i display
+        updateCurrentValueDisplay('descripcionCurrent', values.descriptions, 'Valori attuali: ');
+        updateCurrentValueDisplay('precioCurrent', values.prices, 'Prezzi attuali: ');
+        updateCurrentValueDisplay('ivaCurrent', values.ivas, 'IVA attuali: ');
+        updateCurrentValueDisplay('sectionCurrent', values.sections, 'Sezioni attuali: ');
+        updateCurrentValueDisplay('familyCurrent', values.families, 'Famiglie attuali: ');
+        updateCurrentValueDisplay('departmentCurrent', values.departments, 'Dipartimenti attuali: ');
+    }
+
+    function updateCurrentValueDisplay(elementId, valuesSet, prefix) {
+        const element = document.getElementById(elementId);
+        if (valuesSet.size > 0) {
+            const values = Array.from(valuesSet).slice(0, 3); // Mostra max 3 valori
+            let text = prefix + values.join(', ');
+            if (valuesSet.size > 3) {
+                text += ` (+${valuesSet.size - 3} altri)`;
+            }
+            element.textContent = text;
+            element.style.display = 'block';
+        } else {
+            element.style.display = 'none';
+        }
+    }
+
+    // Event listeners
+    selectAllCheckbox.addEventListener('change', function() {
+        articleCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            const item = checkbox.closest('.article-item-simple') || checkbox.closest('.article-item');
+            if (this.checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+        updateSelectedCount();
+    });
+
+    articleCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const item = this.closest('.article-item-simple') || this.closest('.article-item');
+            if (this.checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+            updateSelectedCount();
+        });
+    });
+
+    clearSelectionBtn.addEventListener('click', function() {
+        articleCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            const item = checkbox.closest('.article-item-simple') || checkbox.closest('.article-item');
+            item.classList.remove('selected');
+        });
+        updateSelectedCount();
+    });
+
+    resetFormBtn.addEventListener('click', function() {
+        bulkEditForm.reset();
+        // Mantieni gli articoli selezionati ma resetta i campi
+        updateSelectedArticlesInputs();
+    });
+
+    // Gestione submit del form
+    bulkEditForm.addEventListener('submit', function(e) {
+        const selectedArticles = document.querySelectorAll('.article-checkbox:checked');
+        if (selectedArticles.length === 0) {
+            e.preventDefault();
+            alert('Seleziona almeno un articolo per continuare.');
+            return;
+        }
+
+        // Conta i campi compilati
+        const fields = bulkEditForm.querySelectorAll('input[type="text"], input[type="number"], select');
+        let filledFields = 0;
+        
+        fields.forEach(field => {
+            if (field.value && field.value.trim() !== '') {
+                filledFields++;
+            }
+        });
+
+        const checkboxes = bulkEditForm.querySelectorAll('input[type="checkbox"]:checked');
+        filledFields += checkboxes.length;
+
+        if (filledFields === 0) {
+            e.preventDefault();
+            alert('Inserisci almeno un valore da modificare.');
+            return;
+        }
+
+        const message = `Sei sicuro di voler applicare le modifiche a ${selectedArticles.length} articoli?\n\nCampi che verranno modificati: ${filledFields}\n\nQuesta operazione non può essere annullata.`;
+        
+        if (!confirm(message)) {
+            e.preventDefault();
+        }
+    });
+
+    // Inizializza
+    updateSelectedCount();
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,1019 @@
+{% extends "base.html" %}
+{% block title %}Anteprima DDT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt_preview.css') }}">
+<style>
+/* Styling per il selettore data */
+.date-selector-container {
+    position: relative;
+}
+
+.date-selector-btn {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 140px;
+}
+
+.date-selector-btn:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Styling per il dropdown di ricerca prodotti */
+#product-search-dropdown {
+    z-index: 9999 !important;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: white;
+}
+
+#product-search-dropdown .list-group-item:hover {
+    background-color: #f8f9ff !important;
+    border-left-color: #0d6efd !important;
+}
+
+/* Assicura che la modale abbia z-index corretto */
+.modal {
+    z-index: 1055;
+}
+
+.modal-backdrop {
+    z-index: 1050;
+}
+
+/* Button Aggiungi Ticket Esistenti */
+.btn-add-existing-tickets {
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.date-selector-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+#date-picker {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    z-index: 1050;
+    border-radius: 8px;
+    border: 2px solid #007bff;
+    font-size: 14px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+#date-picker:focus {
+    outline: none;
+    border-color: #0056b3;
+    box-shadow: 0 4px 12px rgba(0, 86, 179, 0.4);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .date-selector-btn {
+        min-width: 120px;
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+
+    #date-picker {
+        left: 0;
+        transform: none;
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}" class="text-white">DDT</a></li>
+                {% if from_modify %}
+                <li class="breadcrumb-item"><a href="{{ url_for('ddt.detail', ddt_id=ddt_id) }}" class="text-white">DDT #{{ ddt_id }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Modifica DDT</li>
+                {% else %}
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Anteprima DDT</li>
+                {% endif %}
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-6">
+                <h1 class="page-title mb-0">
+                    {% if from_modify %}
+                    <i class="fas fa-edit me-2"></i>Modifica DDT
+                    {% else %}
+                    <i class="fas fa-eye me-2"></i>Anteprima DDT
+                    {% endif %}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    {% if from_modify %}
+                    <span class="text-white-50">Modifica il contenuto del DDT esistente</span>
+                    {% else %}
+                    <span class="text-white-50">Verifica e modifica il contenuto del DDT prima della generazione</span>
+                    {% endif %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-user me-1"></i>Cliente: {{ cliente.Nombre }}
+                    </span>
+                    {% if listini_enabled and has_dedicated_listino and listino_info %}
+                    <span class="status-badge success ms-2">
+                        <i class="fas fa-list-alt me-1"></i>Listino: {{ listino_info.nome }}
+                    </span>
+                    {% elif listini_enabled %}
+                    <span class="status-badge warning ms-2">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Prezzi Standard
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-2 text-center mt-3 mt-md-0">
+                <!-- Campo Data Creazione -->
+                <div class="date-selector-container">
+                    <button type="button" class="btn btn-outline-light date-selector-btn" id="date-selector-btn" title="Seleziona data creazione">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        <span id="selected-date-display"></span>
+                    </button>
+                    <input type="date" class="form-control d-none" id="date-picker" style="background: rgba(255,255,255,0.9);">
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                    <!-- Bottoni di azione principali -->
+                    {% if from_task %}
+                    <button type="submit" class="btn btn-success" id="create-final-ddt" form="final-ddt-form">
+                        <i class="fas fa-file-invoice me-1"></i>Genera DDT da Task
+                    </button>
+                    <button type="button" class="btn btn-primary" id="create-invoice-only">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Genera solo fattura
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-create-manual-ticket">
+                        <i class="fas fa-plus me-1"></i>Aggiungi articolo
+                    </button>
+                    <a href="{{ url_for('tasks.view_task', task_id=task_id) }}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-1"></i>Torna al Task
+                    </a>
+                    {% elif from_warehouse %}
+                    <button type="submit" class="btn btn-success" id="create-final-ddt" form="final-ddt-form">
+                        <i class="fas fa-file-invoice me-1"></i>Genera DDT Definitivo
+                    </button>
+                    <button type="button" class="btn btn-primary" id="create-invoice-only">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Genera solo fattura
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-create-manual-ticket">
+                        <i class="fas fa-plus me-1"></i>Aggiungi articolo
+                    </button>
+                    <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-1"></i>Torna al Warehouse
+                    </a>
+                    {% elif from_modify %}
+                    <button type="button" class="btn btn-success" id="save-ddt-modifications">
+                        <i class="fas fa-save me-1"></i>Salva Modifiche DDT
+                    </button>
+                    <button type="button" class="btn btn-primary" id="create-invoice-only">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Genera solo fattura
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-create-manual-ticket">
+                        <i class="fas fa-plus me-1"></i>Aggiungi articolo
+                    </button>
+                    <a href="{{ url_for('ddt.detail', ddt_id=ddt_id) }}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-1"></i>Torna al DDT
+                    </a>
+                    {% else %}
+                    <button type="submit" class="btn btn-success" id="create-final-ddt" form="final-ddt-form">
+                        <i class="fas fa-file-invoice me-1"></i>Genera DDT Definitivo
+                    </button>
+                    <button type="button" class="btn btn-primary" id="create-invoice-only">
+                        <i class="fas fa-file-invoice-dollar me-1"></i>Genera solo fattura
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-create-manual-ticket">
+                        <i class="fas fa-plus me-1"></i>Aggiungi articolo
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Anteprima DDT -->
+        <div class="col-12">
+            <div class="preview-card">
+                <div class="card-body p-0">
+                    <!-- Barra Totali in Tempo Reale -->
+                    <div class="totals-bar" id="totals-bar">
+                        <div class="totals-bar-content">
+                            <div class="total-item">
+                                <div class="total-label">
+                                    <i class="fas fa-balance-scale me-1"></i>Quantità KG
+                                </div>
+                                <div class="total-value" id="total-quantity-kg">
+                                    <span class="value">0.000</span>
+                                    <span class="unit">kg</span>
+                                </div>
+                            </div>
+                            <div class="total-item">
+                                <div class="total-label">
+                                    <i class="fas fa-boxes me-1"></i>Quantità PZ
+                                </div>
+                                <div class="total-value" id="total-quantity-pz">
+                                    <span class="value">0</span>
+                                    <span class="unit">pz</span>
+                                </div>
+                            </div>
+                            <div class="total-item">
+                                <div class="total-label">
+                                    <i class="fas fa-receipt me-1"></i>Totale Senza IVA
+                                </div>
+                                <div class="total-value" id="total-without-vat">
+                                    <span class="value">€0.00</span>
+                                </div>
+                            </div>
+                            <div class="total-item">
+                                <div class="total-label">
+                                    <i class="fas fa-plus-circle me-1"></i>Totale Con IVA
+                                </div>
+                                <div class="total-value" id="total-with-vat">
+                                    <span class="value">€0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Ticket con layout tabellare -->
+                    <div class="tickets-table-container" id="tickets-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="ddtTicketTable">
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-hashtag me-1"></i>ID Ticket</th>
+                                        <th><i class="fas fa-calendar me-1"></i>Data</th>
+                                        <th><i class="fas fa-box me-1"></i>Prodotti</th>
+                                        <th>
+                                            <i class="fas fa-tag me-1"></i>Prezzo Unit.
+                                            {% if has_dedicated_listino %}
+                                            <i class="fas fa-list-alt text-success ms-1" title="Prezzi da listino dedicato"></i>
+                                            {% endif %}
+                                        </th>
+                                        <th><i class="fas fa-balance-scale me-1"></i>Quantità</th>
+                                        <th>
+                                            <i class="fas fa-receipt me-1"></i>Senza IVA
+                                            {% if has_dedicated_listino %}
+                                            <i class="fas fa-list-alt text-success ms-1" title="Prezzi da listino dedicato"></i>
+                                            {% endif %}
+                                        </th>
+                                        <th>
+                                            <i class="fas fa-plus-circle me-1"></i>Con IVA
+                                            {% if has_dedicated_listino %}
+                                            <i class="fas fa-list-alt text-success ms-1" title="Prezzi da listino dedicato"></i>
+                                            {% endif %}
+                                        </th>
+                                        <th><i class="fas fa-percent me-1"></i>Sconto</th>
+                                        <th class="text-center"><i class="fas fa-cogs me-1"></i>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        {% for item in preview_data %}
+                                    <tr data-ticket-id="{{ item.ticket.IdTicket }}">
+                                        <td data-label="ID Ticket">
+                                            <span class="badge bg-primary">#{{ item.ticket.IdTicket }}</span>
+                                        </td>
+                                        <td data-label="Data">
+                                            <small class="text-muted">{{ item.ticket.Fecha }}</small>
+                                        </td>
+                                        <td data-label="Prodotti">
+                                    {% if item.lines %}
+                                            <div class="text-truncate" style="max-width: 200px;" title="{% for line in item.lines %}{{ line.descripcion }}{% if not loop.last %}, {% endif %}{% endfor %}">
+                                                <i class="fas fa-cube text-muted me-1"></i>
+                                                <strong>{{ item.lines[0].descripcion }}</strong>
+                                                {% if item.lines|length > 1 %}
+                                                <span class="text-muted">+ {{ item.lines|length - 1 }} altri</span>
+                                    {% endif %}
+                                    </div>
+                                            {% else %}
+                                            <span class="text-muted">Nessun prodotto</span>
+                                            {% endif %}
+                                        </td>
+                                        <td data-label="Prezzo Unit.">
+                                            <div class="d-flex align-items-center">
+                                                <span class="unit-price-value">--</span>
+                                                <span class="unit-type-icon ms-1"></span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Quantità">
+                                            <div class="d-flex align-items-center">
+                                                <span class="quantity-value fw-bold">--</span>
+                                                <span class="quantity-unit ms-1"></span>
+                                            </div>
+                                        </td>
+                                        <td data-label="Senza IVA">
+                                            <span class="text-muted">
+                                                €&nbsp;<span class="price-no-vat">--</span>
+                                            </span>
+                                        </td>
+                                        <td data-label="Con IVA">
+                                            <span class="text-success">
+                                                €&nbsp;<span class="price-with-vat">--</span>
+                                            </span>
+                                        </td>
+                                        <td data-label="Sconto">
+                                            <div class="discount-container" data-ticket-id="{{ item.ticket.IdTicket }}">
+                                                <div class="discount-dropdown-wrapper">
+                                                    <input type="number"
+                                                           class="discount-input-field"
+                                                           data-ticket-id="{{ item.ticket.IdTicket }}"
+                                                           placeholder="%"
+                                                           min="0"
+                                                           max="100"
+                                                           step="0.1"
+                                                           value="0"
+                                                           title="Inserisci percentuale di sconto (0-100)">
+                                                    <button type="button"
+                                                            class="btn-remove-discount"
+                                                            title="Rimuovi sconto"
+                                                            style="display: none;">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-label="Azioni" class="text-center">
+                                            <div class="d-flex gap-1 justify-content-center">
+                                                {% if item.lines and item.lines|length > 0 %}
+                                                <button type="button" class="btn btn-sm btn-outline-primary edit-line-btn" 
+                                                        data-ticket-id="{{ item.ticket.IdTicket }}"
+                                                        data-line-id="{{ item.lines[0].id_linea_ticket }}"
+                                                        title="Modifica ticket">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-ticket" 
+                                                        data-ticket-id="{{ item.ticket.IdTicket }}"
+                                                        title="Rimuovi ticket">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                        {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Button per Aggiungere Ticket Esistenti -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <button type="button" 
+                            class="btn-add-existing-tickets" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#existingTicketsModal"
+                            title="Aggiungi ticket esistenti al DDT">
+                        <i class="fas fa-plus me-2"></i>
+                        Aggiungi Ticket Esistenti
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Form nascosti per le azioni -->
+            {% if from_task %}
+            <form id="final-ddt-form" method="POST" action="{{ url_for('tasks.complete_task', task_id=task_id) }}" style="display: none;">
+                {{ create_form.hidden_tag() }}
+                <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+                <input type="hidden" name="id_empresa" value="{{ empresa.IdEmpresa }}">
+                <input type="hidden" id="final-tickets-data" name="tickets" value="{{ selected_tickets_json }}">
+                <input type="hidden" name="from_preview" value="true">
+                <input type="hidden" id="selected-creation-date" name="creation_date" value="">
+                <textarea id="ddt-notes" name="note" style="display: none;" placeholder="Note DDT..."></textarea>
+            </form>
+            {% elif from_warehouse %}
+            <form id="final-ddt-form" method="POST" action="{{ url_for('ddt.create') }}" style="display: none;">
+                {{ create_form.hidden_tag() }}
+                <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+                <input type="hidden" name="id_empresa" value="{{ empresa.IdEmpresa }}">
+                <input type="hidden" id="final-tickets-data" name="tickets" value="{{ selected_tickets_json }}">
+                <input type="hidden" name="from_warehouse" value="true">
+                <input type="hidden" id="selected-creation-date" name="creation_date" value="">
+                <textarea id="ddt-notes" name="note" style="display: none;" placeholder="Note DDT..."></textarea>
+            </form>
+            {% else %}
+            <form id="final-ddt-form" method="POST" action="{{ url_for('ddt.create') }}" style="display: none;">
+                {{ create_form.hidden_tag() }}
+                <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+                <input type="hidden" name="id_empresa" value="{{ empresa.IdEmpresa }}">
+                <input type="hidden" id="final-tickets-data" name="tickets" value="{{ selected_tickets_json }}">
+                <input type="hidden" id="selected-creation-date" name="creation_date" value="">
+                <textarea id="ddt-notes" name="note" style="display: none;" placeholder="Note DDT..."></textarea>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Creazione Ticket Manuale -->
+<div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title text-white fw-bold" id="createTicketModalLabel">
+                    <i class="fas fa-plus me-2"></i>Crea Ticket Manuale
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-success" id="save-manual-ticket" disabled>
+                        <i class="fas fa-plus me-2"></i>Crea Ticket
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-4">
+                <form id="manual-ticket-form">
+                    <!-- Sezione Suggerimenti Ultimi Prodotti -->
+                    <div class="row mb-4" id="recent-products-section" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-primary bg-light">
+                                <div class="card-header bg-primary text-white py-2">
+                                    <h6 class="mb-0 fw-bold">
+                                        <i class="fas fa-history me-2"></i>Ultimi Prodotti Selezionati
+                                    </h6>
+                                    <small class="opacity-75">Clicca per aggiungere rapidamente al ticket</small>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="row" id="recent-products-list">
+                                        <!-- I suggerimenti verranno popolati dinamicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Area Prodotti nel Ticket con Ricerca Integrata -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-gradient-primary text-white py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0 fw-bold">
+                                            <i class="fas fa-shopping-cart me-2"></i>Prodotti nel Ticket
+                                        </h5>
+                                        <span class="badge bg-light text-dark" id="products-count-badge">0 prodotti</span>
+                                    </div>
+                                    
+                                    <!-- Barra di Ricerca Integrata nell'Header -->
+                                    <div class="position-relative">
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text bg-white text-primary border-0">
+                                                <i class="fas fa-search"></i>
+                                            </span>
+                                            <input type="text" class="form-control border-0 shadow-sm" 
+                                                   id="product-search" 
+                                                   placeholder="🔍 Cerca prodotto per nome, ID o codice a barre..."
+                                                   style="font-size: 1.1rem; padding: 0.75rem 1rem;">
+                                        </div>
+                                        
+                                        <!-- Dropdown Risultati Ricerca -->
+                                        <div id="product-search-dropdown" 
+                                             class="position-absolute w-100 bg-white border rounded shadow-lg mt-2" 
+                                             style="z-index: 9999; max-height: 300px; overflow-y: auto; display: none; top: 100%;">
+                                            <!-- I risultati verranno popolati qui -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="selected-products-list" style="min-height: 400px;">
+                                        <!-- Stato vuoto -->
+                                        <div class="text-center text-muted py-5" id="empty-products-state">
+                                            <div class="mb-4">
+                                                <i class="fas fa-box-open fa-4x opacity-25"></i>
+                                            </div>
+                                            <h5 class="text-muted mb-2">Nessun prodotto nel ticket</h5>
+                                            <p class="mb-0">Cerca e seleziona i prodotti dalla barra di ricerca sopra</p>
+                                            <small class="text-muted">
+                                                <i class="fas fa-lightbulb me-1"></i>
+                                                Suggerimento: Puoi cercare per nome, ID o codice a barre
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Footer con totali -->
+                                <div class="card-footer bg-light border-0" id="ticket-summary" style="display: none;">
+                                    <div class="row align-items-center mb-2">
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-calculator text-primary me-2"></i>
+                                                <span class="fw-semibold">Riepilogo:</span>
+                                                <span class="ms-2" id="ticket-items-summary">0 articoli</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 text-md-end">
+                                            <div class="fs-5 fw-bold text-success">
+                                                <i class="fas fa-euro-sign me-1"></i>
+                                                <span id="ticket-total-amount">0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="alert alert-info py-2 mb-0">
+                                                <small class="mb-0">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    <strong>Nota:</strong> Ogni prodotto selezionato creerà un ticket separato nel DDT.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annulla
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Ticket Esistenti -->
+<div class="modal fade" id="existingTicketsModal" tabindex="-1" aria-labelledby="existingTicketsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title fw-bold" id="existingTicketsModalLabel">
+                    <i class="fas fa-list me-2"></i>Ticket Esistenti - Selezione Multipla
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-success" id="add-selected-tickets" disabled>
+                        <i class="fas fa-plus me-2"></i>Aggiungi Selezionati al DDT
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Filtri per i ticket esistenti -->
+                <div class="p-4 bg-light border-bottom">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-search text-primary me-1"></i>Cerca Ticket
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="existing-tickets-search" 
+                                   placeholder="🔍 Cerca per numero ticket...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-box text-success me-1"></i>Prodotto
+                            </label>
+                            <select class="form-select form-select-lg" id="existing-tickets-filter-product">
+                                <option value="">Tutti i prodotti</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-filter text-info me-1"></i>Stato
+                            </label>
+                            <select class="form-select form-select-lg" id="existing-tickets-filter-status">
+                                <option value="">Tutti gli stati</option>
+                                <option value="active">Attivi</option>
+                                <option value="expiring">In scadenza</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-primary btn-lg w-100" id="refresh-existing-tickets">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lista prodotti con accordion -->
+                <div class="existing-products-container" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Loading -->
+                    <div class="text-center py-5" id="existing-tickets-loading">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 class="text-muted">Caricamento prodotti...</h5>
+                        <p class="text-muted mb-0">Stiamo recuperando i ticket disponibili</p>
+                    </div>
+                    
+                    <!-- Lista prodotti -->
+                    <div id="existing-products-list" class="p-3">
+                        <!-- I prodotti verranno caricati qui dinamicamente -->
+                    </div>
+                    
+                    <!-- Stato vuoto -->
+                    <div class="text-center py-5 d-none" id="existing-tickets-empty">
+                        <div class="mb-4">
+                            <i class="fas fa-inbox fa-4x text-muted opacity-25"></i>
+                        </div>
+                        <h5 class="text-muted">Nessun ticket trovato</h5>
+                        <p class="text-muted mb-0">Non ci sono ticket che corrispondono ai criteri di ricerca</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer con controlli selezione multipla -->
+            <div class="modal-footer bg-light border-top">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-outline-secondary" id="select-all-tickets">
+                            <i class="fas fa-check-square me-1"></i>Seleziona tutti
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="deselect-all-tickets">
+                            <i class="fas fa-square me-1"></i>Deseleziona tutti
+                        </button>
+                        <div class="vr"></div>
+                        <span class="text-muted fw-semibold" id="selected-tickets-count">
+                            <i class="fas fa-info-circle me-1"></i>Nessun ticket selezionato
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Annulla
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Modifica Linea Ticket -->
+<div class="modal fade" id="editLineModal" tabindex="-1" aria-labelledby="editLineModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <!-- Header del Modal con Informazioni Prodotto -->
+            <div class="modal-header p-0">
+                <div class="w-100 p-4 position-relative">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <!-- Intestazione Prodotto -->
+                            <div class="mb-2">
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fas fa-ticket-alt me-1"></i>TICKET #<span id="edit-ticket-number"></span>
+                                </span>
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-edit me-1"></i>MODIFICA LINEA
+                                </span>
+                            </div>
+                            
+                            <h4 class="text-white fw-bold mb-2" id="edit-product-title">
+                                <i class="fas fa-box me-2"></i>
+                                <span id="edit-product-description">Caricamento...</span>
+                            </h4>
+                            
+                            <div class="d-flex flex-wrap gap-3 text-white-50">
+                                <div>
+                                    <i class="fas fa-barcode me-1"></i>
+                                    <strong>Codice:</strong> <span id="edit-product-code">--</span>
+                                </div>
+                                <div>
+                                    <i class="fas fa-balance-scale me-1"></i>
+                                    <strong>Tipo:</strong> <span id="edit-product-type">--</span>
+                                </div>
+                                <div>
+                                    <i class="fas fa-euro-sign me-1"></i>
+                                    <strong>Prezzo Attuale:</strong> €<span id="edit-current-price">0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn-close btn-close-white btn-lg" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body p-4">
+                <form id="edit-line-form">
+                    <input type="hidden" id="edit-ticket-id" name="ticket_id">
+                    <input type="hidden" id="edit-line-id" name="line_id">
+                    
+                    <div class="row g-4">
+                        <!-- Sezione Informazioni Prodotto (Read-Only) -->
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0 fw-bold text-white">
+                                        <i class="fas fa-info-circle me-2"></i>Informazioni Prodotto (Non Modificabili)
+                                    </h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold text-muted mb-2">
+                                                <i class="fas fa-barcode me-1"></i>Codice Articolo
+                                            </label>
+                                            <div class="form-control-plaintext bg-light p-3 rounded">
+                                                <span id="edit-id-articulo-display">--</span>
+                                            </div>
+                                            <input type="hidden" id="edit-id-articulo" name="id_articulo">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold text-muted mb-2">
+                                                <i class="fas fa-tag me-1"></i>Descrizione
+                                            </label>
+                                            <div class="form-control-plaintext bg-light p-3 rounded">
+                                                <span id="edit-descripcion-display">--</span>
+                                            </div>
+                                            <input type="hidden" id="edit-descripcion" name="descripcion">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sezione Quantità e Peso -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0 fw-bold text-white">
+                                        <i class="fas fa-weight me-2"></i>Quantità e Misure
+                                    </h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="mb-4">
+                                        <label for="edit-peso" class="form-label fw-semibold mb-2">
+                                            <i class="fas fa-balance-scale me-1 text-primary"></i>Peso/Quantità
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control form-control-lg" id="edit-peso" name="peso" 
+                                                   step="0.001" min="0" placeholder="Inserisci quantità">
+                                            <span class="input-group-text bg-primary text-white fw-bold" id="peso-unit-display">kg</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="edit-comportamiento" class="form-label fw-semibold mb-2">
+                                            <i class="fas fa-cogs me-1 text-primary"></i>Tipo Prodotto
+                                        </label>
+                                        <select class="form-select form-select-lg" id="edit-comportamiento" name="comportamiento" onchange="updatePesoUnit()">
+                                            <option value="0">🔢 Unità (pz)</option>
+                                            <option value="1">⚖️ Peso (kg)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sezione Prezzi e IVA -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0 fw-bold text-white">
+                                        <i class="fas fa-euro-sign me-2"></i>Prezzi e Tasse
+                                    </h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-4">
+                                        <div class="col-12">
+                                            <label for="edit-precio" class="form-label fw-semibold mb-2">
+                                                <i class="fas fa-tag me-1 text-success"></i>Prezzo Unitario (€)
+                                            </label>
+                                            <input type="number" class="form-control form-control-lg" id="edit-precio" name="precio" 
+                                                   step="0.01" min="0" placeholder="0.00" onchange="calculateLineTotal()">
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label for="edit-iva" class="form-label fw-semibold mb-2">
+                                                <i class="fas fa-percentage me-1 text-success"></i>Aliquota IVA
+                                            </label>
+                                            <select class="form-select form-select-lg" id="edit-iva" name="iva" onchange="calculateLineTotal()">
+                                                <option value="4">🥬 4% - Prodotti Alimentari Base</option>
+                                                <option value="10">🍕 10% - Alimentari Normale</option>
+                                                <option value="22">🥤 22% - Bevande/Altri</option>
+                                                <option value="0">🚫 0% - Esente IVA</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="col-12">
+                                            <label for="edit-importe" class="form-label fw-semibold mb-2">
+                                                <i class="fas fa-calculator me-1 text-success"></i>Importo Totale (€)
+                                            </label>
+                                            <input type="number" class="form-control form-control-lg" id="edit-importe" name="importe" 
+                                                   step="0.01" min="0" placeholder="0.00" onchange="calculateUnitPrice()">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3 p-3 bg-light rounded-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            <strong>Calcolo Automatico:</strong> I campi prezzo e importo si aggiornano automaticamente in base alle modifiche.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sezione Date e Lotto -->
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0 fw-bold text-white">
+                                        <i class="fas fa-calendar-alt me-2"></i>Tracciabilità e Scadenze
+                                    </h6>
+                                </div>
+                                <div class="card-body p-4">
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label for="edit-fecha-caducidad" class="form-label fw-semibold mb-2">
+                                                <i class="fas fa-clock me-1 text-warning"></i>Data di Scadenza
+                                            </label>
+                                            <input type="date" class="form-control form-control-lg" id="edit-fecha-caducidad" name="fecha_caducidad">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="edit-texto-lote" class="form-label fw-semibold mb-2">
+                                                <i class="fas fa-certificate me-1 text-warning"></i>Numero di Lotto
+                                            </label>
+                                            <input type="text" class="form-control form-control-lg" id="edit-texto-lote" name="texto_lote" 
+                                                   placeholder="es. LOT2025001, BATCH-A123...">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3 p-3 bg-light rounded-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            <strong>Tracciabilità:</strong> Questi dati sono importanti per la tracciabilità del prodotto e la gestione delle scadenze.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer p-4">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="text-muted">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Le modifiche verranno salvate immediatamente nel database
+                        </small>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <button type="button" class="btn btn-light btn-lg" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Annulla
+                        </button>
+                        <button type="button" class="btn btn-lg" id="save-line-changes">
+                            <i class="fas fa-save me-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ddt.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ddt_preview.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ddt_preview_modals.js') }}"></script>
+
+<!-- Date Selector Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dateSelectorBtn = document.getElementById('date-selector-btn');
+    const datePicker = document.getElementById('date-picker');
+    const selectedDateDisplay = document.getElementById('selected-date-display');
+    const selectedDateInput = document.getElementById('selected-creation-date');
+
+    // Funzione per formattare la data in italiano
+    function formatDateItalian(date) {
+        const options = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        };
+        return date.toLocaleDateString('it-IT', options);
+    }
+
+    // Funzione per formattare la data per il database (YYYY-MM-DD)
+    function formatDateForDB(date) {
+        return date.toISOString().split('T')[0];
+    }
+
+    // Imposta la data odierna come predefinita
+    const today = new Date();
+    const todayFormatted = formatDateItalian(today);
+    const todayForDB = formatDateForDB(today);
+
+    selectedDateDisplay.textContent = todayFormatted;
+    datePicker.value = todayForDB;
+    selectedDateInput.value = todayForDB;
+
+    // Gestione click sul bottone data
+    dateSelectorBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Toggle visibilità del date picker
+        if (datePicker.classList.contains('d-none')) {
+            datePicker.classList.remove('d-none');
+            datePicker.focus();
+
+            // Chiudi il date picker quando si clicca fuori
+            document.addEventListener('click', closeDatePickerOnOutsideClick);
+        } else {
+            datePicker.classList.add('d-none');
+            document.removeEventListener('click', closeDatePickerOnOutsideClick);
+        }
+    });
+
+    // Funzione per chiudere il date picker quando si clicca fuori
+    function closeDatePickerOnOutsideClick(e) {
+        if (!datePicker.contains(e.target) && !dateSelectorBtn.contains(e.target)) {
+            datePicker.classList.add('d-none');
+            document.removeEventListener('click', closeDatePickerOnOutsideClick);
+        }
+    }
+
+    // Gestione cambio data
+    datePicker.addEventListener('change', function() {
+        const selectedDate = new Date(this.value);
+        const formattedDate = formatDateItalian(selectedDate);
+        const dbFormattedDate = formatDateForDB(selectedDate);
+
+        // Aggiorna il display del bottone
+        selectedDateDisplay.textContent = formattedDate;
+
+        // Aggiorna il campo hidden del form
+        selectedDateInput.value = dbFormattedDate;
+
+        // Chiudi il date picker
+        datePicker.classList.add('d-none');
+        document.removeEventListener('click', closeDatePickerOnOutsideClick);
+
+        // Log per debug
+        console.log('Data selezionata:', {
+            display: formattedDate,
+            database: dbFormattedDate,
+            input: selectedDateInput.value
+        });
+    });
+
+    // Gestione pressione tasto ESC per chiudere il date picker
+    datePicker.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            datePicker.classList.add('d-none');
+            document.removeEventListener('click', closeDatePickerOnOutsideClick);
+        }
+    });
+
+    // Permetti selezione di date future (rimossa restrizione)
+    // datePicker.setAttribute('max', todayForDB);
+
+    console.log('Date selector initialized:', {
+        today: todayFormatted,
+        todayDB: todayForDB,
+        currentValue: selectedDateInput.value
+    });
+});
+</script>
+
+<!-- Server data initialization -->
+<script type="application/json" id="server-data">
+{
+    "INITIAL_TICKETS_DATA": {{ selected_tickets_json|tojson|safe }},
+    "INITIAL_PREVIEW_DATA": {{ preview_data|tojson|safe }},
+    "FROM_TASK": {{ from_task|tojson|safe }},
+    "FROM_MODIFY": {% if from_modify %}{{ from_modify|tojson|safe }}{% else %}false{% endif %},
+    "DDT_ID": {% if ddt_id %}{{ ddt_id|tojson|safe }}{% else %}null{% endif %},
+    "CLIENTE_ID": {% if cliente %}{{ cliente.IdCliente|tojson|safe }}{% else %}null{% endif %},
+    "EMPRESA_ID": {% if empresa %}{{ empresa.IdEmpresa|tojson|safe }}{% else %}null{% endif %}
+}
+</script>
+{% endblock %}

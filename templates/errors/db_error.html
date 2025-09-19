@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Errore Database - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/errors.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5 db-error-page">
+    <div class="col-md-8 text-center">
+        <div class="error-container mb-4">
+            <h1 class="display-1 text-muted">Errore Database</h1>
+            <i class="fas fa-database fa-5x text-danger mb-4"></i>
+            <h2 class="mb-4">Errore durante l'accesso al database</h2>
+            
+            <div class="alert alert-danger">
+                <h4><i class="fas fa-exclamation-triangle me-2"></i>ERRORE DATABASE:</h4>
+                <ul class="list-unstyled text-start mt-3">
+                    <li class="mb-2"><i class="fas fa-check-circle me-2"></i>SI È VERIFICATO UN ERRORE DURANTE L'ACCESSO AL DATABASE.</li>
+                    <li><i class="fas fa-check-circle me-2"></i>VERIFICARE LA CONNESSIONE E LA COMPATIBILITÀ DEL DATABASE.</li>
+                </ul>
+            </div>
+            
+            {% if error %}
+            <div class="alert alert-secondary mt-3">
+                <h5>Dettagli errore:</h5>
+                <code>{{ error }}</code>
+            </div>
+            {% endif %}
+            
+            <p class="text-muted mt-4">Si è verificato un errore durante l'accesso al database. Prova a utilizzare lo scanner di rete per trovare la bilancia master corretta.</p>
+        </div>
+        
+        <!-- Network Scanner Section -->
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-search me-2"></i>Scansione Rete per Bilance CS1200*</h5>
+            </div>
+            <div class="card-body">
+                <div id="terminal" class="terminal-box text-start p-3 mb-3">
+                    <div id="terminal-content">
+                        <p>$ Pronto per la scansione della rete locale per dispositivi CS1200*...</p>
+                    </div>
+                </div>
+                
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-dark text-light">Prefisso di Rete</span>
+                    <input type="text" id="network-prefix" class="form-control" value="192.168.1" 
+                           placeholder="es. 192.168.1">
+                </div>
+                
+                <div id="results-container" class="d-none">
+                    <h5 class="text-success mb-3">Dispositivi trovati:</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nome Host</th>
+                                    <th>Indirizzo IP</th>
+                                    <th>Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table">
+                                <!-- Results will be added here by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <button id="scan-button" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Ricerca dispositivi CS1200*
+                    </button>
+                    <button id="stop-scan-button" class="btn btn-danger d-none">
+                        <i class="fas fa-stop-circle me-2"></i>Interrompi Scansione
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sezione per connessione manuale -->
+        <div class="card mb-4 border-secondary">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-plug me-2"></i>Connessione Manuale</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Se conosci già l'indirizzo IP della bilancia master, puoi inserirlo direttamente qui sotto:</p>
+                
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-secondary text-light">Indirizzo IP</span>
+                    <input type="text" id="manual-ip" class="form-control" placeholder="es. 192.168.1.22">
+                    <button class="btn btn-info" type="button" id="test-manual-ip">
+                        <i class="fas fa-vial me-2"></i>Test
+                    </button>
+                    <button class="btn btn-success" type="button" id="connect-manual-ip">
+                        <i class="fas fa-database me-2"></i>Connetti
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-grid gap-2 d-md-block">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary me-md-2">
+                <i class="fas fa-sync me-2"></i>Riprova Connessione
+            </a>
+            <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna Indietro
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="successModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Connessione Riuscita
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-database fa-3x text-success mb-3"></i>
+                </div>
+                <div class="alert alert-success">
+                    <h5 class="text-center">Connessione al Database Aggiornata!</h5>
+                    <p class="text-center mt-2" id="success-message">Bilancia Master trovata e connessa.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-success">
+                    <i class="fas fa-sign-in-alt me-2"></i>Accedi
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="errorModalLabel">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Errore Connessione
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-times-circle fa-3x text-danger mb-3"></i>
+                </div>
+                <div class="alert alert-danger">
+                    <h5 class="text-center">Impossibile Connettersi</h5>
+                    <p class="text-center mt-2" id="error-message">Impossibile stabilire una connessione con l'IP selezionato.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get DOM elements
+        const scanButton = document.getElementById('scan-button');
+        const stopScanButton = document.getElementById('stop-scan-button');
+        const terminalContent = document.getElementById('terminal-content');
+        const networkPrefix = document.getElementById('network-prefix');
+        const resultsContainer = document.getElementById('results-container');
+        const resultsTable = document.getElementById('results-table');
+        
+        // Variables for the network scanner
+        let scanning = false;
+        let scanTimeout;
+        let currentIP = 1;
+        let maxIP = 254;
+        let foundDevices = 0;
+        let successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        let errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        
+        // Add a line to the terminal
+        function addTerminalLine(line, className = '') {
+            const p = document.createElement('p');
+            if (className) {
+                p.className = className;
+            }
+            p.innerHTML = line;
+            terminalContent.appendChild(p);
+            terminalContent.scrollTop = terminalContent.scrollHeight;
+        }
+        
+        // Format IP address with network prefix
+        function formatIP(num) {
+            return `${networkPrefix.value}.${num}`;
+        }
+        
+        // Add a device to the results table
+        function addDeviceToResults(hostname, ip) {
+            resultsContainer.classList.remove('d-none');
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${hostname}</td>
+                <td>${ip}</td>
+                <td>
+                    <button class="btn btn-sm use-db-btn test-db-btn" data-ip="${ip}">
+                        <i class="fas fa-vial me-1"></i> Test
+                    </button>
+                    <button class="btn btn-sm use-db-btn use-db-btn" data-ip="${ip}">
+                        <i class="fas fa-check me-1"></i> Usa
+                    </button>
+                </td>
+            `;
+            resultsTable.appendChild(tr);
+            
+            // Add event listeners to the new buttons
+            tr.querySelector('.test-db-btn').addEventListener('click', function() {
+                testDatabaseConnection(ip);
+            });
+            
+            tr.querySelector('.use-db-btn').addEventListener('click', function() {
+                useDatabaseConnection(ip);
+            });
+        }
+        
+        // Simulate network scan
+        function scanNetwork() {
+            if (!scanning) return;
+            
+            // Update current IP display
+            addTerminalLine(`$ Scansione di ${formatIP(currentIP)}...`);
+            
+            // Simulate delay for scanning
+            scanTimeout = setTimeout(() => {
+                // Random chance to find a device (for demo purposes)
+                const found = Math.random() < 0.05; // 5% chance
+                
+                if (found) {
+                    foundDevices++;
+                    const hostname = `CS1200_${Math.floor(Math.random() * 1000)}`;
+                    addTerminalLine(`$ TROVATO: ${hostname} su ${formatIP(currentIP)}`, 'text-success');
+                    addDeviceToResults(hostname, formatIP(currentIP));
+                }
+                
+                currentIP++;
+                
+                // Continue scanning or finish
+                if (currentIP <= maxIP && scanning) {
+                    // Continue to next IP
+                    scanNetwork();
+                } else {
+                    // Finish scanning
+                    scanning = false;
+                    stopScanButton.classList.add('d-none');
+                    scanButton.classList.remove('d-none');
+                    
+                    if (foundDevices > 0) {
+                        addTerminalLine(`$ Scansione completata. Trovati ${foundDevices} dispositivi.`, 'text-success');
+                    } else {
+                        addTerminalLine(`$ Scansione completata. Nessun dispositivo trovato.`, 'text-warning');
+                    }
+                }
+            }, 100); // Fast for demo purposes
+        }
+        
+        // Start network scan
+        scanButton.addEventListener('click', function() {
+            // Reset variables
+            scanning = true;
+            currentIP = 1;
+            foundDevices = 0;
+            
+            // Update UI
+            scanButton.classList.add('d-none');
+            stopScanButton.classList.remove('d-none');
+            resultsTable.innerHTML = '';
+            resultsContainer.classList.add('d-none');
+            
+            // Add initial terminal lines
+            addTerminalLine(`$ Avvio scansione rete ${networkPrefix.value}.0/24...`);
+            addTerminalLine(`$ Ricerca dispositivi CS1200*...`);
+            
+            // Start the scan
+            scanNetwork();
+        });
+        
+        // Stop network scan
+        stopScanButton.addEventListener('click', function() {
+            scanning = false;
+            clearTimeout(scanTimeout);
+            
+            // Update UI
+            stopScanButton.classList.add('d-none');
+            scanButton.classList.remove('d-none');
+            
+            addTerminalLine(`$ Scansione interrotta dall'utente.`, 'text-warning');
+        });
+        
+        // Manual IP connection test
+        document.getElementById('test-manual-ip').addEventListener('click', function() {
+            const ip = document.getElementById('manual-ip').value.trim();
+            if (ip) {
+                testDatabaseConnection(ip);
+            } else {
+                alert('Inserisci un indirizzo IP valido.');
+            }
+        });
+        
+        // Manual IP connection
+        document.getElementById('connect-manual-ip').addEventListener('click', function() {
+            const ip = document.getElementById('manual-ip').value.trim();
+            if (ip) {
+                useDatabaseConnection(ip);
+            } else {
+                alert('Inserisci un indirizzo IP valido.');
+            }
+        });
+        
+        // Test database connection
+        function testDatabaseConnection(ip) {
+            // Simulate API call (for demo purposes)
+            setTimeout(() => {
+                const success = Math.random() < 0.7; // 70% success rate for demo
+                
+                if (success) {
+                    document.getElementById('success-message').textContent = `Bilancia Master trovata all'indirizzo ${ip}`;
+                    successModal.show();
+                } else {
+                    document.getElementById('error-message').textContent = `Impossibile connettersi al database su ${ip}. Verificare che l'indirizzo sia corretto e che il dispositivo sia accessibile.`;
+                    errorModal.show();
+                }
+            }, 1000);
+        }
+        
+        // Use database connection
+        function useDatabaseConnection(ip) {
+            // Simulate API call (for demo purposes)
+            setTimeout(() => {
+                const success = Math.random() < 0.8; // 80% success rate for demo
+                
+                if (success) {
+                    document.getElementById('success-message').textContent = `Connessione al database su ${ip} configurata con successo.`;
+                    successModal.show();
+                } else {
+                    document.getElementById('error-message').textContent = `Errore durante la configurazione della connessione al database su ${ip}. Verificare le credenziali e le impostazioni di rete.`;
+                    errorModal.show();
+                }
+            }, 1500);
+        }
+    });
+</script>
+{% endblock %} 

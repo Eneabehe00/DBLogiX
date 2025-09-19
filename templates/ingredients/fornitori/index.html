@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Fornitori - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fornitori.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/fornitori.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Fornitori</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-truck me-2"></i>Gestione Fornitori
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ fornitori.total if fornitori else 0 }} fornitori nel database</span>
+                    {% if search %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ingredients.fornitori_new') }}" class="btn btn-success action-btn">
+                        <i class="fas fa-plus me-1"></i>Nuovo Fornitore
+                    </a>
+                    <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{%- from 'components/search_and_stats.html' import render_search_section -%}
+
+<div class="container-fluid">
+    
+    <!-- Search and Filters -->
+    <div class="search-section">
+        <div class="search-header">
+            <i class="fas fa-search"></i>
+            <h5 class="mb-0">Ricerca Fornitori</h5>
+        </div>
+        <form method="GET" class="row g-3 mt-2">
+            <div class="col-lg-6 col-md-8">
+                <label class="form-label">Cerca fornitore</label>
+                <input type="text" name="search" class="form-control" 
+                       value="{{ search }}" 
+                       placeholder="Nome, email, telefono, città...">
+            </div>
+            <div class="col-lg-3 col-md-4">
+                <label class="form-label">Ordinamento</label>
+                <select name="sort" class="form-select">
+                    <option value="nome" {% if sort_by == 'nome' %}selected{% endif %}>Nome A-Z</option>
+                    <option value="citta" {% if sort_by == 'citta' %}selected{% endif %}>Città</option>
+                    <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Più recenti</option>
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-12 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Cerca
+                </button>
+                <a href="{{ url_for('ingredients.fornitori_list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Table -->
+    {% if fornitori.items %}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>
+                        <i class="fas fa-building me-1"></i>Nome Fornitore
+                    </th>
+                    <th>
+                        <i class="fas fa-map-marker-alt me-1"></i>Località
+                    </th>
+                    <th>
+                        <i class="fas fa-phone me-1"></i>Telefono
+                    </th>
+                    <th>
+                        <i class="fas fa-envelope me-1"></i>Email
+                    </th>
+                    <th class="text-center">
+                        <i class="fas fa-leaf me-1"></i>Ingredienti
+                    </th>
+                    <th class="text-center">
+                        <i class="fas fa-euro-sign me-1"></i>Prezzo Medio
+                    </th>
+                    <th>
+                        <i class="fas fa-id-card me-1"></i>P.IVA/C.F.
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fornitore in fornitori.items %}
+                <tr class="table-row clickable-row" 
+                    data-href="{{ url_for('ingredients.fornitori_view', id=fornitore.id) }}"
+                    title="Clicca per visualizzare i dettagli di {{ fornitore.nome }}">
+                    
+                    <td class="fornitore-name-cell">
+                        <div class="fw-semibold" style="color: #2c3e50;">{{ fornitore.nome }}</div>
+                        {% if fornitore.note %}
+                        <small class="text-muted">
+                            <i class="fas fa-sticky-note me-1"></i>
+                            {{ fornitore.note[:50] }}{% if fornitore.note|length > 50 %}...{% endif %}
+                        </small>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if fornitore.citta %}
+                            <span class="fw-medium">{{ fornitore.citta }}</span>
+                            {% if fornitore.provincia %}
+                            <small class="text-muted">({{ fornitore.provincia }})</small>
+                            {% endif %}
+                            {% if fornitore.paese and fornitore.paese != 'Italia' %}
+                            <br><small class="badge bg-info">{{ fornitore.paese }}</small>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if fornitore.telefono %}
+                        <a href="tel:{{ fornitore.telefono }}" class="contact-link" 
+                           onclick="event.stopPropagation();" title="Chiama {{ fornitore.telefono }}">
+                            <i class="fas fa-phone me-1"></i>
+                            {{ fornitore.telefono }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if fornitore.email %}
+                        <a href="mailto:{{ fornitore.email }}" class="contact-link" 
+                           onclick="event.stopPropagation();" title="Invia email a {{ fornitore.email }}">
+                            <i class="fas fa-envelope me-1"></i>
+                            {{ fornitore.email }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="text-center">
+                        {% if fornitore.numero_ingredienti > 0 %}
+                        <span class="badge bg-success fs-6">
+                            {{ fornitore.numero_ingredienti }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">0</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="text-center">
+                        {% if fornitore.prezzo_medio_ingredienti > 0 %}
+                        <span class="fw-medium text-success">
+                            €{{ "%.2f"|format(fornitore.prezzo_medio_ingredienti) }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td>
+                        {% if fornitore.partita_iva %}
+                        <div class="fw-medium">{{ fornitore.partita_iva }}</div>
+                        <small class="text-muted">P.IVA</small>
+                        {% elif fornitore.codice_fiscale %}
+                        <div class="fw-medium">{{ fornitore.codice_fiscale }}</div>
+                        <small class="text-muted">C.F.</small>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if fornitori.pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if fornitori.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('ingredients.fornitori_list', page=fornitori.prev_num, search=search, sort=sort_by) }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in fornitori.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != fornitori.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('ingredients.fornitori_list', page=page_num, search=search, sort=sort_by) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if fornitori.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('ingredients.fornitori_list', page=fornitori.next_num, search=search, sort=sort_by) }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- No Results Table -->
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>
+                        <i class="fas fa-building me-1"></i>Nome Fornitore
+                    </th>
+                    <th>
+                        <i class="fas fa-map-marker-alt me-1"></i>Località
+                    </th>
+                    <th>
+                        <i class="fas fa-phone me-1"></i>Telefono
+                    </th>
+                    <th>
+                        <i class="fas fa-envelope me-1"></i>Email
+                    </th>
+                    <th class="text-center">
+                        <i class="fas fa-leaf me-1"></i>Ingredienti
+                    </th>
+                    <th class="text-center">
+                        <i class="fas fa-euro-sign me-1"></i>Prezzo Medio
+                    </th>
+                    <th>
+                        <i class="fas fa-id-card me-1"></i>P.IVA/C.F.
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="7" class="table-empty-state">
+                        <i class="fas fa-truck"></i>
+                        <h5 class="mt-3 mb-2">Nessun fornitore trovato</h5>
+                        <p class="mb-3">
+                            {% if search %}
+                                Prova a modificare i termini di ricerca per trovare fornitori corrispondenti.
+                            {% else %}
+                                Non ci sono ancora fornitori nel database.
+                            {% endif %}
+                        </p>
+                        {% if search %}
+                        <a href="{{ url_for('ingredients.fornitori_list') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> Visualizza tutti i fornitori
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('ingredients.fornitori_new') }}" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Crea il primo fornitore
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

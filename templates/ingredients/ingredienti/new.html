@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Nuovo Ingrediente - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ingredients.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}" class="text-white">Ingredienti</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}" class="text-white">Gestione Ingredienti</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo Ingrediente</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Nuovo Ingrediente
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Aggiungi un nuovo ingrediente al database</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Form principale -->
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+            <form method="POST" class="needs-validation" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Informazioni Base -->
+                <div class="fattura-card card shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2" style="color: #2c3e50;"></i>Informazioni Base</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label for="nome" class="form-label">Nome Ingrediente <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="nome" name="nome" 
+                                       required maxlength="100" placeholder="Es. Farina 00">
+                                <div class="form-text">Il nome dell'ingrediente deve essere univoco</div>
+                                <div class="invalid-feedback">Inserisci un nome per l'ingrediente</div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="unita_misura" class="form-label">Unità di Misura <span class="text-danger">*</span></label>
+                                <select class="form-select" id="unita_misura" name="unita_misura" required>
+                                    <option value="kg" selected>Chilogrammi (kg)</option>
+                                    <option value="g">Grammi (g)</option>
+                                    <option value="l">Litri (l)</option>
+                                    <option value="ml">Millilitri (ml)</option>
+                                    <option value="pz">Pezzi (pz)</option>
+                                    <option value="conf">Confezioni (conf)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="categoria" class="form-label">Categoria</label>
+                                <input type="text" class="form-control" id="categoria" name="categoria" 
+                                       maxlength="50" placeholder="Es. Cereali, Latticini, Verdure"
+                                       list="categorie-list">
+                                <datalist id="categorie-list">
+                                    <option value="Cereali">
+                                    <option value="Latticini">
+                                    <option value="Verdure">
+                                    <option value="Frutta">
+                                    <option value="Carne">
+                                    <option value="Pesce">
+                                    <option value="Condimenti">
+                                    <option value="Spezie">
+                                    <option value="Erbe aromatiche">
+                                    <option value="Dolcificanti">
+                                    <option value="Conserve">
+                                </datalist>
+                                <div class="form-text">Categoria per raggruppare gli ingredienti</div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="descrizione" class="form-label">Descrizione</label>
+                                <textarea class="form-control" id="descrizione" name="descrizione" 
+                                          rows="3" placeholder="Descrizione dettagliata dell'ingrediente..."></textarea>
+                                <div class="form-text">Descrizione opzionale dell'ingrediente</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informazioni Nutrizionali -->
+                <div class="fattura-card card shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0"><i class="fas fa-apple-alt me-2" style="color: #2c3e50;"></i>Valori Nutrizionali <small class="text-muted">(per 100g)</small></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="calorie" class="form-label">Calorie (kcal)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="calorie" name="calorie" 
+                                           step="0.1" min="0" max="9999" placeholder="Es. 364">
+                                    <span class="input-group-text">kcal</span>
+                                </div>
+                                <div class="form-text">Apporto calorico per 100g</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="proteine" class="form-label">Proteine (g)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="proteine" name="proteine" 
+                                           step="0.01" min="0" max="999" placeholder="Es. 11.5">
+                                    <span class="input-group-text">g</span>
+                                </div>
+                                <div class="form-text">Contenuto proteico per 100g</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="carboidrati" class="form-label">Carboidrati (g)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="carboidrati" name="carboidrati" 
+                                           step="0.01" min="0" max="999" placeholder="Es. 74.2">
+                                    <span class="input-group-text">g</span>
+                                </div>
+                                <div class="form-text">Contenuto di carboidrati per 100g</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="grassi" class="form-label">Grassi (g)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="grassi" name="grassi" 
+                                           step="0.01" min="0" max="999" placeholder="Es. 1.2">
+                                    <span class="input-group-text">g</span>
+                                </div>
+                                <div class="form-text">Contenuto di grassi per 100g</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Allergeni e Conservazione -->
+                <div class="fattura-card card shadow-sm mb-4">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0"><i class="fas fa-shield-alt me-2" style="color: #2c3e50;"></i>Allergeni e Conservazione</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="allergeni" class="form-label">Allergeni</label>
+                                <input type="text" class="form-control" id="allergeni" name="allergeni" 
+                                       placeholder="Es. Glutine, Lattosio, Uova"
+                                       list="allergeni-list">
+                                <datalist id="allergeni-list">
+                                    <option value="Glutine">
+                                    <option value="Lattosio">
+                                    <option value="Uova">
+                                    <option value="Frutta a guscio">
+                                    <option value="Arachidi">
+                                    <option value="Soia">
+                                    <option value="Pesce">
+                                    <option value="Crostacei">
+                                    <option value="Molluschi">
+                                    <option value="Sedano">
+                                    <option value="Senape">
+                                    <option value="Semi di sesamo">
+                                    <option value="Anidride solforosa">
+                                    <option value="Lupini">
+                                </datalist>
+                                <div class="form-text">Elenca gli allergeni separati da virgola</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="conservazione" class="form-label">Modalità di Conservazione</label>
+                                <input type="text" class="form-control" id="conservazione" name="conservazione" 
+                                       placeholder="Es. Luogo fresco e asciutto"
+                                       list="conservazione-list">
+                                <datalist id="conservazione-list">
+                                    <option value="Luogo fresco e asciutto">
+                                    <option value="Frigorifero (+2°C / +8°C)">
+                                    <option value="Freezer (-18°C)">
+                                    <option value="Temperatura ambiente">
+                                    <option value="Al riparo dalla luce">
+                                    <option value="Contenitore ermetico">
+                                </datalist>
+                                <div class="form-text">Come conservare l'ingrediente</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="fattura-card card shadow-sm">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="alert alert-info mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <div>
+                                            <small class="fw-bold">Suggerimento</small>
+                                            <br><small>Dopo la creazione potrai associare fornitori e prezzi.</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ url_for('ingredients.index') }}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-1"></i>Annulla
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Crea Ingrediente
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/ingredients.js') }}"></script>
+<script>
+// Form validation and live preview
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        // Bootstrap validation
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+        
+        // Initialize field enhancements
+        initFieldEnhancements();
+    }, false);
+})();
+
+
+function initFieldEnhancements() {
+    // Auto-capitalize first letter of ingredients name
+    const nomeInput = document.getElementById('nome');
+    if (nomeInput) {
+        nomeInput.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+            }
+        });
+    }
+    
+    // Auto-capitalize category
+    const categoriaInput = document.getElementById('categoria');
+    if (categoriaInput) {
+        categoriaInput.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+            }
+        });
+    }
+    
+    // Number input validation
+    const numberInputs = document.querySelectorAll('input[type="number"]');
+    numberInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // Remove negative values
+            if (this.value < 0) {
+                this.value = 0;
+            }
+        });
+        
+        // Format on blur
+        input.addEventListener('blur', function() {
+            if (this.value && !isNaN(this.value)) {
+                const step = this.getAttribute('step');
+                if (step === '0.01') {
+                    this.value = parseFloat(this.value).toFixed(2);
+                } else if (step === '0.1') {
+                    this.value = parseFloat(this.value).toFixed(1);
+                }
+            }
+        });
+    });
+    
+}
+
+
+// Show success message after creation
+function showSuccessMessage(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    const firstChild = container.firstElementChild;
+    container.insertBefore(alertDiv, firstChild);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

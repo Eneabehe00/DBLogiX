@@ -1,0 +1,731 @@
+{% extends 'base.html' %}
+{% from 'components/search_and_stats.html' import render_search_section %}
+
+{% block title %}Aggiungi Articoli - {{ listino.NomeListino }}{% endblock %}
+
+{% block header_title %}Aggiungi Articoli al Listino{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --listino-primary: #2c3e50;
+        --listino-secondary: #34495e;
+        --listino-success: #27ae60;
+        --listino-danger: #e74c3c;
+        --listino-warning: #f39c12;
+        --listino-info: #3498db;
+        --listino-light: #f4f1f8;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .listino-info-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .listino-info-card .card-header {
+        background: linear-gradient(90deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        border: none;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .articoli-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+    }
+    
+    .table th {
+        background-color: var(--listino-primary);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .table tbody tr.selected {
+        background-color: #e8e2f0;
+        border-left: 4px solid var(--listino-primary);
+    }
+    
+    .price-input {
+        width: 100px;
+        text-align: right;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .price-input:focus {
+        border-color: var(--listino-primary);
+        box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+    }
+    
+    .btn-listino {
+        background-color: var(--listino-primary);
+        border-color: var(--listino-primary);
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-listino:hover {
+        background-color: var(--listino-secondary);
+        border-color: var(--listino-secondary);
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .selection-toolbar {
+        background-color: var(--listino-light);
+        border: 1px solid var(--listino-primary);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .search-section {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .checkbox-lg {
+        transform: scale(1.2);
+    }
+    
+    .ean-code {
+        font-family: 'Courier New', monospace;
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('listini.index') }}" class="text-white">Listini</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="text-white">{{ listino.NomeListino }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Aggiungi Articoli</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Aggiungi Articoli
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Seleziona gli articoli da aggiungere al listino "{{ listino.NomeListino }}"</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="btn btn-outline-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna al Listino
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Listino Info Card -->
+    <div class="card listino-info-card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-tag me-2"></i>{{ listino.NomeListino }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    {% if listino.Descrizione %}
+                    <p class="mb-2">{{ listino.Descrizione }}</p>
+                    {% endif %}
+                    <p class="mb-0">
+                        <strong>Articoli già presenti:</strong> {{ listino.numero_articoli }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="badge badge-listino">
+                        <i class="fas fa-info-circle me-1"></i>
+                        {{ articoli|length }} articoli disponibili
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label for="search" class="form-label fw-bold">
+                    <i class="fas fa-search text-primary me-1"></i>Cerca Articoli
+                </label>
+                <input type="text" 
+                       class="form-control" 
+                       id="search" 
+                       name="search" 
+                       value="{{ search }}" 
+                       placeholder="Cerca per ID, descrizione o codice EAN...">
+            </div>
+            <div class="col-md-4">
+                <div class="d-grid d-md-flex gap-2">
+                    <button type="submit" class="btn btn-listino">
+                        <i class="fas fa-search me-1"></i>Cerca
+                    </button>
+                    {% if search %}
+                    <a href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Reset
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Main Form -->
+    <form method="POST" id="aggiungiArticoliForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        {% if articoli %}
+        <!-- Selection Toolbar -->
+        <div class="selection-toolbar">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllGlobal()">
+                            <i class="fas fa-check-square me-1"></i>Seleziona Tutti
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllGlobal()">
+                            <i class="fas fa-square me-1"></i>Deseleziona Tutti
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="selectAllPage()">
+                            <i class="fas fa-check me-1"></i>Seleziona Pagina
+                        </button>
+                        <span id="selectedCount" class="text-muted">0 articoli selezionati</span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="d-flex align-items-center justify-content-md-end gap-2">
+                        <label for="defaultPrice" class="form-label mb-0 fw-bold">Prezzo predefinito:</label>
+                        <div class="input-group" style="width: 150px;">
+                            <span class="input-group-text">€</span>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="defaultPrice" 
+                                   step="0.001" 
+                                   min="0" 
+                                   placeholder="0.000">
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="applyDefaultPrice()">
+                            <i class="fas fa-magic me-1"></i>Applica
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Articles Table -->
+        <div class="card articoli-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-boxes me-2"></i>Articoli Disponibili
+                    {% if search %}
+                    <span class="badge bg-info ms-2">Risultati per: "{{ search }}"</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" 
+                                           class="form-check-input checkbox-lg" 
+                                           id="selectAllCheckbox" 
+                                           onchange="toggleAll(this)">
+                                </th>
+                                <th style="width: 80px;">ID</th>
+                                <th>Descrizione</th>
+                                <th style="width: 120px;">Codice EAN</th>
+                                <th style="width: 120px;">Prezzo Standard</th>
+                                <th style="width: 140px;">Prezzo Listino</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for articolo in articoli %}
+                            <tr class="articolo-row" data-id="{{ articolo.IdArticulo }}">
+                                <td>
+                                    <input type="checkbox" 
+                                           class="form-check-input checkbox-lg articolo-checkbox" 
+                                           name="articoli_selezionati" 
+                                           value="{{ articolo.IdArticulo }}"
+                                           onchange="updateSelection(this)">
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-primary">{{ articolo.IdArticulo }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div>
+                                            <div class="fw-semibold">{{ articolo.Descripcion }}</div>
+                                            {% if articolo.Marca %}
+                                            <small class="text-muted">{{ articolo.Marca }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if articolo.EANScanner %}
+                                    <span class="ean-code">{{ articolo.EANScanner }}</span>
+                                    {% else %}
+                                    <span class="text-muted fst-italic">N/A</span>
+                                    {% endif %}
+                                </td>
+                                                                 <td>
+                                     <span class="fw-semibold">€{{ "%.3f"|format(articolo.PrecioConIVA or 0) }}</span>
+                                 </td>
+                                 <td>
+                                     <div class="input-group input-group-sm">
+                                         <span class="input-group-text">€</span>
+                                         <input type="number" 
+                                                class="price-input form-control" 
+                                                name="prezzo_{{ articolo.IdArticulo }}" 
+                                                value="{{ "%.3f"|format(articolo.PrecioConIVA or 0) }}" 
+                                                step="0.001" 
+                                                min="0" 
+                                                placeholder="0.000"
+                                                disabled>
+                                     </div>
+                                 </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Annulla
+                        </a>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-listino btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-plus me-1"></i>Aggiungi al Listino
+                            <span id="submitCount"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- No Articles Available -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-box-open text-muted" style="font-size: 4rem;"></i>
+            </div>
+            <h4 class="text-muted">
+                {% if search %}
+                Nessun risultato trovato
+                {% else %}
+                Tutti gli articoli sono già nel listino
+                {% endif %}
+            </h4>
+            <p class="text-muted">
+                {% if search %}
+                Non ci sono articoli che corrispondono ai criteri di ricerca "{{ search }}".
+                <br><a href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino) }}" class="btn btn-outline-primary mt-2">Visualizza tutti gli articoli</a>
+                {% else %}
+                Tutti gli articoli disponibili sono già stati aggiunti a questo listino.
+                <br><a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="btn btn-listino mt-2">Torna al Listino</a>
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Paginazione articoli" class="py-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino, page=pagination.prev_num, search=search) }}">
+                    <i class="fas fa-chevron-left"></i> Precedente
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino, page=page_num, search=search) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino, page=pagination.next_num, search=search) }}">
+                    Successivo <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global selection state management
+let selectedArticles = new Set();
+let allAvailableArticles = [];
+        const STORAGE_KEY = `listino_${ {{ listino.IdListino }} }_selected`;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load previously selected articles from sessionStorage
+    loadSelectedArticles();
+    // Apply selection state to current page
+    applySelectionState();
+    // Update UI
+    updateSubmitButton();
+    updateSelectedCount();
+});
+
+function loadSelectedArticles() {
+    try {
+        const stored = sessionStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            selectedArticles = new Set(JSON.parse(stored));
+        }
+    } catch (e) {
+        console.warn('Error loading selected articles:', e);
+        selectedArticles = new Set();
+    }
+}
+
+function saveSelectedArticles() {
+    try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(selectedArticles)));
+    } catch (e) {
+        console.warn('Error saving selected articles:', e);
+    }
+}
+
+function applySelectionState() {
+    const checkboxes = document.querySelectorAll('.articolo-checkbox');
+    checkboxes.forEach(checkbox => {
+        const articleId = parseInt(checkbox.value);
+        if (selectedArticles.has(articleId)) {
+            checkbox.checked = true;
+            updateSelection(checkbox, false); // false = don't update global state
+        }
+    });
+}
+
+function updateSelection(checkbox, updateGlobalState = true) {
+    const row = checkbox.closest('tr');
+    const priceInput = row.querySelector('.price-input');
+    const articleId = parseInt(checkbox.value);
+    
+    if (checkbox.checked) {
+        row.classList.add('selected');
+        priceInput.disabled = false;
+        priceInput.focus();
+        if (updateGlobalState) {
+            selectedArticles.add(articleId);
+        }
+    } else {
+        row.classList.remove('selected');
+        priceInput.disabled = true;
+        if (updateGlobalState) {
+            selectedArticles.delete(articleId);
+        }
+    }
+    
+    if (updateGlobalState) {
+        saveSelectedArticles();
+        updateSubmitButton();
+        updateSelectedCount();
+    }
+}
+
+async function selectAllGlobal() {
+    try {
+        // Show loading state
+        const btn = event.target.closest('button');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Caricando...';
+        btn.disabled = true;
+        
+        // Get current search query
+        const searchParams = new URLSearchParams(window.location.search);
+        const searchQuery = searchParams.get('search') || '';
+        
+        // Fetch all available article IDs
+        const response = await fetch(`/listini/{{ listino.IdListino }}/api/articoli_disponibili?search=${encodeURIComponent(searchQuery)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            allAvailableArticles = data.articoli_ids;
+            // Add all articles to selection
+            data.articoli_ids.forEach(id => selectedArticles.add(id));
+            saveSelectedArticles();
+            
+            // Apply to current page
+            applySelectionState();
+            updateSubmitButton();
+            updateSelectedCount();
+            
+            // Update master checkbox
+            document.getElementById('selectAllCheckbox').checked = true;
+        } else {
+            alert('Errore nel caricamento degli articoli: ' + data.error);
+        }
+        
+        // Restore button
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        
+    } catch (error) {
+        console.error('Error in selectAllGlobal:', error);
+        alert('Errore nel caricamento degli articoli');
+        
+        // Restore button
+        const btn = event.target.closest('button');
+        btn.innerHTML = '<i class="fas fa-check-square me-1"></i>Seleziona Tutti';
+        btn.disabled = false;
+    }
+}
+
+async function deselectAllGlobal() {
+    // Clear all selections
+    selectedArticles.clear();
+    saveSelectedArticles();
+    
+    // Deselect all checkboxes on current page
+    const checkboxes = document.querySelectorAll('.articolo-checkbox');
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            checkbox.checked = false;
+            updateSelection(checkbox, false);
+        }
+    });
+    
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateSubmitButton();
+    updateSelectedCount();
+}
+
+function selectAllPage() {
+    const checkboxes = document.querySelectorAll('.articolo-checkbox');
+    checkboxes.forEach(checkbox => {
+        if (!checkbox.checked) {
+            checkbox.checked = true;
+            updateSelection(checkbox);
+        }
+    });
+    document.getElementById('selectAllCheckbox').checked = true;
+}
+
+function toggleAll(masterCheckbox) {
+    if (masterCheckbox.checked) {
+        selectAllPage();
+    } else {
+        // Only deselect current page
+        const checkboxes = document.querySelectorAll('.articolo-checkbox');
+        checkboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                checkbox.checked = false;
+                updateSelection(checkbox);
+            }
+        });
+    }
+}
+
+function updateSelectedCount() {
+    const totalSelected = selectedArticles.size;
+    const currentPageSelected = document.querySelectorAll('.articolo-checkbox:checked').length;
+    
+    let text = `${totalSelected} articoli selezionati`;
+    if (totalSelected > currentPageSelected) {
+        text += ` (${currentPageSelected} in questa pagina)`;
+    }
+    
+    document.getElementById('selectedCount').textContent = text;
+}
+
+function updateSubmitButton() {
+    const totalSelected = selectedArticles.size;
+    const submitBtn = document.getElementById('submitBtn');
+    const submitCount = document.getElementById('submitCount');
+    
+    if (totalSelected > 0) {
+        submitBtn.disabled = false;
+        submitCount.textContent = `(${totalSelected})`;
+    } else {
+        submitBtn.disabled = true;
+        submitCount.textContent = '';
+    }
+}
+
+function applyDefaultPrice() {
+    const defaultPrice = document.getElementById('defaultPrice').value;
+    if (!defaultPrice) {
+        alert('Inserisci un prezzo predefinito');
+        return;
+    }
+    
+    const selectedCheckboxes = document.querySelectorAll('.articolo-checkbox:checked');
+    selectedCheckboxes.forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const priceInput = row.querySelector('.price-input');
+        priceInput.value = parseFloat(defaultPrice).toFixed(3);
+    });
+}
+
+// Form validation and submission
+document.getElementById('aggiungiArticoliForm').addEventListener('submit', function(e) {
+    if (selectedArticles.size === 0) {
+        e.preventDefault();
+        alert('Seleziona almeno un articolo da aggiungere al listino');
+        return false;
+    }
+    
+    // Add hidden inputs for all selected articles (including those not on current page)
+    const form = this;
+    
+    // Remove any existing hidden inputs
+    const existingHiddenInputs = form.querySelectorAll('input[name="articoli_selezionati_global"]');
+    existingHiddenInputs.forEach(input => input.remove());
+    
+    // Add hidden inputs for all selected articles
+    selectedArticles.forEach(articleId => {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'articoli_selezionati';
+        hiddenInput.value = articleId;
+        form.appendChild(hiddenInput);
+        
+        // For articles not on current page, set default price
+        const checkbox = form.querySelector(`input[value="${articleId}"]`);
+        if (!checkbox) {
+            // Article not on current page - create hidden price input
+            const priceInput = document.createElement('input');
+            priceInput.type = 'hidden';
+            priceInput.name = `prezzo_${articleId}`;
+            
+            // Use default price if set, otherwise use a default value
+            const defaultPrice = document.getElementById('defaultPrice').value;
+            priceInput.value = defaultPrice || '0.000';
+            form.appendChild(priceInput);
+        }
+    });
+    
+    // Validate prices for articles on current page
+    const currentPageSelected = document.querySelectorAll('.articolo-checkbox:checked');
+    let hasErrors = false;
+    
+    currentPageSelected.forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const priceInput = row.querySelector('.price-input');
+        const price = parseFloat(priceInput.value);
+        
+        if (isNaN(price) || price < 0) {
+            hasErrors = true;
+            priceInput.classList.add('is-invalid');
+        } else {
+            priceInput.classList.remove('is-invalid');
+        }
+    });
+    
+    if (hasErrors) {
+        e.preventDefault();
+        alert('Controlla che tutti i prezzi siano validi (≥ 0)');
+        return false;
+    }
+    
+    // Clear storage on successful submission
+    sessionStorage.removeItem(STORAGE_KEY);
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Aggiungendo articoli...';
+    submitBtn.disabled = true;
+});
+
+// Clear selection when leaving page (unless submitting)
+window.addEventListener('beforeunload', function(e) {
+    // Don't clear if form is being submitted
+    if (!document.getElementById('submitBtn').disabled) {
+        // Keep selections when navigating between pages
+        return;
+    }
+});
+
+// Auto-focus on search input if present
+const searchInput = document.getElementById('search');
+if (searchInput && !searchInput.value) {
+    searchInput.focus();
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Accesso non autorizzato{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-5 text-center">
+                    <i class="fas fa-lock text-danger" style="font-size: 64px;"></i>
+                    <h1 class="mt-4 text-danger">Accesso non autorizzato</h1>
+                    <p class="lead mt-3">
+                        Non hai i permessi necessari per accedere a questa pagina.
+                    </p>
+                    <p class="text-muted">
+                        Solo gli amministratori possono accedere a questa funzionalità.
+                    </p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('warehouse.index') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Torna alla Home
+                        </a>
+                        
+                        <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-outline-primary ms-2">
+                            <i class="fas fa-qrcode me-2"></i>Vai allo Scanner
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

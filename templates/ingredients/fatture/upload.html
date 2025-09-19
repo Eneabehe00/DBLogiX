@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Carica Fattura PDF - DBLogiX{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-lg-8 mx-auto">
+            <!-- Header con breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}">Ingredienti</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.fatture_list') }}">Fatture PDF</a></li>
+                    <li class="breadcrumb-item active">Carica Fattura</li>
+                </ol>
+            </nav>
+
+            <!-- Titolo -->
+            <div class="text-center mb-5">
+                <h1 class="h2">
+                    <i class="fas fa-upload text-success me-2"></i>
+                    Carica Fattura PDF
+                </h1>
+                <p class="text-muted">
+                    Carica una fattura in formato PDF per l'elaborazione automatica di ingredienti e prezzi
+                </p>
+            </div>
+
+            <!-- Form di upload -->
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                        Seleziona File PDF
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <!-- Area di drop file -->
+                        <div class="mb-4">
+                            <div id="dropZone" class="border border-2 border-dashed rounded p-5 text-center">
+                                <div id="dropContent">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Trascina qui il tuo file PDF</h5>
+                                    <p class="text-muted mb-3">oppure</p>
+                                    <input type="file" name="file" id="fileInput" accept=".pdf" class="d-none" required>
+                                    <button type="button" class="btn btn-outline-primary" id="selectFileBtn">
+                                        <i class="fas fa-folder-open me-1"></i>
+                                        Sfoglia File
+                                    </button>
+                                    <p class="text-muted mt-3 mb-0">
+                                        <small>Solo file PDF • Max 10MB</small>
+                                    </p>
+                                </div>
+                                
+                                <!-- File selezionato -->
+                                <div id="fileSelected" class="d-none">
+                                    <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                    <h5 id="fileName" class="text-dark"></h5>
+                                    <p id="fileSize" class="text-muted mb-3"></p>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="removeFileBtn">
+                                        <i class="fas fa-times me-1"></i>
+                                        Rimuovi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Opzioni di elaborazione -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto_process" name="auto_process" value="true">
+                                <label class="form-check-label" for="auto_process">
+                                    <i class="fas fa-magic text-primary me-1"></i>
+                                    <strong>Elabora automaticamente dopo l'upload</strong>
+                                </label>
+                                <div class="form-text">
+                                    Se abilitato, il sistema elaborerà automaticamente la fattura estraendo ingredienti e prezzi.
+                                    Altrimenti potrai farlo manualmente dalla lista fatture.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Informazioni processo -->
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-1"></i>Come funziona l'elaborazione automatica:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Identificazione fornitore:</strong> Il sistema cerca i dati del fornitore nel PDF</li>
+                                <li><strong>Estrazione articoli:</strong> Legge le tabelle per trovare descrizioni, quantità e prezzi</li>
+                                <li><strong>Matching intelligente:</strong> Abbina gli articoli agli ingredienti esistenti</li>
+                                <li><strong>Aggiornamento prezzi:</strong> Crea/aggiorna le associazioni ingrediente-fornitore</li>
+                            </ul>
+                        </div>
+
+                        <!-- Pulsanti -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('ingredients.fatture_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Torna alla Lista
+                            </a>
+                            <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
+                                <i class="fas fa-upload me-1"></i>
+                                Carica Fattura
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress durante upload -->
+            <div id="uploadProgress" class="card mt-4 d-none">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        <span id="uploadStatus">Caricamento in corso...</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    const dropZone = $('#dropZone');
+    const fileInput = $('#fileInput');
+    const selectFileBtn = $('#selectFileBtn');
+    const removeFileBtn = $('#removeFileBtn');
+    const dropContent = $('#dropContent');
+    const fileSelected = $('#fileSelected');
+    const fileName = $('#fileName');
+    const fileSize = $('#fileSize');
+    const uploadBtn = $('#uploadBtn');
+    const uploadForm = $('#uploadForm');
+    const uploadProgress = $('#uploadProgress');
+    const uploadStatus = $('#uploadStatus');
+    
+    let selectedFile = null;
+
+    // Click per aprire file dialog
+    selectFileBtn.click(function() {
+        fileInput.click();
+    });
+
+    // Click su drop zone
+    dropZone.click(function(e) {
+        if (!$(e.target).is('#removeFileBtn, #removeFileBtn *')) {
+            fileInput.click();
+        }
+    });
+
+    // Drag & drop events
+    dropZone.on('dragover', function(e) {
+        e.preventDefault();
+        $(this).addClass('border-primary bg-light');
+    });
+
+    dropZone.on('dragleave', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-primary bg-light');
+    });
+
+    dropZone.on('drop', function(e) {
+        e.preventDefault();
+        $(this).removeClass('border-primary bg-light');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelection(files[0]);
+        }
+    });
+
+    // Selezione file tramite input
+    fileInput.change(function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelection(e.target.files[0]);
+        }
+    });
+
+    // Rimozione file
+    removeFileBtn.click(function(e) {
+        e.stopPropagation();
+        resetFileSelection();
+    });
+
+    // Gestione selezione file
+    function handleFileSelection(file) {
+        if (file.type !== 'application/pdf') {
+            alert('Solo file PDF sono consentiti');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) { // 10MB
+            alert('File troppo grande. Dimensione massima: 10MB');
+            return;
+        }
+
+        selectedFile = file;
+        
+        // Mostra file selezionato
+        fileName.text(file.name);
+        fileSize.text(formatFileSize(file.size));
+        
+        dropContent.addClass('d-none');
+        fileSelected.removeClass('d-none');
+        uploadBtn.prop('disabled', false);
+        
+        // Aggiorna input file
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput[0].files = dt.files;
+    }
+
+    // Reset selezione
+    function resetFileSelection() {
+        selectedFile = null;
+        fileInput.val('');
+        
+        fileSelected.addClass('d-none');
+        dropContent.removeClass('d-none');
+        uploadBtn.prop('disabled', true);
+    }
+
+    // Formatta dimensione file
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // Gestione submit form
+    uploadForm.submit(function(e) {
+        e.preventDefault();
+        
+        if (!selectedFile) {
+            alert('Seleziona un file PDF');
+            return;
+        }
+
+        // Mostra progress
+        uploadProgress.removeClass('d-none');
+        uploadBtn.prop('disabled', true);
+        
+        // Simula progress (il vero progress è difficile con multipart form)
+        let progress = 0;
+        const progressInterval = setInterval(function() {
+            progress += Math.random() * 30;
+            if (progress > 90) progress = 90;
+            
+            $('.progress-bar').css('width', progress + '%');
+        }, 200);
+
+        // Crea FormData
+        const formData = new FormData(this);
+        
+        // Upload con fetch per maggior controllo
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            clearInterval(progressInterval);
+            $('.progress-bar').css('width', '100%');
+            
+            if (response.ok) {
+                uploadStatus.text('Upload completato! Reindirizzamento...');
+                return response.text();
+            } else {
+                throw new Error('Errore durante l\'upload');
+            }
+        })
+        .then(html => {
+            // Se la risposta è HTML, è un redirect manuale
+            setTimeout(() => {
+                window.location.href = "{{ url_for('ingredients.fatture_list') }}";
+            }, 1000);
+        })
+        .catch(error => {
+            clearInterval(progressInterval);
+            uploadProgress.addClass('d-none');
+            uploadBtn.prop('disabled', false);
+            
+            alert('Errore durante l\'upload: ' + error.message);
+            console.error('Upload error:', error);
+        });
+    });
+});
+</script>
+
+<style>
+#dropZone {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#dropZone:hover {
+    border-color: #0d6efd !important;
+    background-color: #f8f9fa;
+}
+
+#dropZone.border-primary {
+    border-color: #0d6efd !important;
+    background-color: #e3f2fd !important;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock %}

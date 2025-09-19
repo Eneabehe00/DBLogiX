@@ -1,0 +1,955 @@
+/* ===========================================================
+   FORNITORI STYLES - DBLogiX
+   Sistema di styling per la gestione fornitori
+   =========================================================== */
+
+/* Variabili CSS specifiche per fornitori */
+:root {
+    --fornitori-primary: #007bff;
+    --fornitori-secondary: #6c757d;
+    --fornitori-success: #28a745;
+    --fornitori-danger: #dc3545;
+    --fornitori-warning: #ffc107;
+    --fornitori-info: #17a2b8;
+    --fornitori-light: #f8f9fa;
+    --fornitori-dark: #343a40;
+    
+    /* Variabili coerenti con Fattura PA */
+    --primary-dark: #2c3e50;
+    --secondary-dark: #34495e;
+    --accent-blue: #3498db;
+    --success-green: #27ae60;
+    --warning-orange: #f39c12;
+    --border-light: #e9ecef;
+}
+
+/* ===========================================================
+   LAYOUT & STRUCTURE
+   =========================================================== */
+
+.fornitori-container {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.fornitori-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+/* ===========================================================
+   TABLE STYLES - Consistent with Fattura PA
+   =========================================================== */
+
+/* Enhanced Table Header */
+.table th {
+    background-color: var(--primary-dark, #2c3e50);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 15px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.85rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Enhanced Table Rows */
+.table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9ff;
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+    border-left: 4px solid var(--accent-blue, #3498db);
+}
+
+/* ===========================================================
+   FORNITORE VIEW PAGE STYLES
+   =========================================================== */
+
+/* Stat items for statistics section */
+.stat-item {
+    text-align: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* Empty state styling */
+.empty-state {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    border: 2px dashed #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.empty-state:hover {
+    border-color: #007bff;
+    background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+}
+
+/* Detail sections styling */
+.detail-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.detail-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #007bff;
+}
+
+.detail-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* Contact links styling */
+.detail-section a[href^="mailto:"],
+.detail-section a[href^="tel:"] {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.detail-section a[href^="mailto:"]:hover,
+.detail-section a[href^="tel:"]:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Badge improvements */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Code styling for supplier codes */
+code {
+    background-color: #f1f3f4 !important;
+    color: #5f6368 !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 4px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+}
+
+/* Clickable rows */
+.clickable-row {
+    cursor: pointer;
+}
+
+/* Contact links in table */
+.contact-link {
+    color: var(--fornitori-secondary);
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.contact-link:hover {
+    background: rgba(0, 123, 255, 0.1);
+    color: var(--fornitori-primary);
+    text-decoration: none;
+}
+
+.contact-link i {
+    color: var(--fornitori-primary);
+}
+
+/* Badge styles */
+.badge.bg-primary {
+    background-color: var(--primary-dark, #2c3e50) !important;
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+}
+
+.badge.bg-success {
+    background-color: var(--success-green, #27ae60) !important;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.badge.bg-info {
+    background-color: var(--accent-blue, #3498db) !important;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-orange, #f39c12) !important;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    color: white !important;
+}
+
+.badge.bg-secondary {
+    background-color: var(--secondary-dark, #34495e) !important;
+    box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+}
+
+/* Empty state for table */
+.table-empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--fornitori-secondary);
+}
+
+.table-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* ===========================================================
+   FORNITORE CARDS
+   =========================================================== */
+
+.fornitore-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.fornitore-card:hover {
+    border-color: var(--fornitori-primary);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.fornitore-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 1.25rem;
+    border-bottom: 1px solid #dee2e6;
+    position: relative;
+}
+
+.fornitore-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--fornitori-dark);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.fornitore-meta {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    color: var(--fornitori-secondary);
+    gap: 0.5rem;
+}
+
+.fornitore-meta i {
+    width: 16px;
+    text-align: center;
+}
+
+.fornitore-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.fornitore-body {
+    padding: 1.25rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===========================================================
+   CONTACT INFO
+   =========================================================== */
+
+.contact-section {
+    margin-bottom: 1rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.contact-item:hover {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.contact-item:last-child {
+    margin-bottom: 0;
+}
+
+.contact-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--fornitori-primary);
+    color: white;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    font-size: 0.75rem;
+}
+
+.contact-link {
+    color: var(--fornitori-dark);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.contact-link:hover {
+    color: var(--fornitori-primary);
+    text-decoration: underline;
+}
+
+/* ===========================================================
+   ADDRESS DISPLAY
+   =========================================================== */
+
+.address-section {
+    background: rgba(108, 117, 125, 0.05);
+    border-left: 3px solid var(--fornitori-secondary);
+    padding: 0.75rem;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1rem;
+}
+
+.address-text {
+    font-size: 0.875rem;
+    color: var(--fornitori-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ===========================================================
+   STATISTICS & METRICS
+   =========================================================== */
+
+.fornitori-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--fornitori-dark);
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--fornitori-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+.stat-success .stat-value {
+    color: var(--fornitori-success);
+}
+
+.stat-info .stat-value {
+    color: var(--fornitori-info);
+}
+
+/* ===========================================================
+   FISCAL INFO
+   =========================================================== */
+
+.fiscal-info {
+    background: rgba(23, 162, 184, 0.05);
+    border: 1px solid rgba(23, 162, 184, 0.2);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-top: 1rem;
+}
+
+.fiscal-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.fiscal-item:last-child {
+    margin-bottom: 0;
+}
+
+.fiscal-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--fornitori-dark);
+}
+
+.fiscal-value {
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: var(--fornitori-info);
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(23, 162, 184, 0.2);
+}
+
+/* ===========================================================
+   FORMS & INPUTS
+   =========================================================== */
+
+.form-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.form-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--fornitori-dark);
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.form-section-title i {
+    color: var(--fornitori-primary);
+}
+
+.input-group-icon {
+    width: 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #ced4da;
+    border-right: 0;
+    color: var(--fornitori-secondary);
+    font-size: 0.875rem;
+}
+
+.form-control:focus {
+    border-color: var(--fornitori-primary);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-help {
+    font-size: 0.8125rem;
+    color: var(--fornitori-secondary);
+    margin-top: 0.375rem;
+    line-height: 1.4;
+}
+
+.required {
+    color: var(--fornitori-danger);
+}
+
+/* ===========================================================
+   SEARCH & FILTERS
+   =========================================================== */
+
+.search-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.search-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.search-header i {
+    color: var(--fornitori-primary);
+    font-size: 1.125rem;
+}
+
+.search-header h5 {
+    margin: 0;
+    color: var(--fornitori-dark);
+    font-weight: 600;
+}
+
+/* ===========================================================
+   DETAIL VIEWS
+   =========================================================== */
+
+.detail-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.detail-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--fornitori-dark);
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.detail-title i {
+    color: var(--fornitori-primary);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    text-align: center;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.info-item:hover {
+    border-color: var(--fornitori-primary);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.info-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--fornitori-dark);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: var(--fornitori-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* ===========================================================
+   CONTACT CARDS
+   =========================================================== */
+
+.contact-card {
+    background: linear-gradient(135deg, var(--fornitori-primary) 0%, #0056b3 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.contact-card h5 {
+    color: white;
+    margin-bottom: 1.25rem;
+}
+
+.contact-card .contact-item {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.contact-card .contact-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-right: 1rem;
+}
+
+.contact-card .contact-link {
+    color: white;
+    font-weight: 500;
+}
+
+.contact-card .contact-link:hover {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===========================================================
+   ADDRESS CARDS
+   =========================================================== */
+
+.address-card {
+    background: linear-gradient(135deg, #6f42c1, #e83e8c);
+    color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.address-card h5 {
+    color: white;
+    margin-bottom: 1.25rem;
+}
+
+.address-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.address-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.address-details {
+    line-height: 1.5;
+}
+
+/* ===========================================================
+   INGREDIENT ASSOCIATIONS
+   =========================================================== */
+
+.ingrediente-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.ingrediente-card:hover {
+    border-color: var(--fornitori-success);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+}
+
+.ingrediente-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.ingrediente-body {
+    padding: 1rem;
+}
+
+.price-badge {
+    background: linear-gradient(135deg, var(--fornitori-success), #20c997);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+/* ===========================================================
+   ACTION BUTTONS
+   =========================================================== */
+
+.action-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-fornitori {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-fornitori:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-fornitori.btn-primary {
+    background: linear-gradient(135deg, var(--fornitori-primary), #0056b3);
+}
+
+.btn-fornitori.btn-success {
+    background: linear-gradient(135deg, var(--fornitori-success), #1e7e34);
+}
+
+.btn-fornitori.btn-outline-secondary {
+    border: 1px solid var(--fornitori-secondary);
+    color: var(--fornitori-secondary);
+}
+
+.btn-fornitori.btn-outline-secondary:hover {
+    background: var(--fornitori-secondary);
+    color: white;
+}
+
+/* ===========================================================
+   RESPONSIVE DESIGN
+   =========================================================== */
+
+@media (max-width: 768px) {
+    .fornitori-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .fornitore-card {
+        margin-bottom: 1rem;
+    }
+    
+    .fornitore-header {
+        padding: 1rem;
+    }
+    
+    .fornitore-body {
+        padding: 1rem;
+    }
+    
+    .form-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .search-section {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .detail-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .fornitori-stats {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .contact-card .contact-content {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .address-content {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .contact-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .contact-icon {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .fiscal-item {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .fornitori-stats {
+        gap: 0.5rem;
+    }
+    
+    .stat-item {
+        padding: 0.5rem;
+    }
+}
+
+/* ===========================================================
+   UTILITIES & HELPERS
+   =========================================================== */
+
+.text-fornitori-primary {
+    color: var(--fornitori-primary) !important;
+}
+
+.text-fornitori-success {
+    color: var(--fornitori-success) !important;
+}
+
+.bg-fornitori-light {
+    background-color: var(--fornitori-light) !important;
+}
+
+.border-fornitori-primary {
+    border-color: var(--fornitori-primary) !important;
+}
+
+/* ===========================================================
+   ANIMATIONS
+   =========================================================== */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fornitore-card {
+    animation: fadeInUp 0.3s ease;
+}
+
+.form-section {
+    animation: fadeInUp 0.3s ease;
+}
+
+.detail-section {
+    animation: fadeInUp 0.3s ease;
+}
+
+/* Stagger animation for cards */
+.fornitore-card:nth-child(1) { animation-delay: 0.05s; }
+.fornitore-card:nth-child(2) { animation-delay: 0.1s; }
+.fornitore-card:nth-child(3) { animation-delay: 0.15s; }
+.fornitore-card:nth-child(4) { animation-delay: 0.2s; }
+.fornitore-card:nth-child(5) { animation-delay: 0.25s; }
+.fornitore-card:nth-child(6) { animation-delay: 0.3s; }
+
+/* ===========================================================
+   LOADING STATES
+   =========================================================== */
+
+.fornitori-loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--fornitori-secondary);
+}
+
+.fornitori-loading i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===========================================================
+   PRINT STYLES
+   =========================================================== */
+
+@media print {
+    .fornitore-actions,
+    .action-buttons,
+    .btn {
+        display: none !important;
+    }
+    
+    .fornitore-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .page-header {
+        background: none !important;
+        color: #000 !important;
+    }
+}

@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}📱 Scansione - {{ task_ticket.task.task_number }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+<style>
+/* Hide sidebar and navbar for full-screen mobile experience */
+@media (max-width: 768px) {
+    .sidebar { display: none !important; }
+    .mobile-header { display: none !important; }
+    .main-content { margin-left: 0 !important; padding-top: 0 !important; }
+    body { overflow-x: hidden; }
+}
+
+/* Camera preference indicator */
+.camera-preference-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 10px;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    animation: fadeInScale 0.5s ease-out;
+}
+
+.camera-preference-indicator i {
+    font-size: 1rem;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="{{ url_for('static', filename='js/tasks.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="scan-container" 
+     data-task-ticket-id="{{ task_ticket.id }}"
+     data-has-current-product="{% if current_product %}true{% else %}false{% endif %}">
+    
+    <!-- Task Progress Header -->
+    <div class="scan-task-progress">
+        <div>
+            <i class="fas fa-tasks"></i>
+            <span>{{ task_ticket.task.task_number }}</span>
+        </div>
+        <span class="badge bg-primary">
+            <i class="fas fa-list-ol"></i> {{ current_ticket_index }}/{{ total_tickets }}
+        </span>
+    </div>
+
+    {% if current_product %}
+    <!-- Product Information -->
+    <div class="scan-product-header">
+        <div class="scan-product-info">
+            <div class="scan-product-name">
+                <i class="fas fa-box"></i>
+                {{ current_product.Descripcion }}
+            </div>
+            <div class="scan-product-details">
+                <span>
+                    <i class="fas fa-receipt"></i>
+                    Ticket #{{ task_ticket.ticket.IdTicket }}
+                </span>
+                <span>
+                    <i class="fas fa-calendar-alt"></i>
+                    {% if current_product.FechaCaducidad %}
+                        {{ current_product.FechaCaducidad.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Section -->
+    <div class="camera-section">
+        <!-- Auto-start loading message -->
+        <div id="camera-starting" class="camera-starting">
+            <i class="fas fa-camera"></i>
+            <h4>📱 Avvio automatico camera...</h4>
+            <p>Preparazione dell'interfaccia di scansione mobile</p>
+        </div>
+        
+        <!-- Camera preview (hidden initially) -->
+        <video id="camera-preview" 
+               autoplay 
+               playsinline 
+               muted
+               style="display: none;">
+        </video>
+        
+        <!-- Camera controls -->
+        <div class="scan-controls">
+            <button id="start-camera" class="scan-btn" style="display: none;">
+                <i class="fas fa-camera"></i> 
+                Avvia Camera
+            </button>
+            <button id="stop-camera" class="scan-btn danger" style="display: none;">
+                <i class="fas fa-stop"></i> 
+                Ferma
+            </button>
+            <button id="switch-camera" class="scan-btn" style="display: none;">
+                <i class="fas fa-sync-alt"></i>
+                Cambia
+            </button>
+        </div>
+        
+        <!-- Camera preference indicator -->
+        <div id="camera-preference-indicator" class="camera-preference-indicator" style="display: none;">
+            <i class="fas fa-memory"></i>
+            <span>Camera preferita in uso</span>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Ticket Completed -->
+    <div class="scan-completion">
+        <div class="completion-content">
+            <i class="fas fa-check-circle completion-icon"></i>
+            <h5>🎉 Ticket Completato!</h5>
+            <p>Tutti i prodotti di questo ticket sono stati scansionati con successo.</p>
+            <p><strong>Passaggio automatico al prossimo ticket...</strong></p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bottom Navigation -->
+    <div class="scan-navigation">
+        <a href="{{ url_for('tasks.view_task', task_id=task_ticket.task.id_task) }}" 
+           class="btn">
+            <i class="fas fa-arrow-left"></i> 
+            Torna al Task
+        </a>
+    </div>
+</div>
+
+<!-- Enhanced Scan Feedback Modal -->
+<div id="scan-feedback" class="scan-feedback" style="display: none;">
+    <div id="feedback-content">
+        <div class="feedback-icon">
+            <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+        <div class="feedback-message">Elaborazione...</div>
+    </div>
+</div>
+
+{% if not current_product %}
+<script>
+// Auto-redirect for completed tickets
+setTimeout(function() {
+    window.location.reload();
+}, 3000);
+</script>
+{% endif %}
+
+<script>
+// Mobile-optimized scan page initialization - Fixed Auto-Start
+document.addEventListener('DOMContentLoaded', function() {
+    // Get scan container data
+    const scanContainer = document.querySelector('.scan-container');
+    const hasCurrentProduct = scanContainer.dataset.hasCurrentProduct === 'true';
+    
+    console.log('📱 Scan page loaded, hasCurrentProduct:', hasCurrentProduct);
+    
+    // Auto-start camera immediately if we have a current product (similar to warehouse scanner)
+    if (hasCurrentProduct) {
+        console.log('🚀 Auto-starting camera...');
+        
+        // Start camera immediately, don't wait for additional delays
+        setTimeout(function() {
+            if (typeof startCamera === 'function') {
+                startCamera();
+            } else {
+                console.error('❌ startCamera function not available yet, retrying...');
+                // Retry after a short delay
+                setTimeout(function() {
+                    if (typeof startCamera === 'function') {
+                        startCamera();
+                    } else {
+                        console.error('❌ startCamera still not available, showing manual button');
+                        $('#camera-starting').hide();
+                        $('#start-camera').show();
+                    }
+                }, 500);
+            }
+        }, 100);
+    } else {
+        // No current product, hide camera starting message
+        $('#camera-starting').hide();
+    }
+    
+    // Prevent screen lock on mobile during scanning
+    if ('wakeLock' in navigator) {
+        let wakeLock = null;
+        
+        async function requestWakeLock() {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('📱 Screen wake lock activated');
+            } catch (err) {
+                console.log('📱 Wake lock request failed:', err);
+            }
+        }
+        
+        // Request wake lock when camera starts
+        $(document).on('cameraStarted', requestWakeLock);
+        
+        // Release wake lock when leaving page
+        $(window).on('beforeunload', function() {
+            if (wakeLock) {
+                wakeLock.release();
+            }
+        });
+    }
+    
+    // Enhanced feedback for mobile
+    window.showMobileFeedback = function(message, type, icon) {
+        const feedback = $('#scan-feedback');
+        const feedbackContent = $('#feedback-content');
+        
+        const iconHtml = icon ? `<i class="${icon}"></i>` : '';
+        const typeClass = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+        
+        feedbackContent.html(`
+            <div class="feedback-icon">
+                ${iconHtml}
+            </div>
+            <div class="feedback-message">${message.replace(/\n/g, '<br>')}</div>
+        `);
+        
+        feedback.removeClass('success error info').addClass(typeClass).fadeIn();
+        
+        if (type !== 'info') {
+            setTimeout(function() {
+                feedback.fadeOut();
+            }, 3000);
+        }
+    };
+    
+    // Override the original showFeedback function
+    window.showFeedback = window.showMobileFeedback;
+    
+    // Add haptic feedback for mobile devices
+    window.triggerHapticFeedback = function(type = 'light') {
+        if ('vibrate' in navigator) {
+            switch(type) {
+                case 'success':
+                    navigator.vibrate([100, 50, 100]);
+                    break;
+                case 'error':
+                    navigator.vibrate([200, 100, 200, 100, 200]);
+                    break;
+                case 'light':
+                default:
+                    navigator.vibrate(50);
+                    break;
+            }
+        }
+    };
+    
+    // Enhanced touch interactions
+    $('.scan-btn').on('touchstart', function() {
+        $(this).addClass('active');
+        triggerHapticFeedback('light');
+    }).on('touchend touchcancel', function() {
+        $(this).removeClass('active');
+    });
+    
+    // Close feedback on tap
+    $('#scan-feedback').on('click', function() {
+        $(this).fadeOut(300);
+    });
+    
+    // Orientation change handling
+    $(window).on('orientationchange', function() {
+        setTimeout(function() {
+            // Recalculate camera preview size
+            const video = document.getElementById('camera-preview');
+            if (video && video.style.display !== 'none') {
+                video.style.height = 'auto';
+            }
+        }, 500);
+    });
+    
+    // Add switch camera button functionality
+    $('#switch-camera').on('click', function() {
+        if (typeof switchCamera === 'function') {
+            switchCamera();
+        } else {
+            console.error('❌ switchCamera function not available');
+        }
+    });
+    
+    // Listen for camera started event to show preference indicator
+    $(document).on('cameraStarted', function() {
+        // Check if a saved preference was used
+        if (window.TasksJS && window.TasksJS.CameraPreferences) {
+            const savedPreference = window.TasksJS.CameraPreferences.getPreferredCamera();
+            if (savedPreference) {
+                $('#camera-preference-indicator').fadeIn(500);
+                console.log('📱 Showing camera preference indicator');
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

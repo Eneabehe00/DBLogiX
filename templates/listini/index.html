@@ -1,0 +1,473 @@
+{% extends 'base.html' %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info %}
+
+{% block title %}Gestione Listini Prezzi{% endblock %}
+
+{% block header_title %}Gestione Listini Prezzi{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/clients.css') }}">
+<style>
+    /* Tema elegante per i listini */
+    :root {
+        --listino-primary: #2c3e50;
+        --listino-secondary: #34495e;
+        --listino-success: #27ae60;
+        --listino-danger: #e74c3c;
+        --listino-warning: #f39c12;
+        --listino-info: #3498db;
+        --listino-dark: #2c3e50;
+        --listino-light: #ecf0f1;
+    }
+
+    .listino-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 3px 15px rgba(44, 62, 80, 0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .listino-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table th {
+        background-color: var(--listino-primary);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .listino-row:hover {
+        background-color: #e8f4f8 !important;
+        cursor: pointer;
+    }
+    
+    .listino-row:hover td {
+        color: var(--listino-primary) !important;
+    }
+    
+    .badge-listino {
+        background-color: var(--listino-primary);
+        color: white;
+        padding: 0.5rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .badge-active {
+        background-color: var(--listino-success);
+    }
+    
+    .badge-inactive {
+        background-color: var(--listino-danger);
+    }
+    
+    .btn-listino {
+        background-color: var(--listino-primary);
+        border-color: var(--listino-primary);
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-listino:hover {
+        background-color: var(--listino-secondary);
+        border-color: var(--listino-secondary);
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .stats-card.listino-stat {
+        background: linear-gradient(135deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card.listino-stat:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.2);
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-buttons .btn {
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+    
+    .listino-info {
+        background-color: #f8f4ff;
+        border: 1px solid var(--listino-primary);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Listini</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-tags me-2"></i>Gestione Listini Prezzi
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ pagination.total if pagination else listini|length }} listini configurati</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('listini.new') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Nuovo Listino
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Listini',
+        'action': url_for('listini.index'),
+        'search_param': 'search',
+        'placeholder': 'Cerca per nome listino, ID o descrizione...',
+        'current_value': search or '',
+        'show_help': true,
+        'help_text': 'Cerca per nome del listino, ID o descrizione',
+        'preserve_params': {},
+        'advanced_filters': []
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': pagination.total if pagination else listini|length,
+            'label': 'Totale Listini',
+            'icon': 'fas fa-tags',
+            'variant': 'listino-stat'
+        },
+        {
+            'value': listini|selectattr('Attivo')|list|length,
+            'label': 'Listini Attivi',
+            'icon': 'fas fa-check-circle',
+            'variant': 'stat-success'
+        },
+        {
+            'value': listini|map(attribute='numero_articoli')|sum,
+            'label': 'Tot. Articoli',
+            'icon': 'fas fa-box',
+            'variant': 'stat-info'
+        },
+        {
+            'value': pagination.page if pagination else 1,
+            'label': 'Pagina',
+            'icon': 'fas fa-bookmark',
+            'variant': 'stat-warning'
+        }
+    ]) }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Search Results Info -->
+    {{ render_search_results_info({
+        'is_search_active': search,
+        'search_term': search,
+        'total_results': pagination.total if pagination else 0,
+        'visible_results': listini|length,
+        'paginated': pagination and pagination.pages > 1,
+        'current_page': pagination.page if pagination else 1,
+        'total_pages': pagination.pages if pagination else 1,
+        'clear_url': url_for('listini.index')
+    }) }}
+
+    <!-- Enhanced Listini List -->
+    <div class="listino-card card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Listini</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if listini %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="listiniTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                            <th><i class="fas fa-tag me-1"></i>Nome Listino</th>
+                            <th><i class="fas fa-file-alt me-1"></i>Descrizione</th>
+                            <th><i class="fas fa-box me-1"></i>Articoli</th>
+                            <th><i class="fas fa-users me-1"></i>Clienti</th>
+                            <th><i class="fas fa-toggle-on me-1"></i>Stato</th>
+                            <th><i class="fas fa-calendar me-1"></i>Creato</th>
+                            <th><i class="fas fa-edit me-1"></i>Ultima Modifica</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for listino in listini %}
+                        <tr class="listino-row" onclick="goToListino({{ listino.IdListino }})" style="cursor: pointer;">
+                            <td class="fw-bold text-primary">{{ listino.IdListino }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tags text-primary me-2"></i>
+                                    <div>
+                                        <span class="fw-semibold">{{ listino.NomeListino }}</span>
+                                        {% if listino.creatore %}
+                                        <br><small class="text-muted">di {{ listino.creatore.username }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if listino.Descrizione %}
+                                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ listino.Descrizione }}">
+                                    {{ listino.Descrizione }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted fst-italic">Nessuna descrizione</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-listino">
+                                    <i class="fas fa-box me-1"></i>{{ listino.numero_articoli }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-listino">
+                                    <i class="fas fa-users me-1"></i>{{ listino.clienti|length }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if listino.Attivo %}
+                                <span class="badge badge-active">
+                                    <i class="fas fa-check-circle me-1"></i>Attivo
+                                </span>
+                                {% else %}
+                                <span class="badge badge-inactive">
+                                    <i class="fas fa-times-circle me-1"></i>Disattivo
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ listino.data_creazione_formatted }}</small>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ listino.data_modifica_formatted }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-tags text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-muted">Nessun listino trovato</h4>
+                <p class="text-muted">
+                    {% if search %}
+                    Non ci sono listini che corrispondono ai criteri di ricerca.
+                    <br><a href="{{ url_for('listini.index') }}" class="btn btn-outline-primary mt-2">Visualizza tutti i listini</a>
+                    {% else %}
+                    Non hai ancora creato nessun listino personalizzato.
+                    <br><a href="{{ url_for('listini.new') }}" class="btn btn-listino mt-2">Crea il primo listino</a>
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Paginazione listini" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('listini.index', page=pagination.prev_num, search=search) }}">
+                    <i class="fas fa-chevron-left"></i> Precedente
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('listini.index', page=page_num, search=search) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('listini.index', page=pagination.next_num, search=search) }}">
+                    Successivo <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Modals -->
+<!-- Copy Listino Modal -->
+<div class="modal fade" id="copyListinoModal" tabindex="-1" aria-labelledby="copyListinoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="copyListinoModalLabel">
+                    <i class="fas fa-copy me-2"></i>Copia Listino
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="copyListinoForm" method="POST">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <p>Stai per creare una copia del listino <strong id="copyListinoName"></strong>.</p>
+                    <div class="mb-3">
+                        <label for="nuovo_nome" class="form-label">Nome del nuovo listino:</label>
+                        <input type="text" class="form-control" id="nuovo_nome" name="nuovo_nome" required>
+                        <div class="form-text">Il nuovo listino conterrà tutti gli articoli e prezzi del listino originale.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-copy me-1"></i>Crea Copia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Listino Modal -->
+<div class="modal fade" id="deleteListinoModal" tabindex="-1" aria-labelledby="deleteListinoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteListinoModalLabel">
+                    <i class="fas fa-trash me-2"></i>Elimina Listino
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deleteListinoForm" method="POST">
+                {{ csrf_token() }}
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Attenzione!</strong> Questa azione è irreversibile.
+                    </div>
+                    <p>Sei sicuro di voler eliminare il listino <strong id="deleteListinoName"></strong>?</p>
+                    <p class="text-muted">Tutti gli articoli e prezzi del listino verranno eliminati definitivamente.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Elimina Definitivamente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshTable() {
+    window.location.reload();
+}
+
+function goToListino(listinoId) {
+    window.location.href = `/listini/${listinoId}`;
+}
+
+function copyListino(listinoId, listinoName) {
+    document.getElementById('copyListinoName').textContent = listinoName;
+    document.getElementById('copyListinoForm').action = `/listini/${listinoId}/copia`;
+    document.getElementById('nuovo_nome').value = `Copia di ${listinoName}`;
+    
+    var modal = new bootstrap.Modal(document.getElementById('copyListinoModal'));
+    modal.show();
+}
+
+function deleteListino(listinoId, listinoName) {
+    document.getElementById('deleteListinoName').textContent = listinoName;
+    document.getElementById('deleteListinoForm').action = `/listini/${listinoId}/delete`;
+    
+    var modal = new bootstrap.Modal(document.getElementById('deleteListinoModal'));
+    modal.show();
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %} 

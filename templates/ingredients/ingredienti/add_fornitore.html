@@ -1,0 +1,643 @@
+{% extends "base.html" %}
+
+{% block title %}Imposta Fornitore per {{ ingrediente.nome }} - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ingredients.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+<style>
+/* Simple Supplier Table Styles */
+.supplier-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.supplier-row:hover {
+    background-color: #f8f9fa;
+}
+
+.supplier-row.selected {
+    background-color: #e7f3ff;
+}
+
+.supplier-radio {
+    transform: scale(1.1);
+}
+
+.supplier-radio:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.supplier-row.hidden {
+    display: none;
+}
+
+/* Custom styling for badges in table */
+.badge-soft {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Search input styling */
+#supplier-search {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: all 0.2s ease;
+}
+
+#supplier-search:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Table responsive improvements */
+@media (max-width: 768px) {
+    .table-responsive table,
+    .table-responsive thead,
+    .table-responsive tbody,
+    .table-responsive th,
+    .table-responsive td,
+    .table-responsive tr {
+        display: block;
+    }
+
+    .table-responsive thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    .table-responsive tbody tr {
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 10px;
+    }
+
+    .table-responsive td {
+        border: none;
+        position: relative;
+        padding-left: 50% !important;
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .table-responsive td:before {
+        content: attr(data-label) ": ";
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+        color: #666;
+    }
+
+    .table-responsive td:first-child {
+        padding-left: 6px !important;
+    }
+
+    .table-responsive td:first-child:before {
+        content: "";
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}" class="text-white">Ingredienti</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.view', id=ingrediente.id) }}" class="text-white">{{ ingrediente.nome }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Aggiungi Fornitore</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-link me-2"></i>Aggiungi Fornitore
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">per {{ ingrediente.nome }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ingredients.view', id=ingrediente.id) }}" class="btn btn-outline-light action-btn mb-2 mb-md-0 me-md-2">
+                        <i class="fas fa-arrow-left me-1"></i>Dettagli
+                    </a>
+                    <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-list me-1"></i>Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Layout principale con sidebar -->
+    <div class="row g-4">
+        <!-- Sidebar Info Ingrediente -->
+        <div class="col-lg-3">
+            <div class="fattura-card card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body p-4">
+                    <!-- Header ingrediente -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-leaf fa-3x mb-3" style="color: #2c3e50;"></i>
+                        <h6 class="fw-bold mb-2">{{ ingrediente.nome }}</h6>
+                        {% if ingrediente.categoria %}
+                        <span class="badge-soft badge-soft-primary">{{ ingrediente.categoria }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Info essenziali -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-info-circle me-2"></i>Info Base</h6>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Unità di Misura</small>
+                            <span class="badge" style="background-color: #34495e; color: white;">{{ ingrediente.unita_misura }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Fornitori</small>
+                            <span class="fw-bold text-success">{{ ingrediente.numero_fornitori }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Miglior Prezzo</small>
+                            <span class="fw-bold" style="color: #2c3e50;">
+                                {% if ingrediente.miglior_prezzo > 0 %}
+                                €{{ "%.3f"|format(ingrediente.miglior_prezzo) }}
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Valori Nutrizionali -->
+                    {% if ingrediente.calorie or ingrediente.proteine or ingrediente.carboidrati or ingrediente.grassi %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-apple-alt me-2"></i>Nutrienti (100g)</h6>
+                        
+                        {% if ingrediente.calorie %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Calorie</small>
+                            <span class="badge-soft badge-soft-primary">{{ ingrediente.calorie }} kcal</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ingrediente.proteine %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Proteine</small>
+                            <span class="badge-soft badge-soft-success">{{ ingrediente.proteine }}g</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ingrediente.carboidrati %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Carboidrati</small>
+                            <span class="badge-soft badge-soft-warning">{{ ingrediente.carboidrati }}g</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ingrediente.grassi %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Grassi</small>
+                            <span class="badge-soft badge-soft-info">{{ ingrediente.grassi }}g</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Dettagli aggiuntivi -->
+                    {% if ingrediente.descrizione or ingrediente.allergeni or ingrediente.conservazione %}
+                    <div class="mb-0">
+                        <h6 class="text-muted mb-3"><i class="fas fa-clipboard-list me-2"></i>Dettagli</h6>
+                        
+                        {% if ingrediente.descrizione %}
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Descrizione</small>
+                            <p class="small mb-0">{{ ingrediente.descrizione }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ingrediente.allergeni %}
+                        <div class="mb-2">
+                            <span class="badge-soft badge-soft-warning w-100 text-start">
+                                <i class="fas fa-exclamation-triangle me-1"></i>{{ ingrediente.allergeni }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if ingrediente.conservazione %}
+                        <div class="mb-0">
+                            <span class="badge-soft badge-soft-info w-100 text-start">
+                                <i class="fas fa-snowflake me-1"></i>{{ ingrediente.conservazione }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contenuto principale -->
+        <div class="col-lg-9">
+            <div class="row g-4">
+                
+                <!-- Aggiungi Nuovo Fornitore -->
+                <div class="col-12">
+                    <div class="fattura-card card shadow-sm">
+                        <div class="card-header bg-transparent">
+                            <h5 class="mb-0"><i class="fas fa-plus me-2" style="color: #2c3e50;"></i>Aggiungi Nuovo Fornitore</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if fornitori %}
+                            <form method="POST" class="needs-validation" novalidate>
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="row g-4">
+                                    <!-- Selezione Fornitore -->
+                                    <div class="col-12">
+                                        <div class="fattura-card card shadow-sm">
+                                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-truck me-2" style="color: #2c3e50;"></i>
+                                                    Seleziona Fornitore <span class="text-danger">*</span>
+                                                </h6>
+                                                <a href="{{ url_for('ingredients.fornitori_new') }}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-plus"></i> Nuovo Fornitore
+                                                </a>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <!-- Search Box -->
+                                                {% if fornitori|length > 5 %}
+                                                <div class="p-3 border-bottom">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">
+                                                            <i class="fas fa-search text-muted"></i>
+                                                        </span>
+                                                        <input type="text" class="form-control" id="supplier-search" 
+                                                               placeholder="Cerca fornitore per nome, città o contatto...">
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                <!-- Fornitori Table -->
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover mb-0" id="suppliers-table">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th width="50"></th>
+                                                                <th><i class="fas fa-building me-1"></i>Fornitore</th>
+                                                                <th><i class="fas fa-map-marker-alt me-1"></i>Località</th>
+                                                                <th><i class="fas fa-phone me-1"></i>Contatti</th>
+                                                                <th><i class="fas fa-chart-bar me-1"></i>Statistiche</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for fornitore in fornitori %}
+                                                            <tr class="supplier-row" 
+                                                                data-search-text="{{ fornitore.nome|lower }} {{ fornitore.citta|lower if fornitore.citta }} {{ fornitore.telefono|lower if fornitore.telefono }} {{ fornitore.email|lower if fornitore.email }}">
+                                                                <td class="text-center">
+                                                                    <input type="radio" name="fornitore_id" value="{{ fornitore.id }}" 
+                                                                           id="supplier_{{ fornitore.id }}" required class="form-check-input supplier-radio">
+                                                                </td>
+                                                                <td data-label="Fornitore">
+                                                                    <label for="supplier_{{ fornitore.id }}" class="mb-0 fw-bold cursor-pointer">
+                                                                        {{ fornitore.nome }}
+                                                                    </label>
+                                                                </td>
+                                                                <td data-label="Località">
+                                                                    {% if fornitore.citta %}
+                                                                    {{ fornitore.citta }}{% if fornitore.provincia %}, {{ fornitore.provincia }}{% endif %}
+                                                                    {% else %}
+                                                                    <span class="text-muted">-</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td data-label="Contatti">
+                                                                    <div class="small">
+                                                                        {% if fornitore.telefono %}
+                                                                        <div><i class="fas fa-phone me-1" style="color: #2c3e50;"></i>{{ fornitore.telefono }}</div>
+                                                                        {% endif %}
+                                                                        {% if fornitore.email %}
+                                                                        <div><i class="fas fa-envelope me-1" style="color: #2c3e50;"></i>{{ fornitore.email }}</div>
+                                                                        {% endif %}
+                                                                        {% if not fornitore.telefono and not fornitore.email %}
+                                                                        <span class="text-muted">-</span>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </td>
+                                                                <td data-label="Statistiche">
+                                                                    <span class="badge-soft badge-soft-info">{{ fornitore.numero_ingredienti }} ingredienti</span>
+                                                                    {% if fornitore.prezzo_medio_ingredienti > 0 %}
+                                                                    <br><small class="text-success">€{{ "%.2f"|format(fornitore.prezzo_medio_ingredienti) }} medio</small>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                
+                                                <div class="invalid-feedback p-3">
+                                                    Seleziona un fornitore per continuare
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Condizioni di Fornitura -->
+                                    <div class="col-12">
+                                        <hr class="my-4">
+                                        <h6 class="mb-3"><i class="fas fa-euro-sign me-2" style="color: #2c3e50;"></i>Condizioni di Fornitura</h6>
+                                        
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="prezzo_unitario" class="form-label">Prezzo Unitario <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">€</span>
+                                                    <input type="number" class="form-control" id="prezzo_unitario" name="prezzo_unitario" 
+                                                           step="0.01" min="0" max="9999" required placeholder="0.00">
+                                                    <span class="input-group-text">/ {{ ingrediente.unita_misura }}</span>
+                                                </div>
+                                                <div class="form-text">Prezzo per {{ ingrediente.unita_misura }}</div>
+                                                <div class="invalid-feedback">Inserisci un prezzo valido</div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label for="codice_fornitore" class="form-label">Codice Fornitore</label>
+                                                <input type="text" class="form-control" id="codice_fornitore" name="codice_fornitore" 
+                                                       maxlength="50" placeholder="Es. FARINA001">
+                                                <div class="form-text">Codice prodotto del fornitore</div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label for="tempo_consegna_giorni" class="form-label">Tempo di Consegna</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="tempo_consegna_giorni" 
+                                                           name="tempo_consegna_giorni" min="0" max="365" value="0">
+                                                    <span class="input-group-text">giorni</span>
+                                                </div>
+                                                <div class="form-text">Giorni lavorativi per la consegna</div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <label for="quantita_minima" class="form-label">Quantità Minima</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="quantita_minima" name="quantita_minima" 
+                                                           step="0.01" min="0" max="9999" value="0" placeholder="0.00">
+                                                    <span class="input-group-text">{{ ingrediente.unita_misura }}</span>
+                                                </div>
+                                                <div class="form-text">Quantità minima ordinabile</div>
+                                            </div>
+                                            
+                                            <div class="col-12">
+                                                <label for="note" class="form-label">Note</label>
+                                                <textarea class="form-control" id="note" name="note" 
+                                                          rows="2" placeholder="Note aggiuntive sulla fornitura..."></textarea>
+                                                <div class="form-text">Condizioni particolari, sconti, etc.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Actions -->
+                                    <div class="col-12">
+                                        <hr class="my-4">
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <a href="{{ url_for('ingredients.view', id=ingrediente.id) }}" 
+                                               class="btn btn-outline-secondary">
+                                                <i class="fas fa-times me-1"></i>Annulla
+                                            </a>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-link me-1"></i>Associa Fornitore
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                            {% else %}
+                            <!-- No fornitori available -->
+                            <div class="text-center py-5">
+                                <i class="fas fa-truck fa-3x text-muted mb-4"></i>
+                                <h6 class="text-muted">Nessun fornitore disponibile</h6>
+                                <p class="text-muted">
+                                    Non ci sono fornitori disponibili per questo ingrediente. 
+                                    Tutti i fornitori sono già associati o devi crearne di nuovi.
+                                </p>
+                                <div class="mt-4">
+                                    <a href="{{ url_for('ingredients.fornitori_new') }}" class="btn btn-primary me-2">
+                                        <i class="fas fa-plus"></i> Crea Nuovo Fornitore
+                                    </a>
+                                    <a href="{{ url_for('ingredients.view', id=ingrediente.id) }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left"></i> Torna all'Ingrediente
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/ingredients.js') }}"></script>
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Supplier table selection
+    initSupplierSelection();
+    
+    // Form helpers
+    initFormHelpers();
+});
+
+// Initialize supplier selection
+function initSupplierSelection() {
+    const supplierRows = document.querySelectorAll('.supplier-row');
+    const supplierRadios = document.querySelectorAll('.supplier-radio');
+    
+    // Initialize search functionality
+    initSupplierSearch();
+    
+    // Make supplier rows clickable
+    supplierRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't trigger if clicking on radio button or label
+            if (e.target.type === 'radio' || e.target.tagName === 'LABEL') {
+                return;
+            }
+            
+            const radio = row.querySelector('.supplier-radio');
+            if (radio && !radio.checked) {
+                radio.checked = true;
+                updateRowSelection();
+                // Trigger change event for form validation
+                radio.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+    
+    // Handle radio changes
+    supplierRadios.forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            updateRowSelection();
+        });
+    });
+    
+    // Update row selection styling
+    function updateRowSelection() {
+        supplierRows.forEach(function(row) {
+            row.classList.remove('selected');
+        });
+        
+        const selectedRadio = document.querySelector('.supplier-radio:checked');
+        if (selectedRadio) {
+            const selectedRow = selectedRadio.closest('.supplier-row');
+            if (selectedRow) {
+                selectedRow.classList.add('selected');
+            }
+        }
+    }
+}
+
+// Initialize supplier search
+function initSupplierSearch() {
+    const searchInput = document.getElementById('supplier-search');
+    if (!searchInput) return;
+    
+    const supplierRows = document.querySelectorAll('.supplier-row');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        supplierRows.forEach(function(row) {
+            const searchText = row.dataset.searchText || '';
+            
+            if (searchTerm === '' || searchText.includes(searchTerm)) {
+                row.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+        
+        // Show/hide no results message
+        updateNoResultsMessage(searchTerm, visibleCount);
+    });
+}
+
+// Update no results message
+function updateNoResultsMessage(searchTerm, visibleCount) {
+    const tableBody = document.querySelector('#suppliers-table tbody');
+    const existingNoResults = tableBody.querySelector('.no-results-row');
+    
+    // Remove existing message
+    if (existingNoResults) {
+        existingNoResults.remove();
+    }
+    
+    // Show no results message if needed
+    if (searchTerm && visibleCount === 0) {
+        const noResultsRow = document.createElement('tr');
+        noResultsRow.className = 'no-results-row';
+        noResultsRow.innerHTML = `
+            <td colspan="5" class="text-center py-4">
+                <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                <h6 class="text-muted mb-2">Nessun fornitore trovato</h6>
+                <p class="text-muted small mb-0">
+                    Prova con un termine di ricerca diverso o crea un nuovo fornitore.
+                </p>
+            </td>
+        `;
+        
+        tableBody.appendChild(noResultsRow);
+    }
+}
+
+// Initialize form helpers
+function initFormHelpers() {
+    const prezzoInput = document.getElementById('prezzo_unitario');
+    const quantitaInput = document.getElementById('quantita_minima');
+    
+    if (!prezzoInput) return; // Form not present
+    
+    // Price calculation helper
+    function calculateMinCost() {
+        const prezzo = parseFloat(prezzoInput.value) || 0;
+        const quantita = parseFloat(quantitaInput.value) || 0;
+        
+        if (prezzo > 0 && quantita > 0) {
+            const costoMinimo = prezzo * quantita;
+            console.log(`Costo minimo ordine: €${costoMinimo.toFixed(3)}`);
+        }
+    }
+    
+    prezzoInput.addEventListener('input', calculateMinCost);
+    quantitaInput.addEventListener('input', calculateMinCost);
+    
+    // Auto-format number inputs
+    prezzoInput.addEventListener('blur', function() {
+        const value = parseFloat(this.value);
+        if (!isNaN(value)) {
+            this.value = value.toFixed(3);
+        }
+    });
+    
+    quantitaInput.addEventListener('blur', function() {
+        const value = parseFloat(this.value);
+        if (!isNaN(value)) {
+            this.value = value.toFixed(3);
+        }
+    });
+}
+</script>
+{% endblock %}

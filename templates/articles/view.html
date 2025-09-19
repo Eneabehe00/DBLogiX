@@ -1,0 +1,2560 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.Descripcion }} - DBLogiX{% endblock %}
+
+{% block header_title %}Dettaglio Articolo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+<style>
+    /* Mobile optimizations for article detail */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #f8f9fa;
+        --success-green: #27ae60;
+        --border-light: #e9ecef;
+    }
+    
+    /* Container width optimization for mobile */
+    @media (max-width: 767.98px) {
+        .container-fluid {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+        }
+        
+        /* Page header improvements */
+         .page-header {
+             padding: 20px 15px;
+         }
+        
+        .page-title {
+            font-size: 1.5rem;
+            line-height: 1.2;
+        }
+        
+        .page-subtitle {
+            font-size: 0.9rem;
+        }
+        
+        .action-btn {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+        
+        /* Card improvements */
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.08);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            margin-bottom: 15px;
+        }
+        
+        .card-body {
+            padding: 15px;
+        }
+        
+        /* Tab navigation mobile */
+        .nav-tabs {
+            border-bottom: 1px solid var(--border-light);
+            padding: 0 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .nav-tabs .nav-link {
+            border: none;
+            border-radius: 10px 10px 0 0;
+            padding: 12px 8px;
+            font-size: 0.8rem;
+            color: var(--primary-dark);
+            margin: 5px 2px 0;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: white;
+            color: var(--accent-blue);
+            border-bottom: 2px solid var(--accent-blue);
+            font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link i {
+            font-size: 1.1rem;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        /* Tab content mobile */
+        .tab-content {
+            padding: 20px 10px;
+            background: white;
+            border-radius: 0 0 15px 15px;
+        }
+        
+        /* Info sections mobile */
+        .info-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+        
+        .section-title {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: var(--primary-dark);
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+        
+        /* Table mobile */
+        .table {
+            font-size: 0.85rem;
+        }
+        
+        .table th {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-dark);
+            background: rgba(52, 152, 219, 0.1);
+            border: none;
+            width: 35%;
+        }
+        
+        .table td {
+            border: none;
+            padding: 8px 10px;
+        }
+        
+        .table-striped > tbody > tr:nth-of-type(odd) > td {
+            background-color: rgba(52, 152, 219, 0.03);
+        }
+        
+        /* Price display mobile */
+        .display-6 {
+            font-size: 2rem;
+        }
+        
+        /* Card groups mobile */
+        .row.g-4 {
+            --bs-gutter-x: 0.75rem;
+            --bs-gutter-y: 1rem;
+        }
+        
+        .card.h-100 {
+            border-radius: 12px;
+            border: 1px solid rgba(52, 152, 219, 0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+            color: white;
+            border-radius: 12px 12px 0 0;
+            padding: 12px 15px;
+        }
+        
+        .card-header h5 {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        /* Badge improvements */
+        .badge-soft {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .badge-soft-success {
+            background: linear-gradient(135deg, var(--success-green), #2ecc71);
+            color: white;
+        }
+        
+        .badge-soft-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #5dade2);
+            color: white;
+        }
+        
+        .badge-soft-secondary {
+            background: linear-gradient(135deg, #95a5a6, #bdc3c7);
+            color: white;
+        }
+        
+        /* Alert improvements */
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 15px;
+        }
+        
+        .alert-light {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+        }
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 575.98px) {
+        .container-fluid {
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+        }
+        
+        .page-title {
+            font-size: 1.3rem;
+        }
+        
+        .card-body {
+            padding: 10px;
+        }
+        
+        .nav-tabs .nav-link {
+            padding: 10px 4px;
+            font-size: 0.7rem;
+            min-width: 50px;
+        }
+        
+        .tab-content {
+            padding: 15px 5px;
+        }
+        
+        .info-section {
+            padding: 10px;
+        }
+        
+        .section-title {
+            font-size: 0.9rem;
+        }
+        
+        .display-6 {
+            font-size: 1.5rem;
+        }
+        
+        .row.g-4 {
+            --bs-gutter-x: 0.5rem;
+            --bs-gutter-y: 0.75rem;
+        }
+    }
+    
+    /* Animation improvements */
+    .card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .info-section {
+        animation: slideInLeft 0.5s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    /* Ticket Card Styles */
+    .ticket-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 15px;
+        padding: 20px;
+        height: 100%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .ticket-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        border-color: var(--bs-primary);
+    }
+
+    .ticket-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--bs-primary), var(--bs-info));
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .ticket-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .ticket-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .ticket-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--bs-primary), var(--bs-info));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.1rem;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+
+    .status-indicator.status-warning { background-color: #ffc107; }
+    .status-indicator.status-success { background-color: #198754; }
+    .status-indicator.status-info { background-color: #0dcaf0; }
+    .status-indicator.status-secondary { background-color: #6c757d; }
+    .status-indicator.status-danger { background-color: #dc3545; }
+    .status-indicator.status-dark { background-color: #212529; }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .ticket-content {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .ticket-number {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ticket-id {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--bs-primary);
+    }
+
+    .ticket-date {
+        font-size: 0.85rem;
+        color: #6c757d;
+        background: rgba(108, 117, 125, 0.1);
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+
+    .ticket-description {
+        font-size: 0.9rem;
+        color: #495057;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .ticket-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .ticket-weight {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+    }
+
+    .type-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .type-badge.type-unit {
+        background: rgba(13, 202, 240, 0.15);
+        color: #0dcaf0;
+    }
+
+    .type-badge.type-weight {
+        background: rgba(13, 110, 253, 0.15);
+        color: #0d6efd;
+    }
+
+    .ticket-status-text {
+        margin-top: 8px;
+    }
+
+    .status-badge {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .status-badge.status-warning {
+        background-color: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+        border: 1px solid rgba(255, 193, 7, 0.3);
+    }
+
+    .status-badge.status-success {
+        background-color: rgba(25, 135, 84, 0.15);
+        color: #198754;
+        border: 1px solid rgba(25, 135, 84, 0.3);
+    }
+
+    .status-badge.status-info {
+        background-color: rgba(13, 202, 240, 0.15);
+        color: #0dcaf0;
+        border: 1px solid rgba(13, 202, 240, 0.3);
+    }
+
+    .status-badge.status-secondary {
+        background-color: rgba(108, 117, 125, 0.15);
+        color: #6c757d;
+        border: 1px solid rgba(108, 117, 125, 0.3);
+    }
+
+    .status-badge.status-danger {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+
+    .status-badge.status-dark {
+        background-color: rgba(33, 37, 41, 0.15);
+        color: #212529;
+        border: 1px solid rgba(33, 37, 41, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Article Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="page-id">#{{ article.IdArticulo }}</div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}" class="text-white">Articoli</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">{{ article.Descripcion }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-box me-2"></i>{{ article.Descripcion }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="status-badge {% if article.EnVenta %}success{% else %}danger{% endif %}">
+                        <i class="fas {% if article.EnVenta %}fa-check-circle{% else %}fa-times-circle{% endif %} me-1"></i>
+                        {% if article.EnVenta %}Attivo{% else %}Inattivo{% endif %}
+                    </span>
+                    {% if article.Favorito %}
+                    <span class="status-badge warning">
+                        <i class="fas fa-star me-1"></i>Preferito
+                    </span>
+                    {% endif %}
+                    <span class="text-white-50">·</span>
+                    <span class="text-white-50">{{ article.TimeStamp.strftime('%d/%m/%Y %H:%M') if article.TimeStamp else 'N/A' }} - {{ article.Usuario or 'N/A' }}</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('articles.edit', id=article.IdArticulo) }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-edit me-1"></i>Modifica
+                    </a>
+                    <a href="{{ url_for('articles.copy', id=article.IdArticulo) }}" class="btn btn-info action-btn mb-2 mb-md-0">
+                        <i class="fas fa-copy me-1"></i>Copia
+                    </a>
+
+                    <a href="{{ url_for('articles.delete', id=article.IdArticulo) }}" 
+                       class="btn btn-outline-light action-btn"
+                       data-delete
+                       data-id="{{ article.IdArticulo }}"
+                       data-name="{{ article.Descripcion }}"
+                       data-type="articolo"
+                       data-url="{{ url_for('articles.delete', id=article.IdArticulo) }}">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Modern Tabs for Product Details -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <ul class="nav nav-tabs card-header-tabs overflow-auto flex-nowrap" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">
+                        <i class="fas fa-info-circle"></i> <span class="d-none d-sm-inline">Generale</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pricing-tab" data-bs-toggle="tab" data-bs-target="#pricing" type="button" role="tab" aria-controls="pricing" aria-selected="false">
+                        <i class="fas fa-tags"></i> <span class="d-none d-sm-inline">Prezzi</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="codes-tab" data-bs-toggle="tab" data-bs-target="#codes" type="button" role="tab" aria-controls="codes" aria-selected="false">
+                        <i class="fas fa-barcode"></i> <span class="d-none d-sm-inline">Codici</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="date-tab" data-bs-toggle="tab" data-bs-target="#date" type="button" role="tab" aria-controls="date" aria-selected="false">
+                        <i class="fas fa-calendar-alt"></i> <span class="d-none d-sm-inline">Date</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="texts-tab" data-bs-toggle="tab" data-bs-target="#texts" type="button" role="tab" aria-controls="texts" aria-selected="false">
+                        <i class="fas fa-font"></i> <span class="d-none d-sm-inline">Testi</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="traceability-tab" data-bs-toggle="tab" data-bs-target="#traceability" type="button" role="tab" aria-controls="traceability" aria-selected="false">
+                        <i class="fas fa-search-location"></i> <span class="d-none d-sm-inline">Tracciabilità</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="false">
+                        <i class="fas fa-info"></i> <span class="d-none d-sm-inline">Info</span>
+                    </button>
+                </li>
+                {% if is_module_enabled('ingredients') %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="ingredients-tab" data-bs-toggle="tab" data-bs-target="#ingredients" type="button" role="tab" aria-controls="ingredients" aria-selected="false">
+                        <i class="fas fa-leaf"></i> <span class="d-none d-sm-inline">Ingredienti</span>
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+        
+            <div class="tab-content p-3 border border-top-0 rounded-bottom">
+                <!-- General Tab -->
+                <div class="tab-pane fade show active" id="general" role="tabpanel" aria-labelledby="general-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-id-card me-2 text-primary"></i> Informazioni Base</h5>
+                                <table class="table table-striped mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th>Descrizione</th>
+                                            <td>{{ article.Descripcion }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Descrizione Alt</th>
+                                            <td>{{ article.Descripcion1 or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tipo</th>
+                                            <td>{{ 'Pesato' if article.IdTipo == 1 else 'Unitario' if article.IdTipo == 0 else article.IdTipo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Famiglia</th>
+                                            <td>{{ familia_nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Sottofamiglia</th>
+                                            <td>{{ subfamilia_nombre }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-sitemap me-2 text-primary"></i> Classificazione</h5>
+                                <table class="table table-striped mb-0">
+                                    <tbody>
+                                        <tr>
+                                            <th>Dipartimento</th>
+                                            <td>{{ departamento_nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Sezione</th>
+                                            <td>{{ seccion_nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tasto Diretto</th>
+                                            <td>{{ article.TeclaDirecta or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tara Fissa</th>
+                                            <td>{{ article.TaraFija or 'N/A' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Pricing Tab -->
+                <div class="tab-pane fade" id="pricing" role="tabpanel" aria-labelledby="pricing-tab">
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-tag me-2 text-primary"></i> Informazioni Prezzo</h5>
+                                <div class="row align-items-center mb-4">
+                                    <div class="col-md-12">
+                                        <div class="p-4 rounded-3 text-center bg-light">
+                                            <h6 class="text-muted mb-2">Prezzo Attuale (con IVA)</h6>
+                                            <h2 class="display-6 mb-0 fw-bold text-primary">{{ article.PrecioConIVA|price if article.PrecioConIVA else '€0.00' }}</h2>
+                                            <p class="text-muted mt-2 mb-0">
+                                                <small>IVA ID: {{ article.IdIVA or 'N/A' }}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <table class="table table-striped">
+                                    <tbody>
+                                        <tr>
+                                            <th>Prezzo (senza IVA)</th>
+                                            <td>{{ article.PrecioSinIVA|price if article.PrecioSinIVA else 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Prezzo (con IVA)</th>
+                                            <td>{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>IVA ID</th>
+                                            <td>{{ article.IdIVA or 'N/A' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Codes Tab -->
+                <div class="tab-pane fade" id="codes" role="tabpanel" aria-labelledby="codes-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-keyboard me-2 text-primary"></i> Tasto Diretto</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="p-4 rounded-3 text-center bg-light">
+                                        <h6 class="text-muted mb-2">Numero per il tasto diretto sulla bilancia</h6>
+                                        <h2 class="display-6 mb-0 fw-bold {% if article.TeclaDirecta %}text-primary{% else %}text-muted{% endif %}">
+                                            {{ article.TeclaDirecta or 'Non impostato' }}
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-barcode me-2 text-primary"></i> Codici EAN</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if eanscanner_list %}
+                                        <div class="row row-cols-1 g-3">
+                                            {% for ean in eanscanner_list %}
+                                                <div class="col">
+                                                    <div class="card h-100 {% if ean.Activo == 1 %}border-primary{% else %}border-light{% endif %}">
+                                                        <div class="card-body">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="flex-grow-1">
+                                                                    <h6 class="card-title mb-1">
+                                                                        <i class="fas fa-barcode me-2 {% if ean.Activo == 1 %}text-primary{% endif %}"></i>
+                                                                        {{ ean.EANScanner }}
+                                                                    </h6>
+                                                                    {% if ean.Activo == 1 %}
+                                                                        <span class="badge-soft badge-soft-success">Primario</span>
+                                                                    {% else %}
+                                                                        <span class="badge-soft badge-soft-secondary">Secondario</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-light text-center">
+                                            <i class="fas fa-info-circle fa-2x mb-3 text-muted"></i>
+                                            <p>Nessun codice EAN assegnato a questo prodotto.</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Date Tab -->
+                <div class="tab-pane fade" id="date" role="tabpanel" aria-labelledby="date-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2 text-primary"></i> Scadenza</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center p-3 rounded-3 bg-light mb-4">
+                                        <div class="me-3">
+                                            {% if article.FechaCaducidadActivada %}
+                                            <div class="badge-soft badge-soft-success rounded-circle p-3">
+                                                <i class="fas fa-check"></i>
+                                            </div>
+                                            {% else %}
+                                            <div class="badge-soft badge-soft-secondary rounded-circle p-3">
+                                                <i class="fas fa-times"></i>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">Data di Scadenza</h6>
+                                            <p class="text-muted mb-0">
+                                                {% if article.FechaCaducidadActivada %}
+                                                Tracciamento scadenza abilitato
+                                                {% else %}
+                                                Tracciamento scadenza disabilitato
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if article.FechaCaducidadActivada %}
+                                    <div class="p-4 rounded-3 text-center bg-light">
+                                        <h6 class="text-muted mb-2">Giorni alla Scadenza</h6>
+                                        <h2 class="display-6 mb-0 fw-bold text-warning">{{ article.DiasCaducidad or '0' }}</h2>
+                                        <p class="text-muted mt-2 mb-0">
+                                            <small>Numero di giorni dopo i quali il prodotto va considerato in scadenza</small>
+                                        </p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2 text-primary"></i> Stato Vendita</h5>
+                                </div>
+                                <div class="card-body d-flex align-items-center justify-content-center">
+                                    <div class="text-center">
+                                        {% if article.EnVenta %}
+                                        <div class="badge-soft badge-soft-success p-4 rounded-circle mb-3">
+                                            <i class="fas fa-check fa-3x"></i>
+                                        </div>
+                                        <h5 class="mb-0 text-success">Prodotto in Vendita</h5>
+                                        <p class="text-muted mt-2">Questo prodotto è attualmente disponibile per la vendita</p>
+                                        {% else %}
+                                        <div class="badge-soft badge-soft-secondary p-4 rounded-circle mb-3">
+                                            <i class="fas fa-times fa-3x"></i>
+                                        </div>
+                                        <h5 class="mb-0 text-secondary">Prodotto non in Vendita</h5>
+                                        <p class="text-muted mt-2">Questo prodotto non è attualmente disponibile per la vendita</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Traceability Tab -->
+                <div class="tab-pane fade" id="traceability" role="tabpanel" aria-labelledby="traceability-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-fingerprint me-2 text-primary"></i> Classe di Tracciabilità</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if article.IdClase %}
+                                    <div class="p-4 rounded-3 text-center bg-light">
+                                        <div class="d-inline-block p-3 rounded-circle mb-3 badge-soft-primary">
+                                            <i class="fas fa-fingerprint fa-2x"></i>
+                                        </div>
+                                        <h5 class="mb-1">{{ clase_nombre }}</h5>
+                                        <p class="text-muted mb-0">ID Classe: {{ article.IdClase }}</p>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-light text-center">
+                                        <i class="fas fa-fingerprint fa-3x mb-3 text-muted"></i>
+                                        <h6>Nessuna Classe Assegnata</h6>
+                                        <p class="text-muted mb-0">Questo prodotto non ha una classe di tracciabilità assegnata.</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if article.IdClase %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-cubes me-2 text-primary"></i> Lotti Associati</h5>
+                                    {% if lotes_asociados %}
+                                    <span class="badge-soft badge-soft-primary px-3 py-2 rounded-pill">{{ lotes_asociados|length }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    {% if lotes_asociados %}
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Nome Lotto</th>
+                                                    <th>Peso</th>
+                                                    <th>Scadenza</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for lote in lotes_asociados %}
+                                                <tr class="lot-row" data-id="{{ lote.IdElemAsociado }}">
+                                                    <td><span class="badge bg-light text-dark">#{{ lote.IdElemAsociado }}</span></td>
+                                                    <td>{{ lote.NombreElemAsociado }}</td>
+                                                    <td><span class="badge-soft badge-soft-primary">{{ lote.Peso }}</span></td>
+                                                    <td>
+                                                        {% if lote.FechaCaducidad %}
+                                                            <span class="badge-soft badge-soft-warning">
+                                                                <i class="fas fa-calendar-alt me-1"></i>
+                                                                {{ lote.FechaCaducidad }}
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="text-muted">N/A</span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-light text-center">
+                                        <i class="fas fa-cubes fa-3x mb-3 text-muted"></i>
+                                        <h6>Nessun Lotto</h6>
+                                        <p class="text-muted mb-0">Nessun lotto associato a questo prodotto.</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i> Informazioni Tracciabilità</h5>
+                                </div>
+                                <div class="card-body d-flex align-items-center justify-content-center">
+                                    <div class="alert alert-light w-100 text-center border">
+                                        <i class="fas fa-exclamation-circle text-warning fa-2x mb-3"></i>
+                                        <p>La tracciabilità sarà disponibile solo dopo aver assegnato una classe di tracciabilità a questo articolo.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Texts Tab -->
+                <div class="tab-pane fade" id="texts" role="tabpanel" aria-labelledby="texts-tab">
+                    <div class="mb-4">
+                    <ul class="nav nav-pills mb-4" id="textsSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="text1-5-tab" data-bs-toggle="pill" data-bs-target="#text1-5" 
+                                type="button" role="tab" aria-controls="text1-5" aria-selected="true">
+                                    <i class="fas fa-file-lines me-1"></i> Testi 1-5
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text6-10-tab" data-bs-toggle="pill" data-bs-target="#text6-10" 
+                                type="button" role="tab" aria-controls="text6-10" aria-selected="false">
+                                    <i class="fas fa-file-lines me-1"></i> Testi 6-10
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text11-15-tab" data-bs-toggle="pill" data-bs-target="#text11-15" 
+                                type="button" role="tab" aria-controls="text11-15" aria-selected="false">
+                                    <i class="fas fa-file-lines me-1"></i> Testi 11-15
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text16-20-tab" data-bs-toggle="pill" data-bs-target="#text16-20" 
+                                type="button" role="tab" aria-controls="text16-20" aria-selected="false">
+                                    <i class="fas fa-file-lines me-1"></i> Testi 16-20
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="textolibre-tab" data-bs-toggle="pill" data-bs-target="#textolibre" 
+                                type="button" role="tab" aria-controls="textolibre" aria-selected="false">
+                                    <i class="fas fa-edit me-1"></i> Valori Nutrizionali
+                            </button>
+                        </li>
+                    </ul>
+                    </div>
+                    
+                    <div class="tab-content p-0" id="textTabsContent">
+                        <!-- Textos 1-5 Tab -->
+                        <div class="tab-pane fade show active" id="text1-5" role="tabpanel" aria-labelledby="text1-5-tab">
+                            <div class="row g-4">
+                                {% for i in range(1, 6) %}
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-transparent">
+                                            <h5 class="mb-0"><i class="fas fa-file-lines me-2 text-primary"></i> Texto {{ i }}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            {% set texto_field = 'Texto' + i|string %}
+                                            {% if article|attr(texto_field) %}
+                                            <div class="p-3 bg-light rounded-3">
+                                                {{ article|attr(texto_field)|replace('\n', '<br>')|safe }}
+                                            </div>
+                                            {% else %}
+                                            <div class="text-center text-muted p-4">
+                                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                <p>Nessuna informazione disponibile</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Textos 6-10 Tab -->
+                        <div class="tab-pane fade" id="text6-10" role="tabpanel" aria-labelledby="text6-10-tab">
+                            <div class="row g-4">
+                                {% for i in range(6, 11) %}
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-transparent">
+                                            <h5 class="mb-0"><i class="fas fa-file-lines me-2 text-primary"></i> Texto {{ i }}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            {% set texto_field = 'Texto' + i|string %}
+                                            {% if article|attr(texto_field) %}
+                                            <div class="p-3 bg-light rounded-3">
+                                                {{ article|attr(texto_field)|replace('\n', '<br>')|safe }}
+                                            </div>
+                                            {% else %}
+                                            <div class="text-center text-muted p-4">
+                                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                <p>Nessuna informazione disponibile</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Textos 11-15 Tab -->
+                        <div class="tab-pane fade" id="text11-15" role="tabpanel" aria-labelledby="text11-15-tab">
+                            <div class="row g-4">
+                                {% for i in range(11, 16) %}
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-transparent">
+                                            <h5 class="mb-0"><i class="fas fa-file-lines me-2 text-primary"></i> Texto {{ i }}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            {% set texto_field = 'Texto' + i|string %}
+                                            {% if article|attr(texto_field) %}
+                                            <div class="p-3 bg-light rounded-3">
+                                                {{ article|attr(texto_field)|replace('\n', '<br>')|safe }}
+                                            </div>
+                                            {% else %}
+                                            <div class="text-center text-muted p-4">
+                                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                <p>Nessuna informazione disponibile</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Textos 16-20 Tab -->
+                        <div class="tab-pane fade" id="text16-20" role="tabpanel" aria-labelledby="text16-20-tab">
+                            <div class="row g-4">
+                                {% for i in range(16, 21) %}
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-transparent">
+                                            <h5 class="mb-0"><i class="fas fa-file-lines me-2 text-primary"></i> Texto {{ i }}</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            {% set texto_field = 'Texto' + i|string %}
+                                            {% if article|attr(texto_field) %}
+                                            <div class="p-3 bg-light rounded-3">
+                                                {{ article|attr(texto_field)|replace('\n', '<br>')|safe }}
+                                            </div>
+                                            {% else %}
+                                            <div class="text-center text-muted p-4">
+                                                <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                <p>Nessuna informazione disponibile</p>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Texto Libre Tab -->
+                        <div class="tab-pane fade" id="textolibre" role="tabpanel" aria-labelledby="textolibre-tab">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-edit me-2 text-primary"></i> Valori Nutrizionali</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if article.TextoLibre %}
+                                    <div class="p-4 bg-light rounded-3">
+                                        {{ article.TextoLibre|replace('\n', '<br>')|safe }}
+                                    </div>
+                                    {% else %}
+                                    <div class="text-center text-muted p-5">
+                                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                                        <h5>Nessun valore nutrizionale disponibile</h5>
+                                        <p>Non sono stati aggiunti valori nutrizionali a questo prodotto.</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Info Tab -->
+                <div class="tab-pane fade" id="info" role="tabpanel" aria-labelledby="info-tab">
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent">
+                                    <h5 class="mb-0"><i class="fas fa-info-circle me-2 text-primary"></i> Informazioni di Sistema</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-striped table-info">
+                                        <tbody>
+                                            <tr>
+                                                <th>ID Articolo</th>
+                                                <td>{{ article.IdArticulo }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Ultimo Aggiornamento</th>
+                                                <td>{{ article.TimeStamp.strftime('%d/%m/%Y %H:%M') if article.TimeStamp else 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Aggiornato da</th>
+                                                <td>{{ article.Usuario or 'N/A' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>ID Azienda</th>
+                                                <td>{{ article.IdEmpresa or 'N/A' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ingredients Tab -->
+                {% if is_module_enabled('ingredients') %}
+                <div class="tab-pane fade" id="ingredients" role="tabpanel" aria-labelledby="ingredients-tab">
+                    <div class="row g-4">
+                        <div class="col-md-12">
+                            <!-- Ingredients Summary -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-leaf me-2 text-success"></i>
+                                        Ingredienti dell'Articolo
+                                    </h5>
+                                    {% if current_user.is_admin %}
+                                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addIngredientModal">
+                                        <i class="fas fa-plus me-1"></i>Aggiungi Ingrediente
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    {% if article_ingredients %}
+                                        <!-- Food Cost Summary -->
+                                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded bg-light">
+                                    <h6 class="text-muted mb-1">Costo Totale Ingredienti</h6>
+                                    <div class="mb-2">
+                                        <h4 class="text-success mb-1">
+                                            <i class="fas fa-euro-sign"></i>
+                                            {{ "%.2f"|format(total_ingredients_cost|float) if total_ingredients_cost else "0.00" }}
+                                        </h4>
+                                        <small class="text-muted">Costo degli ingredienti</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded bg-light" id="food-cost-card">
+                                    <h6 class="text-muted mb-1">Food Cost %</h6>
+                                    <div class="mb-2">
+                                        <h4 class="mb-1" id="food-cost-value" data-percentage="{{ food_cost_percentage|float if food_cost_percentage else 0.0 }}">
+                                            {{ "%.1f"|format(food_cost_percentage|float) if food_cost_percentage else "0.0" }}%
+                                        </h4>
+                                        <small class="text-muted" id="food-cost-status">Percentuale sui costi</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 border rounded bg-light">
+                                    <h6 class="text-muted mb-1">Calcolo Prezzo Vendita</h6>
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block mb-1">Margine %</small>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" 
+                                                       id="profit-margin" 
+                                                       class="form-control text-center fw-bold" 
+                                                       placeholder="0" 
+                                                       min="0" 
+                                                       max="99" 
+                                                       step="0.1">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block mb-1">Prezzo suggerito</small>
+                                            <h4 class="text-primary mb-1" id="selling-price">
+                                                <i class="fas fa-euro-sign me-1"></i>
+                                                <span>0.00</span>
+                                            </h4>
+                                            <button type="button" 
+                                                    class="btn btn-success btn-sm" 
+                                                    id="apply-price-btn" 
+                                                    disabled
+                                                    style="font-size: 0.7rem; padding: 2px 8px;">
+                                                <i class="fas fa-check me-1"></i>Applica
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                                        </div>
+                                        
+                                        <!-- Ingredients Table -->
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th>Ingrediente</th>
+                                                        <th>Quantità</th>
+                                                        <th>Fornitore</th>
+                                                        <th>Prezzo Unit.</th>
+                                                        <th>Costo Totale</th>
+                                                        <th>% sul Totale</th>
+                                                        {% if current_user.is_admin %}
+                                                        <th>Azioni</th>
+                                                        {% endif %}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for ingredient in article_ingredients %}
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="me-3">
+                                                                    <span class="badge bg-success-soft text-success">
+                                                                        <i class="fas fa-leaf"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <div>
+                                                                    <strong>{{ ingredient.ingrediente.nome }}</strong>
+                                                                    {% if ingredient.ingrediente.categoria %}
+                                                                        <br><small class="text-muted">{{ ingredient.ingrediente.categoria }}</small>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="fw-bold">{{ ingredient.quantita_formatted }}</span>
+                                                        </td>
+                                                        <td>
+                                                            {% if ingredient.fornitore_utilizzato %}
+                                                                <strong>{{ ingredient.fornitore_utilizzato.nome }}</strong>
+                                                                <br><small class="text-muted">{{ ingredient.tipo_fornitore_utilizzato }}</small>
+                                                            {% else %}
+                                                                <span class="text-muted">Non specificato</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if ingredient.costo_totale and ingredient.quantita %}
+                                                                {% set prezzo_unitario = (ingredient.costo_totale|float) / (ingredient.quantita|float) %}
+                                                                <span class="text-success fw-bold">
+                                                                    €{{ "%.2f"|format(prezzo_unitario) }}
+                                                                </span>
+                                                                <small class="text-muted d-block">per {{ ingredient.ingrediente.unita_misura }}</small>
+                                                            {% else %}
+                                                                <span class="text-muted">N/A</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if ingredient.costo_totale %}
+                                                                <span class="text-success fw-bold">
+                                                                    {{ ingredient.costo_formatted }}
+                                                                </span>
+                                                            {% else %}
+                                                                <span class="text-muted">N/A</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if ingredient.percentuale_su_totale %}
+                                                                <div class="progress" style="height: 20px;">
+                                                                    <div class="progress-bar bg-success" 
+                                                                         style="width: {{ ingredient.percentuale_su_totale }}%">
+                                                                        {{ "%.1f"|format(ingredient.percentuale_su_totale|float) }}%
+                                                                    </div>
+                                                                </div>
+                                                            {% else %}
+                                                                <span class="text-muted">N/A</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        {% if current_user.is_admin %}
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button class="btn btn-outline-warning" 
+                                                                        data-bs-toggle="modal" 
+                                                                        data-bs-target="#editIngredientModal{{ ingredient.id }}">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <button class="btn btn-outline-danger" 
+                                                                        onclick="confirmDeleteIngredient({{ ingredient.id }}, '{{ ingredient.ingrediente.nome }}')">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                        {% endif %}
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-leaf fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">Nessun ingrediente associato</h5>
+                                            <p class="text-muted">Aggiungi ingredienti per calcolare il food cost di questo articolo.</p>
+                                            {% if current_user.is_admin %}
+                                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addIngredientModal">
+                                                <i class="fas fa-plus me-2"></i>Aggiungi Primo Ingrediente
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sezione Ticket Correlati -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-receipt me-2 text-primary"></i> Ultimi Ticket Correlati</h4>
+        {% if article_tickets %}
+        <span class="badge bg-primary">{{ article_tickets|length }}</span>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if article_tickets %}
+        <!-- Desktop Table View -->
+        <div class="d-none d-lg-block">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Numero</th>
+                            <th>Data</th>
+                            <th>Stato</th>
+                            <th>Peso/Quantità</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in article_tickets %}
+                        <tr data-href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" class="clickable-row">
+                            <td>{{ ticket.IdTicket }}</td>
+                            <td>#{{ ticket.NumTicket }}</td>
+                            <td>{{ ticket.FechaFormateada }}</td>
+                            <td>
+                                {% if ticket.Enviado == 0 %}
+                                <span class="badge-soft badge-soft-warning">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 1 %}
+                                <span class="badge-soft badge-soft-success">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 2 %}
+                                <span class="badge-soft badge-soft-info">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 3 %}
+                                <span class="badge-soft badge-soft-secondary">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 4 %}
+                                <span class="badge-soft badge-soft-danger">{{ ticket.EstadoTicket }}</span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-dark">{{ ticket.EstadoTicket }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ticket.Comportamiento == 0 %}
+                                {{ ticket.Peso|int if ticket.Peso == ticket.Peso|int else ticket.Peso }} unità
+                                {% else %}
+                                {{ "%.3f"|format(ticket.Peso)|rstrip('0')|rstrip('.') }} kg
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ticket.Comportamiento == 0 %}
+                                <span class="badge-soft badge-soft-info">Unità</span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-primary">Peso</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Mobile & Tablet Card View -->
+        <div class="d-block d-lg-none">
+            <div class="row g-3">
+                {% for ticket in article_tickets %}
+                <div class="col-12 col-md-6">
+                    <div class="ticket-card" onclick="window.location.href='{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}'" data-bs-toggle="tooltip" title="Clicca per visualizzare il ticket">
+                        <!-- Ticket Header -->
+                        <div class="ticket-header">
+                            <div class="ticket-icon">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <div class="ticket-status">
+                                {% if ticket.Enviado == 0 %}
+                                <span class="status-indicator status-warning"></span>
+                                {% elif ticket.Enviado == 1 %}
+                                <span class="status-indicator status-success"></span>
+                                {% elif ticket.Enviado == 2 %}
+                                <span class="status-indicator status-info"></span>
+                                {% elif ticket.Enviado == 3 %}
+                                <span class="status-indicator status-secondary"></span>
+                                {% elif ticket.Enviado == 4 %}
+                                <span class="status-indicator status-danger"></span>
+                                {% else %}
+                                <span class="status-indicator status-dark"></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Ticket Content -->
+                        <div class="ticket-content">
+                            <div class="ticket-number">
+                                <span class="ticket-id">#{{ ticket.NumTicket }}</span>
+                                <span class="ticket-date">{{ ticket.FechaFormateada }}</span>
+                            </div>
+                            
+                            <div class="ticket-description">{{ ticket.Descripcion }}</div>
+                            
+                            <div class="ticket-details">
+                                <div class="ticket-weight">
+                                    <i class="fas fa-weight me-1"></i>
+                                    {% if ticket.Comportamiento == 0 %}
+                                    {{ ticket.Peso|int if ticket.Peso == ticket.Peso|int else ticket.Peso }} unità
+                                    {% else %}
+                                    {{ "%.3f"|format(ticket.Peso)|rstrip('0')|rstrip('.') }} kg
+                                    {% endif %}
+                                </div>
+                                <div class="ticket-type">
+                                    {% if ticket.Comportamiento == 0 %}
+                                    <span class="type-badge type-unit">Unità</span>
+                                    {% else %}
+                                    <span class="type-badge type-weight">Peso</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="ticket-status-text">
+                                {% if ticket.Enviado == 0 %}
+                                <span class="status-badge status-warning">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 1 %}
+                                <span class="status-badge status-success">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 2 %}
+                                <span class="status-badge status-info">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 3 %}
+                                <span class="status-badge status-secondary">{{ ticket.EstadoTicket }}</span>
+                                {% elif ticket.Enviado == 4 %}
+                                <span class="status-badge status-danger">{{ ticket.EstadoTicket }}</span>
+                                {% else %}
+                                <span class="status-badge status-dark">{{ ticket.EstadoTicket }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-receipt text-muted mb-3" style="font-size: 3rem;"></i>
+            <h5 class="text-muted">Nessun ticket correlato</h5>
+            <p class="text-muted mb-0">Non ci sono ticket correlati per questo articolo</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get elements
+        const lotDetailsContainer = document.getElementById('lot-details-container');
+        const lotParametersBody = document.getElementById('lot-parameters-body');
+        const lotName = document.getElementById('lot-name');
+        const closeLotDetails = document.getElementById('close-lot-details');
+        
+        // Add event listeners to all view-lote buttons
+        document.querySelectorAll('.view-lote').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const lotId = this.getAttribute('data-id');
+                getLotDetails(lotId);
+                
+                // Get the lot name from the row
+                const row = this.closest('tr');
+                const lotNameText = row.cells[1].textContent;
+                lotName.textContent = lotNameText;
+            });
+        });
+        
+        // Close lot details when clicking the close button
+        if (closeLotDetails) {
+            closeLotDetails.addEventListener('click', function() {
+                lotDetailsContainer.classList.add('d-none');
+            });
+        }
+        
+        // Function to get lot details
+        function getLotDetails(lotId) {
+            // Show loading state
+            lotParametersBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center">
+                        <div class="d-flex justify-content-center p-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            lotDetailsContainer.classList.remove('d-none');
+            
+            fetch(`/articles/get-lot-details/${lotId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayLotDetails(data.data);
+                    } else {
+                        // Show error
+                        lotParametersBody.innerHTML = `
+                            <tr>
+                                <td colspan="3" class="text-center text-danger">
+                                    <div class="p-3">
+                                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                        <p>${data.error || 'Unknown error'}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    lotParametersBody.innerHTML = `
+                        <tr>
+                            <td colspan="3" class="text-center text-danger">
+                                <div class="p-3">
+                                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                    <p>${error.message || 'Unknown error'}</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+        
+        // Function to display lot details
+        function displayLotDetails(details) {
+            // Clear previous data
+            lotParametersBody.innerHTML = '';
+            
+            if (details.length === 0) {
+                lotParametersBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center">
+                            <div class="p-3">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <p>Nessun dettaglio trovato per questo lotto.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Create rows for parameters
+                details.forEach(param => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><span class="badge bg-light text-dark">${param.IdParametro}</span></td>
+                        <td><strong>${param.Parametro}</strong></td>
+                        <td>${param.Valor}</td>
+                    `;
+                    lotParametersBody.appendChild(row);
+                });
+            }
+        }
+        
+        // Also allow clicking on the row to view lot details
+        document.querySelectorAll('.lot-row').forEach(function(row) {
+            row.addEventListener('click', function() {
+                const lotId = this.getAttribute('data-id');
+                const lotNameText = this.cells[1].textContent;
+                lotName.textContent = lotNameText;
+                getLotDetails(lotId);
+            });
+        });
+
+        // Make ticket rows clickable
+        const ticketRows = document.querySelectorAll('tr[data-href]');
+        ticketRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                window.location.href = this.getAttribute('data-href');
+            });
+        });
+        
+        // === MOBILE ENHANCEMENTS ===
+        
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        
+        // Enhanced tab navigation for mobile
+        const tabLinks = document.querySelectorAll('.nav-tabs .nav-link');
+        tabLinks.forEach((tab, index) => {
+            tab.style.animationDelay = `${index * 0.1}s`;
+            
+            tab.addEventListener('click', function() {
+                // Add mobile-specific behavior for tab switching
+                if (window.innerWidth <= 767) {
+                    // Small delay to allow tab content to render
+                    setTimeout(() => {
+                        this.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'nearest' 
+                        });
+                    }, 100);
+                }
+            });
+        });
+        
+        // Card animations
+        const cards = document.querySelectorAll('.card');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+        
+        // Info sections animations
+        const infoSections = document.querySelectorAll('.info-section');
+        infoSections.forEach((section, index) => {
+            section.style.animationDelay = `${index * 0.15}s`;
+        });
+        
+        // Mobile touch optimization for tables
+        function optimizeTablesForMobile() {
+            const tables = document.querySelectorAll('.table');
+            tables.forEach(table => {
+                if (window.innerWidth <= 480) {
+                    table.classList.add('mobile-optimized');
+                    // Add touch scrolling for horizontal tables
+                    const tableWrapper = table.closest('.table-responsive');
+                    if (tableWrapper) {
+                        tableWrapper.style.webkitOverflowScrolling = 'touch';
+                    }
+                } else {
+                    table.classList.remove('mobile-optimized');
+                }
+            });
+        }
+        
+        // Run on load and resize
+        optimizeTablesForMobile();
+        window.addEventListener('resize', optimizeTablesForMobile);
+        
+        // Enhanced mobile navigation
+        const backButton = document.querySelector('.breadcrumb a[href*="articles"]');
+        if (backButton && window.innerWidth <= 767) {
+            backButton.innerHTML = '<i class="fas fa-arrow-left me-1"></i>Torna alla Lista';
+        }
+        
+        // Mobile-specific price display enhancements
+        const priceDisplays = document.querySelectorAll('.display-6');
+        priceDisplays.forEach(display => {
+            if (window.innerWidth <= 575) {
+                display.style.fontSize = '1.5rem';
+            }
+        });
+        
+        // Smooth scroll for tab navigation on mobile
+        if (window.innerWidth <= 767) {
+            const tabContainer = document.querySelector('.nav-tabs');
+            if (tabContainer) {
+                let isScrolling = false;
+                
+                tabContainer.addEventListener('touchstart', () => {
+                    isScrolling = true;
+                });
+                
+                tabContainer.addEventListener('touchend', () => {
+                    setTimeout(() => {
+                        isScrolling = false;
+                    }, 100);
+                });
+                
+                // Prevent click events during scrolling
+                tabContainer.addEventListener('click', (e) => {
+                    if (isScrolling) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
+            }
+        }
+        
+        console.log('Article detail page loaded with enhanced mobile features');
+        console.log('Mobile optimizations applied');
+    });
+</script>
+
+<!-- Modal per Aggiungere Ingrediente -->
+<div class="modal fade" id="addIngredientModal" tabindex="-1" aria-labelledby="addIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h6 class="modal-title" id="addIngredientModalLabel">
+                    <i class="fas fa-leaf me-2"></i>Aggiungi Ingrediente
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addIngredientForm">
+                <div class="modal-body p-3">
+                    <!-- Sezione Ricerca Ingrediente -->
+                    <div class="mb-3" id="searchSection">
+                        <label class="form-label">
+                            <i class="fas fa-search me-1"></i>
+                            Cerca Ingrediente
+                        </label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="ingredientSearch" 
+                               placeholder="Digita il nome dell'ingrediente..."
+                               autocomplete="off">
+                        <div class="form-text">Digita almeno 2 caratteri per cercare</div>
+                        
+                        <!-- Risultati della ricerca -->
+                        <div id="ingredientResults" class="mt-2" style="display: none;">
+                            <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+                                <div id="ingredientsList">
+                                    <!-- Risultati dinamici qui -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sezione Ingrediente Selezionato -->
+                    <div class="alert alert-success mb-3" id="selectedSection" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-leaf me-2"></i>
+                                <div>
+                                    <strong id="selectedIngredientName">-</strong>
+                                    <br>
+                                    <small class="text-muted" id="selectedIngredientCategory">-</small>
+                                    <small class="text-muted"> • Unità: <span id="selectedIngredientUnit">-</span></small>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-success" id="changeIngredientBtn">
+                                <i class="fas fa-edit"></i> Cambia
+                            </button>
+                        </div>
+                        <input type="hidden" id="selectedIngredientId" name="IdIngrediente">
+                    </div>
+                    
+                    <!-- Sezione Dettagli Utilizzo -->
+                    <div id="detailsSection" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quantityInput" class="form-label">
+                                        <i class="fas fa-balance-scale me-1"></i>
+                                        Quantità utilizzata <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="quantityInput" 
+                                               name="Quantita" 
+                                               step="0.01" 
+                                               min="0.01" 
+                                               required 
+                                               placeholder="1.0">
+                                        <span class="input-group-text" id="unitDisplay">unità</span>
+                                    </div>
+                                    <div class="form-text">Quantità necessaria per {{ article.Descripcion }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notesInput" class="form-label">
+                                        <i class="fas fa-sticky-note me-1"></i>
+                                        Note d'utilizzo (Opzionale)
+                                    </label>
+                                    <textarea class="form-control" 
+                                              id="notesInput" 
+                                              name="Note" 
+                                              rows="3" 
+                                              placeholder="Note sull'utilizzo (es: tritato fine, solo decorazione, ecc.)"></textarea>
+                                    <div class="form-text">Dettagli sulla preparazione</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-success" id="addIngredientBtn" disabled>
+                        <i class="fas fa-plus me-1"></i>Aggiungi Ingrediente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript per gestire il nuovo modale ingredienti
+document.addEventListener('DOMContentLoaded', function() {
+    const addIngredientModal = document.getElementById('addIngredientModal');
+    const ingredientSearch = document.getElementById('ingredientSearch');
+    const ingredientResults = document.getElementById('ingredientResults');
+    const ingredientsList = document.getElementById('ingredientsList');
+    
+    // Sezioni del modale
+    const searchSection = document.getElementById('searchSection');
+    const selectedSection = document.getElementById('selectedSection');
+    const detailsSection = document.getElementById('detailsSection');
+    
+    // Elementi per ingrediente selezionato
+    const selectedIngredientName = document.getElementById('selectedIngredientName');
+    const selectedIngredientCategory = document.getElementById('selectedIngredientCategory');
+    const selectedIngredientUnit = document.getElementById('selectedIngredientUnit');
+    const selectedIngredientId = document.getElementById('selectedIngredientId');
+    const changeIngredientBtn = document.getElementById('changeIngredientBtn');
+    
+    // Elementi per quantità e note
+    const quantityInput = document.getElementById('quantityInput');
+    const unitDisplay = document.getElementById('unitDisplay');
+    const notesInput = document.getElementById('notesInput');
+    const addIngredientBtn = document.getElementById('addIngredientBtn');
+    const addIngredientForm = document.getElementById('addIngredientForm');
+    
+    let selectedIngredient = null;
+    let searchTimeout = null;
+    
+    // Reset form when modal opens
+    addIngredientModal.addEventListener('show.bs.modal', function() {
+        resetForm();
+    });
+    
+    // Search ingredients as user types
+    ingredientSearch.addEventListener('input', function() {
+        const searchTerm = this.value.trim();
+        
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        if (searchTerm.length < 2) {
+            ingredientResults.style.display = 'none';
+            return;
+        }
+        
+        // Add loading state
+        ingredientsList.innerHTML = '<div class="text-center py-2">Cercando...</div>';
+        ingredientResults.style.display = 'block';
+        
+        // Debounce search
+        searchTimeout = setTimeout(() => {
+            searchIngredients(searchTerm);
+        }, 300);
+    });
+    
+    // Change ingredient button
+    changeIngredientBtn.addEventListener('click', function() {
+        showSearchSection();
+    });
+    
+    // Quantity input validation and visual feedback
+    quantityInput.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value > 0) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        } else {
+            this.classList.remove('is-valid');
+            if (this.value !== '') {
+                this.classList.add('is-invalid');
+            }
+        }
+        updateFormState();
+    });
+    
+    // Form submission
+    addIngredientForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const quantity = parseFloat(quantityInput.value);
+        if (!selectedIngredient) {
+            showMessage('Seleziona un ingrediente', 'error');
+            return;
+        }
+        if (!quantity || quantity <= 0) {
+            quantityInput.classList.add('is-invalid');
+            quantityInput.focus();
+            showMessage('Inserisci una quantità valida', 'error');
+            return;
+        }
+        
+        addIngredientToArticle();
+    });
+    
+    function resetForm() {
+        selectedIngredient = null;
+        ingredientSearch.value = '';
+        quantityInput.value = '';
+        notesInput.value = '';
+        
+        // Reset visual states
+        quantityInput.classList.remove('is-valid', 'is-invalid');
+        
+        showSearchSection();
+    }
+    
+    function showSearchSection() {
+        searchSection.style.display = 'block';
+        selectedSection.style.display = 'none';
+        detailsSection.style.display = 'none';
+        ingredientResults.style.display = 'none';
+        selectedIngredient = null;
+        updateFormState();
+        ingredientSearch.focus();
+    }
+    
+    function showSelectedSection() {
+        searchSection.style.display = 'none';
+        selectedSection.style.display = 'block';
+        detailsSection.style.display = 'block';
+        quantityInput.focus();
+    }
+    
+    function searchIngredients(searchTerm) {
+        fetch(`/ingredients/api/ingredienti/search?q=${encodeURIComponent(searchTerm)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(ingredients => {
+                displaySearchResults(ingredients);
+            })
+            .catch(error => {
+                console.error('Error searching ingredients:', error);
+                ingredientsList.innerHTML = '<div class="alert alert-danger mb-0">Errore nella ricerca degli ingredienti</div>';
+                ingredientResults.style.display = 'block';
+            });
+    }
+    
+    function displaySearchResults(ingredients) {
+        ingredientsList.innerHTML = '';
+        
+        if (ingredients.length === 0) {
+            ingredientsList.innerHTML = '<div class="text-center py-3 text-muted">Nessun ingrediente trovato</div>';
+        } else {
+            ingredients.forEach(ingredient => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'border rounded p-2 mb-1 ingredient-result';
+                resultItem.style.cursor = 'pointer';
+                resultItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold">${ingredient.nome}</span>
+                            <br>
+                            <small class="text-muted">${ingredient.categoria || 'Generale'} • ${ingredient.unita_misura}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary rounded-pill">${ingredient.unita_misura}</span>
+                        </div>
+                    </div>
+                `;
+                
+                resultItem.addEventListener('click', () => selectIngredient(ingredient));
+                resultItem.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#f8f9fa';
+                });
+                resultItem.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+                
+                ingredientsList.appendChild(resultItem);
+            });
+        }
+        
+        ingredientResults.style.display = 'block';
+    }
+    
+    function selectIngredient(ingredient) {
+        selectedIngredient = ingredient;
+        selectedIngredientId.value = ingredient.id;
+        selectedIngredientName.textContent = ingredient.nome;
+        selectedIngredientCategory.textContent = ingredient.categoria || 'Categoria non specificata';
+        selectedIngredientUnit.textContent = ingredient.unita_misura;
+        unitDisplay.textContent = ingredient.unita_misura;
+        
+        // Configure quantity input based on unit
+        configureQuantityInput(ingredient.unita_misura);
+        
+        showSelectedSection();
+        updateFormState();
+    }
+    
+    function configureQuantityInput(unit) {
+        const unitLower = unit.toLowerCase();
+        
+        if (unitLower.includes('kg') || unitLower.includes('g') || 
+            unitLower.includes('l') || unitLower.includes('ml')) {
+            // Weight/volume: allow 2 decimals
+            quantityInput.step = '0.01';
+            quantityInput.min = '0.01';
+            quantityInput.placeholder = '0.10';
+        } else if (unitLower.includes('pz') || unitLower.includes('pezzo') || 
+                   unitLower.includes('n°') || unitLower.includes('unità')) {
+            // Pieces: whole numbers
+            quantityInput.step = '1';
+            quantityInput.min = '1';
+            quantityInput.placeholder = '1';
+        } else {
+            // Default: 1 decimal
+            quantityInput.step = '0.1';
+            quantityInput.min = '0.1';
+            quantityInput.placeholder = '1.0';
+        }
+    }
+    
+    function updateFormState() {
+        const hasIngredient = selectedIngredient !== null;
+        const hasValidQuantity = quantityInput.value && parseFloat(quantityInput.value) > 0;
+        
+        addIngredientBtn.disabled = !(hasIngredient && hasValidQuantity);
+    }
+    
+    function addIngredientToArticle() {
+        const quantity = parseFloat(quantityInput.value);
+        const notes = notesInput.value.trim();
+        
+        const data = {
+            IdArticolo: {{ article.IdArticulo }},
+            IdIngrediente: selectedIngredient.id,
+            Quantita: quantity,
+            Note: notes
+        };
+        
+        // Show loading state
+        const originalText = addIngredientBtn.innerHTML;
+        addIngredientBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Aggiungendo...';
+        addIngredientBtn.disabled = true;
+        
+        fetch('/ingredients/api/add-ingredient-to-article', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('Ingrediente aggiunto con successo!', 'success');
+                bootstrap.Modal.getInstance(addIngredientModal).hide();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showMessage('Errore: ' + data.error, 'error');
+                addIngredientBtn.innerHTML = originalText;
+                addIngredientBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error adding ingredient:', error);
+            showMessage('Errore di rete durante l\'aggiunta dell\'ingrediente', 'error');
+            addIngredientBtn.innerHTML = originalText;
+            addIngredientBtn.disabled = false;
+        });
+    }
+    
+    function getCsrfToken() {
+        return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+    }
+    
+    function showMessage(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+});
+
+// Function to delete ingredient
+function confirmDeleteIngredient(associazioneId, ingredientName) {
+    if (confirm(`Sei sicuro di voler rimuovere l'ingrediente "${ingredientName}" da questo articolo?`)) {
+        deleteIngredientFromArticle(associazioneId);
+    }
+}
+
+function deleteIngredientFromArticle(associazioneId) {
+    fetch(`/ingredients/api/remove-ingredient-from-article/${associazioneId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore nella rimozione: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting ingredient:', error);
+        alert('Errore di rete durante la rimozione dell\'ingrediente');
+    });
+}
+</script>
+
+<!-- Modali per Modificare Ingredienti -->
+{% if is_module_enabled('ingredients') and article_ingredients %}
+    {% for ingredient in article_ingredients %}
+    <div class="modal fade" id="editIngredientModal{{ ingredient.id }}" tabindex="-1" aria-labelledby="editIngredientModalLabel{{ ingredient.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editIngredientModalLabel{{ ingredient.id }}">
+                        <i class="fas fa-edit me-2"></i>Modifica: {{ ingredient.ingrediente.nome }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editIngredientForm{{ ingredient.id }}">
+                    <div class="modal-body">
+                        <!-- Informazioni Ingrediente -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-leaf fa-2x text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ ingredient.ingrediente.nome }}</h6>
+                                    {% if ingredient.ingrediente.categoria %}
+                                        <small class="text-muted">Categoria: {{ ingredient.ingrediente.categoria }}</small>
+                                    {% endif %}
+                                    {% if ingredient.ingrediente.unita_misura %}
+                                        <br><small class="text-muted">Unità di misura: {{ ingredient.ingrediente.unita_misura }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quantità utilizzata -->
+                        <div class="mb-4">
+                            <label for="editQuantity{{ ingredient.id }}" class="form-label">
+                                <i class="fas fa-balance-scale me-2"></i>Quantità utilizzata <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control form-control-lg" 
+                                       id="editQuantity{{ ingredient.id }}" 
+                                       name="Quantita" 
+                                       step="0.01" 
+                                       min="0.01" 
+                                       value="{{ ingredient.quantita|float }}" 
+                                       required>
+                                <span class="input-group-text fw-bold">{{ ingredient.ingrediente.unita_misura or 'pz' }}</span>
+                            </div>
+                            <div class="form-text">
+                                Quantità di <strong>{{ ingredient.ingrediente.nome }}</strong> necessaria per produrre <strong>{{ article.Descripcion }}</strong>
+                            </div>
+                        </div>
+                        
+                        <!-- Note -->
+                        <div class="mb-3">
+                            <label for="editNotes{{ ingredient.id }}" class="form-label">
+                                <i class="fas fa-sticky-note me-2"></i>Note d'utilizzo (Opzionale)
+                            </label>
+                            <textarea class="form-control" 
+                                      id="editNotes{{ ingredient.id }}" 
+                                      name="Note" 
+                                      rows="3" 
+                                      placeholder="Aggiungi note sull'utilizzo di questo ingrediente (es: solo per la farcitura, tritato fine, utilizzare a temperatura ambiente, ecc.)">{{ ingredient.note or '' }}</textarea>
+                            <div class="form-text">
+                                Le note aiutano a specificare come utilizzare l'ingrediente nella ricetta
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary" id="updateIngredientBtn{{ ingredient.id }}">
+                            <i class="fas fa-save me-1"></i>Aggiorna Ingrediente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<script>
+// JavaScript per gestire la modifica degli ingredienti
+document.addEventListener('DOMContentLoaded', function() {
+    {% if is_module_enabled('ingredients') and article_ingredients %}
+        {% for ingredient in article_ingredients %}
+            setupEditIngredientModal({{ ingredient.id }}, {{ article.IdArticulo }});
+        {% endfor %}
+    {% endif %}
+});
+
+function setupEditIngredientModal(ingredientId, articleId) {
+    const form = document.getElementById('editIngredientForm' + ingredientId);
+    const quantityInput = document.getElementById('editQuantity' + ingredientId);
+    const notesInput = document.getElementById('editNotes' + ingredientId);
+    const updateBtn = document.getElementById('updateIngredientBtn' + ingredientId);
+    
+    if (!form || !quantityInput || !updateBtn) {
+        console.warn('Missing elements for ingredient modal', ingredientId);
+        return;
+    }
+    
+    // Add visual feedback for quantity input
+    quantityInput.addEventListener('input', function() {
+        const value = parseFloat(this.value);
+        if (value > 0) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        } else {
+            this.classList.remove('is-valid');
+            this.classList.add('is-invalid');
+        }
+    });
+    
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate quantity
+        const quantity = parseFloat(quantityInput.value);
+        if (!quantity || quantity <= 0) {
+            quantityInput.classList.add('is-invalid');
+            quantityInput.focus();
+            showMessage('La quantità deve essere maggiore di zero', 'error');
+            return;
+        }
+        
+        const originalText = updateBtn.innerHTML;
+        updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Aggiornando...';
+        updateBtn.disabled = true;
+        
+        const formData = new FormData(form);
+        const data = {
+            Quantita: formData.get('Quantita'),
+            Note: formData.get('Note') || ''
+        };
+        
+        fetch(`/ingredients/api/update-article-ingredient/${ingredientId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('Ingrediente aggiornato con successo!', 'success');
+                const modalElement = document.getElementById('editIngredientModal' + ingredientId);
+                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showMessage('Errore: ' + data.error, 'error');
+                updateBtn.innerHTML = originalText;
+                updateBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error updating ingredient:', error);
+            showMessage('Errore di rete durante l\'aggiornamento', 'error');
+            updateBtn.innerHTML = originalText;
+            updateBtn.disabled = false;
+        });
+    });
+    
+    function getCsrfToken() {
+        return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+    }
+    
+    function showMessage(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const alert = document.createElement('div');
+        alert.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alert);
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Initialize selling price calculator and food cost coloring
+    initializePriceCalculator();
+    initializeFoodCostColoring();
+    
+    function initializePriceCalculator() {
+        const profitMarginInput = document.getElementById('profit-margin');
+        const sellingPriceDisplay = document.getElementById('selling-price');
+        const applyPriceBtn = document.getElementById('apply-price-btn');
+        const totalIngredientsCost = {{ total_ingredients_cost|float if total_ingredients_cost else 0 }};
+        const articleId = {{ article.IdArticulo if article else 0 }};
+        
+        let currentCalculatedPrice = 0;
+        
+        if (profitMarginInput && sellingPriceDisplay) {
+            profitMarginInput.addEventListener('input', function() {
+                const profitMargin = parseFloat(this.value) || 0;
+                
+                if (profitMargin >= 0 && profitMargin < 100 && totalIngredientsCost > 0) {
+                    // Formula: Prezzo di vendita = Costo ingredienti / (1 - Percentuale guadagno/100)
+                    const sellingPrice = totalIngredientsCost / (1 - profitMargin / 100);
+                    currentCalculatedPrice = sellingPrice;
+                    
+                    sellingPriceDisplay.innerHTML = `
+                        <i class="fas fa-euro-sign me-1"></i>
+                        <span>${sellingPrice.toFixed(2)}</span>
+                    `;
+                    sellingPriceDisplay.className = 'text-success mb-1';
+                    
+                    // Enable apply button
+                    if (applyPriceBtn) {
+                        applyPriceBtn.disabled = false;
+                        applyPriceBtn.classList.remove('btn-secondary');
+                        applyPriceBtn.classList.add('btn-success');
+                    }
+                    
+                    // Add subtle animation
+                    sellingPriceDisplay.style.transform = 'scale(1.05)';
+                    setTimeout(() => {
+                        sellingPriceDisplay.style.transform = 'scale(1)';
+                    }, 200);
+                    
+                } else if (profitMargin >= 100) {
+                    currentCalculatedPrice = 0;
+                    sellingPriceDisplay.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <span>Non valido</span>
+                    `;
+                    sellingPriceDisplay.className = 'text-danger mb-1';
+                    
+                    // Disable apply button
+                    if (applyPriceBtn) {
+                        applyPriceBtn.disabled = true;
+                        applyPriceBtn.classList.remove('btn-success');
+                        applyPriceBtn.classList.add('btn-secondary');
+                    }
+                } else {
+                    currentCalculatedPrice = 0;
+                    sellingPriceDisplay.innerHTML = `
+                        <i class="fas fa-euro-sign me-1"></i>
+                        <span>0.00</span>
+                    `;
+                    sellingPriceDisplay.className = 'text-muted mb-1';
+                    
+                    // Disable apply button
+                    if (applyPriceBtn) {
+                        applyPriceBtn.disabled = true;
+                        applyPriceBtn.classList.remove('btn-success');
+                        applyPriceBtn.classList.add('btn-secondary');
+                    }
+                }
+            });
+            
+            // Set default display
+            sellingPriceDisplay.innerHTML = `
+                <i class="fas fa-euro-sign me-1"></i>
+                <span>0.00</span>
+            `;
+            sellingPriceDisplay.className = 'text-primary mb-1';
+            
+            // Add smooth transitions
+            sellingPriceDisplay.style.transition = 'all 0.3s ease';
+            
+            // Add keyboard shortcuts
+            profitMarginInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.blur();
+                }
+            });
+            
+            // Add validation
+            profitMarginInput.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (value && value > 99) {
+                    this.value = 99;
+                    this.dispatchEvent(new Event('input'));
+                } else if (value && value < 0) {
+                    this.value = 0;
+                    this.dispatchEvent(new Event('input'));
+                }
+            });
+            
+            // Handle apply price button click
+            if (applyPriceBtn) {
+                applyPriceBtn.addEventListener('click', function() {
+                    if (currentCalculatedPrice > 0 && articleId > 0) {
+                        applyPriceToArticle(articleId, currentCalculatedPrice);
+                    }
+                });
+            }
+        }
+    }
+    
+    function applyPriceToArticle(articleId, price) {
+        const applyBtn = document.getElementById('apply-price-btn');
+        const originalText = applyBtn.innerHTML;
+        
+        // Show loading state
+        applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Applicando...';
+        applyBtn.disabled = true;
+        
+        fetch(`/ingredients/api/update-article-price/${articleId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                prezzo_con_iva: price.toFixed(2)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success state temporarily
+                applyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Applicato!';
+                applyBtn.classList.remove('btn-success');
+                applyBtn.classList.add('btn-outline-success');
+                
+                showMessage('Prezzo aggiornato con successo! Aggiornamento pagina...', 'success');
+                
+                // Reload the page after a short delay to show updated data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } else {
+                showMessage(`Errore: ${data.error}`, 'error');
+                applyBtn.innerHTML = originalText;
+                applyBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Errore di connessione durante l\'aggiornamento del prezzo', 'error');
+            applyBtn.innerHTML = originalText;
+            applyBtn.disabled = false;
+        });
+    }
+    
+    function initializeFoodCostColoring() {
+        const foodCostCard = document.getElementById('food-cost-card');
+        const foodCostValue = document.getElementById('food-cost-value');
+        const foodCostStatus = document.getElementById('food-cost-status');
+        
+        if (foodCostCard && foodCostValue) {
+            const percentage = parseFloat(foodCostValue.getAttribute('data-percentage')) || 0;
+            
+            // Remove existing color classes
+            foodCostValue.classList.remove('text-success', 'text-warning', 'text-danger', 'text-info');
+            foodCostCard.style.borderColor = '';
+            foodCostCard.style.backgroundColor = '';
+            
+            if (foodCostStatus) {
+                foodCostStatus.classList.remove('text-success', 'text-warning', 'text-danger', 'text-info');
+            }
+            
+            if (percentage >= 20 && percentage <= 30) {
+                // Green for good food cost (20-30%)
+                foodCostValue.classList.add('text-success');
+                foodCostCard.style.borderColor = '#28a745';
+                foodCostCard.style.backgroundColor = '#d4edda';
+                foodCostCard.setAttribute('title', 'Food Cost buono (20-30%) - Prezzo ben tarato, margini sani');
+                if (foodCostStatus) {
+                    foodCostStatus.textContent = 'Buono 🔹';
+                    foodCostStatus.classList.add('text-success');
+                }
+            } else if (percentage > 30 && percentage <= 35) {
+                // Yellow/warning for moderate food cost (30-35%)
+                foodCostValue.classList.add('text-warning');
+                foodCostCard.style.borderColor = '#ffc107';
+                foodCostCard.style.backgroundColor = '#fff3cd';
+                foodCostCard.setAttribute('title', 'Food Cost da monitorare (30-35%) - Ancora accettabile ma verificare fornitori');
+                if (foodCostStatus) {
+                    foodCostStatus.textContent = 'Da monitorare 🟡';
+                    foodCostStatus.classList.add('text-warning');
+                }
+            } else if (percentage > 35) {
+                // Red for high food cost (> 35%)
+                foodCostValue.classList.add('text-danger');
+                foodCostCard.style.borderColor = '#dc3545';
+                foodCostCard.style.backgroundColor = '#f8d7da';
+                foodCostCard.setAttribute('title', 'Food Cost critico (>35%) - Costo materie prime troppo alto');
+                if (foodCostStatus) {
+                    foodCostStatus.textContent = 'Critico 🔴';
+                    foodCostStatus.classList.add('text-danger');
+                }
+            } else {
+                // For percentages < 20% (very low food cost, might indicate pricing issues)
+                foodCostValue.classList.add('text-info');
+                foodCostCard.style.borderColor = '#17a2b8';
+                foodCostCard.style.backgroundColor = '#d1ecf1';
+                foodCostCard.setAttribute('title', 'Food Cost molto basso (<20%) - Verificare se il prezzo è corretto');
+                if (foodCostStatus) {
+                    foodCostStatus.textContent = 'Molto basso 🔵';
+                    foodCostStatus.classList.add('text-info');
+                }
+            }
+            
+            // Add smooth transition
+            foodCostCard.style.transition = 'all 0.3s ease';
+            
+            // Initialize tooltip
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                new bootstrap.Tooltip(foodCostCard);
+            }
+        }
+    }
+}
+</script>
+
+{% endblock %} 

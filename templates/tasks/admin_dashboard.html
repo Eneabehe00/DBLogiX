@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
+
+{% block title %}Task Management - Dashboard Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tasks.css') }}">
+<style>
+    /* Enhanced Task Table Styles */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --text-secondary: #34495e;
+        --text-info: #2980b9;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+        --purple: #8e44ad;
+    }
+    
+    .task-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table th {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .table tbody tr.task-overdue:hover {
+        background-color: #fdf2f2;
+    }
+    
+    .table tbody tr.task-completed:hover {
+        background-color: #f8fff9;
+    }
+    
+    .table tbody tr.task-completed-ddt:hover {
+        background-color: #faf5ff;
+    }
+    
+    .badge-soft {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .badge-soft-primary { background-color: rgba(52, 152, 219, 0.1); color: #3498db; }
+    .badge-soft-success { background-color: rgba(39, 174, 96, 0.1); color: #27ae60; }
+    .badge-soft-warning { background-color: rgba(243, 156, 18, 0.1); color: #f39c12; }
+    .badge-soft-danger { background-color: rgba(231, 76, 60, 0.1); color: #e74c3c; }
+    .badge-soft-info { background-color: rgba(52, 152, 219, 0.1); color: #3498db; }
+    .badge-soft-secondary { background-color: rgba(52, 73, 94, 0.1); color: #34495e; }
+    .badge-soft-purple { background-color: rgba(142, 68, 173, 0.1); color: #8e44ad; }
+    
+    .task-progress-mini {
+        width: 80px;
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .task-progress-fill-mini {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+        background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    }
+    
+    .task-progress-fill-mini.overdue {
+        background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+    }
+    
+    .task-progress-fill-mini.completed {
+        background: linear-gradient(90deg, #27ae60 0%, #229954 100%);
+    }
+    
+    .btn-task-action {
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: 1px solid;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+        margin: 1px;
+    }
+    
+    .btn-task-action:hover {
+        transform: translateY(-1px);
+        text-decoration: none;
+    }
+    
+    .btn-task-action.btn-view {
+        background: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+    
+    .btn-task-action.btn-edit {
+        background: #f39c12;
+        color: white;
+        border-color: #f39c12;
+    }
+    
+    .btn-task-action.btn-ddt {
+        background: #8e44ad;
+        color: white;
+        border-color: #8e44ad;
+    }
+    
+    .btn-task-action.btn-delete {
+        background: #e74c3c;
+        color: white;
+        border-color: #e74c3c;
+    }
+    
+    /* Category Filter Tabs */
+    .category-filter-tabs {
+        background: #ffffff;
+        border-radius: 15px;
+        padding: 8px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+    }
+    
+    .category-tab {
+        flex: 1;
+        min-width: 200px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        text-align: center;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        border: 2px solid transparent;
+    }
+    
+    .category-tab:hover {
+        background: #f8f9fa;
+        text-decoration: none;
+    }
+    
+    .category-tab.active {
+        background: #3498db;
+        color: white;
+        border-color: #2980b9;
+    }
+    
+    .category-tab .tab-icon {
+        font-size: 1.2rem;
+    }
+    
+    .category-tab .tab-count {
+        background: rgba(255, 255, 255, 0.25);
+        color: inherit;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        opacity: 1;
+    }
+    
+    .category-tab.tab-active { background: #3498db; color: white; }
+    .category-tab.tab-overdue { background: #e74c3c; color: white; }
+    .category-tab.tab-no-ddt { background: #f39c12; color: white; }
+    .category-tab.tab-with-ddt { background: #8e44ad; color: white; }
+    
+    /* Task specific status classes */
+    .task-row.task-overdue {
+        border-left: 4px solid #e74c3c;
+        background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%);
+    }
+    
+    .task-row.task-completed {
+        border-left: 4px solid #27ae60;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+    }
+    
+    .task-row.task-completed-ddt {
+        border-left: 4px solid #8e44ad;
+        background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .category-filter-tabs {
+            flex-direction: column;
+        }
+        
+        .category-tab {
+            min-width: auto;
+        }
+        
+        .table-responsive table {
+            font-size: 0.85rem;
+        }
+        
+        .btn-task-action {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+// Task-specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced task actions handling
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-task-action')) {
+            e.stopPropagation();
+            const btn = e.target.closest('.btn-task-action');
+            const action = btn.getAttribute('data-action');
+            const taskId = btn.getAttribute('data-task-id');
+            
+            switch(action) {
+                case 'edit':
+                    window.location.href = `/tasks/task/${taskId}/edit`;
+                    break;
+                case 'view':
+                    window.location.href = `/tasks/task/${taskId}`;
+                    break;
+                case 'ddt':
+                    window.location.href = `/tasks/task/${taskId}/preview_ddt`;
+                    break;
+                case 'delete':
+                    if (confirm('Sei sicuro di voler eliminare questo task?')) {
+                        // Create and submit form for task deletion (POST method required)
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/tasks/task/${taskId}/delete`;
+                        
+                        // Add CSRF token
+                        const csrfMetaTag = document.querySelector('meta[name="csrf-token"]');
+                        if (csrfMetaTag) {
+                            const csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = 'csrf_token';
+                            csrfInput.value = csrfMetaTag.getAttribute('content');
+                            form.appendChild(csrfInput);
+                        }
+                        
+                        // Append form to body and submit
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                    break;
+            }
+        }
+    });
+    
+    // Handle clickable rows
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    clickableRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Don't navigate if clicking on a button
+            if (e.target.closest('.btn-task-action')) {
+                return;
+            }
+            
+            const href = this.getAttribute('data-href');
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.querySelector('.unified-search-input');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+    });
+
+    console.log('Enhanced Task dashboard loaded');
+});
+
+// Export tasks function
+function exportTasks() {
+    // Implementation for exporting tasks
+    console.log('Exporting tasks...');
+}
+
+// Refresh table function
+function refreshTable() {
+    window.location.reload();
+}
+
+// Clear all filters function
+function clearFilters() {
+    window.location.href = '{{ url_for("tasks.admin_dashboard") }}';
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Task Management</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-tasks me-2"></i>Task Management - Admin
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ stats.total_tasks }} tasks totali nel sistema</span>
+                    {% if search %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('tasks.create_task') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Crea Nuovo Task
+                    </a>
+                    <a href="{{ url_for('tasks.notifications') }}" class="btn btn-light action-btn position-relative">
+                        <i class="fas fa-bell me-1"></i>Notifiche
+                        {% if stats.completed_notifications_count > 0 %}
+                        <span class="badge bg-success position-absolute" style="top: -8px; right: -8px; font-size: 0.7rem;">{{ stats.completed_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Category Filter Tabs -->
+    <div class="category-filter-tabs">
+        <a href="{{ url_for('tasks.admin_dashboard', category='active', query=search, date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" 
+           class="category-tab {% if category_filter == 'active' %}tab-active{% endif %}">
+            <div class="tab-icon"><i class="fas fa-play"></i></div>
+            <div>Tasks Attivi</div>
+            <div class="tab-count">{{ stats.active_tasks }}</div>
+        </a>
+        
+        <a href="{{ url_for('tasks.admin_dashboard', category='overdue', query=search, date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" 
+           class="category-tab {% if category_filter == 'overdue' %}tab-overdue{% endif %}">
+            <div class="tab-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div>Task Scaduti</div>
+            <div class="tab-count">{{ stats.overdue_tasks }}</div>
+        </a>
+        
+        <a href="{{ url_for('tasks.admin_dashboard', category='completed_no_ddt', query=search, date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" 
+           class="category-tab {% if category_filter == 'completed_no_ddt' %}tab-no-ddt{% endif %}">
+            <div class="tab-icon"><i class="fas fa-check-circle"></i></div>
+            <div>Completati senza DDT</div>
+            <div class="tab-count">{{ stats.completed_no_ddt_tasks }}</div>
+        </a>
+        
+        <a href="{{ url_for('tasks.admin_dashboard', category='completed_with_ddt', query=search, date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" 
+           class="category-tab {% if category_filter == 'completed_with_ddt' %}tab-with-ddt{% endif %}">
+            <div class="tab-icon"><i class="fas fa-file-alt"></i></div>
+            <div>Completati con DDT</div>
+            <div class="tab-count">{{ stats.completed_with_ddt_tasks }}</div>
+        </a>
+        
+        <a href="{{ url_for('tasks.admin_dashboard', query=search, date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status) }}" 
+           class="category-tab {% if not category_filter %}active{% endif %}">
+            <div class="tab-icon"><i class="fas fa-th-large"></i></div>
+            <div>Tutti i Tasks</div>
+            <div class="tab-count">{{ stats.total_tasks }}</div>
+        </a>
+    </div>
+
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Tasks',
+        'action': url_for('tasks.admin_dashboard'),
+        'search_param': 'query',
+        'placeholder': 'Cerca per ID, numero task, titolo, descrizione...',
+        'current_value': search or '',
+        'show_help': true,
+        'help_text': 'Ricerca in tempo reale attraverso ID, numero, titolo e descrizione',
+        'preserve_params': {
+            'date_from': current_filters.date_from,
+            'date_to': current_filters.date_to,
+            'priority': current_filters.priority,
+            'status': current_filters.status,
+            'category': current_filters.category
+        },
+        'advanced_filters': [
+            {
+                'id': 'startDate',
+                'name': 'date_from',
+                'label': '📅 Data inizio',
+                'type': 'date',
+                'value': current_filters.date_from
+            },
+            {
+                'id': 'endDate',
+                'name': 'date_to',
+                'label': '📅 Data fine',
+                'type': 'date',
+                'value': current_filters.date_to
+            },
+            {
+                'id': 'priorityFilter',
+                'name': 'priority',
+                'label': '🎯 Priorità',
+                'type': 'select',
+                'value': current_filters.priority,
+                'options': [
+                    {'value': 'low', 'label': 'Bassa'},
+                    {'value': 'medium', 'label': 'Media'},
+                    {'value': 'high', 'label': 'Alta'}
+                ]
+            },
+            {
+                'id': 'statusFilter',
+                'name': 'status',
+                'label': '📊 Stato',
+                'type': 'select',
+                'value': current_filters.status,
+                'options': [
+                    {'value': 'pending', 'label': 'In Attesa'},
+                    {'value': 'assigned', 'label': 'Assegnato'},
+                    {'value': 'in_progress', 'label': 'In Corso'},
+                    {'value': 'completed', 'label': 'Completato'}
+                ]
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': stats.active_tasks,
+            'label': 'Tasks Attivi',
+            'icon': 'fas fa-play',
+            'variant': 'stat-info'
+        },
+        {
+            'value': stats.overdue_tasks,
+            'label': 'Scaduti',
+            'icon': 'fas fa-exclamation-triangle',
+            'variant': 'stat-danger'
+        },
+        {
+            'value': stats.completed_no_ddt_tasks,
+            'label': 'Completati (senza DDT)',
+            'icon': 'fas fa-check-circle',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': stats.completed_with_ddt_tasks,
+            'label': 'Completati (con DDT)',
+            'icon': 'fas fa-file-alt',
+            'variant': 'stat-success'
+        },
+        {
+            'value': stats.total_tasks,
+            'label': 'Totali',
+            'icon': 'fas fa-list',
+            'variant': ''
+        },
+        {
+            'value': (active_tasks|length) + (overdue_tasks|length) + (completed_no_ddt_tasks|length) + (completed_with_ddt_tasks|length),
+            'label': 'Visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': ''
+        }
+    ]) }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Search Results Info -->
+    {{ render_search_results_info({
+        'is_search_active': search,
+        'search_term': search,
+        'total_results': (active_tasks|length) + (overdue_tasks|length) + (completed_no_ddt_tasks|length) + (completed_with_ddt_tasks|length),
+        'clear_url': url_for('tasks.admin_dashboard', date_from=current_filters.date_from, date_to=current_filters.date_to, priority=current_filters.priority, status=current_filters.status, category=current_filters.category)
+    }) }}
+
+    <!-- Tasks List -->
+    {% set all_tasks = [] %}
+    {% if not category_filter or category_filter == 'active' %}
+        {% set _ = all_tasks.extend(active_tasks) %}
+    {% endif %}
+    {% if not category_filter or category_filter == 'overdue' %}
+        {% set _ = all_tasks.extend(overdue_tasks) %}
+    {% endif %}
+    {% if not category_filter or category_filter == 'completed_no_ddt' %}
+        {% set _ = all_tasks.extend(completed_no_ddt_tasks) %}
+    {% endif %}
+    {% if not category_filter or category_filter == 'completed_with_ddt' %}
+        {% set _ = all_tasks.extend(completed_with_ddt_tasks) %}
+    {% endif %}
+
+    {% if all_tasks %}
+    <div class="task-card card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Elenco Tasks</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportTasks()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="taskTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag me-1"></i>Numero</th>
+                            <th><i class="fas fa-tasks me-1"></i>Titolo</th>
+                            <th><i class="fas fa-user me-1"></i>Assegnato</th>
+                            <th><i class="fas fa-building me-1"></i>Cliente</th>
+                            <th><i class="fas fa-calendar me-1"></i>Scadenza</th>
+                            <th><i class="fas fa-chart-bar me-1"></i>Progresso</th>
+                            <th><i class="fas fa-flag me-1"></i>Priorità</th>
+                            <th><i class="fas fa-info-circle me-1"></i>Stato</th>
+                            <th><i class="fas fa-cogs me-1"></i>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in all_tasks %}
+                        {% set task_class = '' %}
+                        {% if task.is_overdue %}
+                            {% set task_class = 'task-overdue' %}
+                        {% elif task.status == 'completed' and task.ddt_generated %}
+                            {% set task_class = 'task-completed-ddt' %}
+                        {% elif task.status == 'completed' %}
+                            {% set task_class = 'task-completed' %}
+                        {% endif %}
+                        
+                        <tr data-href="{{ url_for('tasks.view_task', task_id=task.id_task) }}" class="clickable-row task-row {{ task_class }}" style="cursor: pointer;">
+                            <td data-label="Numero">
+                                <span class="badge bg-primary">{{ task.task_number }}</span>
+                            </td>
+                            <td data-label="Titolo">
+                                <div class="text-truncate" style="max-width: 200px;" title="{{ task.title }}">
+                                    <strong>{{ task.title }}</strong>
+                                </div>
+                                {% if task.description %}
+                                <div class="text-muted small text-truncate" style="max-width: 200px;" title="{{ task.description }}">
+                                    {{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td data-label="Assegnato">
+                                {% if task.assignee %}
+                                <div>
+                                    <i class="fas fa-user text-muted me-1"></i>
+                                    <strong>{{ task.assignee.username }}</strong>
+                                </div>
+                                {% if task.assigned_at %}
+                                <div class="text-muted small">
+                                    {{ task.assigned_at.strftime('%d/%m/%Y') }}
+                                </div>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">Non assegnato</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Cliente">
+                                {% if task.client %}
+                                <div class="text-truncate" style="max-width: 150px;" title="{{ task.client.Nombre }}">
+                                    <i class="fas fa-building text-muted me-1"></i>
+                                    {{ task.client.Nombre }}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Scadenza">
+                                {% if task.deadline %}
+                                {% if task.is_overdue %}
+                                <span class="badge-soft badge-soft-danger">
+                                    {{ task.deadline.strftime('%d/%m/%Y') }}
+                                    <span class="ms-1">(Scaduto)</span>
+                                </span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-success">
+                                    {{ task.deadline.strftime('%d/%m/%Y') }}
+                                </span>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Progresso">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="task-progress-mini">
+                                        <div class="task-progress-fill-mini {% if task.is_overdue %}overdue{% elif task.status == 'completed' %}completed{% endif %}" 
+                         style="width: {% if task.total_tickets > 0 %}{{ (task.completed_tickets / task.total_tickets * 100)|round|int }}%{% else %}0%{% endif %}">
+                                </div>
+                            </div>
+                                    <small class="text-muted">{{ task.completed_tickets }}/{{ task.total_tickets }}</small>
+                            </td>
+                            <td data-label="Priorità">
+                                {% if task.priority == 'high' %}
+                                <span class="badge-soft badge-soft-danger">Alta</span>
+                                {% elif task.priority == 'medium' %}
+                                <span class="badge-soft badge-soft-warning">Media</span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-success">Bassa</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Stato">
+                                {% if task.status == 'pending' %}
+                                <span class="badge-soft badge-soft-secondary">In Attesa</span>
+                                {% elif task.status == 'assigned' %}
+                                <span class="badge-soft badge-soft-info">Assegnato</span>
+                                {% elif task.status == 'in_progress' %}
+                                <span class="badge-soft badge-soft-warning">In Corso</span>
+                                {% elif task.status == 'completed' %}
+                                    {% if task.ddt_generated %}
+                                    <span class="badge-soft badge-soft-purple">Compl. + DDT</span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-success">Completato</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td data-label="Azioni">
+                                <div class="d-flex flex-wrap gap-1">
+                                    <a href="#" class="btn-task-action btn-view" 
+                                       data-action="view" data-task-id="{{ task.id_task }}" title="Visualizza dettagli">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if current_user.is_admin and task.status != 'completed' %}
+                                    <a href="#" class="btn-task-action btn-edit" 
+                                       data-action="edit" data-task-id="{{ task.id_task }}" title="Modifica task">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if task.is_completed and not task.ddt_generated and current_user.is_admin %}
+                                    <a href="#" class="btn-task-action btn-ddt" 
+                                       data-action="ddt" data-task-id="{{ task.id_task }}" title="Genera DDT">
+                                        <i class="fas fa-file-alt"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if current_user.is_admin %}
+                                    <a href="#" class="btn-task-action btn-delete" 
+                                       data-action="delete" data-task-id="{{ task.id_task }}" title="Elimina task">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted">Nessun task trovato</h4>
+        <p class="text-muted">
+            {% if category_filter %}
+                Non ci sono task nella categoria selezionata.
+            {% elif search %}
+                Nessun risultato per la ricerca "{{ search }}".
+            {% else %}
+                Non ci sono task nel sistema.
+            {% endif %}
+        </p>
+        {% if not search and not category_filter %}
+        <a href="{{ url_for('tasks.create_task') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Crea il primo task
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %} 

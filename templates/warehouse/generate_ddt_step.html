@@ -1,0 +1,926 @@
+{% extends "base.html" %}
+
+{% block title %}Genera DDT - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+<style>
+    /* Mobile-First Responsive Design */
+    :root {
+        --primary-color: #2c3e50;
+        --primary-light: #3498db;
+        --success-color: #27ae60;
+        --warning-color: #f39c12;
+        --danger-color: #e74c3c;
+        --background-light: #f8f9fa;
+        --text-dark: #2c3e50;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+        --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+        --border-radius: 12px;
+    }
+
+    /* Mobile Container */
+    .mobile-container {
+        padding: 20px 16px;
+        max-width: 100%;
+    }
+
+    /* Page Header */
+    .page-header {
+        margin-bottom: 24px;
+        text-align: center;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+        color: var(--text-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .page-subtitle {
+        font-size: 0.95rem;
+        margin: 0;
+        color: var(--text-secondary);
+    }
+
+    /* Enhanced Card Design */
+    .ddt-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-color);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .ddt-card-header {
+        background: var(--background-light);
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ddt-card-header-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--primary-light);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .ddt-card-header h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-dark);
+    }
+
+    .ddt-card-body {
+        padding: 20px;
+    }
+
+    /* Enhanced Alert */
+    .enhanced-alert {
+        background: rgba(52, 152, 219, 0.1);
+        border: 1px solid rgba(52, 152, 219, 0.2);
+        border-radius: var(--border-radius);
+        padding: 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .enhanced-alert-icon {
+        color: var(--primary-light);
+        font-size: 1.1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+
+    .enhanced-alert-content h6 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+        color: var(--text-dark);
+    }
+
+    .enhanced-alert-content p {
+        font-size: 0.9rem;
+        margin: 0;
+        color: var(--text-secondary);
+        line-height: 1.4;
+    }
+
+    /* Mobile Table for Articles */
+    .articles-mobile-container {
+        background: white;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    .articles-mobile-header {
+        background: var(--background-light);
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .articles-mobile-header h6 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-dark);
+    }
+
+    .articles-mobile-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .article-mobile-item {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        transition: background-color 0.2s ease;
+    }
+
+    .article-mobile-item:last-child {
+        border-bottom: none;
+    }
+
+    .article-mobile-item:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+
+    .article-mobile-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .article-mobile-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .article-mobile-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        flex-shrink: 0;
+        width: 80px;
+    }
+
+    .article-mobile-value {
+        font-size: 0.9rem;
+        color: var(--text-dark);
+        font-weight: 500;
+        text-align: right;
+        flex: 1;
+    }
+
+    .article-mobile-product {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    /* Enhanced Customer Search */
+    .customer-search-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .customer-search-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .customer-search-input-group {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .customer-search-icon {
+        position: absolute;
+        left: 12px;
+        color: var(--text-secondary);
+        z-index: 5;
+        font-size: 0.9rem;
+    }
+
+    .customer-search-input {
+        width: 100%;
+        padding: 12px 12px 12px 40px;
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius);
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .customer-search-input:focus {
+        outline: none;
+        border-color: var(--primary-light);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    }
+
+    .customer-search-help {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 6px;
+    }
+
+    /* Mobile Suggestions */
+    .customer-suggestions-mobile {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid var(--primary-light);
+        border-top: none;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        max-height: 250px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: var(--shadow-md);
+    }
+
+    .customer-suggestion-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-size: 0.9rem;
+        color: var(--text-dark);
+    }
+
+    .customer-suggestion-item:last-child {
+        border-bottom: none;
+    }
+
+    .customer-suggestion-item:hover {
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+
+    .customer-suggestion-item:active {
+        background-color: rgba(52, 152, 219, 0.2);
+    }
+
+    .customer-suggestion-empty {
+        padding: 20px;
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Selected Customer Display */
+    .selected-customer-card {
+        background: rgba(39, 174, 96, 0.1);
+        border: 2px solid rgba(39, 174, 96, 0.3);
+        border-radius: var(--border-radius);
+        padding: 16px;
+        margin-bottom: 20px;
+    }
+
+    .selected-customer-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .selected-customer-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--success-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    .selected-customer-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--success-color);
+    }
+
+    .selected-customer-info {
+        font-size: 0.9rem;
+        color: var(--text-dark);
+        font-weight: 500;
+        padding-left: 44px;
+    }
+
+    /* Action Buttons */
+    .action-buttons-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 20px;
+        border-radius: var(--border-radius);
+        font-size: 0.95rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        cursor: pointer;
+    }
+
+    .action-btn-primary {
+        background: var(--primary-light);
+        color: white;
+    }
+
+    .action-btn-primary:hover:not(:disabled) {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .action-btn-secondary {
+        background: transparent;
+        color: var(--text-secondary);
+        border-color: var(--border-color);
+    }
+
+    .action-btn-secondary:hover {
+        background: var(--background-light);
+        color: var(--text-dark);
+        border-color: var(--text-secondary);
+    }
+
+    .action-btn-success {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .action-btn-success:hover:not(:disabled) {
+        background: #229954;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .action-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    /* Loading State */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        display: none;
+    }
+
+    .loading-content {
+        text-align: center;
+        color: var(--primary-color);
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border-color);
+        border-top: 3px solid var(--primary-light);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Desktop Enhancements */
+    @media (min-width: 768px) {
+        .mobile-container {
+            padding: 24px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .ddt-card-body {
+            padding: 32px;
+        }
+
+        .action-buttons-container {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-btn {
+            min-width: 180px;
+        }
+
+        .articles-mobile-container {
+            display: none;
+        }
+
+        /* Desktop Table */
+        .articles-desktop-table {
+            display: block;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .articles-desktop-table {
+            display: none;
+        }
+
+        .page-title {
+            font-size: 1.25rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Custom Scrollbar */
+    .articles-mobile-list::-webkit-scrollbar,
+    .customer-suggestions-mobile::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .articles-mobile-list::-webkit-scrollbar-track,
+    .customer-suggestions-mobile::-webkit-scrollbar-track {
+        background: var(--background-light);
+    }
+
+    .articles-mobile-list::-webkit-scrollbar-thumb,
+    .customer-suggestions-mobile::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 2px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 16px;
+        opacity: 0.6;
+    }
+
+    .empty-state h6 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        color: var(--text-dark);
+    }
+
+    .empty-state p {
+        font-size: 0.9rem;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Generazione DDT in corso...</p>
+    </div>
+</div>
+
+<!-- Main Container -->
+<div class="mobile-container">
+
+    <!-- Articles Summary -->
+    <div class="ddt-card">
+        <div class="ddt-card-header">
+            <div class="ddt-card-header-icon">
+                <i class="fas fa-list"></i>
+            </div>
+            <h3>Articoli Selezionati</h3>
+        </div>
+        <div class="ddt-card-body" style="padding: 0;">
+            {% if items and items|length > 0 %}
+                <!-- Mobile View -->
+                <div class="articles-mobile-container">
+                    <div class="articles-mobile-header">
+                        <i class="fas fa-box text-primary"></i>
+                        <h6>{{ items|length }} articol{{ 'o' if items|length == 1 else 'i' }}</h6>
+                    </div>
+                    <div class="articles-mobile-list">
+                        {% for item in items %}
+                        <div class="article-mobile-item">
+                            <div class="article-mobile-row">
+                                <span class="article-mobile-label">Ticket</span>
+                                <span class="article-mobile-value">#{{ item.ticket_number }}</span>
+                            </div>
+                            <div class="article-mobile-row">
+                                <span class="article-mobile-label">Prodotto</span>
+                                <span class="article-mobile-value article-mobile-product">{{ item.product_name }}</span>
+                            </div>
+                            <div class="article-mobile-row">
+                                <span class="article-mobile-label">Peso</span>
+                                <span class="article-mobile-value">{{ item.product_weight }} {% if item.comportamiento == 0 %}unità{% else %}kg{% endif %}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Desktop Table -->
+                <div class="articles-desktop-table">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ticket #</th>
+                                    <th>Prodotto</th>
+                                    <th>Peso</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ item.ticket_number }}</td>
+                                    <td class="text-truncate" style="max-width: 200px;">{{ item.product_name }}</td>
+                                    <td>{{ item.product_weight }} {% if item.comportamiento == 0 %}unità{% else %}kg{% endif %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <h6>Nessun Articolo</h6>
+                    <p>Non sono stati trovati articoli per questo DDT.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Customer Selection -->
+    <div class="ddt-card">
+        <div class="ddt-card-header">
+            <div class="ddt-card-header-icon">
+                <i class="fas fa-user"></i>
+            </div>
+            <h3>Selezione Cliente</h3>
+        </div>
+        <div class="ddt-card-body">
+            {% if is_module_enabled('ddt') %}
+            <form id="generate-ddt-form" method="POST" action="{{ safe_url_for('ddt.preview') }}">
+            {% else %}
+            <form id="generate-ddt-form" method="POST" action="{{ url_for('warehouse.index') }}" style="display: none;">
+            {% endif %}
+                {{ form.hidden_tag() }}
+                <input type="hidden" name="cliente_id" id="selected_customer_id" value="">
+                <input type="hidden" name="cliente_nome" id="selected_customer_name" value="">
+                <input type="hidden" name="id_empresa" id="id_empresa" value="">
+                <input type="hidden" name="tickets" id="tickets_json" value="">
+                <input type="hidden" name="from_warehouse" value="true">
+
+                <!-- Customer Search -->
+                <div class="customer-search-container">
+                    <label class="customer-search-label">Cerca Cliente</label>
+                    <div class="customer-search-input-group">
+                        <i class="fas fa-search customer-search-icon"></i>
+                        <input type="text" class="customer-search-input" id="customer_search" 
+                               placeholder="Digita almeno 3 caratteri per cercare...">
+                        <div id="customer_suggestions" class="customer-suggestions-mobile" style="display: none;"></div>
+                    </div>
+                    <div class="customer-search-help">Inizia a digitare per vedere i risultati corrispondenti</div>
+                </div>
+
+                <!-- Selected Customer -->
+                <div class="selected-customer-card d-none" id="selectedCustomerCard">
+                    <div class="selected-customer-header">
+                        <div class="selected-customer-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <h6 class="selected-customer-title">Cliente Selezionato</h6>
+                    </div>
+                    <div class="selected-customer-info" id="selected_customer_display">
+                        Nessun cliente selezionato
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons-container">
+                    <a href="{{ url_for('warehouse.tickets') }}" class="action-btn action-btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Torna ai Ticket</span>
+                    </a>
+                    <button type="submit" class="action-btn action-btn-success" id="btn-finalize-ddt" 
+                            {% if not items or items|length == 0 %}disabled{% endif %}>
+                        <i class="fas fa-file-alt"></i>
+                        <span>Anteprima DDT</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JSON data for JavaScript -->
+<script type="application/json" id="ticket-data-json">
+[{% if items and items|length > 0 %}{% for item in items %}{"id_ticket":{{ item.ticket_id }},"ticket_number":{{ item.ticket_number }},"product_name":"{{ item.product_name|replace('"', '\\"') }}","product_weight":{{ item.product_weight }},"comportamiento":{{ item.comportamiento }}}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}]
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM Elements
+    const customerSearchInput = document.getElementById('customer_search');
+    const customerSuggestionsDiv = document.getElementById('customer_suggestions');
+    const selectedCustomerIdInput = document.getElementById('selected_customer_id');
+    const selectedCustomerNameInput = document.getElementById('selected_customer_name');
+    const idEmpresaInput = document.getElementById('id_empresa');
+    const ticketsJsonInput = document.getElementById('tickets_json');
+    const generateDDTForm = document.getElementById('generate-ddt-form');
+    const btnFinalizeDDT = document.getElementById('btn-finalize-ddt');
+    const selectedCustomerCard = document.getElementById('selectedCustomerCard');
+    const selectedCustomerDisplay = document.getElementById('selected_customer_display');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // Load ticket data from JSON
+    const ticketDataFromServer = JSON.parse(document.getElementById('ticket-data-json').textContent);
+
+    // Initialize
+    init();
+
+    function init() {
+        fetchCompanyId();
+        setupCustomerSearch();
+        setupFormSubmission();
+        setupClickOutside();
+    }
+
+    // Fetch company ID
+    function fetchCompanyId() {
+        fetch('/warehouse/api/company/first')
+            .then(response => response.json())
+            .then(data => {
+                if(data.success && data.id_empresa) {
+                    idEmpresaInput.value = data.id_empresa;
+                    console.log('Company ID set:', data.id_empresa);
+                } else {
+                    console.error('Failed to get company ID:', data.message || 'Unknown error');
+                }
+            })
+            .catch(error => console.error('Error fetching company ID:', error));
+    }
+
+    // Setup customer search
+    function setupCustomerSearch() {
+        let searchTimeout = null;
+
+        if (!customerSearchInput) return;
+
+        customerSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.trim();
+            
+            // Reset state
+            clearSelectedCustomer();
+            clearSuggestions();
+
+            if (searchTerm.length < 3) {
+                clearTimeout(searchTimeout);
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchCustomers(searchTerm);
+            }, 300);
+        });
+
+        customerSearchInput.addEventListener('focus', function() {
+            if (this.value.length >= 3) {
+                customerSuggestionsDiv.style.display = 'block';
+            }
+        });
+    }
+
+    // Search customers
+    function searchCustomers(searchTerm) {
+        showLoading(true);
+        
+        fetch(`/ddt/api/clients/search?term=${encodeURIComponent(searchTerm)}`)
+            .then(response => response.json())
+            .then(data => {
+                showLoading(false);
+                
+                let clients = [];
+                if (data.success && data.clients && data.clients.length > 0) {
+                    clients = data.clients;
+                } else if (Array.isArray(data) && data.length > 0) {
+                    clients = data;
+                }
+
+                renderCustomerSuggestions(clients);
+            })
+            .catch(error => {
+                showLoading(false);
+                console.error('Error fetching clients:', error);
+                renderErrorSuggestion();
+            });
+    }
+
+    // Render customer suggestions
+    function renderCustomerSuggestions(clients) {
+        customerSuggestionsDiv.innerHTML = '';
+
+        if (clients.length === 0) {
+            renderEmptySuggestion();
+            return;
+        }
+
+        clients.forEach(client => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'customer-suggestion-item';
+            suggestionItem.textContent = client.text || client.name;
+            suggestionItem.dataset.clientId = client.id;
+            
+            suggestionItem.addEventListener('click', function() {
+                selectCustomer(this.dataset.clientId, this.textContent);
+            });
+            
+            customerSuggestionsDiv.appendChild(suggestionItem);
+        });
+
+        customerSuggestionsDiv.style.display = 'block';
+    }
+
+    // Render empty suggestion
+    function renderEmptySuggestion() {
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'customer-suggestion-empty';
+        emptyItem.innerHTML = '<i class="fas fa-search me-2"></i>Nessun cliente trovato';
+        customerSuggestionsDiv.appendChild(emptyItem);
+        customerSuggestionsDiv.style.display = 'block';
+    }
+
+    // Render error suggestion
+    function renderErrorSuggestion() {
+        customerSuggestionsDiv.innerHTML = '';
+        const errorItem = document.createElement('div');
+        errorItem.className = 'customer-suggestion-empty';
+        errorItem.style.color = 'var(--danger-color)';
+        errorItem.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i>Errore durante la ricerca';
+        customerSuggestionsDiv.appendChild(errorItem);
+        customerSuggestionsDiv.style.display = 'block';
+    }
+
+    // Select customer
+    function selectCustomer(clientId, clientName) {
+        selectedCustomerIdInput.value = clientId;
+        selectedCustomerNameInput.value = clientName;
+        
+        customerSearchInput.value = clientName;
+        customerSuggestionsDiv.style.display = 'none';
+        
+        selectedCustomerCard.classList.remove('d-none');
+        selectedCustomerDisplay.innerHTML = `<strong>${clientName}</strong><br><small>ID: ${clientId}</small>`;
+        
+        btnFinalizeDDT.disabled = false;
+    }
+
+    // Clear selected customer
+    function clearSelectedCustomer() {
+        selectedCustomerIdInput.value = '';
+        selectedCustomerNameInput.value = '';
+        selectedCustomerCard.classList.add('d-none');
+        btnFinalizeDDT.disabled = true;
+    }
+
+    // Clear suggestions
+    function clearSuggestions() {
+        customerSuggestionsDiv.innerHTML = '';
+        customerSuggestionsDiv.style.display = 'none';
+    }
+
+    // Setup click outside
+    function setupClickOutside() {
+        document.addEventListener('click', function(event) {
+            if (!customerSearchInput.contains(event.target) && 
+                !customerSuggestionsDiv.contains(event.target)) {
+                customerSuggestionsDiv.style.display = 'none';
+            }
+        });
+    }
+
+    // Setup form submission
+    function setupFormSubmission() {
+        if (!generateDDTForm) return;
+
+        generateDDTForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!selectedCustomerIdInput.value) {
+                alert('Seleziona un cliente prima di generare il DDT');
+                return;
+            }
+            
+            // Prepare ticket data
+            ticketsJsonInput.value = prepareTicketData();
+            
+            // Show loading and submit
+            showFormLoading(true);
+            this.submit();
+        });
+    }
+
+    // Prepare ticket data
+    function prepareTicketData() {
+        const ticketData = [];
+        const empresaId = parseInt(idEmpresaInput.value || "1");
+        
+        ticketDataFromServer.forEach(function(ticket) {
+            ticketData.push({
+                id_ticket: ticket.id_ticket,
+                id_empresa: empresaId,
+                id_tienda: 1,
+                id_balanza_maestra: 1,
+                id_balanza_esclava: -1,
+                tipo_venta: 2
+            });
+        });
+        
+        return JSON.stringify(ticketData);
+    }
+
+    // Show loading state
+    function showLoading(show) {
+        if (show) {
+            customerSearchInput.style.opacity = '0.6';
+        } else {
+            customerSearchInput.style.opacity = '1';
+        }
+    }
+
+    // Show form loading
+    function showFormLoading(show) {
+        if (show) {
+            loadingOverlay.style.display = 'flex';
+            btnFinalizeDDT.disabled = true;
+        } else {
+            loadingOverlay.style.display = 'none';
+            btnFinalizeDDT.disabled = false;
+        }
+    }
+});
+</script>
+{% endblock %} 

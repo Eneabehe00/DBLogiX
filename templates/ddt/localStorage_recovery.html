@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Recupero Dati DDT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recovery-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .recovery-card {
+        background: white;
+        border-radius: 15px;
+        padding: 40px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        text-align: center;
+        max-width: 500px;
+        width: 100%;
+    }
+    
+    .recovery-icon {
+        font-size: 3rem;
+        color: #3498db;
+        margin-bottom: 20px;
+    }
+    
+    .spinner {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .error-message {
+        color: #e74c3c;
+        margin-top: 20px;
+    }
+    
+    .success-message {
+        color: #27ae60;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recovery-container">
+    <div class="recovery-card">
+        <div class="recovery-icon">
+            <i class="fas fa-sync-alt spinner" id="loadingIcon"></i>
+            <i class="fas fa-check-circle d-none" id="successIcon"></i>
+            <i class="fas fa-exclamation-triangle d-none" id="errorIcon"></i>
+        </div>
+        
+        <h3 id="statusTitle">Recupero ticket selezionati...</h3>
+        <p id="statusMessage">Caricamento dati dal browser...</p>
+        
+        <div id="errorContent" class="d-none">
+            <div class="error-message">
+                <p>Nessun ticket selezionato trovato.</p>
+                <p>Seleziona i ticket per creare il DDT.</p>
+            </div>
+            <div class="mt-3">
+                <a href="{{ url_for('ddt.select_tickets', cliente_id=cliente_id) }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-1"></i>Torna alla Selezione
+                </a>
+            </div>
+        </div>
+        
+        <div id="successContent" class="d-none">
+            <div class="success-message">
+                <p>Ticket trovati! Reindirizzamento in corso...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form nascosto per il POST -->
+<form id="recoveryForm" method="POST" action="{{ url_for('ddt.preview') }}" style="display: none;">
+    <input type="hidden" name="cliente_id" value="{{ cliente_id }}">
+    <input type="hidden" name="id_empresa" value="1">
+    <input type="hidden" name="selected_tickets" id="recoveredTickets">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 Inizializzazione recupero localStorage...');
+    
+    const clienteId = {{ cliente_id }};
+    const STORAGE_KEY = 'ddt_selected_tickets_temp';
+    
+    // Elements
+    const loadingIcon = document.getElementById('loadingIcon');
+    const successIcon = document.getElementById('successIcon');
+    const errorIcon = document.getElementById('errorIcon');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusMessage = document.getElementById('statusMessage');
+    const errorContent = document.getElementById('errorContent');
+    const successContent = document.getElementById('successContent');
+    const recoveryForm = document.getElementById('recoveryForm');
+    const recoveredTickets = document.getElementById('recoveredTickets');
+    
+    // Function to show success state
+    function showSuccess(ticketsCount) {
+        loadingIcon.classList.add('d-none');
+        successIcon.classList.remove('d-none');
+        statusTitle.textContent = 'Ticket recuperati!';
+        statusMessage.textContent = `Trovati ${ticketsCount} ticket selezionati.`;
+        successContent.classList.remove('d-none');
+    }
+    
+    // Function to show error state
+    function showError(message) {
+        loadingIcon.classList.add('d-none');
+        errorIcon.classList.remove('d-none');
+        statusTitle.textContent = 'Nessun dato trovato';
+        statusMessage.textContent = message || 'Impossibile recuperare i ticket dal localStorage.';
+        errorContent.classList.remove('d-none');
+    }
+    
+    // Try to recover data from localStorage
+    setTimeout(() => {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            
+            if (!stored) {
+                console.log('❌ Nessun dato trovato nel localStorage');
+                showError('Nessun ticket selezionato trovato nel browser.');
+                return;
+            }
+            
+            const storageData = JSON.parse(stored);
+            
+            // Verify client ID matches
+            if (storageData.cliente_id !== clienteId) {
+                console.log('❌ Client ID mismatch:', storageData.cliente_id, 'vs', clienteId);
+                localStorage.removeItem(STORAGE_KEY);
+                showError('I ticket salvati sono per un altro cliente.');
+                return;
+            }
+            
+            // Check if data is not too old (1 hour max)
+            const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
+            if (Date.now() - storageData.timestamp > maxAge) {
+                console.log('❌ Dati troppo vecchi');
+                localStorage.removeItem(STORAGE_KEY);
+                showError('I ticket salvati sono troppo vecchi.');
+                return;
+            }
+            
+            // Check if we have tickets
+            if (!storageData.selected_tickets || storageData.selected_tickets.length === 0) {
+                console.log('❌ Nessun ticket selezionato');
+                showError('Nessun ticket selezionato trovato.');
+                return;
+            }
+            
+            // Success! Prepare form data
+            console.log('✅ Ticket recuperati:', storageData.selected_tickets.length);
+            
+            // Convert ticket IDs to the format expected by the server
+            const ticketsData = storageData.selected_tickets.map(ticketId => ({
+                id_ticket: ticketId,
+                id_empresa: 1, // Default empresa
+                id_tienda: 1,
+                id_balanza_maestra: 1,
+                id_balanza_esclava: -1,
+                tipo_venta: 2
+            }));
+            
+            recoveredTickets.value = JSON.stringify(ticketsData);
+            
+            showSuccess(storageData.selected_tickets.length);
+            
+            // Submit form after short delay
+            setTimeout(() => {
+                console.log('📤 Invio dati recuperati...');
+                recoveryForm.submit();
+            }, 1500);
+            
+        } catch (e) {
+            console.error('❌ Errore nel recupero:', e);
+            showError('Errore nel recupero dei dati: ' + e.message);
+        }
+    }, 1000); // Small delay for better UX
+});
+</script>
+{% endblock %}

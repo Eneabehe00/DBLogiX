@@ -1,0 +1,818 @@
+{% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
+
+{% block title %}Gestione Sezioni - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sections.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+    }
+
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group .form-control {
+        border-radius: 10px 0 0 10px;
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+    }
+    
+    .btn-outline-secondary {
+        border-color: var(--secondary-dark);
+        color: var(--secondary-dark);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+        border-radius: 12px;
+        border-left: 4px solid var(--accent-blue);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        opacity: 0.9;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    
+    .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .section-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        background-color: var(--white);
+        cursor: pointer;
+        position: relative;
+        height: 100%;
+    }
+    
+    .section-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+
+    /* Container width optimization for mobile */
+    @media (max-width: 767.98px) {
+        .container-fluid {
+            padding-left: 5px !important;
+            padding-right: 5px !important;
+        }
+    }
+
+    /* Mobile card improvements */
+    @media (max-width: 767.98px) {
+        .row.g-3 {
+            --bs-gutter-x: 0.5rem;
+            --bs-gutter-y: 0.75rem;
+        }
+        
+        .section-card {
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.08);
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 1px solid rgba(52, 152, 219, 0.1);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(44, 62, 80, 0.15);
+            border-color: var(--accent-blue);
+        }
+        
+        .section-image-container {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .section-icon {
+            color: white;
+            font-size: 3rem;
+            opacity: 0.9;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .section-header {
+            margin-bottom: 12px;
+        }
+        
+        .section-id {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            background: rgba(52, 152, 219, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .section-count {
+            font-size: 0.9rem;
+            font-weight: 600;
+            float: right;
+            margin-top: -32px;
+        }
+        
+        .section-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            line-height: 1.3;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .section-meta {
+            font-size: 0.8rem;
+            color: var(--medium-gray);
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .section-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: auto;
+        }
+        
+        .section-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            border: none;
+        }
+        
+        .badge-articles-positive {
+            background: linear-gradient(135deg, var(--accent-blue), #5dade2);
+            color: white;
+        }
+        
+        .badge-articles-empty {
+            background: linear-gradient(135deg, var(--medium-gray), #95a5a6);
+            color: white;
+        }
+        
+        .mobile-grid-container {
+            padding: 15px 5px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .mobile-grid-title {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        }
+        
+        .mobile-grid-title h5 {
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .mobile-section-divider {
+            height: 20px;
+            background: transparent;
+        }
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 575.98px) {
+        .container-fluid {
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+        }
+        
+        .mobile-grid-container {
+            padding: 8px 2px;
+        }
+        
+        .row.g-3 {
+            --bs-gutter-x: 0.25rem;
+            --bs-gutter-y: 0.5rem;
+        }
+        
+        .section-card {
+            min-height: 180px;
+        }
+        
+        .section-content {
+            padding: 15px;
+        }
+        
+        .section-image-container {
+            height: 80px;
+        }
+        
+        .section-icon {
+            font-size: 2.5rem;
+        }
+        
+        .section-name {
+            font-size: 1rem;
+        }
+        
+        .section-id {
+            font-size: 0.8rem;
+        }
+    }
+    
+    /* Animation improvements */
+    .section-card {
+        animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .section-card:nth-child(even) {
+        animation-delay: 0.1s;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Click ripple effect */
+    .click-ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(39, 174, 96, 0.3);
+        pointer-events: none;
+        animation: ripple-animation 0.6s ease-out;
+        z-index: 1;
+    }
+    
+         @keyframes ripple-animation {
+         0% {
+             transform: scale(0);
+             opacity: 1;
+         }
+         100% {
+             transform: scale(1);
+             opacity: 0;
+         }
+     }
+     
+     /* Card visibility animation */
+     .section-card {
+         opacity: 0;
+         transform: translateY(20px);
+         transition: all 0.4s ease-out;
+     }
+     
+     .section-card.card-visible {
+         opacity: 1;
+         transform: translateY(0);
+     }
+     
+     /* Loading shimmer effect */
+     .section-card:not(.card-visible) .section-image-container {
+         background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+         background-size: 200% 100%;
+         animation: shimmer 1.5s infinite;
+     }
+     
+     @keyframes shimmer {
+         0% {
+             background-position: -200% 0;
+         }
+         100% {
+             background-position: 200% 0;
+         }
+     }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+        cursor: pointer;
+    }
+    
+    .pagination .page-link {
+        color: var(--primary-dark);
+        border: 1px solid var(--border-light);
+        padding: 10px 15px;
+        margin: 0 2px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: var(--white);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        border-color: var(--primary-dark);
+        color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced search functionality - prioritize server-side search
+    let searchTimeout;
+    const searchInput = document.getElementById('liveSearch');
+    const clearSearchBtn = document.getElementById('clearSearch');
+    
+    // Check if we have an active server search
+    const hasActiveSearch = searchInput && searchInput.value.trim().length > 0;
+    
+    // Server-side search with auto-submit
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            // If search term is long enough, use server-side search
+            if (searchTerm.length >= 2) {
+                searchTimeout = setTimeout(() => {
+                    // Submit the form for server-side search
+                    const form = this.closest('form');
+                    if (form) {
+                        form.submit();
+                    }
+                }, 800); // 800ms delay for auto-submit
+            } else if (searchTerm.length === 0) {
+                // Clear search immediately when empty
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    window.location.href = "{{ url_for('sections.index') }}";
+                }, 300);
+            }
+        });
+    }
+    
+    // Clear search functionality
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            if (searchInput) {
+                searchInput.value = '';
+                searchInput.focus();
+                // Navigate to clear URL
+                window.location.href = "{{ url_for('sections.index') }}";
+            }
+        });
+    }
+    
+    // Enhanced table interactions
+    const sectionRows = document.querySelectorAll('.section-row');
+    sectionRows.forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Only navigate if not clicking on a button or link
+            if (!e.target.closest('button') && !e.target.closest('a')) {
+                const url = this.dataset.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            }
+        });
+        
+        // Add hover effect
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // Initialize tooltips for mobile cards
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    
+    // Add loading animation for mobile cards
+    const mobileCards = document.querySelectorAll('.section-card');
+    mobileCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        // Add click ripple effect
+        card.addEventListener('click', function(e) {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            this.appendChild(ripple);
+            
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Mobile card lazy loading effect
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('card-visible');
+                cardObserver.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+    
+    mobileCards.forEach(card => {
+        cardObserver.observe(card);
+    });
+
+    console.log('Sections page loaded with enhanced mobile features');
+    console.log('Mobile cards initialized:', mobileCards.length);
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Gestione Sezioni</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-tags me-2"></i>Gestione Sezioni
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ sections.total if sections else 0 }} sezioni nel database</span>
+                    {% if query %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                {% if current_user.is_admin %}
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('sections.new') }}" class="btn btn-light action-btn mb-2 mb-md-0">
+                        <i class="fas fa-plus me-1"></i>Nuova Sezione
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Sezioni',
+        'action': url_for('sections.index'),
+        'search_param': 'query',
+        'placeholder': 'Cerca sezioni per nome o ID...',
+        'current_value': query or '',
+        'show_help': true,
+        'help_text': 'Ricerca in tempo reale attraverso nome e ID sezione',
+        'preserve_params': {},
+        'advanced_filters': []
+    }) }}
+
+    <!-- Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'title': 'Totale Sezioni',
+            'value': sections.total if sections else 0,
+            'icon': 'fas fa-tags',
+            'color': 'primary'
+        },
+        {
+            'title': 'Con Articoli',
+            'value': section_counts.keys()|length if section_counts else 0,
+            'icon': 'fas fa-box',
+            'color': 'success'
+        },
+        {
+            'title': 'Pagina Corrente',
+            'value': sections.page if sections and sections.pages > 1 else 1,
+            'icon': 'fas fa-file-alt',
+            'color': 'info'
+        },
+        {
+            'title': 'Risultati Visualizzati',
+            'value': sections.items|length if sections else 0,
+            'icon': 'fas fa-eye',
+            'color': 'warning'
+        }
+    ]) }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Search Results Info -->
+    {{ render_search_results_info({
+        'is_search_active': query is defined and query,
+        'search_term': query,
+        'total_results': sections.total if sections else 0,
+        'visible_results': sections.items|length if sections else 0,
+        'current_page': sections.page if sections else 1,
+        'total_pages': sections.pages if sections else 1,
+        'clear_url': url_for('sections.index'),
+        'paginated': sections.pages > 1 if sections else false
+    }) }}
+
+    <!-- Sections List -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2 text-primary"></i>Elenco Sezioni
+                <span class="badge bg-primary ms-2">{{ sections.total if sections else 0 }} totali</span>
+            </h5>
+            {% if sections and sections.items %}
+            <small class="text-muted">Pagina {{ sections.page }} di {{ sections.pages }}</small>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if error is defined and error %}
+            <div class="alert alert-danger m-3">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Si è verificato un errore</h5>
+                <p>{{ error }}</p>
+                <p>Si prega di riprovare o contattare l'amministratore del sistema.</p>
+            </div>
+            {% endif %}
+            
+            {% if sections is none %}
+            <div class="alert alert-warning m-3">
+                <h5><i class="fas fa-exclamation-circle me-2"></i>Ricerca non disponibile</h5>
+                <p>Si è verificato un problema durante la ricerca. Visualizzazione delle sezioni non disponibile.</p>
+                <p>Per riprovare, <a href="{{ url_for('sections.index') }}">clicca qui</a> per tornare alla lista completa.</p>
+            </div>
+            {% elif sections and sections.items|length == 0 and not query %}
+            <div class="p-5 text-center">
+                <i class="fas fa-tags text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessuna sezione trovata</h5>
+                <p class="text-muted">Non ci sono sezioni nel sistema. Clicca su "Nuova Sezione" per aggiungerne una.</p>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('sections.new') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Aggiungi Sezione
+                </a>
+                {% endif %}
+            </div>
+            {% elif sections and sections.items|length == 0 and query %}
+            <div class="alert alert-info m-3">
+                <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
+                <p>La ricerca per "{{ query }}" non ha prodotto risultati. Prova con un termine diverso o consulta la lista completa.</p>
+                <a href="{{ url_for('sections.index') }}" class="btn btn-primary mt-2">Mostra tutte le sezioni</a>
+            </div>
+            {% elif sections and sections.items|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="sectionsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome Sezione</th>
+                            <th>Articoli</th>
+                            <th>Ultima Modifica</th>
+                            <th>Utente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for section in sections.items %}
+                        <tr class="clickable-row" data-href="{{ url_for('sections.view', id=section.IdSeccion) }}">
+                            <td data-label="ID">
+                                <span class="fw-bold text-primary">#{{ section.IdSeccion }}</span>
+                            </td>
+                            <td data-label="Nome">
+                                <div class="fw-semibold">{{ section.NombreSeccion }}</div>
+                            </td>
+                            <td data-label="Articoli">
+                                {% set count = section_counts.get(section.IdSeccion, 0) %}
+                                {% if count > 0 %}
+                                <span class="badge bg-primary">{{ count }} articoli</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Nessun articolo</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Ultima Modifica">
+                                {{ section.TimeStamp.strftime('%d/%m/%Y %H:%M') if section.TimeStamp else 'N/A' }}
+                            </td>
+                            <td data-label="Utente">
+                                {{ section.Usuario if section.Usuario else 'N/A' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+
+            <!-- Pagination -->
+            {% if sections.pages > 1 %}
+            <div class="p-3 border-top">
+                <nav aria-label="Page navigation" class="d-flex justify-content-center">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if sections.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('sections.index', page=sections.prev_num, query=query) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+
+                        {% for page_num in sections.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != sections.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('sections.index', page=page_num, query=query) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if sections.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('sections.index', page=sections.next_num, query=query) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

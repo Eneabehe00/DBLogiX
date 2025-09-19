@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Statistiche - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+/* Modern Dashboard Styles - Coherent with Site Theme */
+:root {
+    --primary-dark: #2c3e50;
+    --secondary-dark: #34495e;
+    --accent-blue: #3498db;
+    --light-gray: #ecf0f1;
+    --medium-gray: #bdc3c7;
+    --text-dark: #2c3e50;
+    --white: #ffffff;
+    --border-light: #e9ecef;
+    --success-green: #27ae60;
+    --warning-orange: #f39c12;
+    --danger-red: #e74c3c;
+    --sidebar-bg: #203750;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    height: auto;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(44, 62, 80, 0.15);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-dark);
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--primary-dark);
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 2rem;
+    opacity: 0.1;
+    color: var(--primary-dark);
+}
+
+.chart-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    border: none;
+    height: auto;
+    min-height: 400px;
+}
+
+.chart-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-dark);
+    border-bottom: 2px solid #f8f9fa;
+    padding-bottom: 0.5rem;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 1.5rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 350px;
+    width: 100%;
+}
+
+.top-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.top-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.top-list-item:last-child {
+    border-bottom: none;
+}
+
+.progress-bar-custom {
+    height: 8px;
+    border-radius: 10px;
+    background: var(--primary-dark);
+}
+
+.revenue-highlight {
+    background: var(--success-green);
+    color: white;
+}
+
+.revenue-highlight .stat-value {
+    color: white;
+}
+
+.revenue-highlight .stat-icon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.clients-highlight {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.clients-highlight .stat-value {
+    color: white;
+}
+
+.clients-highlight .stat-icon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.products-highlight {
+    background: var(--warning-orange);
+    color: white;
+}
+
+.products-highlight .stat-value {
+    color: white;
+}
+
+.products-highlight .stat-icon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.tickets-highlight {
+    background: var(--primary-dark);
+    color: white;
+}
+
+.tickets-highlight .stat-value {
+    color: white;
+}
+
+.tickets-highlight .stat-icon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.activity-highlight {
+    background: var(--secondary-dark);
+    color: white;
+}
+
+.activity-highlight .stat-value {
+    color: white;
+}
+
+.activity-highlight .stat-icon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.users-highlight {
+    background: var(--danger-red);
+    color: white;
+}
+
+.users-highlight .stat-value {
+    color: white;
+}
+
+.users-highlight .stat-icon {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+    .metric-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        height: 250px;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .chart-card {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header - ORIGINAL STYLE -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Dashboard</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Dashboard - Statistiche
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Panoramica completa e statistiche avanzate del sistema</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <span class="badge bg-light text-dark">
+                    <i class="fas fa-calendar me-1"></i>Dashboard
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Key Metrics -->
+    <div class="metric-grid">
+        <!-- Revenue Card -->
+        <div class="stat-card revenue-highlight">
+            <i class="fas fa-euro-sign stat-icon"></i>
+            <div class="stat-value">€{{ "%.2f"|format(total_revenue) }}</div>
+            <div class="stat-label text-white-50">Fatturato Totale</div>
+        </div>
+        
+        <!-- Clients Card -->
+        <div class="stat-card clients-highlight">
+            <i class="fas fa-users stat-icon"></i>
+            <div class="stat-value">{{ total_clients }}</div>
+            <div class="stat-label text-white-50">Clienti Totali</div>
+            <small class="text-white-50">{{ active_clients }} Attivi</small>
+        </div>
+        
+        <!-- Products Card -->
+        <div class="stat-card products-highlight">
+            <i class="fas fa-box stat-icon"></i>
+            <div class="stat-value">{{ total_products }}</div>
+            <div class="stat-label text-white-50">Prodotti Totali</div>
+            <small class="text-white-50">{{ active_products }} In Vendita</small>
+        </div>
+        
+        <!-- Tickets Card -->
+        <div class="stat-card tickets-highlight">
+            <i class="fas fa-ticket-alt stat-icon"></i>
+            <div class="stat-value">{{ total_tickets }}</div>
+            <div class="stat-label text-white-50">Ticket Totali</div>
+            <div class="row mt-2 text-center">
+                <div class="col-4">
+                    <small class="text-white-50">{{ processed_tickets }}</small>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">Processati</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-white-50">{{ pending_tickets }}</small>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">Giacenza</div>
+                </div>
+                <div class="col-4">
+                    <small class="text-white-50">{{ expired_tickets }}</small>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.7);">Scaduti</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity Today -->
+        <div class="stat-card activity-highlight">
+            <i class="fas fa-qrcode stat-icon"></i>
+            <div class="stat-value">{{ today_scans }}</div>
+            <div class="stat-label text-white-50">Scansioni Oggi</div>
+            <small class="text-white-50">{{ yesterday_scans }} ieri</small>
+        </div>
+        
+        <!-- Users Activity -->
+        <div class="stat-card users-highlight">
+            <i class="fas fa-user-check stat-icon"></i>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label text-white-50">Utenti Sistema</div>
+            <small class="text-white-50">{{ admin_users }} Amministratori</small>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="chart-grid">
+        <!-- Daily Activity Chart -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-chart-area me-2"></i>Attività Ultimi 30 Giorni
+            </div>
+            <div class="chart-container">
+                <canvas id="dailyActivityChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Top Products Chart -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-trophy me-2"></i>Top 10 Prodotti Più Venduti
+            </div>
+            <div class="chart-container">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Ticket Status Distribution -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-chart-pie me-2"></i>Distribuzione Status Ticket
+            </div>
+            <div class="chart-container">
+                <canvas id="ticketStatusChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Monthly Trends -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-chart-line me-2"></i>Trend Mensili Ticket
+            </div>
+            <div class="chart-container">
+                <canvas id="monthlyTrendsChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Hourly Activity Pattern -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-clock me-2"></i>Pattern Attività Oraria (Ultima Settimana)
+            </div>
+            <div class="chart-container">
+                <canvas id="hourlyActivityChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Most Active Users -->
+        <div class="chart-card">
+            <div class="chart-title">
+                <i class="fas fa-users me-2"></i>Utenti Più Attivi
+            </div>
+            <div class="top-list">
+                {% for user in most_active_users %}
+                <div class="top-list-item">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-user-circle fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">{{ user.username }}</h6>
+                            <small class="text-muted">{{ user.scan_count }} scansioni</small>
+                        </div>
+                    </div>
+                    <div class="ms-auto">
+                        <span class="badge bg-primary">{{ user.scan_count }}</span>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun dato disponibile</h5>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="stat-card">
+                <h5 class="chart-title">
+                    <i class="fas fa-info-circle me-2"></i>Statistiche Veloci
+                </h5>
+                <div class="row">
+                    <div class="col-6 text-center border-end">
+                        <h4 class="text-primary">{{ week_scans }}</h4>
+                        <small class="text-muted">Scansioni Settimana</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h4 class="text-success">{{ month_scans }}</h4>
+                        <small class="text-muted">Scansioni Mese</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6 text-center border-end">
+                        <h4 class="text-info">{{ checkout_scans }}</h4>
+                        <small class="text-muted">Checkout Totali</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h4 class="text-warning">{{ view_scans }}</h4>
+                        <small class="text-muted">Visualizzazioni</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="stat-card">
+                <h5 class="chart-title">
+                    <i class="fas fa-tasks me-2"></i>Stato Sistema
+                </h5>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Ticket Processati</span>
+                        <span>{{ "%.1f"|format((processed_tickets / total_tickets * 100) if total_tickets > 0 else 0) }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar progress-bar-custom" style="width: {{ (processed_tickets / total_tickets * 100) if total_tickets > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Prodotti Attivi</span>
+                        <span>{{ "%.1f"|format((active_products / total_products * 100) if total_products > 0 else 0) }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar progress-bar-custom" style="width: {{ (active_products / total_products * 100) if total_products > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Clienti Attivi</span>
+                        <span>{{ "%.1f"|format((active_clients / total_clients * 100) if total_clients > 0 else 0) }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar progress-bar-custom" style="width: {{ (active_clients / total_clients * 100) if total_clients > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/admin/dashboard.js') }}"></script>
+<script id="charts-data" type="application/json">{{ charts_data|safe }}</script>
+{% endblock %} 

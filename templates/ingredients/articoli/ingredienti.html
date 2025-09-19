@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+
+{% block title %}Ingredienti: {{ articolo.Descripcion }} - DBLogiX{% endblock %}
+
+{% block header_title %}
+    Ingredienti Articolo
+    <small class="text-muted ms-2">{{ articolo.Descripcion }}</small>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.article-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.food-cost-summary {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.ingredient-item {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.ingredient-item:hover {
+    border-color: #28a745;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+}
+
+.ingredient-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 8px 8px 0 0;
+}
+
+.ingredient-body {
+    padding: 1rem;
+}
+
+.cost-indicator {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.percentage-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
+    font-size: 0.875rem;
+}
+
+.percentage-excellent {
+    background: #28a745;
+}
+
+.percentage-good {
+    background: #17a2b8;
+}
+
+.percentage-acceptable {
+    background: #ffc107;
+}
+
+.percentage-high {
+    background: #dc3545;
+}
+
+.detail-section {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <!-- Header Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{{ url_for('ingredients.food_cost') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Torna al Food Cost
+            </a>
+            <a href="{{ url_for('articles.view', id=articolo.IdArticulo) }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-box"></i> Vai all'articolo
+            </a>
+            <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('articles.edit', id=articolo.IdArticulo) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Modifica Articolo
+            </a>
+        </div>
+    </div>
+
+    <!-- Article Info -->
+    <div class="article-info">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-2">{{ articolo.Descripcion }}</h2>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-tag me-2"></i>
+                            <div>
+                                <div>Prezzo di vendita</div>
+                                <strong>€{{ "%.2f"|format(articolo.PrecioConIVA|float) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-leaf me-2"></i>
+                            <div>
+                                <div>Ingredienti</div>
+                                <strong>{{ ingredienti_articolo|length }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-barcode me-2"></i>
+                            <div>
+                                <div>ID Articolo</div>
+                                <strong>{{ articolo.IdArticulo }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                {% set food_cost_class = 'excellent' if percentuale_food_cost <= 25 else 'good' if percentuale_food_cost <= 35 else 'acceptable' if percentuale_food_cost <= 45 else 'high' %}
+                <div class="percentage-circle percentage-{{ food_cost_class }} mx-auto">
+                    {{ "%.1f"|format(percentuale_food_cost) }}%
+                </div>
+                <div class="mt-2">
+                    <strong>Food Cost</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            
+            <!-- Food Cost Summary -->
+            <div class="food-cost-summary">
+                <h5 class="detail-title">
+                    <i class="fas fa-calculator me-2"></i>
+                    Riepilogo Costi
+                </h5>
+                
+                <div class="row g-3">
+                    <div class="col-md-4 text-center">
+                        <div class="cost-indicator text-success">
+                            €{{ "%.2f"|format(articolo.PrecioConIVA|float) }}
+                        </div>
+                        <div class="text-muted">Prezzo Vendita</div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="cost-indicator text-danger">
+                            €{{ "%.2f"|format(costo_totale) }}
+                        </div>
+                        <div class="text-muted">Costo Ingredienti</div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="cost-indicator" style="color: #2c3e50;">
+                            €{{ "%.2f"|format(articolo.PrecioConIVA|float - costo_totale) }}
+                        </div>
+                        <div class="text-muted">Margine</div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <div class="progress" style="height: 12px;">
+                        <div class="progress-bar bg-danger" 
+                             style="width: {{ [percentuale_food_cost, 100]|min }}%">
+                        </div>
+                        <div class="progress-bar bg-success" 
+                             style="width: {{ [100 - percentuale_food_cost, 100]|max }}%">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-1">
+                        <small class="text-muted">Costo Ingredienti ({{ "%.1f"|format(percentuale_food_cost) }}%)</small>
+                        <small class="text-muted">Margine ({{ "%.1f"|format(100 - percentuale_food_cost) }}%)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingredienti List -->
+            <div class="detail-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="detail-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Composizione Ingredienti
+                    </h5>
+                </div>
+                
+                {% if ingredienti_articolo %}
+                {% for articolo_ingrediente in ingredienti_articolo %}
+                <div class="ingredient-item">
+                    <div class="ingredient-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <a href="{{ url_for('ingredients.view', id=articolo_ingrediente.ingrediente.id) }}" 
+                                       class="text-decoration-none">
+                                        {{ articolo_ingrediente.ingrediente.nome }}
+                                    </a>
+                                </h6>
+                                {% if articolo_ingrediente.ingrediente.categoria %}
+                                <span class="badge bg-secondary">{{ articolo_ingrediente.ingrediente.categoria }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <div class="h6 text-success mb-0">
+                                    {{ articolo_ingrediente.costo_formatted }}
+                                </div>
+                                <small class="text-muted">
+                                    {% if costo_totale > 0 %}
+                                        {{ "%.1f"|format((articolo_ingrediente.costo_totale / costo_totale) * 100) }}% del costo totale
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ingredient-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <strong>Quantità:</strong>
+                                <div>{{ articolo_ingrediente.quantita_formatted }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                {% if articolo_ingrediente.fornitore_preferito %}
+                                <strong>Fornitore preferito:</strong>
+                                <div>
+                                    <a href="{{ url_for('ingredients.fornitori_view', id=articolo_ingrediente.fornitore_preferito.id) }}" 
+                                       class="text-decoration-none">
+                                        {{ articolo_ingrediente.fornitore_preferito.nome }}
+                                    </a>
+                                </div>
+                                {% else %}
+                                <strong>Fornitore:</strong>
+                                <div class="text-muted">Miglior prezzo disponibile</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                {% if articolo_ingrediente.ingrediente.miglior_prezzo > 0 %}
+                                <strong>Prezzo unitario:</strong>
+                                <div>€{{ "%.2f"|format(articolo_ingrediente.ingrediente.miglior_prezzo) }}/{{ articolo_ingrediente.ingrediente.unita_misura }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Fornitori disponibili:</strong>
+                                <div>{{ articolo_ingrediente.ingrediente.numero_fornitori }}</div>
+                            </div>
+                        </div>
+                        
+                        {% if articolo_ingrediente.note %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-sticky-note me-1"></i>
+                                {{ articolo_ingrediente.note }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if articolo_ingrediente.ingrediente.allergeni %}
+                        <div class="mt-2">
+                            <small class="text-warning">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                Allergeni: {{ articolo_ingrediente.ingrediente.allergeni }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-leaf fa-3x text-muted mb-3"></i>
+                    <h6 class="text-muted">Nessun ingrediente configurato</h6>
+                    <p class="text-muted">
+                        Questo articolo non ha ingredienti associati per il calcolo del food cost.
+                    </p>
+                    <a href="{{ url_for('ingredients.index') }}" class="btn btn-success">
+                        <i class="fas fa-leaf"></i> Gestisci Ingredienti
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+        
+        <div class="col-lg-4">
+            
+            <!-- Food Cost Analysis -->
+            <div class="detail-section">
+                <h5 class="detail-title">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Analisi Food Cost
+                </h5>
+                
+                {% if percentuale_food_cost > 0 %}
+                <div class="text-center mb-3">
+                    <div class="percentage-circle percentage-{{ food_cost_class }} mx-auto">
+                        {{ "%.1f"|format(percentuale_food_cost) }}%
+                    </div>
+                </div>
+                
+                <div class="alert alert-{{ 'success' if food_cost_class == 'excellent' else 'info' if food_cost_class == 'good' else 'warning' if food_cost_class == 'acceptable' else 'danger' }}">
+                    <h6>
+                        {% if food_cost_class == 'excellent' %}
+                        <i class="fas fa-check-circle"></i> Eccellente
+                        {% elif food_cost_class == 'good' %}
+                        <i class="fas fa-thumbs-up"></i> Buono
+                        {% elif food_cost_class == 'acceptable' %}
+                        <i class="fas fa-exclamation-triangle"></i> Accettabile
+                        {% else %}
+                        <i class="fas fa-exclamation-circle"></i> Alto
+                        {% endif %}
+                    </h6>
+                    <p class="mb-0 small">
+                        {% if food_cost_class == 'excellent' %}
+                        Food cost ottimale. La gestione dei costi è eccellente.
+                        {% elif food_cost_class == 'good' %}
+                        Food cost entro parametri accettabili. Buona gestione dei costi.
+                        {% elif food_cost_class == 'acceptable' %}
+                        Food cost accettabile ma monitorare per eventuali miglioramenti.
+                        {% else %}
+                        Food cost alto. Necessaria ottimizzazione dei costi o del prezzo di vendita.
+                        {% endif %}
+                    </p>
+                </div>
+                {% else %}
+                <div class="alert alert-secondary">
+                    <h6><i class="fas fa-info-circle"></i> Dati mancanti</h6>
+                    <p class="mb-0 small">
+                        Non è possibile calcolare il food cost senza ingredienti configurati.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="detail-section">
+                <h5 class="detail-title">
+                    <i class="fas fa-cog me-2"></i>
+                    Azioni Rapide
+                </h5>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('articles.edit', id=articolo.IdArticulo) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Modifica Articolo
+                    </a>
+                    <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-success">
+                        <i class="fas fa-leaf"></i> Gestisci Ingredienti
+                    </a>
+                    <a href="{{ url_for('ingredients.fornitori_list') }}" class="btn btn-outline-info">
+                        <i class="fas fa-truck"></i> Gestisci Fornitori
+                    </a>
+                </div>
+            </div>
+
+            <!-- Optimization Suggestions -->
+            {% if percentuale_food_cost > 35 %}
+            <div class="detail-section">
+                <h5 class="detail-title">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Suggerimenti
+                </h5>
+                
+                <div class="alert alert-info">
+                    <h6>Ottimizzazione possibile</h6>
+                    <ul class="mb-0 small">
+                        <li>Confronta prezzi tra fornitori diversi</li>
+                        <li>Verifica quantità minime di ordine</li>
+                        <li>Considera fornitori alternativi</li>
+                        {% if percentuale_food_cost > 45 %}
+                        <li>Valuta un aumento del prezzo di vendita</li>
+                        <li>Rivedere la ricetta per ottimizzare costi</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Meta Info -->
+            <div class="detail-section">
+                <h5 class="detail-title">
+                    <i class="fas fa-info me-2"></i>
+                    Informazioni
+                </h5>
+                
+                <div class="small text-muted">
+                    <div class="d-flex justify-content-between py-1">
+                        <span>ID Articolo:</span>
+                        <span>{{ articolo.IdArticulo }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span>Ingredienti:</span>
+                        <span>{{ ingredienti_articolo|length }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span>Ultimo calcolo:</span>
+                        <span>{{ moment().format('DD/MM/YYYY HH:mm') }}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Print functionality
+window.addEventListener('beforeprint', function() {
+    document.querySelectorAll('.dropdown').forEach(el => el.style.display = 'none');
+});
+
+window.addEventListener('afterprint', function() {
+    document.querySelectorAll('.dropdown').forEach(el => el.style.display = '');
+});
+
+// Initialize tooltips
+if (typeof bootstrap !== 'undefined') {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+</script>
+{% endblock %}

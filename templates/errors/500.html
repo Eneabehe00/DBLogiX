@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Errore del Server - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/errors.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 text-center error-page-simple">
+        <div class="error-container mb-4">
+            <h1 class="display-1 text-muted">500</h1>
+            <i class="fas fa-exclamation-triangle fa-5x text-danger mb-4"></i>
+            <h2 class="mb-4">Errore del Server</h2>
+            <p class="lead mb-4">Si è verificato un errore interno del server. L'amministratore è stato informato del problema.</p>
+            <p class="text-muted">Se il problema persiste, contatta l'assistenza tecnica.</p>
+        </div>
+        
+        <div class="d-grid gap-2 d-md-block">
+            <a href="{{ url_for('warehouse.index') }}" class="btn btn-primary me-md-2">
+                <i class="fas fa-home me-2"></i>Torna alla Home
+            </a>
+            <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna Indietro
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %} 

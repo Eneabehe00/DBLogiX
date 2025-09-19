@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuovo Listino - DBLogiX{% endblock %}
+
+{% block header_title %}Crea Nuovo Listino{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --listino-primary: #2c3e50;
+        --listino-secondary: #34495e;
+        --listino-light: #f4f1f8;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .form-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+        overflow: hidden;
+    }
+    
+    .form-card .card-header {
+        background: linear-gradient(90deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        border: none;
+        padding: 1.5rem;
+    }
+    
+    .form-control:focus {
+        border-color: var(--listino-primary);
+        box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+    }
+    
+    .btn-listino {
+        background-color: var(--listino-primary);
+        border-color: var(--listino-primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-listino:hover {
+        background-color: var(--listino-secondary);
+        border-color: var(--listino-secondary);
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .info-panel {
+        background-color: var(--listino-light);
+        border: 1px solid var(--listino-primary);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--listino-primary);
+        margin-bottom: 0.7rem;
+    }
+    
+    .required::after {
+        content: " *";
+        color: #e74c3c;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('listini.index') }}" class="text-white">Listini</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Crea Nuovo Listino
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Configura un nuovo listino prezzi personalizzato</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('listini.index') }}" class="btn btn-outline-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna ai Listini
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Info Panel -->
+    <div class="info-panel">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h5 class="mb-2 text-primary">
+                    <i class="fas fa-lightbulb me-2"></i>Informazioni sui Listini
+                </h5>
+                <p class="mb-0">
+                    Dopo aver creato il listino, potrai aggiungere gli articoli e configurare i prezzi personalizzati. 
+                    Il listino potrà essere associato ai clienti per applicare automaticamente i prezzi durante la creazione dei DDT.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <div class="d-flex align-items-center justify-content-lg-end">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    <small class="text-muted">I campi con * sono obbligatori</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card form-card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tag me-2"></i>Informazioni Listino
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="createListinoForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <!-- Nome Listino -->
+                            <div class="col-md-12 mb-4">
+                                <label for="NomeListino" class="form-label required">Nome Listino</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-tag text-primary"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="NomeListino" 
+                                           name="NomeListino" 
+                                           placeholder="es. Listino Clienti Premium"
+                                           required
+                                           maxlength="100">
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-primary me-1"></i>
+                                    Inserisci un nome descrittivo e univoco per il listino
+                                </div>
+                            </div>
+
+                            <!-- Descrizione -->
+                            <div class="col-md-12 mb-4">
+                                <label for="Descrizione" class="form-label">Descrizione</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-file-alt text-primary"></i>
+                                    </span>
+                                    <textarea class="form-control" 
+                                              id="Descrizione" 
+                                              name="Descrizione" 
+                                              rows="4"
+                                              placeholder="Descrizione dettagliata del listino (opzionale)..."></textarea>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-primary me-1"></i>
+                                    Aggiungi una descrizione per spiegare a chi è destinato questo listino
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <a href="{{ url_for('listini.index') }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times me-1"></i>Annulla
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <button type="submit" class="btn btn-listino" id="submitBtn">
+                                            <i class="fas fa-save me-1"></i>Crea Listino
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Steps Panel -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-lg-8">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-road me-2"></i>Prossimi Passi
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="mb-2">
+                                <i class="fas fa-plus-circle text-info" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>1. Aggiungi Articoli</h6>
+                            <small class="text-muted">Dopo la creazione, aggiungi gli articoli al listino</small>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="mb-2">
+                                <i class="fas fa-euro-sign text-success" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>2. Configura Prezzi</h6>
+                            <small class="text-muted">Personalizza i prezzi per ogni articolo</small>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="mb-2">
+                                <i class="fas fa-user-tag text-warning" style="font-size: 2rem;"></i>
+                            </div>
+                            <h6>3. Associa Clienti</h6>
+                            <small class="text-muted">Collega il listino ai clienti desiderati</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('createListinoForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const nomeInput = document.getElementById('NomeListino');
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        const nome = nomeInput.value.trim();
+        
+        if (!nome) {
+            e.preventDefault();
+            nomeInput.focus();
+            alert('Il nome del listino è obbligatorio');
+            return false;
+        }
+        
+        if (nome.length < 3) {
+            e.preventDefault();
+            nomeInput.focus();
+            alert('Il nome del listino deve essere di almeno 3 caratteri');
+            return false;
+        }
+        
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Creazione in corso...';
+        submitBtn.disabled = true;
+    });
+    
+    // Auto-focus on nome input
+    nomeInput.focus();
+    
+    // Real-time validation feedback
+    nomeInput.addEventListener('input', function() {
+        const value = this.value.trim();
+        
+        if (value.length > 0 && value.length < 3) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else if (value.length >= 3) {
+            this.classList.add('is-valid');
+            this.classList.remove('is-invalid');
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+        }
+        
+        // Update submit button state
+        submitBtn.disabled = value.length < 3;
+    });
+    
+    // Character counter for nome
+    const maxLength = parseInt(nomeInput.getAttribute('maxlength'));
+    const counterElement = document.createElement('div');
+    counterElement.className = 'form-text text-end';
+    counterElement.innerHTML = `<small><span id="nomeCounter">0</span>/${maxLength} caratteri</small>`;
+    nomeInput.parentNode.parentNode.appendChild(counterElement);
+    
+    nomeInput.addEventListener('input', function() {
+        document.getElementById('nomeCounter').textContent = this.value.length;
+    });
+});
+</script>
+{% endblock %} 

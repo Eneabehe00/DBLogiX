@@ -1,0 +1,897 @@
+{% extends 'base.html' %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid %}
+
+{% block title %}{{ listino.NomeListino }} - Dettagli Listino{% endblock %}
+
+{% block header_title %}Dettagli Listino: {{ listino.NomeListino }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --listino-primary: #2c3e50;
+        --listino-secondary: #34495e;
+        --listino-success: #27ae60;
+        --listino-danger: #e74c3c;
+        --listino-warning: #f39c12;
+        --listino-info: #3498db;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .listino-info-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .listino-info-card .card-header {
+        background: linear-gradient(90deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        border: none;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .articoli-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+    }
+    
+    .table th {
+        background-color: var(--listino-primary);
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .badge-listino {
+        background-color: var(--listino-primary);
+        color: white;
+        padding: 0.5rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .btn-listino {
+        background-color: var(--listino-primary);
+        border-color: var(--listino-primary);
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-listino:hover {
+        background-color: var(--listino-secondary);
+        border-color: var(--listino-secondary);
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .price-edit-input {
+        background-color: transparent;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        width: 100px;
+        text-align: right;
+    }
+    
+    .price-edit-input:focus {
+        border-color: var(--listino-primary);
+        box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+    }
+    
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.8rem;
+    }
+    
+    .status-active {
+        background-color: var(--listino-success);
+        color: white;
+    }
+    
+    .status-inactive {
+        background-color: var(--listino-danger);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('listini.index') }}" class="text-white">Listini</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">{{ listino.NomeListino }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-tag me-2"></i>{{ listino.NomeListino }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ listino.numero_articoli }} articoli • {{ clienti_count }} clienti associati</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('listini.edit', id=listino.IdListino) }}" class="btn btn-outline-light action-btn me-2">
+                        <i class="fas fa-edit me-1"></i>Modifica
+                    </a>
+                    <a class="btn btn-danger" onclick="confirmDeleteListino({{ listino.IdListino }}, '{{ listino.NomeListino }}')">
+                        <i class="fas fa-trash me-2"></i>Elimina Listino
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Listino Info Card -->
+    <div class="card listino-info-card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-info-circle me-2"></i>Informazioni Listino
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Nome Listino:</label>
+                        <p class="mb-1">{{ listino.NomeListino }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Descrizione:</label>
+                        <p class="mb-1">{{ listino.Descrizione or 'Nessuna descrizione disponibile' }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Stato:</label>
+                        <p class="mb-1">
+                            {% if listino.Attivo %}
+                            <span class="status-badge status-active">
+                                <i class="fas fa-check-circle me-1"></i>Attivo
+                            </span>
+                            {% else %}
+                            <span class="status-badge status-inactive">
+                                <i class="fas fa-times-circle me-1"></i>Disattivo
+                            </span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Creato da:</label>
+                        <p class="mb-1">{{ listino.creatore.username if listino.creatore else 'N/A' }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Data Creazione:</label>
+                        <p class="mb-1">{{ listino.data_creazione_formatted }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary">Ultima Modifica:</label>
+                        <p class="mb-1">{{ listino.data_modifica_formatted }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': listino.numero_articoli,
+            'label': 'Articoli nel Listino',
+            'icon': 'fas fa-box',
+            'variant': 'stat-primary'
+        },
+        {
+            'value': clienti_count,
+            'label': 'Clienti Associati',
+            'icon': 'fas fa-users',
+            'variant': 'stat-info'
+        },
+        {
+            'value': righe|length,
+            'label': 'Visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': pagination.page if pagination else 1,
+            'label': 'Pagina',
+            'icon': 'fas fa-bookmark',
+            'variant': 'stat-warning'
+        }
+    ]) }}
+
+    <!-- Search Section for Articles -->
+    {% if listino.numero_articoli > 0 %}
+    {{ render_search_section({
+        'title': 'Cerca Articoli nel Listino',
+        'action': url_for('listini.view', id=listino.IdListino),
+        'search_param': 'search',
+        'placeholder': 'Cerca per nome articolo, ID o codice EAN...',
+        'current_value': search or '',
+        'show_help': true,
+        'help_text': 'Cerca articoli all\'interno di questo listino',
+        'preserve_params': {},
+        'advanced_filters': []
+    }) }}
+    {% endif %}
+
+    <!-- Articles List -->
+    <div class="card articoli-card">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-box me-2 text-primary"></i>Articoli nel Listino
+            </h5>
+            <div class="d-flex gap-2">
+                {% if listino.numero_articoli > 0 %}
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+                {% endif %}
+                <a href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino) }}" class="btn btn-sm btn-listino">
+                    <i class="fas fa-plus me-1"></i>Aggiungi Articoli
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if righe %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="articoliTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                            <th><i class="fas fa-box me-1"></i>Articolo</th>
+                            <th><i class="fas fa-barcode me-1"></i>EAN</th>
+                            <th><i class="fas fa-euro-sign me-1"></i>Prezzo Standard</th>
+                            <th><i class="fas fa-tags me-1"></i>Prezzo Listino</th>
+                            <th><i class="fas fa-percentage me-1"></i>Differenza</th>
+                            <th><i class="fas fa-calendar me-1"></i>Aggiornato</th>
+                            <th><i class="fas fa-cogs me-1"></i>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for riga in righe %}
+                        {% set articolo = riga.articolo %}
+                        {% set prezzo_standard = articolo.PrecioConIVA or 0 %}
+                        {% set prezzo_listino = riga.Prezzo %}
+                        {% set differenza = ((prezzo_listino - prezzo_standard) / prezzo_standard * 100) if prezzo_standard > 0 else 0 %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ articolo.IdArticulo }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-cube text-primary me-2"></i>
+                                    <div>
+                                        <span class="fw-semibold">{{ articolo.Descripcion }}</span>
+                                        {% if articolo.Descripcion1 %}
+                                        <br><small class="text-muted">{{ articolo.Descripcion1 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if articolo.EANScanner %}
+                                <code class="bg-light p-1 rounded">{{ articolo.EANScanner }}</code>
+                                {% else %}
+                                <span class="text-muted fst-italic">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-semibold">€{{ "%.3f"|format(prezzo_standard) }}</span>
+                            </td>
+                            <td>
+                                <form class="d-inline-block" method="POST" action="{{ url_for('listini.modifica_prezzo', listino_id=listino.IdListino, articolo_id=articolo.IdArticulo) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <div class="input-group input-group-sm" style="width: 120px;">
+                                        <span class="input-group-text">€</span>
+                                        <input type="number" 
+                                               name="prezzo" 
+                                               value="{{ "%.3f"|format(prezzo_listino) }}" 
+                                               step="0.001" 
+                                               min="0" 
+                                               class="price-edit-input form-control"
+                                               id="prezzo_{{ articolo.IdArticulo }}"
+                                               onchange="this.form.submit()">
+                                    </div>
+                                </form>
+                            </td>
+                            <td>
+                                {% if differenza > 0 %}
+                                <span class="badge bg-success">+{{ "%.1f"|format(differenza) }}%</span>
+                                {% elif differenza < 0 %}
+                                <span class="badge bg-danger">{{ "%.1f"|format(differenza) }}%</span>
+                                {% else %}
+                                <span class="badge bg-secondary">0%</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ riga.DataModifica.strftime('%d/%m/%Y %H:%M') if riga.DataModifica else 'N/A' }}</small>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <form class="d-inline-block" method="POST" action="{{ url_for('listini.rimuovi_articolo', listino_id=listino.IdListino, articolo_id=articolo.IdArticulo) }}" onsubmit="return confirm('Rimuovere questo articolo dal listino?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Rimuovi dal listino">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-box-open text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-muted">Nessun articolo nel listino</h4>
+                <p class="text-muted">
+                    {% if search %}
+                    Non ci sono articoli che corrispondono ai criteri di ricerca.
+                    <br><a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="btn btn-outline-primary mt-2">Visualizza tutti gli articoli</a>
+                    {% else %}
+                    Questo listino non contiene ancora articoli.
+                    <br><a href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino) }}" class="btn btn-listino mt-2">Aggiungi i primi articoli</a>
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Paginazione articoli" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('listini.view', id=listino.IdListino, page=pagination.prev_num, search=search) }}">
+                    <i class="fas fa-chevron-left"></i> Precedente
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('listini.view', id=listino.IdListino, page=page_num, search=search) }}">{{ page_num }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">…</span>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('listini.view', id=listino.IdListino, page=pagination.next_num, search=search) }}">
+                    Successivo <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <!-- Client Management Section -->
+    <div class="card articoli-card mt-4">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2 text-primary"></i>Clienti Associati
+                <span class="badge bg-primary ms-2">{{ clienti_count }}</span>
+            </h5>
+            <div class="d-flex gap-2">
+                {% if clienti_count > 0 %}
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshClientTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+                {% endif %}
+                <button class="btn btn-sm btn-listino" onclick="showAssignClientModal()">
+                    <i class="fas fa-user-plus me-1"></i>Assegna Cliente
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if clienti_associati %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="clientiTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-hashtag me-1"></i>ID</th>
+                            <th><i class="fas fa-user me-1"></i>Nome Cliente</th>
+                            <th><i class="fas fa-envelope me-1"></i>Email</th>
+                            <th><i class="fas fa-phone me-1"></i>Telefono</th>
+                            <th><i class="fas fa-map-marker-alt me-1"></i>Città</th>
+                            <th><i class="fas fa-cogs me-1"></i>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clienti_associati %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ cliente.IdCliente }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user text-primary me-2"></i>
+                                    <div>
+                                        <span class="fw-semibold">{{ cliente.Nombre or 'N/A' }}</span>
+                                        {% if cliente.DNI %}
+                                        <br><small class="text-muted">DNI: {{ cliente.DNI }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if cliente.Email %}
+                                <a href="mailto:{{ cliente.Email }}" class="text-decoration-none">
+                                    <i class="fas fa-envelope me-1"></i>{{ cliente.Email }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted fst-italic">Non disponibile</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.Telefono1 %}
+                                <a href="tel:{{ cliente.Telefono1 }}" class="text-decoration-none">
+                                    <i class="fas fa-phone me-1"></i>{{ cliente.Telefono1 }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted fst-italic">Non disponibile</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.Poblacion %}
+                                <i class="fas fa-map-marker-alt me-1 text-muted"></i>{{ cliente.Poblacion }}
+                                {% if cliente.Provincia %}, {{ cliente.Provincia }}{% endif %}
+                                {% else %}
+                                <span class="text-muted fst-italic">Non disponibile</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{{ url_for('clients.view', id=cliente.IdCliente) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Visualizza dettagli cliente">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-warning" 
+                                            title="Rimuovi listino dal cliente"
+                                            onclick="confirmRemoveClientFromListino({{ cliente.IdCliente }}, '{{ cliente.Nombre or 'Cliente senza nome' }}')">
+                                        <i class="fas fa-unlink"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-users text-muted" style="font-size: 4rem;"></i>
+                </div>
+                <h4 class="text-muted">Nessun cliente associato</h4>
+                <p class="text-muted">
+                    Questo listino non è ancora stato associato ad alcun cliente.
+                    <br><button class="btn btn-listino mt-2" onclick="showAssignClientModal()">
+                        <i class="fas fa-user-plus me-1"></i>Assegna il primo cliente
+                    </button>
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Assign Client Modal -->
+<div class="modal fade" id="assignClientModal" tabindex="-1" aria-labelledby="assignClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="assignClientModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Assegna Cliente al Listino
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Seleziona un cliente da associare al listino <strong>{{ listino.NomeListino }}</strong>:</p>
+                <div class="mb-3">
+                    <label for="client_search" class="form-label">Cerca Cliente:</label>
+                    <input type="text" class="form-control" id="client_search" placeholder="Cerca per nome, email o ID cliente...">
+                </div>
+                <div id="client_list" class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-search fa-2x mb-2"></i>
+                        <p>Inizia a digitare per cercare i clienti...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove Client Confirmation Modal -->
+<div class="modal fade" id="removeClientModal" tabindex="-1" aria-labelledby="removeClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="removeClientModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Rimuovi Listino dal Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="removeClientForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>Stai per rimuovere il listino <strong>{{ listino.NomeListino }}</strong> dal cliente <strong id="removeClientName"></strong>.</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <strong>Attenzione:</strong> Il cliente non avrà più associato questo listino e tornerà ad utilizzare i prezzi standard.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-unlink me-1"></i>Rimuovi Listino
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Listino Confirmation Modal -->
+<div class="modal fade" id="deleteListinoModal" tabindex="-1" aria-labelledby="deleteListinoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteListinoModalLabel">
+                    <i class="fas fa-trash me-2"></i>Elimina Listino
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deleteListinoForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-center mb-3">Sei sicuro di voler eliminare questo listino?</h5>
+                    <p class="text-center">Stai per eliminare il listino <strong id="deleteListinoName"></strong>.</p>
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <strong>Attenzione:</strong> Questa azione eliminerà:
+                        <ul class="mb-0 mt-2">
+                            <li>Tutti gli articoli del listino</li>
+                            <li>Tutti i prezzi personalizzati</li>
+                            <li>L'associazione con tutti i clienti</li>
+                        </ul>
+                    </div>
+                    <p class="text-center text-muted">
+                        <small>Questa azione non può essere annullata.</small>
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Annulla
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Elimina Listino
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Copy Listino Modal -->
+<div class="modal fade" id="copyListinoModal" tabindex="-1" aria-labelledby="copyListinoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="copyListinoModalLabel">
+                    <i class="fas fa-copy me-2"></i>Copia Listino
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="copyListinoForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <p>Stai per creare una copia del listino <strong id="copyListinoName"></strong>.</p>
+                    <div class="mb-3">
+                        <label for="nuovo_nome" class="form-label">Nome del nuovo listino:</label>
+                        <input type="text" class="form-control" id="nuovo_nome" name="nuovo_nome" required>
+                        <div class="form-text">Il nuovo listino conterrà tutti gli articoli e prezzi del listino originale.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-copy me-1"></i>Crea Copia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function refreshTable() {
+    window.location.reload();
+}
+
+function refreshClientTable() {
+    window.location.reload();
+}
+
+function copyListino(listinoId, listinoName) {
+    document.getElementById('copyListinoName').textContent = listinoName;
+    document.getElementById('copyListinoForm').action = `/listini/${listinoId}/copia`;
+    document.getElementById('nuovo_nome').value = `Copia di ${listinoName}`;
+    
+    var modal = new bootstrap.Modal(document.getElementById('copyListinoModal'));
+    modal.show();
+}
+
+function confirmDeleteListino(listinoId, nomeListino) {
+    // Set the listino name in the modal
+    document.getElementById('deleteListinoName').textContent = nomeListino;
+    
+    // Set the form action
+    document.getElementById('deleteListinoForm').action = `/listini/${listinoId}/delete`;
+    
+    // Show the modal
+    var modal = new bootstrap.Modal(document.getElementById('deleteListinoModal'));
+    modal.show();
+}
+
+function showAssignClientModal() {
+    var modal = new bootstrap.Modal(document.getElementById('assignClientModal'));
+    modal.show();
+    
+    // Reset search
+    document.getElementById('client_search').value = '';
+    document.getElementById('client_list').innerHTML = `
+        <div class="text-center text-muted">
+            <i class="fas fa-search fa-2x mb-2"></i>
+            <p>Inizia a digitare per cercare i clienti...</p>
+        </div>
+    `;
+}
+
+function confirmRemoveClientFromListino(clientId, clientName) {
+    document.getElementById('removeClientName').textContent = clientName;
+    document.getElementById('removeClientForm').action = `/listini/{{ listino.IdListino }}/remove_client/${clientId}`;
+    
+    var modal = new bootstrap.Modal(document.getElementById('removeClientModal'));
+    modal.show();
+}
+
+async function searchClients(query) {
+    if (!query || query.length < 2) {
+        document.getElementById('client_list').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <p>Inserisci almeno 2 caratteri per cercare...</p>
+            </div>
+        `;
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/listini/{{ listino.IdListino }}/api/search_clients?q=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error('Errore nella ricerca');
+        
+        const clients = await response.json();
+        displayClients(clients);
+    } catch (error) {
+        console.error('Errore nella ricerca clienti:', error);
+        document.getElementById('client_list').innerHTML = `
+            <div class="text-center text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <p>Errore durante la ricerca. Riprova.</p>
+            </div>
+        `;
+    }
+}
+
+function displayClients(clients) {
+    const container = document.getElementById('client_list');
+    
+    if (clients.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-user-slash fa-2x mb-2"></i>
+                <p>Nessun cliente trovato con questi criteri.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    clients.forEach(client => {
+        const hasListino = client.IdListino && client.IdListino !== {{ listino.IdListino }};
+        const isCurrentListino = client.IdListino === {{ listino.IdListino }};
+        
+        html += `
+            <div class="border-bottom pb-2 mb-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            <i class="fas fa-user me-1 text-primary"></i>
+                            ${client.Nombre || 'Nome non disponibile'}
+                        </h6>
+                        <small class="text-muted">
+                            ID: ${client.IdCliente}
+                            ${client.Email ? ' • ' + client.Email : ''}
+                            ${client.Telefono1 ? ' • ' + client.Telefono1 : ''}
+                        </small>
+                        ${client.Poblacion ? `<br><small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>${client.Poblacion}</small>` : ''}
+                        ${hasListino ? `<br><span class="badge bg-warning text-dark">Ha già un altro listino</span>` : ''}
+                        ${isCurrentListino ? `<br><span class="badge bg-success">Già associato a questo listino</span>` : ''}
+                    </div>
+                    <div class="ms-2">
+                        ${isCurrentListino ? 
+                            '<button class="btn btn-sm btn-outline-secondary" disabled><i class="fas fa-check"></i> Già associato</button>' :
+                            `<button class="btn btn-sm btn-primary" onclick="assignClientToListino(${client.IdCliente}, '${client.Nombre || 'Cliente'}')">
+                                <i class="fas fa-plus"></i> Assegna
+                            </button>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+async function assignClientToListino(clientId, clientName) {
+    try {
+        const response = await fetch(`/listini/{{ listino.IdListino }}/assign_client/${clientId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            }
+        });
+        
+        if (!response.ok) throw new Error('Errore nell\'assegnazione');
+        
+        const result = await response.json();
+        if (result.success) {
+            // Close modal
+            var modal = bootstrap.Modal.getInstance(document.getElementById('assignClientModal'));
+            modal.hide();
+            
+            // Show success message and reload
+            alert(`Cliente "${clientName}" assegnato con successo al listino!`);
+            window.location.reload();
+        } else {
+            alert(result.message || 'Errore durante l\'assegnazione');
+        }
+    } catch (error) {
+        console.error('Errore nell\'assegnazione cliente:', error);
+        alert('Errore durante l\'assegnazione del cliente');
+    }
+}
+
+// Auto-submit price changes with confirmation
+document.addEventListener('DOMContentLoaded', function() {
+    const priceInputs = document.querySelectorAll('.price-edit-input');
+    
+    priceInputs.forEach(input => {
+        let originalValue = input.value;
+        
+        input.addEventListener('focus', function() {
+            originalValue = this.value;
+        });
+        
+        input.addEventListener('change', function() {
+            if (this.value !== originalValue) {
+                if (confirm(`Aggiornare il prezzo a €${this.value}?`)) {
+                    this.form.submit();
+                } else {
+                    this.value = originalValue;
+                }
+            }
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                this.value = originalValue;
+                this.blur();
+            }
+        });
+    });
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Client search functionality
+    const clientSearchInput = document.getElementById('client_search');
+    if (clientSearchInput) {
+        let searchTimeout;
+        clientSearchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            searchTimeout = setTimeout(() => {
+                searchClients(query);
+            }, 300);
+        });
+    }
+});
+</script>
+{% endblock %} 

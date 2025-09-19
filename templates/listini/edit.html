@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}Modifica Listino - {{ listino.NomeListino }}{% endblock %}
+
+{% block header_title %}Modifica Listino{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --listino-primary: #2c3e50;
+        --listino-secondary: #34495e;
+        --listino-light: #f4f1f8;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .form-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.1);
+        overflow: hidden;
+    }
+    
+    .form-card .card-header {
+        background: linear-gradient(90deg, var(--listino-primary), var(--listino-secondary));
+        color: white;
+        border: none;
+        padding: 1.5rem;
+    }
+    
+    .form-control:focus {
+        border-color: var(--listino-primary);
+        box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.25);
+    }
+    
+    .btn-listino {
+        background-color: var(--listino-primary);
+        border-color: var(--listino-primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-listino:hover {
+        background-color: var(--listino-secondary);
+        border-color: var(--listino-secondary);
+        transform: translateY(-1px);
+        color: white;
+    }
+    
+    .info-panel {
+        background-color: var(--listino-light);
+        border: 1px solid var(--listino-primary);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--listino-primary);
+        margin-bottom: 0.7rem;
+    }
+    
+    .required::after {
+        content: " *";
+        color: #e74c3c;
+        font-weight: bold;
+    }
+    
+    .current-info {
+        background-color: #e8f4f8;
+        border: 1px solid var(--listino-primary);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .danger-zone {
+        border: 2px solid #e74c3c;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        background-color: #fdf2f2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('clients.index') }}" class="text-white">Clienti</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('listini.index') }}" class="text-white">Listini</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="text-white">{{ listino.NomeListino }}</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Modifica</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-edit me-2"></i>Modifica Listino
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Modifica le informazioni del listino "{{ listino.NomeListino }}"</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="btn btn-outline-light action-btn">
+                    <i class="fas fa-arrow-left me-1"></i>Torna al Listino
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Info Panel -->
+    <div class="info-panel">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h5 class="mb-2 text-primary">
+                    <i class="fas fa-edit me-2"></i>Modifica Listino Prezzi
+                </h5>
+                <p class="mb-0">
+                    Modifica le informazioni del listino. Le modifiche non influenzeranno gli articoli già associati o i prezzi configurati.
+                    I clienti che utilizzano questo listino vedranno le modifiche applicate immediatamente.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <div class="d-flex align-items-center justify-content-lg-end">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    <small class="text-muted">I campi con * sono obbligatori</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Info -->
+    <div class="current-info">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary mb-2">
+                    <i class="fas fa-info-circle me-1"></i>Informazioni Attuali
+                </h6>
+                <p class="mb-1"><strong>ID Listino:</strong> {{ listino.IdListino }}</p>
+                <p class="mb-1"><strong>Articoli:</strong> {{ listino.numero_articoli or 0 }}</p>
+                <p class="mb-0"><strong>Creato:</strong> {{ listino.DataCreazione.strftime('%d/%m/%Y %H:%M') if listino.DataCreazione else 'N/A' }}</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-primary mb-2">
+                    <i class="fas fa-users me-1"></i>Utilizzo
+                </h6>
+                <p class="mb-1"><strong>Stato:</strong> 
+                    {% if listino.Attivo %}
+                        <span class="badge bg-success">Attivo</span>
+                    {% else %}
+                        <span class="badge bg-danger">Disattivo</span>
+                    {% endif %}
+                </p>
+                <p class="mb-0"><strong>Creato da:</strong> {{ listino.creatore.username if listino.creatore else 'N/A' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card form-card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tag me-2"></i>Informazioni Listino
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="editListinoForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row">
+                            <!-- Nome Listino -->
+                            <div class="col-md-12 mb-4">
+                                <label for="NomeListino" class="form-label required">Nome Listino</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-tag text-primary"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="NomeListino" 
+                                           name="NomeListino" 
+                                           value="{{ listino.NomeListino }}"
+                                           placeholder="es. Listino Clienti Premium"
+                                           required
+                                           maxlength="100">
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-primary me-1"></i>
+                                    Il nome deve essere descrittivo e univoco nel sistema
+                                </div>
+                            </div>
+
+                            <!-- Descrizione -->
+                            <div class="col-md-12 mb-4">
+                                <label for="Descrizione" class="form-label">Descrizione</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-file-alt text-primary"></i>
+                                    </span>
+                                    <textarea class="form-control" 
+                                              id="Descrizione" 
+                                              name="Descrizione" 
+                                              rows="4"
+                                              placeholder="Descrizione dettagliata del listino (opzionale)...">{{ listino.Descrizione or '' }}</textarea>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-primary me-1"></i>
+                                    Descrizione per spiegare a chi è destinato questo listino
+                                </div>
+                            </div>
+
+                            <!-- Stato Attivo -->
+                            <div class="col-md-12 mb-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           id="Attivo" 
+                                           name="Attivo"
+                                           {% if listino.Attivo %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold text-primary" for="Attivo">
+                                        <i class="fas fa-toggle-on me-1"></i>Listino Attivo
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle text-primary me-1"></i>
+                                    Solo i listini attivi possono essere associati ai clienti e utilizzati nei DDT
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-listino" id="saveBtn">
+                                            <i class="fas fa-save me-1"></i>Salva Modifiche
+                                        </button>
+                                        <a href="{{ url_for('listini.view', id=listino.IdListino) }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-times me-1"></i>Annulla
+                                        </a>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('listini.aggiungi_articoli', id=listino.IdListino) }}" class="btn btn-outline-primary">
+                                            <i class="fas fa-plus me-1"></i>Gestisci Articoli
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.getElementById('editListinoForm');
+    const saveBtn = document.getElementById('saveBtn');
+    
+    form.addEventListener('submit', function(e) {
+        const nomeListino = document.getElementById('NomeListino').value.trim();
+        
+        if (!nomeListino) {
+            e.preventDefault();
+            alert('Il nome del listino è obbligatorio');
+            return false;
+        }
+        
+        // Disable button to prevent double submission
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
+    });
+});
+
+function copyListino(listinoId, nomeListino) {
+    if (confirm(`Vuoi creare una copia del listino "${nomeListino}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/listini/${listinoId}/copia`;
+        
+        const csrfToken = document.querySelector('[name="csrf_token"]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+
+</script>
+{% endblock %} 

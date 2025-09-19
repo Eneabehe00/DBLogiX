@@ -1,0 +1,19 @@
+{
+  "enabled_modules": [
+    "chat",
+    "ddt",
+    "articles",
+    "fattura_pa",
+    "warehouse",
+    "scanner",
+    "sections",
+    "admin",
+    "listini",
+    "auth",
+    "tasks",
+    "clients",
+    "ingredients"
+  ],
+  "installation_date": "1752244122.69",
+  "version": "2.0.0"
+}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Article - {{ article.Descripcion }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/articles.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('articles.index') }}">Articles</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('articles.view', id=article.IdArticulo) }}">{{ article.Descripcion }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Delete</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h1 class="card-title">Delete Article</h1>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-danger">
+                <h4 class="alert-heading">Warning!</h4>
+                <p>You are about to delete the article <strong>"{{ article.Descripcion }}"</strong> (ID: {{ article.IdArticulo }}). This action cannot be undone.</p>
+                <p>Are you sure you want to proceed?</p>
+            </div>
+
+            <div class="mt-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Article Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-striped">
+                                    <tbody>
+                                        <tr>
+                                            <th>ID</th>
+                                            <td data-label="ID">{{ article.IdArticulo }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Description</th>
+                                            <td data-label="Description">{{ article.Descripcion }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Alternative Description</th>
+                                            <td data-label="Alternative Description">{{ article.Descripcion1 or 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Price</th>
+                                            <td data-label="Price">{{ article.PrecioConIVA|price if article.PrecioConIVA else 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>EAN</th>
+                                            <td data-label="EAN">{{ article.EANScanner or 'N/A' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" action="{{ url_for('articles.delete', id=article.IdArticulo) }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="form-check mb-3">
+                    {{ form.confirm(class="form-check-input" + (" is-invalid" if form.confirm.errors else "")) }}
+                    <label class="form-check-label" for="confirm">
+                        I confirm that I want to delete this article
+                    </label>
+                    {% for error in form.confirm.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('articles.view', id=article.IdArticulo) }}" class="btn btn-secondary">Cancel</a>
+                    {{ form.submit(class="btn btn-danger") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,38 @@
+{% macro safe_link(endpoint, class="", style="", title="", icon="", text="", **kwargs) %}
+    {% if '.' in endpoint %}
+        {% set module_name = endpoint.split('.')[0] %}
+        {% if module_name in ['tasks', 'clients', 'ddt', 'fattura_pa', 'chat'] and not is_module_enabled(module_name) %}
+            <span class="{{ class }} disabled" style="{{ style }}; opacity: 0.5; cursor: not-allowed;" title="Modulo {{ module_name }} non disponibile">
+                {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+                {{ text }}
+            </span>
+        {% else %}
+            <a href="{{ safe_url_for(endpoint, **kwargs) }}" class="{{ class }}" style="{{ style }}" title="{{ title }}">
+                {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+                {{ text }}
+            </a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for(endpoint, **kwargs) }}" class="{{ class }}" style="{{ style }}" title="{{ title }}">
+            {% if icon %}<i class="{{ icon }}"></i>{% endif %}
+            {{ text }}
+        </a>
+    {% endif %}
+{% endmacro %}
+
+{% macro conditional_url(endpoint, **kwargs) %}
+    {% if '.' in endpoint %}
+        {% set module_name = endpoint.split('.')[0] %}
+        {% if module_name in ['tasks', 'clients', 'ddt', 'fattura_pa', 'chat'] and not is_module_enabled(module_name) %}
+            {{ url_for('warehouse.index') }}
+        {% else %}
+            {{ safe_url_for(endpoint, **kwargs) }}
+        {% endif %}
+    {% else %}
+        {{ url_for(endpoint, **kwargs) }}
+    {% endif %}
+{% endmacro %}
+
+{% macro module_enabled_check(module_name) %}
+    {{ is_module_enabled(module_name) }}
+{% endmacro %} 

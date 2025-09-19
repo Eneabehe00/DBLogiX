@@ -1,0 +1,1254 @@
+{% extends "base.html" %}
+{% from 'components/search_and_stats.html' import render_search_section, render_stats_grid, render_search_results_info, render_active_filters %}
+
+{% block title %}Gestione Tickets{% endblock %}
+
+{% block header_title %}Gestione Tickets{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+<style>
+    /* Elegant Dark Theme - No Gradients */
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --light-gray: #ecf0f1;
+        --medium-gray: #bdc3c7;
+        --text-dark: #2c3e50;
+        --white: #ffffff;
+        --border-light: #e9ecef;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --danger-red: #e74c3c;
+        }
+        
+    .ticket-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+            overflow: hidden;
+    }
+    
+    .ticket-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .table th {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border: none;
+        font-weight: 600;
+        padding: 15px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9ff;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.1);
+    }
+    
+    .filter-section {
+        background-color: var(--light-gray);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        border: 1px solid var(--border-light);
+    }
+    
+    .stats-card {
+        background-color: var(--primary-dark);
+        color: var(--white);
+        border-radius: 15px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+        background-color: var(--secondary-dark);
+    }
+    
+    .stats-card.bg-success {
+        background-color: var(--success-green);
+    }
+    
+    .stats-card.bg-success:hover {
+        background-color: #229954;
+    }
+    
+    .stats-card.bg-warning {
+        background-color: var(--warning-orange);
+    }
+    
+    .stats-card.bg-warning:hover {
+        background-color: #e67e22;
+    }
+    
+    .stats-card.bg-info {
+        background-color: var(--accent-blue);
+        }
+    
+    .stats-card.bg-info:hover {
+        background-color: #2980b9;
+    }
+    
+    .stats-card.bg-danger {
+        background-color: var(--danger-red);
+    }
+    
+    .stats-card.bg-danger:hover {
+        background-color: var(--danger-red);
+    }
+    
+    .input-group .form-control {
+        border: 2px solid var(--border-light);
+        border-radius: 10px 0 0 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .input-group .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        transform: scale(1.02);
+    }
+    
+    .input-group-text {
+        border: 2px solid var(--border-light);
+        border-left: none;
+        background-color: var(--primary-dark);
+        color: var(--white);
+        font-weight: 600;
+    }
+    
+    .badge.bg-primary {
+        background-color: var(--primary-dark) !important;
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .badge.bg-info {
+        background-color: var(--accent-blue) !important;
+        box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    .badge.bg-success {
+        background-color: var(--success-green) !important;
+        box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--warning-orange) !important;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    }
+    
+    .badge.bg-danger {
+        background-color: var(--danger-red) !important;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--secondary-dark) !important;
+        box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-success:hover {
+        background-color: var(--success-green);
+        border-color: var(--success-green);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-warning:hover {
+        background-color: var(--warning-orange);
+        border-color: var(--warning-orange);
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: var(--danger-red);
+        border-color: var(--danger-red);
+        transform: translateY(-1px);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+        box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+    }
+    
+    .pagination .page-link:hover {
+        background-color: var(--light-gray);
+        transform: translateY(-1px);
+        color: var(--primary-dark);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-dark);
+        border-color: var(--secondary-dark);
+    }
+    
+    .alert-info {
+        background-color: #e8f5fe;
+        border-color: var(--accent-blue);
+        color: var(--primary-dark);
+    }
+    
+    .text-primary {
+        color: var(--primary-dark) !important;
+    }
+    
+    .text-success {
+        color: var(--success-green) !important;
+    }
+    
+    .status-filters .btn-group .btn {
+        transition: all 0.3s ease;
+        margin: 2px;
+        border-radius: 8px;
+    }
+    
+    .status-filters .btn.active {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .badge-soft {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.75rem;
+    }
+    
+    .badge-soft-primary {
+        background-color: rgba(44, 62, 80, 0.15);
+        color: var(--primary-dark);
+    }
+    
+    .badge-soft-success {
+        background-color: rgba(39, 174, 96, 0.15);
+        color: var(--success-green);
+    }
+    
+    .badge-soft-warning {
+        background-color: rgba(243, 156, 18, 0.15);
+        color: var(--warning-orange);
+    }
+    
+    .badge-soft-danger {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: var(--danger-red);
+    }
+    
+    .badge-soft-secondary {
+        background-color: rgba(52, 73, 94, 0.15);
+        color: var(--secondary-dark);
+    }
+    
+    /* Status Filter Improvements */
+    .status-filters .btn {
+        padding: 12px 16px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+    }
+    
+    .status-filters .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    
+    .status-filters .btn.active {
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .status-filters .badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
+    @media (max-width: 991.98px) {
+        .status-filters .btn {
+            font-size: 0.9rem;
+            padding: 10px 12px;
+            min-height: 44px;
+        }
+        
+        .status-filters .btn i {
+            font-size: 0.85rem;
+        }
+    }
+    
+    @media (max-width: 575.98px) {
+        .status-filters .btn {
+            font-size: 0.85rem;
+            padding: 8px 10px;
+            min-height: 40px;
+        }
+        
+        .status-filters .btn .badge {
+            display: none;
+        }
+    }
+    
+    /* Mobile Ticket Cards Styling - Article-like Layout */
+    .mobile-grid-container {
+        padding: 1.5rem 1rem;
+    }
+    
+    .mobile-grid-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border-light);
+    }
+    
+    .mobile-grid-title h5 {
+        margin: 0;
+        color: var(--primary-dark);
+        font-weight: 600;
+    }
+    
+    .ticket-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(44, 62, 80, 0.1);
+        border-radius: 15px;
+        overflow: hidden;
+        background-color: var(--white);
+        cursor: pointer;
+        animation: fadeInUp 0.6s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .ticket-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .ticket-image-container {
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    
+    .ticket-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .ticket-content {
+        padding: 16px;
+    }
+    
+    .ticket-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .ticket-id {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--primary-dark);
+    }
+    
+    .ticket-date {
+        font-size: 0.7rem;
+        color: var(--medium-gray);
+        font-weight: 500;
+    }
+    
+    .ticket-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-dark);
+        margin-bottom: 12px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 2.4em;
+    }
+    
+    .ticket-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: auto;
+    }
+    
+    .ticket-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 8px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+    }
+    
+    .badge-quantity-positive {
+        background-color: rgba(39, 174, 96, 0.15);
+        color: var(--success-green);
+    }
+    
+    .badge-quantity-warning {
+        background-color: rgba(243, 156, 18, 0.15);
+        color: var(--warning-orange);
+    }
+    
+    .badge-quantity-negative {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: var(--danger-red);
+    }
+    
+    .badge-quantity-zero {
+        background-color: rgba(52, 73, 94, 0.15);
+        color: var(--secondary-dark);
+    }
+    
+    .mobile-section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+        margin: 0.5rem 0;
+    }
+    
+    /* Animation keyframes */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Click ripple effect */
+    .click-ripple {
+        position: absolute;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.6);
+        transform: scale(0);
+        animation: ripple 0.6s linear;
+        pointer-events: none;
+    }
+    
+    @keyframes ripple {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .ticket-card {
+            margin-bottom: 20px;
+        }
+        
+        .mobile-grid-container {
+            padding: 1rem 0.75rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .ticket-image-container {
+            height: 80px;
+        }
+        
+        .ticket-content {
+            padding: 10px;
+        }
+        
+        .ticket-id {
+            font-size: 0.8rem;
+        }
+        
+        .ticket-date {
+            font-size: 0.65rem;
+        }
+        
+        .ticket-title {
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+        }
+        
+        .ticket-badge {
+            padding: 2px 6px;
+            font-size: 0.6rem;
+        }
+    }
+    
+    /* Mobile card visibility animation */
+    .ticket-card {
+        opacity: 0;
+        animation-delay: 0.1s;
+    }
+    
+    .ticket-card:nth-child(1) { animation-delay: 0.1s; }
+    .ticket-card:nth-child(2) { animation-delay: 0.2s; }
+    .ticket-card:nth-child(3) { animation-delay: 0.3s; }
+    .ticket-card:nth-child(4) { animation-delay: 0.4s; }
+    .ticket-card:nth-child(5) { animation-delay: 0.5s; }
+    .ticket-card:nth-child(6) { animation-delay: 0.6s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Tickets</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-receipt me-2"></i>Gestione Tickets
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ tickets.total if tickets.total else 0 }} tickets nel database</span>
+                    {% if current_status == 'in_task' %}
+                    <span class="status-badge warning ms-2">
+                        <i class="fas fa-tasks me-1"></i>Dentro Task
+                    </span>
+                    {% elif current_status == 'processed' %}
+                    <span class="status-badge success ms-2">
+                        <i class="fas fa-check-circle me-1"></i>Processati
+                    </span>
+                    {% elif current_status == 'expired' %}
+                    <span class="status-badge danger ms-2">
+                        <i class="fas fa-times-circle me-1"></i>Scaduti
+                    </span>
+                    {% elif current_status == 'expiring' %}
+                    <span class="status-badge danger ms-2">
+                        <i class="fas fa-exclamation-circle me-1"></i>In Scadenza
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('warehouse.scanner') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-qrcode me-1"></i>Scanner
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid px-2 px-md-3">
+    <!-- Unified Search Section -->
+    {{ render_search_section({
+        'title': 'Ricerca Tickets',
+        'action': url_for('warehouse.tickets'),
+        'search_param': 'query',
+        'placeholder': 'Cerca per #numero, ID, codice a barre, prodotto...',
+        'current_value': search or '',
+        'show_help': true,
+        'help_text': 'Usa #123 per ticket numero 123, oppure cerca per prodotto',
+        'preserve_params': {
+            'status': current_status or '',
+            'start_date': request.args.get('start_date', ''),
+            'end_date': request.args.get('end_date', '')
+        },
+        'advanced_filters': [
+            {
+                'id': 'startDate',
+                'name': 'start_date',
+                'label': '📅 Data inizio',
+                'type': 'date',
+                'value': request.args.get('start_date', '')
+            },
+            {
+                'id': 'endDate',
+                'name': 'end_date',
+                'label': '📅 Data fine',
+                'type': 'date',
+                'value': request.args.get('end_date', '')
+            }
+        ]
+    }) }}
+
+    <!-- Unified Stats Grid -->
+    {{ render_stats_grid([
+        {
+            'value': tickets.total if tickets.total else 0,
+            'label': 'Totale Tickets',
+            'icon': 'fas fa-ticket-alt',
+            'variant': ''
+        },
+        {
+            'value': tickets.items|length,
+            'label': 'Tickets visualizzati',
+            'icon': 'fas fa-eye',
+            'variant': 'stat-success'
+        },
+        {
+            'value': expiring_count or 0,
+            'label': 'In Scadenza',
+            'icon': 'fas fa-exclamation-triangle',
+            'variant': 'stat-warning'
+        },
+        {
+            'value': expired_count or 0,
+            'label': 'Scaduti',
+            'icon': 'fas fa-times-circle',
+            'variant': 'stat-danger'
+        }
+    ]) }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Status Filter -->
+    <div class="card shadow-sm mb-4 status-filters">
+        <div class="card-header bg-transparent">
+            <h5 class="mb-0"><i class="fas fa-filter me-2 text-primary"></i>Stato Tickets</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', query=search or '') }}" class="btn btn-outline-primary w-100 {% if not current_status %}active{% endif %}">
+                        <i class="fas fa-list-ul me-1"></i> Tutti
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='in_task', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-primary w-100 {% if current_status == 'in_task' %}active{% endif %}">
+                        <i class="fas fa-tasks me-1"></i> Dentro Task
+                        {% if task_count > 0 %}
+                            <span class="badge bg-primary ms-1">{{ task_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='processed', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-success w-100 {% if current_status == 'processed' %}active{% endif %}">
+                        <i class="fas fa-check-circle me-1"></i> Processati
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='expired', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger w-100 {% if current_status == 'expired' %}active{% endif %}">
+                        <i class="fas fa-times-circle me-1"></i> Scaduti
+                        {% if expired_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ expired_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="col-lg col-md-6 col-sm-6">
+                    <a href="{{ url_for('warehouse.tickets', status='expiring', query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" class="btn btn-outline-danger w-100 {% if current_status == 'expiring' %}active{% endif %}">
+                        <i class="fas fa-exclamation-circle me-1"></i> Scadenza
+                        {% if expiring_count > 0 %}
+                        <span class="badge bg-danger ms-1">{{ expiring_count }}</span>
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results Info -->
+    {{ render_search_results_info({
+        'search_query': search,
+        'total_results': tickets.total if tickets else 0,
+        'visible_results': tickets.items|length if tickets else 0,
+        'current_page': tickets.page if tickets else 1,
+        'total_pages': tickets.pages if tickets else 1,
+        'clear_url': url_for('warehouse.tickets', status=current_status, start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')),
+        'entity_name': 'tickets'
+    }) }}
+
+    <!-- Active Filters Info -->
+    {% if request.args.get('start_date') or request.args.get('end_date') %}
+    {{ render_active_filters([
+        {
+            'label': 'Filtro data',
+            'value': (request.args.get('start_date', '') + ' - ' + request.args.get('end_date', '')) if request.args.get('start_date') and request.args.get('end_date') else ('Da ' + request.args.get('start_date', '')) if request.args.get('start_date') else ('Fino al ' + request.args.get('end_date', '')),
+            'icon': 'fas fa-calendar',
+            'clear_all_url': url_for('warehouse.tickets')
+        }
+    ]) }}
+    {% endif %}
+
+    <!-- Enhanced Tickets List -->
+    <div class="ticket-card card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2 text-primary"></i>Elenco Tickets
+                <span class="badge bg-primary ms-2">{{ tickets.total if tickets.total else 0 }} totali</span>
+            </h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportTickets()">
+                    <i class="fas fa-download me-1"></i>Esporta
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="refreshTable()">
+                    <i class="fas fa-sync-alt me-1"></i>Aggiorna
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if tickets.items %}
+            <!-- Desktop Table View -->
+            <div class="d-none d-md-block">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="ticketTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <i class="fas fa-hashtag me-1"></i>ID
+                                </th>
+                                <th>
+                                    <i class="fas fa-receipt me-1"></i>Numero
+                                </th>
+                                <th>
+                                    <i class="fas fa-calendar me-1"></i>Data
+                                </th>
+                                <th>
+                                    <i class="fas fa-box me-1"></i>Prodotto
+                                </th>
+                                <th>
+                                    <i class="fas fa-clock me-1"></i>Scadenza
+                                </th>
+                                <th>
+                                    <i class="fas fa-barcode me-1"></i>Codice
+                                </th>
+                                <th>
+                                    <i class="fas fa-list-ol me-1"></i>Linee
+                                </th>
+                                <th>
+                                    <i class="fas fa-flag me-1"></i>Stato
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tickets.items %}
+                            <tr data-href="{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}" style="cursor: pointer;" class="clickable-row">
+                                <td data-label="ID">
+                                    <span class="badge bg-primary">{{ ticket.IdTicket }}</span>
+                                </td>
+                                <td data-label="Numero">
+                                    <strong>#{{ ticket.NumTicket }}</strong>
+                                </td>
+                                <td data-label="Data">
+                                    <small class="text-muted">{{ ticket.formatted_date }}</small>
+                                </td>
+                                <td data-label="Prodotto">
+                                    {% if ticket.IdTicket in ticket_products %}
+                                    <div>
+                                        <div class="text-truncate" style="max-width: 160px;" title="{{ ticket_products[ticket.IdTicket]['product_name'] }}">
+                                            <i class="fas fa-cube text-muted me-1"></i>
+                                        <strong>{{ ticket_products[ticket.IdTicket]['product_name'] }}</strong> 
+                                        </div>
+                                        {% if ticket_products[ticket.IdTicket]['product_id'] %}
+                                        <div class="text-muted small">
+                                            ID: {{ ticket_products[ticket.IdTicket]['product_id'] }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">Non disponibile</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Scadenza">
+                                    {% if ticket.IdTicket in ticket_expiry %}
+                                    {% set expiry_data = ticket_expiry[ticket.IdTicket] %}
+                                    {% if expiry_data.days_remaining is not none %}
+                                    {% if expiry_data.days_remaining < 0 %}
+                                    <span class="badge-soft badge-soft-danger">
+                                        {{ expiry_data.expiry_date }}
+                                        <span class="ms-1">(Scaduto)</span>
+                                        </span>
+                                    {% elif expiry_data.days_remaining <= 5 %}
+                                    <span class="badge-soft badge-soft-danger">
+                                        {{ expiry_data.expiry_date }}
+                                        <span class="ms-1">({{ expiry_data.days_remaining }} giorni)</span>
+                                    </span>
+                                    {% elif expiry_data.days_remaining <= 10 %}
+                                    <span class="badge-soft badge-soft-warning">
+                                        {{ expiry_data.expiry_date }}
+                                        <span class="ms-1">({{ expiry_data.days_remaining }} giorni)</span>
+                                    </span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-success">
+                                        {{ expiry_data.expiry_date }}
+                                    </span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Codice">
+                                    {% if ticket.CodigoBarras %}
+                                    <code class="small">{{ ticket.CodigoBarras }}</code>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Linee">
+                                    {% if ticket.NumLineas %}
+                                    <span class="badge-soft badge-soft-primary">{{ ticket.NumLineas }}</span>
+                                    {% elif ticket.IdTicket in ticket_line_counts %}
+                                    <span class="badge-soft badge-soft-primary">{{ ticket_line_counts[ticket.IdTicket] }}</span>
+                                    {% else %}
+                                    <span class="badge-soft badge-soft-secondary">0</span>
+                                    {% endif %}
+                                </td>
+                                <td data-label="Stato">
+                                    <span class="badge-soft badge-soft-{{ ticket.status_class }}">{{ ticket.status_text }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Mobile Grid View -->
+            <div class="d-block d-md-none">
+                <div class="mobile-grid-container">
+                    <div class="mobile-grid-title">
+                        <h5>
+                            <i class="fas fa-receipt me-2 text-primary"></i>Tickets
+                        </h5>
+                        <small class="text-muted">{{ tickets.items|length }} di {{ tickets.total }} tickets</small>
+                    </div>
+                    
+                    <div class="row g-4">
+                        {% for ticket in tickets.items %}
+                        <div class="col-6 col-sm-6 col-md-4 col-lg-3">
+                            <div class="ticket-card" onclick="window.location.href='{{ url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket) }}'" data-bs-toggle="tooltip" data-bs-placement="top" title="Clicca per visualizzare i dettagli">
+                                <!-- Ticket Image Header -->
+                                <div class="ticket-image-container">
+                                    <div class="ticket-placeholder">
+                                        <i class="fas fa-receipt fa-2x text-white"></i>
+                                    </div>
+                                    
+                                    <!-- Status indicator -->
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        {% if ticket.status_class == 'success' %}
+                                        <i class="fas fa-check-circle text-success" style="font-size: 0.8rem;" title="Processato"></i>
+                                        {% elif ticket.status_class == 'warning' %}
+                                        <i class="fas fa-clock text-warning" style="font-size: 0.8rem;" title="Pendente"></i>
+                                        {% elif ticket.status_class == 'danger' %}
+                                        <i class="fas fa-exclamation-circle text-danger" style="font-size: 0.8rem;" title="Scaduto"></i>
+                                        {% else %}
+                                        <i class="fas fa-circle text-secondary" style="font-size: 0.8rem;" title="{{ ticket.status_text }}"></i>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Ticket Content -->
+                                <div class="ticket-content">
+                                    <div class="ticket-header">
+                                        <div class="ticket-id">#{{ ticket.NumTicket }}</div>
+                                        <div class="ticket-date">{{ ticket.formatted_date }}</div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                    
+                                    <div class="ticket-title" title="{{ ticket_products[ticket.IdTicket]['product_name'] if ticket.IdTicket in ticket_products else 'Non disponibile' }}">
+                                        {% if ticket.IdTicket in ticket_products %}
+                                        {{ ticket_products[ticket.IdTicket]['product_name'] }}
+                                        {% else %}
+                                        <span class="text-muted">Non disponibile</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="ticket-badges">
+                                        <!-- Status Badge -->
+                                        <span class="ticket-badge {% if ticket.status_class == 'success' %}badge-quantity-positive{% elif ticket.status_class == 'warning' %}badge-quantity-warning{% elif ticket.status_class == 'danger' %}badge-quantity-negative{% else %}badge-quantity-zero{% endif %}" title="Stato: {{ ticket.status_text }}">
+                                            {{ ticket.status_text }}
+                                        </span>
+                                        
+                                        <!-- Only show critical expiry info -->
+                                        {% if ticket.IdTicket in ticket_expiry %}
+                                        {% set expiry_data = ticket_expiry[ticket.IdTicket] %}
+                                        {% if expiry_data.days_remaining is not none and expiry_data.days_remaining <= 10 %}
+                                        {% if expiry_data.days_remaining < 0 %}
+                                        <span class="ticket-badge" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white;" title="Scaduto il {{ expiry_data.expiry_date }}">
+                                            SCADUTO
+                                        </span>
+                                        {% elif expiry_data.days_remaining <= 5 %}
+                                        <span class="ticket-badge" style="background: linear-gradient(135deg, #e74c3c, #c0392b); color: white;" title="Scade il {{ expiry_data.expiry_date }}">
+                                            {{ expiry_data.days_remaining }}gg
+                                        </span>
+                                        {% else %}
+                                        <span class="ticket-badge" style="background: linear-gradient(135deg, #f39c12, #e67e22); color: white;" title="Scade il {{ expiry_data.expiry_date }}">
+                                            {{ expiry_data.days_remaining }}gg
+                                        </span>
+                                        {% endif %}
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if loop.index is divisibleby(2) and loop.index < tickets.items|length %}
+                        <div class="mobile-section-divider col-12 d-block d-sm-none"></div>
+                        {% elif loop.index is divisibleby(3) and loop.index < tickets.items|length %}
+                        <div class="mobile-section-divider col-12 d-none d-md-block d-lg-none"></div>
+                        {% elif loop.index is divisibleby(4) and loop.index < tickets.items|length %}
+                        <div class="mobile-section-divider col-12 d-none d-lg-block"></div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enhanced Pagination -->
+            {% if tickets.pages > 1 %}
+            <div class="p-3 border-top bg-light">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if tickets.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.prev_num, status=current_status, query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in tickets.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == tickets.page %}
+                                <li class="page-item active">
+                                    <a class="page-link" href="#">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('warehouse.tickets', page=page_num, status=current_status, query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}">{{ page_num }}</a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if tickets.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('warehouse.tickets', page=tickets.next_num, status=current_status, query=search or '', start_date=request.args.get('start_date', ''), end_date=request.args.get('end_date', '')) }}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Pagina {{ tickets.page }} di {{ tickets.pages }} - {{ tickets.total }} elementi totali
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="p-5 text-center">
+                <i class="fas fa-receipt text-muted mb-3" style="font-size: 4rem;"></i>
+                <h5>Nessun ticket trovato</h5>
+                <p class="text-muted">Non ci sono ticket che corrispondono ai criteri di ricerca.</p>
+                <a href="{{ url_for('warehouse.tickets') }}" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-list me-2"></i>Visualizza tutti i ticket
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Enhanced search functionality - prioritize server-side search
+        let searchTimeout;
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('.table-row');
+        const clearSearchBtn = document.getElementById('clearSearch');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const searchForm = document.getElementById('searchForm');
+        
+        // Check if we have an active server search
+        const hasActiveSearch = searchInput.value.trim().length > 0;
+        
+        function updateVisibleCount() {
+            const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none');
+            visibleCountEl.textContent = visibleRows.length;
+        }
+        
+        // Server-side search with auto-submit
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const searchTerm = this.value.toLowerCase().trim();
+        
+                // If search term is long enough, use server-side search
+                if (searchTerm.length >= 2) {
+                    searchTimeout = setTimeout(function() {
+                        // Auto-submit form for server-side search
+                        searchForm.submit();
+                    }, 800); // Longer delay for server search
+                } else if (searchTerm.length === 0) {
+                    // Clear search immediately if input is empty
+                    searchForm.submit();
+                } else {
+                    // For very short terms, use client-side search on current page only
+                    searchTimeout = setTimeout(function() {
+                        performClientSideSearch(searchTerm);
+                    }, 200);
+                }
+            });
+            
+            // Handle Enter key for immediate search
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    if (this.value.trim().length > 0) {
+                        searchForm.submit();
+                    }
+                }
+            });
+        }
+        
+        // Client-side search function (only for short terms or as fallback)
+        function performClientSideSearch(searchTerm) {
+            if (hasActiveSearch) {
+                // Don't perform client-side search if server search is active
+                return;
+            }
+            
+            tableRows.forEach(function(row) {
+                const ticketId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const ticketNumber = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const ticketProduct = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+                const ticketCode = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                
+                // Search in multiple fields
+                if (ticketId.includes(searchTerm) || 
+                    ticketNumber.includes(searchTerm) || 
+                    ticketProduct.includes(searchTerm) || 
+                    ticketCode.includes(searchTerm)) {
+                    row.style.display = '';
+                    row.classList.add('animate__animated', 'animate__fadeIn');
+                } else {
+                    row.style.display = 'none';
+                    row.classList.remove('animate__animated', 'animate__fadeIn');
+                }
+            });
+            updateVisibleCount();
+        }
+        
+        // Clear search functionality
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', function() {
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.delete('query');
+                window.location.href = currentUrl.toString();
+            });
+        }
+        
+        // Add search hints
+        if (searchInput && !hasActiveSearch) {
+            const originalPlaceholder = searchInput.placeholder;
+            searchInput.addEventListener('focus', function() {
+                this.placeholder = 'Digita almeno 2 caratteri per ricerca globale...';
+            });
+            searchInput.addEventListener('blur', function() {
+                this.placeholder = originalPlaceholder;
+            });
+        }
+        
+        // Show search status
+        if (hasActiveSearch) {
+            // Add visual indicator that server search is active
+            const searchIcon = document.querySelector('#searchForm .input-group-text i');
+            if (searchIcon) {
+                searchIcon.className = 'fas fa-search text-success';
+                searchIcon.title = 'Ricerca attiva su tutti i tickets';
+            }
+        }
+        
+        // Date filter functionality
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const applyDateFilterBtn = document.getElementById('applyDateFilter');
+        
+        if (applyDateFilterBtn) {
+            applyDateFilterBtn.addEventListener('click', function() {
+                const startDate = startDateInput.value;
+                const endDate = endDateInput.value;
+                
+                if (!startDate && !endDate) return;
+                
+                const currentUrl = new URL(window.location.href);
+                if (startDate) currentUrl.searchParams.set('start_date', startDate);
+                else currentUrl.searchParams.delete('start_date');
+                
+                if (endDate) currentUrl.searchParams.set('end_date', endDate);
+                else currentUrl.searchParams.delete('end_date');
+                
+                window.location.href = currentUrl.toString();
+            });
+        }
+        
+        // Make rows clickable to view detail
+        tableRows.forEach(function(row) {
+            row.addEventListener('click', function() {
+                if (this.dataset.url) {
+                    window.location.href = this.dataset.url;
+                }
+            });
+        });
+        
+        // Export functionality
+        window.exportTickets = function() {
+            alert('Funzionalità di esportazione non ancora implementata');
+        };
+        
+        // Refresh table
+        window.refreshTable = function() {
+            window.location.reload();
+        };
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
+        
+        // Initialize visible count
+        updateVisibleCount();
+        
+        // Initialize mobile card interactions
+        const mobileCards = document.querySelectorAll('.ticket-card');
+        mobileCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.05}s`;
+            
+            // Add click ripple effect
+            card.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                ripple.className = 'click-ripple';
+                this.appendChild(ripple);
+                
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.width = ripple.style.height = size + 'px';
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+        
+        // Mobile card lazy loading effect
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('card-visible');
+                    cardObserver.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+        
+        mobileCards.forEach(card => {
+            cardObserver.observe(card);
+        });
+
+        // Console debugging
+        console.log('Tickets page loaded with enhanced mobile features');
+        console.log('Total tickets on page:', tableRows.length);
+        console.log('Mobile cards initialized:', mobileCards.length);
+        console.log('Active search:', hasActiveSearch);
+    });
+</script>
+{% endblock %} 

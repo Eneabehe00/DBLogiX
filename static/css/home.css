@@ -1,0 +1,509 @@
+/* Home CSS - DB-LogiX - Elegant Dark Theme
+-------------------------------------------------- */
+
+/* Custom Variables */
+:root {
+    --primary-dark: #2c3e50;
+    --secondary-dark: #34495e;
+    --accent-blue: #3498db;
+    --light-gray: #ecf0f1;
+    --medium-gray: #bdc3c7;
+    --text-dark: #2c3e50;
+    --white: #ffffff;
+    --border-light: #e9ecef;
+    --success-green: #27ae60;
+    --warning-orange: #f39c12;
+    --danger-red: #e74c3c;
+    --info-blue: #3498db;
+}
+
+/* Enhanced Container styles */
+.container-fluid {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+/* Enhanced Dashboard Header - No Gradients */
+.dashboard-header {
+    background-color: var(--primary-dark);
+    border-radius: 1rem;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0.5rem 1rem rgba(44, 62, 80, 0.15);
+    border: none;
+}
+
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.dashboard-header .action-btn {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: var(--white);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.dashboard-header .action-btn:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(52, 152, 219, 0.3);
+    text-decoration: none;
+}
+
+/* Statistics Overview */
+.stats-overview {
+    background-color: var(--light-gray);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+    border: 1px solid var(--border-light);
+}
+
+.stat-card {
+    background-color: var(--primary-dark);
+    color: var(--white);
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 15px rgba(44, 62, 80, 0.1);
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+    background-color: var(--secondary-dark);
+}
+
+.stat-card.success {
+    background-color: var(--success-green);
+}
+
+.stat-card.warning {
+    background-color: var(--warning-orange);
+}
+
+.stat-card.info {
+    background-color: var(--info-blue);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Quick Actions */
+.quick-action-item {
+    display: block;
+    background-color: var(--white);
+    border-radius: 15px;
+    padding: 2rem;
+    text-decoration: none;
+    color: var(--text-dark);
+    height: 100%;
+    box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-light);
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 25px rgba(44, 62, 80, 0.15);
+    color: var(--text-dark);
+    text-decoration: none;
+}
+
+.quick-action-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+    color: var(--white);
+}
+
+.quick-action-icon.bg-success-soft {
+    background-color: var(--success-green);
+}
+
+.quick-action-icon.bg-warning-soft {
+    background-color: var(--warning-orange);
+}
+
+.quick-action-icon.bg-primary-soft {
+    background-color: var(--primary-dark);
+}
+
+.quick-action-icon.bg-info-soft {
+    background-color: var(--info-blue);
+}
+
+.quick-action-icon.bg-dark-soft {
+    background-color: var(--secondary-dark);
+}
+
+.quick-action-item h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+}
+
+.quick-action-item p {
+    margin-bottom: 0;
+    color: var(--medium-gray);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Activity Cards */
+.activity-card {
+    background-color: var(--white);
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.activity-card:hover {
+    box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+}
+
+.activity-card .card-header {
+    background-color: var(--light-gray);
+    border-bottom: 1px solid var(--border-light);
+    padding: 20px 25px;
+}
+
+.activity-card .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0;
+}
+
+/* Enhanced Table Styles */
+.table-hover tbody tr:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+    cursor: pointer;
+}
+
+.table th {
+    font-weight: 600;
+    color: var(--text-dark);
+    border-bottom: 2px solid var(--border-light);
+    background-color: var(--light-gray);
+    padding: 0.75rem;
+}
+
+.table td {
+    vertical-align: middle;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.75rem;
+}
+
+/* Enhanced Buttons */
+.btn {
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.btn-outline-primary {
+    color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    background-color: transparent;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+/* Enhanced Badges */
+.badge {
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.badge.bg-primary {
+    background-color: var(--primary-dark) !important;
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.3);
+}
+
+.badge.bg-success {
+    background-color: var(--success-green) !important;
+    box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-orange) !important;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+    color: var(--white) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-red) !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.badge.bg-secondary {
+    background-color: var(--secondary-dark) !important;
+    box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+}
+
+/* Mobile Tabs */
+.mobile-tabs .nav-link {
+    color: var(--text-dark);
+    border: none;
+    border-radius: 0;
+    padding: 15px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.mobile-tabs .nav-link.active {
+    background-color: var(--primary-dark);
+    color: var(--white);
+}
+
+/* Mobile Table */
+.mobile-table-row {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mobile-table-row:hover {
+    background-color: rgba(52, 152, 219, 0.05);
+}
+
+.mobile-cell {
+    margin-bottom: 10px;
+}
+
+.mobile-label {
+    font-size: 0.8rem;
+    color: var(--medium-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.mobile-value {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+/* Ticket and Activity Numbers */
+.ticket-number,
+.activity-number {
+    color: var(--primary-dark);
+    font-weight: 600;
+}
+
+/* User avatar */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: var(--light-gray);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--medium-gray);
+}
+
+/* Badge Soft */
+.badge-soft {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-soft-primary {
+    background-color: rgba(44, 62, 80, 0.15);
+    color: var(--primary-dark);
+}
+
+.badge-soft-success {
+    background-color: rgba(39, 174, 96, 0.15);
+    color: var(--success-green);
+}
+
+.badge-soft-info {
+    background-color: rgba(52, 152, 219, 0.15);
+    color: var(--info-blue);
+}
+
+.badge-soft-warning {
+    background-color: rgba(243, 156, 18, 0.15);
+    color: var(--warning-orange);
+}
+
+.badge-soft-danger {
+    background-color: rgba(231, 76, 60, 0.15);
+    color: var(--danger-red);
+}
+
+.badge-soft-secondary {
+    background-color: rgba(52, 73, 94, 0.15);
+    color: var(--secondary-dark);
+}
+
+/* Text Colors */
+.text-primary {
+    color: var(--primary-dark) !important;
+}
+
+.text-success {
+    color: var(--success-green) !important;
+}
+
+.text-info {
+    color: var(--info-blue) !important;
+}
+
+.text-warning {
+    color: var(--warning-orange) !important;
+}
+
+.text-secondary {
+    color: var(--secondary-dark) !important;
+}
+
+.text-danger {
+    color: var(--danger-red) !important;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+    .quick-action-item {
+        margin-bottom: 20px;
+        padding: 1.5rem;
+    }
+    
+    .stats-overview {
+        margin: 0 -15px 20px;
+        border-radius: 0;
+        padding: 20px 15px;
+    }
+    
+    .stat-card {
+        margin-bottom: 15px;
+        min-height: 120px;
+    }
+    
+    .dashboard-header {
+        padding: 1.5rem 2rem;
+        margin: 0 -15px 20px;
+        border-radius: 0;
+    }
+    
+    .dashboard-title {
+        font-size: 2rem;
+    }
+    
+    .quick-action-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Loading and Animation States */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .quick-action-item {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+    }
+    
+    .stats-overview {
+        display: none !important;
+    }
+    
+    .stat-card {
+        background-color: #f8f9fa !important;
+        color: #333 !important;
+    }
+} 

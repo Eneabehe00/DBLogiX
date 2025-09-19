@@ -1,0 +1,687 @@
+{% extends "base.html" %}
+
+{% block title %}{{ fornitore.nome }} - Fornitore - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ingredients.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fornitori.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.fornitori_list') }}" class="text-white">Fornitori</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">{{ fornitore.nome }}</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-truck me-2"></i>{{ fornitore.nome }}
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    {% if fornitore.citta %}
+                    <span class="text-white-50">{{ fornitore.citta }}</span>
+                    {% endif %}
+                    {% if fornitore.numero_ingredienti > 0 %}
+                    <span class="badge bg-success ms-2">
+                        {{ fornitore.numero_ingredienti }} ingredienti
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ingredients.fornitori_edit', id=fornitore.id) }}" class="btn btn-primary action-btn mb-2 mb-md-0 me-md-2">
+                        <i class="fas fa-edit me-1"></i>Modifica
+                    </a>
+                    {% if current_user.is_admin %}
+                    <button class="btn btn-danger action-btn mb-2 mb-md-0 me-md-2" data-bs-toggle="modal" data-bs-target="#deleteFornitoreModal" style="background-color: #dc3545 !important; border-color: #dc3545 !important;">
+                        <i class="fas fa-trash me-1"></i>Elimina
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('ingredients.fornitori_list') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Torna alla Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+
+    <!-- Layout principale con sidebar -->
+    <div class="row g-4">
+        <!-- Sidebar Info Fornitore -->
+        <div class="col-lg-3">
+            <div class="fattura-card card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body p-4">
+                    <!-- Header fornitore -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-truck fa-3x mb-3" style="color: #2c3e50;"></i>
+                        <h6 class="fw-bold mb-2">{{ fornitore.nome }}</h6>
+                        {% if fornitore.citta %}
+                        <span class="badge-soft badge-soft-primary">{{ fornitore.citta }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Statistiche in alto -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-chart-bar me-2"></i>Statistiche</h6>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Ingredienti</small>
+                            <span class="fw-bold text-success">{{ fornitore.numero_ingredienti }}</span>
+                        </div>
+                        
+                        {% if fornitore.prezzo_medio_ingredienti > 0 %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Prezzo Medio</small>
+                            <span class="fw-bold" style="color: #2c3e50;">€{{ "%.2f"|format(fornitore.prezzo_medio_ingredienti) }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Aggiornato</small>
+                            <span class="fw-bold small" style="color: #34495e;">{{ fornitore.updated_at.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Contatti -->
+                    {% if fornitore.email or fornitore.telefono %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-phone me-2"></i>Contatti</h6>
+                        
+                        {% if fornitore.email %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Email</small>
+                            <a href="mailto:{{ fornitore.email }}" class="small text-decoration-none">{{ fornitore.email }}</a>
+                        </div>
+                        {% endif %}
+                        
+                        {% if fornitore.telefono %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Telefono</small>
+                            <a href="tel:{{ fornitore.telefono }}" class="small text-decoration-none">{{ fornitore.telefono }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Indirizzo -->
+                    {% if fornitore.indirizzo_completo != 'N/A' %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-map-marker-alt me-2"></i>Indirizzo</h6>
+                        <div class="small text-muted">
+                            {% if fornitore.indirizzo %}{{ fornitore.indirizzo }}<br>{% endif %}
+                            {% if fornitore.cap %}{{ fornitore.cap }} {% endif %}
+                            {% if fornitore.citta %}{{ fornitore.citta }}{% endif %}
+                            {% if fornitore.provincia %} ({{ fornitore.provincia }}){% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Dati Fiscali -->
+                    {% if fornitore.partita_iva or fornitore.codice_fiscale or fornitore.iban %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="fas fa-file-invoice me-2"></i>Dati Fiscali</h6>
+                        
+                        {% if fornitore.partita_iva %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">P.IVA</small>
+                            <span class="badge-soft badge-soft-info">{{ fornitore.partita_iva }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if fornitore.codice_fiscale %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">C.F.</small>
+                            <span class="badge-soft badge-soft-secondary">{{ fornitore.codice_fiscale }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if fornitore.iban %}
+                        <div class="mb-0">
+                            <small class="text-muted d-block">IBAN</small>
+                            <code class="small">{{ fornitore.iban }}</code>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Note -->
+                    {% if fornitore.note %}
+                    <div class="mb-0">
+                        <h6 class="text-muted mb-2"><i class="fas fa-sticky-note me-2"></i>Note</h6>
+                        <p class="small text-muted mb-0">{{ fornitore.note|nl2br }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contenuto principale -->
+        <div class="col-lg-9">
+            <div class="fattura-card card shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-leaf me-2" style="color: #2c3e50;"></i>Ingredienti Forniti ({{ associazioni_ingredienti|length }})</h5>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="showAddIngredientModal()">
+                        <i class="fas fa-plus"></i> Aggiungi Ingrediente
+                    </button>
+                </div>
+                <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                    {% if associazioni_ingredienti %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th><i class="fas fa-leaf me-1"></i>Ingrediente</th>
+                                    <th><i class="fas fa-euro-sign me-1"></i>Prezzo</th>
+                                    <th><i class="fas fa-truck me-1"></i>Consegna</th>
+                                    <th><i class="fas fa-barcode me-1"></i>Codice</th>
+                                    <th class="text-center"><i class="fas fa-cogs me-1"></i>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for associazione in associazioni_ingredienti %}
+                                <tr class="clickable-row" data-href="{{ url_for('ingredients.view', id=associazione.ingrediente.id) }}" style="cursor: pointer;">
+                                    <td data-label="Ingrediente" onclick="window.location.href='{{ url_for('ingredients.view', id=associazione.ingrediente.id) }}'">
+                                        <div>
+                                            <strong>{{ associazione.ingrediente.nome }}</strong>
+                                            {% if associazione.ingrediente.categoria %}
+                                            <br><span class="badge-soft badge-soft-secondary small">{{ associazione.ingrediente.categoria }}</span>
+                                            {% endif %}
+                                            {% if associazione.ingrediente.unita_misura %}
+                                            <span class="badge small ms-1" style="background-color: #34495e; color: white;">{{ associazione.ingrediente.unita_misura }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td data-label="Prezzo" onclick="window.location.href='{{ url_for('ingredients.view', id=associazione.ingrediente.id) }}'">
+                                        <span class="badge-soft badge-soft-success">{{ associazione.prezzo_formatted }}</span>
+                                        {% if associazione.quantita_minima and associazione.quantita_minima > 0 %}
+                                        <br><small class="text-muted">Min: {{ associazione.quantita_minima_formatted }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Consegna" onclick="window.location.href='{{ url_for('ingredients.view', id=associazione.ingrediente.id) }}'">
+                                        {% if associazione.tempo_consegna_giorni > 0 %}
+                                        <span class="badge-soft badge-soft-info">{{ associazione.tempo_consegna_text }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Codice" onclick="window.location.href='{{ url_for('ingredients.view', id=associazione.ingrediente.id) }}'">
+                                        {% if associazione.codice_fornitore %}
+                                        <code class="small">{{ associazione.codice_fornitore }}</code>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td data-label="Azioni" class="text-center" onclick="event.stopPropagation()">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editIngredientAssociation({{ associazione.id }}, '{{ associazione.ingrediente.nome }}', {{ associazione.prezzo_unitario }}, '{{ associazione.codice_fornitore }}', {{ associazione.tempo_consegna_giorni }}, {{ associazione.quantita_minima }}, '{{ associazione.note }}')" 
+                                                    title="Modifica associazione">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    onclick="removeIngredient({{ associazione.id }}, '{{ associazione.ingrediente.nome }}')" 
+                                                    title="Rimuovi ingrediente">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-leaf fa-2x text-muted mb-3"></i>
+                        <h6 class="text-muted">Nessun ingrediente associato</h6>
+                        <button type="button" class="btn btn-primary mt-2" onclick="showAddIngredientModal()">
+                            <i class="fas fa-plus"></i> Aggiungi primo ingrediente
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modale per Aggiungere Ingrediente -->
+    <div class="modal fade" id="addIngredientModal" tabindex="-1" aria-labelledby="addIngredientModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addIngredientModalLabel">
+                        <i class="fas fa-plus me-2" style="color: #2c3e50;"></i>Aggiungi Ingrediente a {{ fornitore.nome }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addIngredientForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="fornitore_id" value="{{ fornitore.id }}">
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="ingrediente-search" class="form-label">Cerca Ingrediente <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search text-muted"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="ingrediente-search" 
+                                           placeholder="Digita il nome dell'ingrediente...">
+                                </div>
+                                <div id="ingredients-results" class="mt-2" style="max-height: 200px; overflow-y: auto;"></div>
+                                <input type="hidden" id="selected-ingrediente-id" name="ingrediente_id" required>
+                                <div class="invalid-feedback">Seleziona un ingrediente</div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="add-prezzo-unitario" class="form-label">Prezzo Unitario <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input type="number" class="form-control" id="add-prezzo-unitario" name="prezzo_unitario" 
+                                           step="0.01" min="0" max="9999" required>
+                                    <span class="input-group-text" id="add-unita-misura">/</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="add-codice-fornitore" class="form-label">Codice Fornitore</label>
+                                <input type="text" class="form-control" id="add-codice-fornitore" name="codice_fornitore" maxlength="50">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="add-tempo-consegna" class="form-label">Tempo di Consegna</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="add-tempo-consegna" name="tempo_consegna_giorni" min="0" max="365" value="0">
+                                    <span class="input-group-text">giorni</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="add-quantita-minima" class="form-label">Quantità Minima</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="add-quantita-minima" name="quantita_minima" 
+                                           step="0.01" min="0" max="9999" value="0">
+                                    <span class="input-group-text" id="add-unita-misura-2">/</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="add-note" class="form-label">Note</label>
+                                <textarea class="form-control" id="add-note" name="note" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Annulla
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Aggiungi Ingrediente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modale per Modifica Associazione -->
+    <div class="modal fade" id="editIngredientModal" tabindex="-1" aria-labelledby="editIngredientModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editIngredientModalLabel">
+                        <i class="fas fa-edit me-2" style="color: #2c3e50;"></i>Modifica Associazione
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editIngredientForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit-associazione-id" name="associazione_id">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" id="edit-ingrediente-nome">Ingrediente</label>
+                            <p class="text-muted small mb-0" id="edit-ingrediente-info"></p>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="edit-prezzo-unitario" class="form-label">Prezzo Unitario <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input type="number" class="form-control" id="edit-prezzo-unitario" name="prezzo_unitario" 
+                                           step="0.01" min="0" max="9999" required>
+                                    <span class="input-group-text" id="edit-unita-misura">/</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="edit-codice-fornitore" class="form-label">Codice Fornitore</label>
+                                <input type="text" class="form-control" id="edit-codice-fornitore" name="codice_fornitore" maxlength="50">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="edit-tempo-consegna" class="form-label">Tempo di Consegna</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="edit-tempo-consegna" name="tempo_consegna_giorni" min="0" max="365">
+                                    <span class="input-group-text">giorni</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="edit-quantita-minima" class="form-label">Quantità Minima</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="edit-quantita-minima" name="quantita_minima" 
+                                           step="0.01" min="0" max="9999">
+                                    <span class="input-group-text" id="edit-unita-misura-2">/</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label for="edit-note" class="form-label">Note</label>
+                                <textarea class="form-control" id="edit-note" name="note" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Annulla
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/fornitori.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize modals
+    initAddIngredientModal();
+    initEditIngredientModal();
+});
+
+// Show add ingredient modal
+function showAddIngredientModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addIngredientModal'));
+    modal.show();
+}
+
+// Initialize add ingredient modal
+function initAddIngredientModal() {
+    const searchInput = document.getElementById('ingrediente-search');
+    const resultsContainer = document.getElementById('ingredients-results');
+    const selectedIdInput = document.getElementById('selected-ingrediente-id');
+    const unitaMisuraSpan = document.getElementById('add-unita-misura');
+    const unitaMisuraSpan2 = document.getElementById('add-unita-misura-2');
+    let searchTimeout;
+    
+    // Search ingredients
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            resultsContainer.innerHTML = '';
+            selectedIdInput.value = '';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            fetch(`/ingredients/api/ingredienti/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    renderIngredientResults(data);
+                })
+                .catch(error => {
+                    console.error('Error searching ingredients:', error);
+                    resultsContainer.innerHTML = '<div class="alert alert-danger">Errore nella ricerca</div>';
+                });
+        }, 300);
+    });
+    
+    // Render search results
+    function renderIngredientResults(ingredients) {
+        if (ingredients.length === 0) {
+            resultsContainer.innerHTML = '<div class="text-muted small">Nessun ingrediente trovato</div>';
+            return;
+        }
+        
+        const html = ingredients.map(ingredient => `
+            <div class="ingredient-result-item border rounded p-2 mb-2" 
+                 data-id="${ingredient.id}" 
+                 data-name="${ingredient.nome}"
+                 data-unit="${ingredient.unita_misura}"
+                 style="cursor: pointer;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${ingredient.nome}</strong>
+                        ${ingredient.categoria ? `<br><small class="text-muted">${ingredient.categoria}</small>` : ''}
+                    </div>
+                    <span class="badge" style="background-color: #34495e; color: white;">${ingredient.unita_misura}</span>
+                </div>
+            </div>
+        `).join('');
+        
+        resultsContainer.innerHTML = html;
+        
+        // Add click handlers
+        resultsContainer.querySelectorAll('.ingredient-result-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const name = this.dataset.name;
+                const unit = this.dataset.unit;
+                
+                // Update form
+                selectedIdInput.value = id;
+                searchInput.value = name;
+                unitaMisuraSpan.textContent = `/ ${unit}`;
+                unitaMisuraSpan2.textContent = unit;
+                resultsContainer.innerHTML = '';
+                
+                // Focus on price input
+                document.getElementById('add-prezzo-unitario').focus();
+            });
+        });
+    }
+    
+    // Handle form submission
+    const addForm = document.getElementById('addIngredientForm');
+    addForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = {};
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Aggiungendo...';
+        submitBtn.disabled = true;
+        
+        // Submit via existing endpoint
+        fetch(`/ingredients/${data.ingrediente_id}/aggiungi-fornitore`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Success - close modal and refresh page
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addIngredientModal'));
+                modal.hide();
+                window.location.reload();
+            } else {
+                throw new Error('Errore nell\'aggiunta');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Errore nell\'aggiunta dell\'ingrediente: ' + error.message);
+        })
+        .finally(() => {
+            // Restore button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+}
+
+// Initialize edit ingredient modal
+function initEditIngredientModal() {
+    const editForm = document.getElementById('editIngredientForm');
+    
+    editForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const associazioneId = formData.get('associazione_id');
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
+        submitBtn.disabled = true;
+        
+        // Submit form data directly
+        fetch(`/ingredients/associazioni/${associazioneId}/modifica`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Success - close modal and refresh page
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editIngredientModal'));
+                modal.hide();
+                window.location.reload();
+            } else {
+                throw new Error('Errore nella modifica');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Errore nella modifica: ' + error.message);
+        })
+        .finally(() => {
+            // Restore button
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+}
+
+// Edit ingredient association
+function editIngredientAssociation(associazioneId, ingredienteNome, prezzo, codice, tempoConsegna, quantitaMinima, note) {
+    // Populate modal with data
+    document.getElementById('edit-associazione-id').value = associazioneId;
+    document.getElementById('edit-ingrediente-nome').textContent = ingredienteNome;
+    document.getElementById('edit-ingrediente-info').textContent = `Modifica le condizioni di fornitura per ${ingredienteNome}`;
+    document.getElementById('edit-prezzo-unitario').value = prezzo || '';
+    document.getElementById('edit-codice-fornitore').value = codice || '';
+    document.getElementById('edit-tempo-consegna').value = tempoConsegna || 0;
+    document.getElementById('edit-quantita-minima').value = quantitaMinima || 0;
+    document.getElementById('edit-note').value = note || '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editIngredientModal'));
+    modal.show();
+}
+
+// Remove ingredient
+function removeIngredient(associazioneId, ingredienteNome) {
+    if (confirm(`Rimuovere "${ingredienteNome}" da questo fornitore?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/ingredients/associazioni/${associazioneId}/elimina`;
+        form.style.display = 'none';
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+<!-- Modal di Conferma Eliminazione Fornitore -->
+<div class="modal fade" id="deleteFornitoreModal" tabindex="-1" aria-labelledby="deleteFornitoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteFornitoreModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Conferma Eliminazione
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-warning me-2"></i>
+                    <strong>Attenzione!</strong> Questa operazione è irreversibile.
+                </div>
+                
+                <p>Stai per eliminare definitivamente il fornitore:</p>
+                <div class="p-3 bg-light rounded">
+                    <h6 class="mb-1"><i class="fas fa-building me-2" style="color: #2c3e50;"></i>{{ fornitore.nome }}</h6>
+                    {% if fornitore.email %}
+                    <small class="text-muted d-block"><i class="fas fa-envelope me-1"></i>{{ fornitore.email }}</small>
+                    {% endif %}
+                    {% if fornitore.telefono %}
+                    <small class="text-muted d-block"><i class="fas fa-phone me-1"></i>{{ fornitore.telefono }}</small>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-3">
+                    <h6 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Conseguenze dell'eliminazione:</h6>
+                    <ul class="text-muted">
+                        <li>Il fornitore verrà rimosso definitivamente dal sistema</li>
+                        <li>Verranno eliminate tutte le associazioni con gli ingredienti</li>
+                        <li>Verranno aggiornati gli ingredienti che lo avevano come preferito</li>
+                        <li>I prezzi degli ingredienti potrebbero cambiare automaticamente</li>
+                    </ul>
+                </div>
+                
+                <p class="mt-3 mb-0"><strong>Sei sicuro di voler procedere?</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annulla
+                </button>
+                <form method="POST" action="{{ url_for('ingredients.fornitori_delete', id=fornitore.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger" style="background-color: #dc3545 !important; border-color: #dc3545 !important;">
+                        <i class="fas fa-trash me-1"></i>Elimina Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

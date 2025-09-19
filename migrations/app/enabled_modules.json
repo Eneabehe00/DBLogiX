@@ -1,0 +1,11 @@
+{
+  "enabled_modules": [
+    "warehouse",
+    "admin",
+    "auth",
+    "articles",
+    "sections"
+  ],
+  "installation_date": "1752244122.69",
+  "version": "2.0.0"
+}

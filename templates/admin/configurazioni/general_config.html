@@ -1,0 +1,1596 @@
+{% extends "base.html" %}
+
+{% block title %}Configurazioni Generali - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<style>
+/* Tab specifici per questa pagina */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 2rem;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    border-bottom-color: #6c757d;
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    background-color: transparent;
+    font-weight: 600;
+}
+
+.section-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.section-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem 1.25rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.section-header i {
+    margin-right: 0.5rem;
+    color: #007bff;
+}
+
+.section-content {
+    padding: 1.5rem 1.25rem;
+}
+
+.help-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.action-buttons {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.chat-stats-row {
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.chat-stats-row h4 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.chat-stats-row small {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.chat-operation-section {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.chat-operation-section h5 {
+    margin-bottom: 0.75rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.chat-operation-section p {
+    margin-bottom: 1rem;
+    color: #6c757d;
+}
+
+@media (max-width: 768px) {
+    .nav-tabs .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .chat-operation-section {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-white">Admin</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Configurazioni</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>Configurazioni
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Gestisci tutte le impostazioni di sistema, database, azienda e chat</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <!-- Spazio per azioni future -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" id="configTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="database-tab" data-bs-toggle="tab" data-bs-target="#database" 
+                    type="button" role="tab" aria-controls="database" aria-selected="true">
+                <i class="fas fa-database me-2"></i>Database
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="company-tab" data-bs-toggle="tab" data-bs-target="#company" 
+                    type="button" role="tab" aria-controls="company" aria-selected="false">
+                <i class="fas fa-building me-2"></i>Azienda
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" 
+                    type="button" role="tab" aria-controls="system" aria-selected="false">
+                <i class="fas fa-cog me-2"></i>Sistema
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" 
+                    type="button" role="tab" aria-controls="chat" aria-selected="false">
+                <i class="fas fa-comments me-2"></i>Chat
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="clienti-tab" data-bs-toggle="tab" data-bs-target="#clienti" 
+                    type="button" role="tab" aria-controls="clienti" aria-selected="false">
+                <i class="fas fa-users me-2"></i>Clienti
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ddt-tab" data-bs-toggle="tab" data-bs-target="#ddt" 
+                    type="button" role="tab" aria-controls="ddt" aria-selected="false">
+                <i class="fas fa-file-alt me-2"></i>DDT
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="fatture-tab" data-bs-toggle="tab" data-bs-target="#fatture" 
+                    type="button" role="tab" aria-controls="fatture" aria-selected="false">
+                <i class="fas fa-file-invoice me-2"></i>Fatture
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="configTabContent">
+        
+        <!-- Database Configuration Tab -->
+        <div class="tab-pane fade show active" id="database" role="tabpanel" aria-labelledby="database-tab">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Configurazione Database:</strong> Configura i parametri di connessione al database remoto contenente i dati di prodotti e ticket.
+            </div>
+            
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-server"></i>
+                    Parametri di Connessione
+                </div>
+                <div class="section-content">
+                    <form method="post" novalidate>
+                        {{ db_form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ db_form.host.label(class="form-label") }}
+                                    {{ db_form.host(class="form-control" + (" is-invalid" if db_form.host.errors else "")) }}
+                                    {% if db_form.host.errors %}
+                                        {% for error in db_form.host.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ db_form.port.label(class="form-label") }}
+                                    {{ db_form.port(class="form-control" + (" is-invalid" if db_form.port.errors else "")) }}
+                                    {% if db_form.port.errors %}
+                                        {% for error in db_form.port.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ db_form.user.label(class="form-label") }}
+                                    {{ db_form.user(class="form-control" + (" is-invalid" if db_form.user.errors else "")) }}
+                                    {% if db_form.user.errors %}
+                                        {% for error in db_form.user.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ db_form.password.label(class="form-label") }}
+                                    {{ db_form.password(class="form-control" + (" is-invalid" if db_form.password.errors else "")) }}
+                                    {% if db_form.password.errors %}
+                                        {% for error in db_form.password.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ db_form.database.label(class="form-label") }}
+                            {{ db_form.database(class="form-control" + (" is-invalid" if db_form.database.errors else "")) }}
+                            {% if db_form.database.errors %}
+                                {% for error in db_form.database.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" name="test_connection" value="1" class="btn btn-info">
+                                <i class="fas fa-plug me-2"></i>Test Connessione
+                            </button>
+                            <button type="submit" name="submit_db" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Salva Configurazione
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Company Configuration Tab -->
+        <div class="tab-pane fade" id="company" role="tabpanel" aria-labelledby="company-tab">
+            <div class="alert alert-warning">
+                <i class="fas fa-building me-2"></i>
+                <strong>Configurazione Azienda:</strong> Configura i dati dell'azienda che verranno utilizzati nei documenti e nelle stampe DDT.
+            </div>
+            
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-industry"></i>
+                    Dati Aziendali
+                </div>
+                <div class="section-content">
+                    <form method="post" novalidate>
+                        {{ company_form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ company_form.nombre_empresa.label(class="form-label") }}
+                                    {{ company_form.nombre_empresa(class="form-control" + (" is-invalid" if company_form.nombre_empresa.errors else "")) }}
+                                    {% if company_form.nombre_empresa.errors %}
+                                        {% for error in company_form.nombre_empresa.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ company_form.cif_vat.label(class="form-label") }}
+                                    {{ company_form.cif_vat(class="form-control" + (" is-invalid" if company_form.cif_vat.errors else "")) }}
+                                    {% if company_form.cif_vat.errors %}
+                                        {% for error in company_form.cif_vat.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ company_form.telefono.label(class="form-label") }}
+                                    {{ company_form.telefono(class="form-control" + (" is-invalid" if company_form.telefono.errors else "")) }}
+                                    {% if company_form.telefono.errors %}
+                                        {% for error in company_form.telefono.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ company_form.direccion.label(class="form-label") }}
+                                    {{ company_form.direccion(class="form-control" + (" is-invalid" if company_form.direccion.errors else "")) }}
+                                    {% if company_form.direccion.errors %}
+                                        {% for error in company_form.direccion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ company_form.cod_postal.label(class="form-label") }}
+                                    {{ company_form.cod_postal(class="form-control" + (" is-invalid" if company_form.cod_postal.errors else "")) }}
+                                    {% if company_form.cod_postal.errors %}
+                                        {% for error in company_form.cod_postal.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ company_form.poblacion.label(class="form-label") }}
+                                    {{ company_form.poblacion(class="form-control" + (" is-invalid" if company_form.poblacion.errors else "")) }}
+                                    {% if company_form.poblacion.errors %}
+                                        {% for error in company_form.poblacion.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ company_form.provincia.label(class="form-label") }}
+                                    {{ company_form.provincia(class="form-control" + (" is-invalid" if company_form.provincia.errors else "")) }}
+                                    {% if company_form.provincia.errors %}
+                                        {% for error in company_form.provincia.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" name="submit_company" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Salva Configurazione Azienda
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Configuration Tab -->
+        <div class="tab-pane fade" id="system" role="tabpanel" aria-labelledby="system-tab">
+            <div class="alert alert-info">
+                <i class="fas fa-cog me-2"></i>
+                <strong>Configurazioni Sistema:</strong> Gestisci tutte le impostazioni avanzate del sistema, email, backup e sicurezza.
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {{ system_form.hidden_tag() }}
+                
+                <!-- Basic System Settings -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-sliders-h"></i>
+                        Impostazioni Base
+                    </div>
+                    <div class="section-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.expiry_warning_days.label(class="form-label") }}
+                                    {{ system_form.expiry_warning_days(class="form-control" + (" is-invalid" if system_form.expiry_warning_days.errors else "")) }}
+                                    <div class="help-text">{{ system_form.expiry_warning_days.description }}</div>
+                                    {% if system_form.expiry_warning_days.errors %}
+                                        {% for error in system_form.expiry_warning_days.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.articles_per_package.label(class="form-label") }}
+                                    {{ system_form.articles_per_package(class="form-control" + (" is-invalid" if system_form.articles_per_package.errors else "")) }}
+                                    <div class="help-text">{{ system_form.articles_per_package.description }}</div>
+                                    {% if system_form.articles_per_package.errors %}
+                                        {% for error in system_form.articles_per_package.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ system_form.allow_users_create_ddt(class="form-check-input") }}
+                                        {{ system_form.allow_users_create_ddt.label(class="form-check-label") }}
+                                        <div class="help-text">{{ system_form.allow_users_create_ddt.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Lot Management Configuration -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-tags"></i>
+                        Gestione Lotti
+                    </div>
+                    <div class="section-content">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Gestione Lotti:</strong> Configura come gestire le informazioni del lotto nei ticket e nei DDT. Puoi utilizzare lotti automatici basati sulla data del ticket o utilizzare il campo TextoLote personalizzato.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.lot_mode.label(class="form-label") }}
+                                    {{ system_form.lot_mode(class="form-control" + (" is-invalid" if system_form.lot_mode.errors else ""), id="lotModeSelect") }}
+                                    <div class="help-text">{{ system_form.lot_mode.description }}</div>
+                                    {% if system_form.lot_mode.errors %}
+                                        {% for error in system_form.lot_mode.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3" id="lotTimestampFormatGroup">
+                                    {{ system_form.lot_timestamp_format.label(class="form-label") }}
+                                    {{ system_form.lot_timestamp_format(class="form-control" + (" is-invalid" if system_form.lot_timestamp_format.errors else "")) }}
+                                    <div class="help-text">{{ system_form.lot_timestamp_format.description }}</div>
+                                    {% if system_form.lot_timestamp_format.errors %}
+                                        {% for error in system_form.lot_timestamp_format.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ system_form.lot_display_in_ticket(class="form-check-input") }}
+                                        {{ system_form.lot_display_in_ticket.label(class="form-check-label") }}
+                                        <div class="help-text">{{ system_form.lot_display_in_ticket.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ system_form.lot_display_in_ddt(class="form-check-input") }}
+                                        {{ system_form.lot_display_in_ddt.label(class="form-check-label") }}
+                                        <div class="help-text">{{ system_form.lot_display_in_ddt.description }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Esempio di visualizzazione lotto -->
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <h6 class="mb-2"><i class="fas fa-eye me-2"></i>Anteprima Lotto</h6>
+                            <div id="lotPreview">
+                                <small class="text-muted">Seleziona una modalità per vedere l'anteprima del lotto</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Email Configuration -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-envelope"></i>
+                        Configurazione Email
+                    </div>
+                    <div class="section-content">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.smtp_server.label(class="form-label") }}
+                                    {{ system_form.smtp_server(class="form-control") }}
+                                    <div class="help-text">{{ system_form.smtp_server.description }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.smtp_port.label(class="form-label") }}
+                                    {{ system_form.smtp_port(class="form-control") }}
+                                    <div class="help-text">{{ system_form.smtp_port.description }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.smtp_username.label(class="form-label") }}
+                                    {{ system_form.smtp_username(class="form-control") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.smtp_password.label(class="form-label") }}
+                                    {{ system_form.smtp_password(class="form-control") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ system_form.admin_email.label(class="form-label") }}
+                                    {{ system_form.admin_email(class="form-control") }}
+                                    <div class="help-text">{{ system_form.admin_email.description }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ system_form.smtp_use_tls(class="form-check-input") }}
+                                        {{ system_form.smtp_use_tls.label(class="form-check-label") }}
+                                    </div>
+                                    <div class="form-check">
+                                        {{ system_form.enable_email_notifications(class="form-check-input") }}
+                                        {{ system_form.enable_email_notifications.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Backup Configuration -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-hdd"></i>
+                        Configurazione Backup
+                    </div>
+                    <div class="section-content">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ system_form.backup_frequency_hours.label(class="form-label") }}
+                                    {{ system_form.backup_frequency_hours(class="form-control") }}
+                                    <div class="help-text">{{ system_form.backup_frequency_hours.description }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ system_form.backup_retention_days.label(class="form-label") }}
+                                    {{ system_form.backup_retention_days(class="form-control") }}
+                                    <div class="help-text">{{ system_form.backup_retention_days.description }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ system_form.backup_path.label(class="form-label") }}
+                                    {{ system_form.backup_path(class="form-control") }}
+                                    <div class="help-text">{{ system_form.backup_path.description }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Logo Configuration -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <i class="fas fa-image"></i>
+                        Logo Aziendale
+                    </div>
+                    <div class="section-content">
+                        <div class="mb-3">
+                            {{ system_form.company_logo.label(class="form-label") }}
+                            {{ system_form.company_logo(class="form-control") }}
+                            <div class="help-text">{{ system_form.company_logo.description }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button type="submit" name="submit_system" value="1" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Salva Configurazioni Sistema
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Chat Configuration Tab -->
+        <div class="tab-pane fade" id="chat" role="tabpanel" aria-labelledby="chat-tab">
+            <div class="alert alert-success">
+                <i class="fas fa-comments me-2"></i>
+                <strong>Gestione Chat:</strong> Configura le impostazioni di pulizia e backup per la chat di sistema.
+            </div>
+            
+            <!-- Chat Management -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-broom"></i>
+                    Pulizia Chat
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="chat-operation-section">
+                                <h5>Svuotamento Manuale</h5>
+                                <p>Svuota immediatamente tutti i messaggi della chat. Questa azione creerà automaticamente un backup prima della cancellazione.</p>
+                                <button type="button" class="btn btn-warning" onclick="clearChatManual()">
+                                    <i class="fas fa-trash me-2"></i>Svuota Chat Ora
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chat-operation-section">
+                                <h5>Backup Immediato</h5>
+                                <p>Crea un backup immediato di tutti i messaggi della chat senza cancellarli.</p>
+                                <button type="button" class="btn btn-info" onclick="backupChatNow()">
+                                    <i class="fas fa-download me-2"></i>Backup Chat Ora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Automatic Chat Settings -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-clock"></i>
+                    Configurazione Automatica
+                </div>
+                <div class="section-content">
+                    <form method="post" id="chatConfigForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Svuotamento Automatico</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableAutoCleanup" name="enable_auto_cleanup">
+                                        <label class="form-check-label" for="enableAutoCleanup">
+                                            Abilita svuotamento automatico periodico
+                                        </label>
+                                    </div>
+                                    <div class="help-text">Quando abilitato, la chat verrà svuotata automaticamente con la frequenza impostata</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Frequenza Svuotamento (giorni)</label>
+                                    <select class="form-select" id="cleanupFrequency" name="cleanup_frequency">
+                                        <option value="1">Ogni giorno</option>
+                                        <option value="7" selected>Ogni settimana</option>
+                                        <option value="14">Ogni 2 settimane</option>
+                                        <option value="30">Ogni mese</option>
+                                    </select>
+                                    <div class="help-text">Frequenza con cui eseguire lo svuotamento automatico</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Backup Automatico</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableAutoBackup" name="enable_auto_backup" checked>
+                                        <label class="form-check-label" for="enableAutoBackup">
+                                            Abilita backup automatico prima dello svuotamento
+                                        </label>
+                                    </div>
+                                    <div class="help-text">Crea sempre un backup prima di svuotare la chat</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Conservazione Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="backupRetention" name="backup_retention" value="30" min="1" max="365">
+                                    <div class="help-text">Per quanti giorni conservare i backup della chat</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Percorso Backup Chat</label>
+                            <input type="text" class="form-control" id="chatBackupPath" name="chat_backup_path" value="Backup/Chat" readonly>
+                            <div class="help-text">I backup della chat verranno salvati nella cartella Backup/Chat nella root del progetto</div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" name="submit_chat" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Salva Configurazioni Chat
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Chat Statistics -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiche Chat
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-primary" id="totalMessages">-</h4>
+                                <small>Messaggi Totali</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-success" id="todayMessages">-</h4>
+                                <small>Messaggi Oggi</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-info" id="lastBackup">-</h4>
+                                <small>Ultimo Backup</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-warning" id="backupCount">-</h4>
+                                <small>Backup Disponibili</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Clienti Configuration Tab -->
+        <div class="tab-pane fade" id="clienti" role="tabpanel" aria-labelledby="clienti-tab">
+            <div class="alert alert-info">
+                <i class="fas fa-users me-2"></i>
+                <strong>Gestione Backup Clienti:</strong> Configura le impostazioni di backup automatico e gestisci i backup dei dati clienti.
+            </div>
+            
+            <!-- Clienti Manual Operations -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-download"></i>
+                    Backup Manuale
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="chat-operation-section">
+                                <h5>Backup Immediato Clienti</h5>
+                                <p>Crea un backup immediato di tutti i dati clienti nel database.</p>
+                                <button type="button" class="btn btn-info" onclick="backupClientiNow()">
+                                    <i class="fas fa-download me-2"></i>Backup Clienti Ora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Automatic Clienti Settings -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-clock"></i>
+                    Configurazione Automatica
+                </div>
+                <div class="section-content">
+                    <form method="post" id="clientiConfigForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Backup Automatico</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableClientiAutoBackup" name="enable_clienti_auto_backup" checked>
+                                        <label class="form-check-label" for="enableClientiAutoBackup">
+                                            Abilita backup automatico periodico dei clienti
+                                        </label>
+                                    </div>
+                                    <div class="help-text">Quando abilitato, verrà creato automaticamente un backup dei clienti</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Frequenza Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="clientiBackupFrequency" name="clienti_backup_frequency_days" value="7" min="1" max="365">
+                                    <div class="help-text">Ogni quanti giorni eseguire il backup automatico dei clienti</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Conservazione Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="clientiBackupRetention" name="clienti_backup_retention_days" value="30" min="1" max="365">
+                                    <div class="help-text">Per quanti giorni conservare i backup dei clienti</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Percorso Backup Clienti</label>
+                                    <input type="text" class="form-control" id="clientiBackupPath" name="clienti_backup_path" value="Backup/Clienti" readonly>
+                                    <div class="help-text">I backup dei clienti verranno salvati nella cartella Backup/Clienti</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" name="submit_clienti" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Salva Configurazioni Clienti
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Clienti Statistics -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiche Clienti
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-primary" id="totalClients">-</h4>
+                                <small>Clienti Totali</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-success" id="activeClients">-</h4>
+                                <small>Clienti Attivi</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-info" id="lastClientiBackup">-</h4>
+                                <small>Ultimo Backup</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-warning" id="clientiBackupCount">-</h4>
+                                <small>Backup Disponibili</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- DDT Configuration Tab -->
+        <div class="tab-pane fade" id="ddt" role="tabpanel" aria-labelledby="ddt-tab">
+            <div class="alert alert-warning">
+                <i class="fas fa-file-alt me-2"></i>
+                <strong>Gestione Backup DDT:</strong> Configura le impostazioni di backup automatico e gestisci i backup dei Documenti di Trasporto.
+            </div>
+            
+            <!-- DDT Manual Operations -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-download"></i>
+                    Backup Manuale
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="chat-operation-section">
+                                <h5>Backup Immediato DDT</h5>
+                                <p>Crea un backup immediato di tutti i DDT (Documenti di Trasporto) e delle loro righe.</p>
+                                <button type="button" class="btn btn-info" onclick="backupDDTNow()">
+                                    <i class="fas fa-download me-2"></i>Backup DDT Ora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Automatic DDT Settings -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-clock"></i>
+                    Configurazione Automatica
+                </div>
+                <div class="section-content">
+                    <form method="post" id="ddtConfigForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Backup Automatico</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableDDTAutoBackup" name="enable_ddt_auto_backup" checked>
+                                        <label class="form-check-label" for="enableDDTAutoBackup">
+                                            Abilita backup automatico periodico dei DDT
+                                        </label>
+                                    </div>
+                                    <div class="help-text">Quando abilitato, verrà creato automaticamente un backup dei DDT</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Frequenza Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="ddtBackupFrequency" name="ddt_backup_frequency_days" value="7" min="1" max="365">
+                                    <div class="help-text">Ogni quanti giorni eseguire il backup automatico dei DDT</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Conservazione Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="ddtBackupRetention" name="ddt_backup_retention_days" value="30" min="1" max="365">
+                                    <div class="help-text">Per quanti giorni conservare i backup dei DDT</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Percorso Backup DDT</label>
+                                    <input type="text" class="form-control" id="ddtBackupPath" name="ddt_backup_path" value="Backup/DDT" readonly>
+                                    <div class="help-text">I backup dei DDT verranno salvati nella cartella Backup/DDT</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" name="submit_ddt" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Salva Configurazioni DDT
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- DDT Statistics -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiche DDT
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-primary" id="totalDDTs">-</h4>
+                                <small>DDT Totali</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-success" id="todayDDTs">-</h4>
+                                <small>DDT Oggi</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-info" id="lastDDTBackup">-</h4>
+                                <small>Ultimo Backup</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-warning" id="ddtBackupCount">-</h4>
+                                <small>Backup Disponibili</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fatture Configuration Tab -->
+        <div class="tab-pane fade" id="fatture" role="tabpanel" aria-labelledby="fatture-tab">
+            <div class="alert alert-success">
+                <i class="fas fa-file-invoice me-2"></i>
+                <strong>Gestione Backup Fatture:</strong> Configura le impostazioni di backup automatico e gestisci i backup delle fatture elettroniche.
+            </div>
+            
+            <!-- Fatture Manual Operations -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-download"></i>
+                    Backup Manuale
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="chat-operation-section">
+                                <h5>Backup Immediato Fatture</h5>
+                                <p>Crea un backup immediato di tutte le fatture elettroniche (file XML) presenti nel sistema.</p>
+                                <button type="button" class="btn btn-info" onclick="backupFattureNow()">
+                                    <i class="fas fa-download me-2"></i>Backup Fatture Ora
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Automatic Fatture Settings -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-clock"></i>
+                    Configurazione Automatica
+                </div>
+                <div class="section-content">
+                    <form method="post" id="fattureConfigForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Backup Automatico</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableFattureAutoBackup" name="enable_fatture_auto_backup" checked>
+                                        <label class="form-check-label" for="enableFattureAutoBackup">
+                                            Abilita backup automatico periodico delle fatture
+                                        </label>
+                                    </div>
+                                    <div class="help-text">Quando abilitato, verrà creato automaticamente un backup delle fatture</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Frequenza Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="fattureBackupFrequency" name="fatture_backup_frequency_days" value="7" min="1" max="365">
+                                    <div class="help-text">Ogni quanti giorni eseguire il backup automatico delle fatture</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Conservazione Backup (giorni)</label>
+                                    <input type="number" class="form-control" id="fattureBackupRetention" name="fatture_backup_retention_days" value="30" min="1" max="365">
+                                    <div class="help-text">Per quanti giorni conservare i backup delle fatture</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Percorso Backup Fatture</label>
+                                    <input type="text" class="form-control" id="fattureBackupPath" name="fatture_backup_path" value="Backup/Fatture" readonly>
+                                    <div class="help-text">I backup delle fatture verranno salvati nella cartella Backup/Fatture</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button type="submit" name="submit_fatture" value="1" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Salva Configurazioni Fatture
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Fatture Statistics -->
+            <div class="section-card">
+                <div class="section-header">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiche Fatture
+                </div>
+                <div class="section-content">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-primary" id="totalFatture">-</h4>
+                                <small>Fatture Totali</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-success" id="todayFatture">-</h4>
+                                <small>Fatture Oggi</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-info" id="lastFattureBackup">-</h4>
+                                <small>Ultimo Backup</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="chat-stats-row">
+                                <h4 class="text-warning" id="fattureBackupCount">-</h4>
+                                <small>Backup Disponibili</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Chat Operations -->
+<div class="modal fade" id="chatOperationModal" tabindex="-1" aria-labelledby="chatOperationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chatOperationModalLabel">Conferma Operazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="chatOperationMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" id="confirmChatOperation">Conferma</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Chat management functions
+function clearChatManual() {
+    document.getElementById('chatOperationMessage').textContent = 
+        'Sei sicuro di voler svuotare tutti i messaggi della chat? Verrà creato automaticamente un backup prima della cancellazione.';
+    document.getElementById('confirmChatOperation').onclick = function() {
+        performChatOperation('clear');
+    };
+    new bootstrap.Modal(document.getElementById('chatOperationModal')).show();
+}
+
+function backupChatNow() {
+    document.getElementById('chatOperationMessage').textContent = 
+        'Vuoi creare un backup immediato di tutti i messaggi della chat?';
+    document.getElementById('confirmChatOperation').onclick = function() {
+        performChatOperation('backup');
+    };
+    new bootstrap.Modal(document.getElementById('chatOperationModal')).show();
+}
+
+function performChatOperation(operation) {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('chatOperationModal'));
+    modal.hide();
+    
+    // Show loading
+    const originalContent = document.getElementById('confirmChatOperation').innerHTML;
+    document.getElementById('confirmChatOperation').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Elaborazione...';
+    
+    // Perform operation
+    fetch('/admin/configurazioni/chat-operation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            operation: operation
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Reload to show updated statistics
+        } else {
+            alert('Errore: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Errore durante l\'operazione: ' + error);
+    })
+    .finally(() => {
+        document.getElementById('confirmChatOperation').innerHTML = originalContent;
+    });
+}
+
+// Load chat statistics
+function loadChatStatistics() {
+    fetch('/admin/configurazioni/chat-stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('totalMessages').textContent = data.total_messages || '0';
+            document.getElementById('todayMessages').textContent = data.today_messages || '0';
+            document.getElementById('lastBackup').textContent = data.last_backup || 'Mai';
+            document.getElementById('backupCount').textContent = data.backup_count || '0';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading chat statistics:', error);
+    });
+    
+    // Load chat configuration values
+    loadChatConfiguration();
+}
+
+// Load chat configuration
+function loadChatConfiguration() {
+    fetch('/admin/configurazioni/chat-config')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('enableAutoCleanup').checked = data.enable_auto_cleanup || false;
+            document.getElementById('cleanupFrequency').value = data.cleanup_frequency || 7;
+            document.getElementById('enableAutoBackup').checked = data.enable_auto_backup !== undefined ? data.enable_auto_backup : true;
+            document.getElementById('backupRetention').value = data.backup_retention || 30;
+            document.getElementById('chatBackupPath').value = data.backup_path || 'Backup/Chat';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading chat configuration:', error);
+    });
+}
+
+// Load statistics on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadChatStatistics();
+});
+
+// Tab switching
+document.querySelectorAll('#configTabs button').forEach(button => {
+    button.addEventListener('click', function() {
+        // Update active tab
+        document.querySelectorAll('#configTabs button').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Update active content
+        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active', 'show'));
+        const target = document.querySelector(this.getAttribute('data-bs-target'));
+        if (target) {
+            target.classList.add('active', 'show');
+        }
+        
+        // Load chat stats when switching to chat tab
+        if (this.id === 'chat-tab') {
+            loadChatStatistics();
+        }
+        // Load clienti stats when switching to clienti tab
+        if (this.id === 'clienti-tab') {
+            loadClientiStatistics();
+        }
+        // Load DDT stats when switching to DDT tab
+        if (this.id === 'ddt-tab') {
+            loadDDTStatistics();
+        }
+        // Load fatture stats when switching to fatture tab
+        if (this.id === 'fatture-tab') {
+            loadFattureStatistics();
+        }
+    });
+});
+
+// ===== CLIENTI BACKUP FUNCTIONS =====
+
+function backupClientiNow() {
+    if (confirm('Vuoi creare un backup immediato di tutti i dati clienti?')) {
+        performBackupOperation('clienti', 'backup');
+    }
+}
+
+function loadClientiStatistics() {
+    fetch('/admin/configurazioni/clienti-stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('totalClients').textContent = data.total_clients || '0';
+            document.getElementById('activeClients').textContent = data.active_clients || '0';
+            document.getElementById('lastClientiBackup').textContent = data.last_backup || 'Mai';
+            document.getElementById('clientiBackupCount').textContent = data.backup_count || '0';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading clienti statistics:', error);
+    });
+    
+    // Load clienti configuration values
+    loadClientiConfiguration();
+}
+
+function loadClientiConfiguration() {
+    fetch('/admin/configurazioni/clienti-config')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('enableClientiAutoBackup').checked = data.enable_auto_backup !== undefined ? data.enable_auto_backup : true;
+            document.getElementById('clientiBackupFrequency').value = data.backup_frequency || 7;
+            document.getElementById('clientiBackupRetention').value = data.backup_retention || 30;
+            document.getElementById('clientiBackupPath').value = data.backup_path || 'Backup/Clienti';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading clienti configuration:', error);
+    });
+}
+
+// ===== DDT BACKUP FUNCTIONS =====
+
+function backupDDTNow() {
+    if (confirm('Vuoi creare un backup immediato di tutti i DDT?')) {
+        performBackupOperation('ddt', 'backup');
+    }
+}
+
+function loadDDTStatistics() {
+    fetch('/admin/configurazioni/ddt-stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('totalDDTs').textContent = data.total_ddts || '0';
+            document.getElementById('todayDDTs').textContent = data.today_ddts || '0';
+            document.getElementById('lastDDTBackup').textContent = data.last_backup || 'Mai';
+            document.getElementById('ddtBackupCount').textContent = data.backup_count || '0';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading DDT statistics:', error);
+    });
+    
+    // Load DDT configuration values
+    loadDDTConfiguration();
+}
+
+function loadDDTConfiguration() {
+    fetch('/admin/configurazioni/ddt-config')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('enableDDTAutoBackup').checked = data.enable_auto_backup !== undefined ? data.enable_auto_backup : true;
+            document.getElementById('ddtBackupFrequency').value = data.backup_frequency || 7;
+            document.getElementById('ddtBackupRetention').value = data.backup_retention || 30;
+            document.getElementById('ddtBackupPath').value = data.backup_path || 'Backup/DDT';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading DDT configuration:', error);
+    });
+}
+
+// ===== FATTURE BACKUP FUNCTIONS =====
+
+function backupFattureNow() {
+    if (confirm('Vuoi creare un backup immediato di tutte le fatture?')) {
+        performBackupOperation('fatture', 'backup');
+    }
+}
+
+function loadFattureStatistics() {
+    fetch('/admin/configurazioni/fatture-stats')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('totalFatture').textContent = data.total_fatture || '0';
+            document.getElementById('todayFatture').textContent = data.today_fatture || '0';
+            document.getElementById('lastFattureBackup').textContent = data.last_backup || 'Mai';
+            document.getElementById('fattureBackupCount').textContent = data.backup_count || '0';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading fatture statistics:', error);
+    });
+    
+    // Load fatture configuration values
+    loadFattureConfiguration();
+}
+
+function loadFattureConfiguration() {
+    fetch('/admin/configurazioni/fatture-config')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('enableFattureAutoBackup').checked = data.enable_auto_backup !== undefined ? data.enable_auto_backup : true;
+            document.getElementById('fattureBackupFrequency').value = data.backup_frequency || 7;
+            document.getElementById('fattureBackupRetention').value = data.backup_retention || 30;
+            document.getElementById('fattureBackupPath').value = data.backup_path || 'Backup/Fatture';
+        }
+    })
+    .catch(error => {
+        console.error('Error loading fatture configuration:', error);
+    });
+}
+
+// ===== GENERIC BACKUP OPERATION FUNCTION =====
+
+function performBackupOperation(type, operation) {
+    // Show loading indication
+    const button = event.target;
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Elaborazione...';
+    button.disabled = true;
+    
+    // Perform operation
+    fetch(`/admin/configurazioni/${type}-operation`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            operation: operation
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Successo: ' + data.message);
+            // Reload statistics based on type
+            if (type === 'clienti') {
+                loadClientiStatistics();
+            } else if (type === 'ddt') {
+                loadDDTStatistics();
+            } else if (type === 'fatture') {
+                loadFattureStatistics();
+            }
+        } else {
+            alert('Errore: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Errore durante l\'operazione: ' + error);
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+// ===== LOT MANAGEMENT FUNCTIONS =====
+
+function initializeLotManagement() {
+    const lotModeSelect = document.getElementById('lotModeSelect');
+    const timestampFormatGroup = document.getElementById('lotTimestampFormatGroup');
+    const lotPreview = document.getElementById('lotPreview');
+    
+    if (!lotModeSelect) return;
+    
+    function updateLotInterface() {
+        const selectedMode = lotModeSelect.value;
+        
+        // Nascondi/mostra il campo formato timestamp
+        if (selectedMode === 'timestamp') {
+            timestampFormatGroup.style.display = 'block';
+        } else {
+            timestampFormatGroup.style.display = 'none';
+        }
+        
+        // Aggiorna anteprima
+        updateLotPreview(selectedMode);
+    }
+    
+    function updateLotPreview(mode) {
+        const timestampFormat = document.getElementById('lot_timestamp_format').value;
+        const currentDate = new Date();
+        
+        let previewHTML = '';
+        
+        switch(mode) {
+            case 'disabled':
+                previewHTML = '<span class="text-muted"><i class="fas fa-times-circle me-2"></i>Gestione lotti disabilitata</span>';
+                break;
+                
+            case 'timestamp':
+                let exampleLot = '';
+                if (timestampFormat === 'ddmmyyyy') {
+                    const day = String(currentDate.getDate()).padStart(2, '0');
+                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const year = currentDate.getFullYear();
+                    exampleLot = `${day}${month}${year}`;
+                } else {
+                    const day = String(currentDate.getDate()).padStart(2, '0');
+                    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    const year = currentDate.getFullYear();
+                    exampleLot = `${year}${month}${day}`;
+                }
+                previewHTML = `
+                    <span class="text-success">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Lotto automatico da timestamp: <strong>LOTTO N: ${exampleLot}</strong>
+                    </span>
+                    <br><small class="text-muted">Basato sulla data di oggi (${currentDate.toLocaleDateString('it-IT')})</small>
+                `;
+                break;
+                
+            case 'textoLote':
+                previewHTML = `
+                    <span class="text-info">
+                        <i class="fas fa-text-width me-2"></i>
+                        Lotto da campo TextoLote: <strong>LOTTO: [Contenuto del campo]</strong>
+                    </span>
+                    <br><small class="text-muted">Utilizza il valore del campo TextoLote dalla linea del ticket</small>
+                `;
+                break;
+                
+            default:
+                previewHTML = '<small class="text-muted">Seleziona una modalità per vedere l\'anteprima del lotto</small>';
+        }
+        
+        lotPreview.innerHTML = previewHTML;
+    }
+    
+    // Event listeners
+    lotModeSelect.addEventListener('change', updateLotInterface);
+    
+    const timestampFormatSelect = document.getElementById('lot_timestamp_format');
+    if (timestampFormatSelect) {
+        timestampFormatSelect.addEventListener('change', function() {
+            if (lotModeSelect.value === 'timestamp') {
+                updateLotPreview('timestamp');
+            }
+        });
+    }
+    
+    // Inizializza l'interfaccia
+    updateLotInterface();
+}
+
+// Inizializza la gestione lotti quando il DOM è pronto
+document.addEventListener('DOMContentLoaded', function() {
+    initializeLotManagement();
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Fatture PDF - DBLogiX{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header con breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}">Ingredienti</a></li>
+                    <li class="breadcrumb-item active">Fatture PDF</li>
+                </ol>
+            </nav>
+
+            <!-- Titolo e azioni -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="fas fa-file-invoice text-primary me-2"></i>
+                    Gestione Fatture PDF
+                </h1>
+                <div>
+                    <a href="{{ url_for('ingredients.fatture_upload') }}" class="btn btn-success">
+                        <i class="fas fa-upload me-1"></i>
+                        Carica Fattura
+                    </a>
+                </div>
+            </div>
+
+            <!-- Informazioni sistema -->
+            <div class="alert alert-info">
+                <div class="row">
+                    <div class="col-md-8">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Sistema automatico di elaborazione fatture:</strong>
+                        Carica i tuoi PDF di fatture e il sistema estrarrà automaticamente ingredienti, fornitori e prezzi,
+                        aggiornando il database con le nuove associazioni.
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-folder me-1"></i>
+                            Cartella: UPLOADS/fatture/
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista fatture -->
+            {% if fatture %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-1"></i>
+                        Fatture Caricate ({{ fatture|length }})
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome File</th>
+                                    <th>Dimensione</th>
+                                    <th>Caricato</th>
+                                    <th>Modificato</th>
+                                    <th class="text-center">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fattura in fatture %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                                            <span class="fw-medium">{{ fattura.filename }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">
+                                            {{ "%.1f"|format(fattura.size / 1024) }} KB
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ fattura.created.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ fattura.modified.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('ingredients.fatture_detail', filename=fattura.filename) }}" 
+                                               class="btn btn-outline-primary" title="Visualizza Dettagli">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-success process-btn" 
+                                                    data-filename="{{ fattura.filename }}" title="Elabora Automaticamente">
+                                                <i class="fas fa-cogs"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger delete-btn" 
+                                                    data-filename="{{ fattura.filename }}" title="Elimina">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Stato vuoto -->
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-file-invoice fa-5x text-muted"></i>
+                </div>
+                <h4 class="text-muted mb-3">Nessuna fattura caricata</h4>
+                <p class="text-muted mb-4">
+                    Inizia caricando la tua prima fattura PDF per automatizzare la gestione degli ingredienti
+                </p>
+                <a href="{{ url_for('ingredients.fatture_upload') }}" class="btn btn-success btn-lg">
+                    <i class="fas fa-upload me-2"></i>
+                    Carica Prima Fattura
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal di conferma eliminazione -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Conferma Eliminazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sei sicuro di voler eliminare la fattura <strong id="deleteFileName"></strong>?</p>
+                <p class="text-warning"><small>Questa azione non può essere annullata.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>
+                        Elimina
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal di elaborazione -->
+<div class="modal fade" id="processModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Elaborazione Fattura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="processContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary me-2" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                        <span>Elaborazione in corso...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Gestione eliminazione fatture
+    $('.delete-btn').click(function() {
+        const filename = $(this).data('filename');
+        $('#deleteFileName').text(filename);
+        $('#deleteForm').attr('action', `/ingredients/fatture/delete/${filename}`);
+        $('#deleteModal').modal('show');
+    });
+
+    // Gestione elaborazione fatture
+    $('.process-btn').click(function() {
+        const filename = $(this).data('filename');
+        const button = $(this);
+        
+        // Disabilita il pulsante durante l'elaborazione
+        button.prop('disabled', true);
+        button.find('i').removeClass('fa-cogs').addClass('fa-spinner fa-spin');
+        
+        $('#processModal').modal('show');
+        
+        // Chiamata API per elaborazione
+        $.ajax({
+            url: '/ingredients/api/fatture/process',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({filename: filename}),
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    const matching = response.matching_results;
+                    $('#processContent').html(`
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-check-circle me-1"></i>Elaborazione Completata!</h6>
+                            <ul class="mb-0">
+                                <li><strong>Fornitore:</strong> ${response.supplier.nome}</li>
+                                <li><strong>Articoli processati:</strong> ${response.items_processed}</li>
+                                <li><strong>Ingredienti trovati:</strong> ${matching.matched}</li>
+                                <li><strong>Ingredienti creati:</strong> ${matching.created}</li>
+                                <li><strong>Associazioni aggiornate:</strong> ${matching.updated}</li>
+                                <li><strong>Articoli saltati:</strong> ${matching.skipped}</li>
+                            </ul>
+                        </div>
+                        ${matching.details.length > 0 ? `
+                            <div class="mt-3">
+                                <h6>Dettagli:</h6>
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Ingrediente</th>
+                                                <th>Prezzo</th>
+                                                <th>Azione</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${matching.details.map(detail => `
+                                                <tr>
+                                                    <td>${detail.ingrediente}</td>
+                                                    <td>€${detail.prezzo.toFixed(2)}</td>
+                                                    <td><span class="badge bg-${detail.action === 'created' ? 'success' : 'primary'}">${detail.action}</span></td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ` : ''}
+                    `);
+                    
+                    // Refresh della pagina dopo 3 secondi
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3000);
+                } else {
+                    $('#processContent').html(`
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-exclamation-triangle me-1"></i>Errori durante l'elaborazione:</h6>
+                            <ul class="mb-0">
+                                ${response.errors.map(error => `<li>${error}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr) {
+                const response = xhr.responseJSON || {error: 'Errore di connessione'};
+                $('#processContent').html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Errore: ${response.error}
+                    </div>
+                `);
+            },
+            complete: function() {
+                // Riabilita il pulsante
+                button.prop('disabled', false);
+                button.find('i').removeClass('fa-spinner fa-spin').addClass('fa-cogs');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

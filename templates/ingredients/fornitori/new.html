@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Nuovo Fornitore - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fornitori.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/fornitori.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.fornitori_list') }}" class="text-white">Fornitori</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Nuovo Fornitore</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-plus me-2"></i>Nuovo Fornitore
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">Aggiungi un nuovo fornitore al database</span>
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ingredients.fornitori_list') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Lista
+                    </a>
+                    <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-light action-btn">
+                        <i class="fas fa-home me-1"></i>Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+
+    <form method="POST" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row">
+            <div class="col-lg-8">
+                
+                <!-- Informazioni Base -->
+                <div class="form-section">
+                    <h5 class="form-section-title">
+                        <i class="fas fa-building me-2"></i>
+                        Informazioni Azienda
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="nome" class="form-label">
+                                Nome Fornitore <span class="required">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="nome" name="nome" 
+                                   required maxlength="100" placeholder="Es. Metro Cash & Carry">
+                            <div class="form-help">Il nome dell'azienda fornitrice</div>
+                            <div class="invalid-feedback">
+                                Inserisci il nome del fornitore
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="partita_iva" class="form-label">Partita IVA</label>
+                            <div class="input-group">
+                                <span class="input-group-icon">
+                                    <i class="fas fa-file-invoice"></i>
+                                </span>
+                                <input type="text" class="form-control" id="partita_iva" name="partita_iva" 
+                                       maxlength="16" placeholder="12345678901">
+                            </div>
+                            <div class="form-help">Partita IVA dell'azienda</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="codice_fiscale" class="form-label">Codice Fiscale</label>
+                            <div class="input-group">
+                                <span class="input-group-icon">
+                                    <i class="fas fa-id-card"></i>
+                                </span>
+                                <input type="text" class="form-control" id="codice_fiscale" name="codice_fiscale" 
+                                       maxlength="16" placeholder="RSSMRA80A01H501Z">
+                            </div>
+                            <div class="form-help">Codice fiscale (persone fisiche)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contatti -->
+                <div class="form-section">
+                    <h5 class="form-section-title">
+                        <i class="fas fa-address-book me-2"></i>
+                        Informazioni di Contatto
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       maxlength="100" placeholder="ordini@fornitore.it">
+                            </div>
+                            <div class="form-help">Email principale per ordini e comunicazioni</div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="telefono" class="form-label">Telefono</label>
+                            <div class="input-group">
+                                <span class="input-group-icon">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                <input type="tel" class="form-control" id="telefono" name="telefono" 
+                                       maxlength="20" placeholder="+39 02 12345678">
+                            </div>
+                            <div class="form-help">Numero di telefono principale</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indirizzo -->
+                <div class="form-section">
+                    <h5 class="form-section-title">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Indirizzo
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="indirizzo" class="form-label">Via/Piazza</label>
+                            <input type="text" class="form-control" id="indirizzo" name="indirizzo" 
+                                   maxlength="200" placeholder="Via Roma, 123">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="cap" class="form-label">CAP</label>
+                            <input type="text" class="form-control" id="cap" name="cap" 
+                                   maxlength="10" placeholder="20100" pattern="[0-9]{5}">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="citta" class="form-label">Città</label>
+                            <input type="text" class="form-control" id="citta" name="citta" 
+                                   maxlength="100" placeholder="Milano">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="provincia" class="form-label">Provincia</label>
+                            <input type="text" class="form-control" id="provincia" name="provincia" 
+                                   maxlength="50" placeholder="MI" style="text-transform: uppercase;">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="paese" class="form-label">Paese</label>
+                            <select class="form-select" id="paese" name="paese">
+                                <option value="Italia" selected>Italia</option>
+                                <option value="Francia">Francia</option>
+                                <option value="Germania">Germania</option>
+                                <option value="Spagna">Spagna</option>
+                                <option value="Austria">Austria</option>
+                                <option value="Svizzera">Svizzera</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informazioni Bancarie -->
+                <div class="form-section">
+                    <h5 class="form-section-title">
+                        <i class="fas fa-university me-2"></i>
+                        Informazioni Bancarie <small class="text-muted">(opzionale)</small>
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="iban" class="form-label">IBAN</label>
+                            <div class="input-group">
+                                <span class="input-group-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </span>
+                                <input type="text" class="form-control" id="iban" name="iban" 
+                                       maxlength="34" placeholder="IT60 X054 2811 1010 0000 0123 456"
+                                       pattern="[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}"
+                                       style="text-transform: uppercase;">
+                            </div>
+                            <div class="form-help">IBAN per pagamenti (formato: IT60 X054 2811 1010 0000 0123 456)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="form-section">
+                    <h5 class="form-section-title">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Note Aggiuntive
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="note" class="form-label">Note</label>
+                            <textarea class="form-control" id="note" name="note" 
+                                      rows="4" placeholder="Note aggiuntive sul fornitore..."></textarea>
+                            <div class="form-help">Informazioni aggiuntive, condizioni particolari, orari, ecc.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="col-lg-4">
+                
+                <!-- Actions -->
+                <div class="form-section sticky-top" style="top: 1rem;">
+                    <h5 class="form-section-title">
+                        <i class="fas fa-cog me-2"></i>
+                        Azioni
+                    </h5>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg btn-fornitori">
+                            <i class="fas fa-save"></i> Crea Fornitore
+                        </button>
+                        
+                        <a href="{{ url_for('ingredients.fornitori_list') }}" class="btn btn-outline-secondary btn-fornitori">
+                            <i class="fas fa-times"></i> Annulla
+                        </a>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Suggerimento</h6>
+                        <p class="mb-0 small">
+                            Dopo aver creato il fornitore, potrai associarlo agli ingredienti 
+                            con prezzi e condizioni di fornitura specifiche.
+                        </p>
+                    </div>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-shield-alt"></i> Privacy
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted">
+                                I dati inseriti sono utilizzati esclusivamente per la gestione 
+                                aziendale e non vengono condivisi con terzi.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

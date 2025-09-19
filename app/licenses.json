@@ -1,0 +1,15 @@
+{
+  "valid_keys": [
+    {
+      "key": "DBLogiX-ADMIN-2024",
+      "description": "Chiave amministratore predefinita",
+      "created_at": "2025-07-04T07:33:47.438024",
+      "expires_at": null,
+      "modules_allowed": [
+        "all"
+      ]
+    }
+  ],
+  "last_updated": "2025-07-04T07:33:47.438024",
+  "version": "1.0"
+}

@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Gestione Ingredienti - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ingredients.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header shadow-sm mb-4">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse.index') }}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white-50" aria-current="page">Ingredienti</li>
+            </ol>
+        </nav>
+        <div class="row align-items-center mt-3">
+            <div class="col-md-8">
+                <h1 class="page-title mb-0">
+                    <i class="fas fa-leaf me-2"></i>Gestione Ingredienti
+                </h1>
+                <p class="page-subtitle mt-2 mb-0">
+                    <span class="text-white-50">{{ ingredienti.total if ingredienti else 0 }} ingredienti nel database</span>
+                    {% if search %}
+                    <span class="status-badge info ms-2">
+                        <i class="fas fa-search me-1"></i>Ricerca attiva
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-grid d-md-block gap-2">
+                    <a href="{{ url_for('ingredients.new') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-plus me-1"></i>Nuovo Ingrediente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <!-- Search Section -->
+    <div class="filter-section">
+        <form method="GET" class="row g-3">
+            <div class="col-lg-8 col-md-8">
+                <label for="search_input" class="form-label">Cerca ingrediente</label>
+                <input type="text" name="search" id="search_input" class="form-control" 
+                       value="{{ search or '' }}" 
+                       placeholder="Cerca per nome o descrizione ingrediente...">
+            </div>
+            
+            <div class="col-lg-2 col-md-2">
+                <label for="sort_filter" class="form-label">Ordinamento</label>
+                <select name="sort" id="sort_filter" class="form-select">
+                    <option value="nome" {% if sort_by == 'nome' %}selected{% endif %}>Nome A-Z</option>
+                    <option value="categoria" {% if sort_by == 'categoria' %}selected{% endif %}>Categoria</option>
+                    <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Più recenti</option>
+                </select>
+            </div>
+            
+            <div class="col-lg-2 col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Cerca
+                </button>
+                <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- Ingredient List -->
+    <div class="fattura-card card shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-leaf me-2" style="color: #2c3e50;"></i>Elenco Ingredienti 
+                <span class="badge ms-2" style="background-color: #34495e; color: white;">{{ ingredienti.total if ingredienti else 0 }} totali</span></h5>
+            {% if ingredienti and ingredienti.items %}
+            <small class="text-muted">Pagina {{ ingredienti.page }} di {{ ingredienti.pages }}</small>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if error is defined and error %}
+            <div class="alert alert-danger m-3">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Si è verificato un errore</h5>
+                <p>{{ error }}</p>
+                <p>Si prega di riprovare o contattare l'amministratore del sistema.</p>
+            </div>
+            {% endif %}
+            
+            {% if ingredienti is none %}
+            <div class="alert alert-warning m-3">
+                <h5><i class="fas fa-exclamation-circle me-2"></i>Ricerca non disponibile</h5>
+                <p>Si è verificato un problema durante la ricerca. Visualizzazione degli ingredienti non disponibile.</p>
+                <p>Per riprovare, <a href="{{ url_for('ingredients.index') }}">clicca qui</a> per tornare alla lista completa.</p>
+            </div>
+            {% endif %}
+            
+            {% if ingredienti and ingredienti.items|length == 0 and search %}
+            <div class="alert alert-info m-3">
+                <h5><i class="fas fa-info-circle me-2"></i>Nessun risultato trovato</h5>
+                <p>La ricerca per "{{ search }}" non ha prodotto risultati. Prova con un termine diverso o consulta la lista completa.</p>
+                <a href="{{ url_for('ingredients.index') }}" class="btn btn-primary mt-2">Mostra tutti gli ingredienti</a>
+            </div>
+            {% endif %}
+            
+            {% if ingredienti and ingredienti.items|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="ingredientsTable">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-leaf me-1"></i>Nome</th>
+                            <th><i class="fas fa-tags me-1"></i>Categoria</th>
+                            <th><i class="fas fa-balance-scale me-1"></i>Unità Misura</th>
+                            <th><i class="fas fa-truck me-1"></i>Fornitori</th>
+                            <th><i class="fas fa-euro-sign me-1"></i>Prezzo Migliore</th>
+                            <th><i class="fas fa-exclamation-triangle me-1"></i>Allergeni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ingrediente in ingredienti.items %}
+                        <tr class="table-row clickable-row" data-href="{{ url_for('ingredients.view', id=ingrediente.id) }}">
+                            <td data-label="Nome">
+                                <strong>{{ ingrediente.nome }}</strong>
+                                {% if ingrediente.descrizione %}
+                                <br><small class="text-muted">{{ ingrediente.descrizione[:80] }}{% if ingrediente.descrizione|length > 80 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td data-label="Categoria">
+                                {% if ingrediente.categoria %}
+                                <span class="badge-soft badge-soft-primary">{{ ingrediente.categoria }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Unità Misura">
+                                <span class="badge" style="background-color: #34495e; color: white;">{{ ingrediente.unita_misura }}</span>
+                            </td>
+                            <td data-label="Fornitori">
+                                {% if ingrediente.numero_fornitori > 0 %}
+                                <span class="badge-soft badge-soft-success">{{ ingrediente.numero_fornitori }}</span>
+                                {% else %}
+                                <span class="badge-soft badge-soft-secondary">0</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Prezzo Migliore">
+                                {% if ingrediente.miglior_prezzo > 0 %}
+                                <span class="badge-soft badge-soft-success">€{{ "%.2f"|format(ingrediente.miglior_prezzo) }}</span>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Allergeni">
+                                {% if ingrediente.allergeni %}
+                                <span class="badge-soft badge-soft-warning" title="{{ ingrediente.allergeni }}">
+                                    <i class="fas fa-exclamation-triangle"></i> Si
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if ingredienti and ingredienti.pages > 1 %}
+    <div class="mt-4">
+        <nav aria-label="Page navigation" class="d-flex justify-content-center">
+            <ul class="pagination pagination-sm mb-0">
+                {% if ingredienti.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('ingredients.index', page=ingredienti.prev_num, search=search, categoria=categoria, sort=sort_by) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&laquo;</span>
+                </li>
+                {% endif %}
+
+                {% for page_num in ingredienti.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != ingredienti.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('ingredients.index', page=page_num, search=search, categoria=categoria, sort=sort_by) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if ingredienti.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('ingredients.index', page=ingredienti.next_num, search=search, categoria=categoria, sort=sort_by) }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">&raquo;</span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% if not ingredienti or not ingredienti.items %}
+    <!-- No Results -->
+    <div class="search-results-section">
+        {% if search or categoria %}
+        <i class="fas fa-search search-results-icon"></i>
+        <h5 class="search-results-title">Nessun ingrediente trovato</h5>
+        <p class="search-results-subtitle">
+            Prova a modificare i filtri di ricerca o visualizza tutti gli ingredienti
+        </p>
+        <a href="{{ url_for('ingredients.index') }}" class="btn btn-primary">
+            <i class="fas fa-list me-2"></i>Mostra tutti gli ingredienti
+        </a>
+        {% else %}
+        <i class="fas fa-leaf search-results-icon"></i>
+        <h5 class="search-results-title">Nessun ingrediente nel sistema</h5>
+        <p class="search-results-subtitle">
+            Non ci sono ingredienti nel database. Clicca su "Nuovo Ingrediente" per aggiungerne uno.
+        </p>
+        <a href="{{ url_for('ingredients.new') }}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>Crea il primo ingrediente
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/ingredients.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Make rows clickable
+    const clickableRows = document.querySelectorAll('.clickable-row');
+    clickableRows.forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function() {
+            const href = this.dataset.href;
+            if (href) {
+                window.location.href = href;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

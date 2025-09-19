@@ -1,0 +1,2014 @@
+{% extends "base.html" %}
+
+{% block title %}Seleziona Prodotti per DDT{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-dark: #2c3e50;
+        --secondary-dark: #34495e;
+        --accent-blue: #3498db;
+        --success-green: #27ae60;
+        --warning-orange: #f39c12;
+        --light-gray: #ecf0f1;
+        --border-light: #e9ecef;
+        --white: #ffffff;
+    }
+    
+    /* RIMOZIONE COMPLETA ANIMAZIONI - Caricamento istantaneo */
+    body {
+        background-color: #f8f9fa;
+    }
+    
+    .page-container {
+        opacity: 1; /* Rimuovo l'animazione di fade-in */
+        /* transition: opacity 0.5s ease-in-out; - RIMOSSA */
+    }
+    
+    .page-container.loaded {
+        opacity: 1;
+    }
+    
+    .client-info-compact {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-dark) 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 20px rgba(44, 62, 80, 0.15);
+    }
+    
+    .client-name {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .client-details {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .client-detail-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .products-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 2px 15px rgba(44, 62, 80, 0.08);
+        margin-bottom: 100px;
+    }
+    
+    .products-header {
+        background: linear-gradient(135deg, var(--primary-dark), var(--secondary-dark));
+        color: white;
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 15px 15px 0 0;
+    }
+    
+    .products-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .products-list {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .product-item {
+        border-bottom: 1px solid var(--border-light);
+        cursor: pointer;
+        /* transition: all 0.3s ease; - RIMOSSA */
+        position: relative;
+    }
+    
+    .product-item:last-child {
+        border-bottom: none;
+    }
+    
+    .product-item:hover {
+        background: #f8f9fa;
+        /* transform: translateX(5px); - RIMOSSA */
+        /* box-shadow: 0 2px 10px rgba(0,0,0,0.1); - RIMOSSA */
+    }
+    
+    .product-item.selected {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid var(--success-green);
+    }
+    
+    .product-content {
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .product-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .product-checkbox {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--success-green);
+        pointer-events: none; /* Disabilito il click diretto sulla checkbox */
+    }
+    
+    .product-details {
+        flex: 1;
+    }
+    
+    .product-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-dark);
+        margin-bottom: 5px;
+    }
+    
+    .product-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .product-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .product-stats {
+        text-align: right;
+        color: var(--primary-dark);
+    }
+    
+    .tickets-count {
+        font-weight: 600;
+        color: var(--accent-blue);
+    }
+    
+    .total-weight {
+        font-size: 0.9rem;
+        color: var(--success-green);
+    }
+    
+    .total-value {
+        font-size: 0.9rem;
+        color: var(--warning-orange);
+    }
+    
+    /* Rimuovo il bottone "Vedi Ticket" - ora non necessario */
+    .view-tickets-btn {
+        display: none;
+    }
+    
+    /* Indicatore visivo per riga cliccabile - SENZA ANIMAZIONI */
+    .product-item::after {
+        content: "Clicca per vedere i ticket";
+        position: absolute;
+        right: 25px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.8rem;
+        color: var(--accent-blue);
+        opacity: 0;
+        /* transition: opacity 0.3s ease; - RIMOSSA */
+        pointer-events: none;
+    }
+    
+    .product-item:hover::after {
+        opacity: 0.7;
+    }
+    
+    /* SEZIONE STICKY COMPLETAMENTE RIFATTA - Bianca, stretta e centrata */
+    .sticky-selection-bar {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: white;
+        color: #333;
+        padding: 12px 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 1000;
+        border: 1px solid #e9ecef;
+        border-radius: 25px;
+        max-width: 600px;
+        width: auto;
+        min-width: 400px;
+    }
+    
+    .selection-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+    
+    .selection-stats {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .selection-stat {
+        text-align: center;
+    }
+    
+    .stat-number {
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1;
+        margin-bottom: 2px;
+        color: #333;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: uppercase;
+    }
+    
+    .selection-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-action {
+        padding: 6px 14px;
+        border-radius: 15px;
+        font-weight: 500;
+        font-size: 0.8rem;
+        /* transition: all 0.3s ease; - RIMOSSA */
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        text-decoration: none;
+    }
+    
+    .btn-action:hover {
+        /* transform: translateY(-2px); - RIMOSSA */
+        /* box-shadow: 0 5px 15px rgba(0,0,0,0.3); - RIMOSSA */
+    }
+    
+    .btn-cancel {
+        background: #f8f9fa;
+        color: #666;
+        border: 1px solid #dee2e6;
+    }
+    
+    .btn-cancel:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+    
+    .btn-preview {
+        background: var(--success-green);
+        color: white;
+    }
+    
+    .btn-preview:hover {
+        background: #219a52;
+        color: white;
+    }
+    
+    .btn-preview:disabled {
+        background: #6c757d;
+        color: #adb5bd;
+        cursor: not-allowed;
+    }
+    
+    /* Modal styles con filtri avanzati - SENZA ANIMAZIONI */
+    .modal-header {
+        background: var(--primary-dark);
+        color: white;
+    }
+    
+    .modal-header .btn-close {
+        filter: invert(1);
+    }
+    
+    /* Sezione filtri nel modale */
+    .modal-filters {
+        background: #f8f9fa;
+        padding: 15px;
+        border-bottom: 1px solid var(--border-light);
+        border-radius: 0;
+    }
+    
+    .filters-row {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .filter-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--primary-dark);
+        text-transform: uppercase;
+    }
+    
+    .filter-control {
+        padding: 6px 12px;
+        border: 1px solid var(--border-light);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        background: white;
+    }
+    
+    .filter-control:focus {
+        border-color: var(--accent-blue);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+    
+    .tickets-list-modal {
+        background: white;
+        border-radius: 0 0 12px 12px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .tickets-scroll-container {
+        max-height: 60vh;
+        overflow-y: auto;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .tickets-scroll-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .tickets-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .tickets-scroll-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+    
+    .tickets-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    #modalTicketsGrid {
+        min-height: 200px;
+    }
+    
+    .ticket-list-item {
+        border-bottom: 1px solid var(--border-light);
+        padding: 12px 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: white;
+        opacity: 1;
+    }
+    
+    .ticket-list-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* Stato nascosto per filtri */
+    .ticket-list-item.filtered-hidden {
+        display: none;
+    }
+    
+    .ticket-list-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .ticket-list-item.selected {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid var(--success-green);
+    }
+    
+    .ticket-list-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .ticket-checkbox-modal {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--success-green);
+        margin: 0;
+    }
+    
+    .ticket-list-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+    }
+    
+    .ticket-id-modal {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        min-width: 100px;
+    }
+    
+    .ticket-date {
+        font-size: 0.9rem;
+        color: #6c757d;
+        min-width: 120px;
+    }
+    
+    .ticket-weight {
+        font-size: 0.9rem;
+        color: var(--accent-blue);
+        font-weight: 600;
+        min-width: 90px;
+        text-align: center;
+    }
+    
+    .ticket-value {
+        font-size: 0.9rem;
+        color: var(--warning-orange);
+        font-weight: 600;
+        min-width: 90px;
+        text-align: center;
+    }
+    
+    .ticket-code {
+        font-size: 0.9rem;
+        color: #495057;
+        font-family: monospace;
+        font-weight: 500;
+        min-width: 140px;
+        text-align: center;
+    }
+    
+    .ticket-list-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    
+    .ticket-expiry {
+        font-size: 0.8rem;
+        color: #6c757d;
+        min-width: 100px;
+        text-align: center;
+    }
+    
+    .ticket-expiry.warning {
+        color: var(--warning-orange);
+        font-weight: 600;
+    }
+    
+    .ticket-list-header {
+        background: #f8f9fa;
+        border-bottom: 2px solid var(--border-light);
+        padding: 10px 20px;
+        font-weight: 600;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .ticket-list-header-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .ticket-list-header-left .header-checkbox {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .ticket-list-header-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    
+    .ticket-list-header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    
+    .ticket-status {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        text-align: center;
+        min-width: 60px;
+    }
+    
+    .ticket-status.normal {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .ticket-status.warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .ticket-status.danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    /* Miglioramenti filtri */
+    .modal-filters {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 15px 20px;
+    }
+    
+    .filter-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--primary-dark);
+        margin-bottom: 4px;
+        display: block;
+    }
+    
+    .no-products-message {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .no-products-message i {
+        font-size: 4rem;
+        opacity: 0.3;
+        margin-bottom: 20px;
+    }
+    
+    /* Responsive per sidebar mobile */
+    @media (max-width: 768px) {
+        .sticky-selection-bar {
+            left: 10px;
+            right: 10px;
+            transform: none;
+            min-width: unset;
+            max-width: unset;
+            width: calc(100% - 20px);
+        }
+        
+        .selection-content {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+    
+    /* RIMOZIONE STATI DI CARICAMENTO CON ANIMAZIONI */
+    .loading {
+        display: none; /* Nascondo completamente gli stati di loading */
+    }
+    
+    .fade-in {
+        /* animation: fadeIn 0.5s ease-in; - RIMOSSA */
+        opacity: 1; /* Sempre visibile immediatamente */
+    }
+    
+    /* Rimuovo completamente le keyframes */
+    /* @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    } - RIMOSSA */
+    
+    .filtered-count {
+        background: var(--accent-blue);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        margin-left: 8px;
+    }
+    
+    .clear-filters-btn {
+        background: none;
+        border: 1px solid var(--border-light);
+        color: var(--secondary-dark);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        cursor: pointer;
+    }
+    
+    .clear-filters-btn:hover {
+        background: var(--light-gray);
+    }
+    
+    /* Stili per la barra di ricerca prodotti */
+    .products-search-bar {
+        background: #f8f9fa;
+        border-bottom: 1px solid var(--border-light);
+        padding: 15px 25px;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+    
+    .search-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        max-width: 100%;
+    }
+    
+    .search-input-group {
+        position: relative;
+        flex: 1;
+        max-width: 400px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 12px;
+        color: #6c757d;
+        z-index: 2;
+        pointer-events: none;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 10px 45px 10px 35px;
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        font-size: 0.95rem;
+        background: white;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+    
+    .search-input:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        background: #fff;
+    }
+    
+    .search-input::placeholder {
+        color: #adb5bd;
+        font-style: italic;
+    }
+    
+    .clear-search-btn {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: #6c757d;
+        font-size: 0.9rem;
+        padding: 5px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 2;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .clear-search-btn:hover {
+        background: #e9ecef;
+        color: #495057;
+    }
+    
+    .search-results-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .results-count {
+        font-size: 0.9rem;
+        color: var(--primary-dark);
+        font-weight: 600;
+        padding: 6px 12px;
+        background: white;
+        border: 1px solid var(--border-light);
+        border-radius: 15px;
+        min-width: 120px;
+        text-align: center;
+    }
+    
+    .no-results-message {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c757d;
+        background: white;
+        border-radius: 0 0 15px 15px;
+    }
+    
+    .no-results-message i {
+        font-size: 3rem;
+        opacity: 0.3;
+        margin-bottom: 15px;
+        color: var(--accent-blue);
+    }
+    
+    .no-results-message h6 {
+        margin-bottom: 8px;
+        color: var(--primary-dark);
+    }
+    
+    .no-results-message p {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+    
+    /* Animazione per nascondere/mostrare prodotti */
+    .product-item.search-hidden {
+        display: none;
+    }
+    
+    .search-highlight {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border-left: 4px solid var(--warning-orange);
+    }
+    
+    /* Responsive per la barra di ricerca */
+    @media (max-width: 768px) {
+        .search-container {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .search-input-group {
+            max-width: 100%;
+        }
+        
+        .search-results-info {
+            align-self: stretch;
+            justify-content: center;
+        }
+        
+        .results-count {
+            flex: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="page-header shadow-sm mb-4">
+        <div class="container-fluid">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('ddt.index') }}" class="text-white">DDT</a></li>
+                    <li class="breadcrumb-item active text-white-50" aria-current="page">Seleziona Prodotti</li>
+                </ol>
+            </nav>
+            <div class="row align-items-center mt-3">
+                <div class="col-md-8">
+                    <h1 class="page-title mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>Crea Nuovo Documento
+                    </h1>
+                    <p class="page-subtitle mt-2 mb-0">
+                        <span class="text-white-50">Fase 2: Selezione Prodotti per Cliente {{ cliente.Nombre }}</span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <a href="{{ url_for('ddt.new') }}" class="btn btn-light action-btn">
+                        <i class="fas fa-arrow-left me-1"></i>Cambia Cliente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Client Info Compact -->
+        <div class="client-info-compact">
+            <div class="client-name">
+                <i class="fas fa-user-circle me-2"></i>{{ cliente.Nombre }}
+            </div>
+            <div class="client-details">
+                <div class="client-detail-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>{{ cliente.Direccion or 'Indirizzo non disponibile' }}</span>
+                </div>
+                {% if cliente.DNI %}
+                <div class="client-detail-item">
+                    <i class="fas fa-id-card"></i>
+                    <span>P.IVA/CF: {{ cliente.DNI }}</span>
+                </div>
+                {% endif %}
+                {% if cliente.Telefono1 %}
+                <div class="client-detail-item">
+                    <i class="fas fa-phone"></i>
+                    <span>{{ cliente.Telefono1 }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Listino Info Banner -->
+        {% if listino_info %}
+        <div class="alert alert-info border-0 shadow-sm" style="border-radius: 12px; margin-bottom: 25px;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-tags text-info me-3" style="font-size: 1.2rem;"></i>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1 text-info">
+                        <i class="fas fa-euro-sign me-1"></i>Prezzi di Listino Applicati
+                    </h6>
+                    <p class="mb-0 small">
+                        <strong>{{ listino_info.nome }}</strong>
+                        {% if listino_info.descrizione %}
+                        - {{ listino_info.descrizione }}
+                        {% endif %}
+                        <br>
+                        <span class="text-muted">I prezzi mostrati sono quelli specifici del listino dedicato a questo cliente.</span>
+                    </p>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">ID: {{ listino_info.id }}</small>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-light border-0 shadow-sm" style="border-radius: 12px; margin-bottom: 25px;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-info-circle text-secondary me-3" style="font-size: 1.2rem;"></i>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1 text-secondary">
+                        <i class="fas fa-euro-sign me-1"></i>Prezzi Standard
+                    </h6>
+                    <p class="mb-0 small">
+                        <span class="text-muted">Questo cliente utilizza i prezzi standard. Per applicare prezzi personalizzati, associare un listino dalla sezione <a href="{{ url_for('listini.index') }}" class="text-decoration-none">Listini Prezzi</a>.</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Products Container -->
+        <div class="products-container">
+            <div class="products-header">
+                <h2 class="products-title">
+                    <i class="fas fa-boxes"></i>
+                    Seleziona Prodotti
+                </h2>
+                <span class="badge bg-light text-dark fs-6">{{ products|length }} prodotti disponibili</span>
+            </div>
+            
+            <!-- Barra di ricerca prodotti -->
+            <div class="products-search-bar">
+                <div class="search-container">
+                    <div class="search-input-group">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               id="productSearchInput" 
+                               class="search-input" 
+                               placeholder="Cerca prodotti per nome...">
+                        <button type="button" 
+                                id="clearSearchBtn" 
+                                class="clear-search-btn" 
+                                title="Cancella ricerca"
+                                style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="search-results-info">
+                        <span id="searchResultsCount" class="results-count">{{ products|length }} prodotti</span>
+                    </div>
+                </div>
+            </div>
+            
+            {% if products %}
+            <div class="products-list">
+                {% for product in products %}
+                <div class="product-item" data-product-id="{{ product.id_articulo }}" data-product-name="{{ product.descripcion }}">
+                    <div class="product-content">
+                        <div class="product-info">
+                            <input type="checkbox" class="product-checkbox" data-product-id="{{ product.id_articulo }}">
+                            <div class="product-details">
+                                <div class="product-name">{{ product.descripcion }}</div>
+                                <div class="product-meta">
+                                    <span><i class="fas fa-tag me-1"></i>ID: {{ product.id_articulo }}</span>
+                                    <span>
+                                        <i class="fas fa-euro-sign me-1"></i>
+                                        €{{ "%.2f"|format(product.precio) }}/{{ 'PZ' if product.comportamiento == 0 else 'KG' }}
+                                        {% if listino_info %}
+                                        <small class="text-success ms-1">
+                                            <i class="fas fa-check-circle" title="Prezzo di listino applicato"></i>
+                                        </small>
+                                        {% else %}
+                                        <small class="text-muted ms-1">
+                                            <i class="fas fa-info-circle" title="Prezzo standard"></i>
+                                        </small>
+                                        {% endif %}
+                                    </span>
+                                    <span class="{{ 'text-warning' if product.comportamiento == 0 else 'text-info' }}">
+                                        <i class="fas fa-{{ 'sort-numeric-up' if product.comportamiento == 0 else 'weight' }} me-1"></i>
+                                        {{ 'A Pezzi' if product.comportamiento == 0 else 'A Peso' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="product-actions">
+                            <div class="product-stats">
+                                <div class="tickets-count">{{ product.tickets|length }} ticket</div>
+                                <div class="total-weight">{{ "%.3f"|format(product.total_weight) }} {{ 'PZ' if product.comportamiento == 0 else 'KG' }}</div>
+                                <div class="total-value">€{{ "%.2f"|format(product.total_value) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-products-message">
+                <i class="fas fa-box-open"></i>
+                <h5>Nessun prodotto disponibile</h5>
+                <p>Non ci sono ticket non elaborati per questo cliente.</p>
+                <small>Tutti i ticket potrebbero essere già stati processati o non ce ne sono nel sistema.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sticky Selection Bar -->
+    <div class="sticky-selection-bar">
+        <div class="selection-content">
+            <div class="selection-stats">
+                <div class="selection-stat">
+                    <div class="stat-number" id="selectionProducts">0</div>
+                    <div class="stat-label">Prodotti</div>
+                </div>
+                <div class="selection-stat">
+                    <div class="stat-number" id="selectionTickets">0</div>
+                    <div class="stat-label">Ticket</div>
+                </div>
+                <div class="selection-stat">
+                    <div class="stat-number" id="selectionWeight">0.000</div>
+                    <div class="stat-label">Peso Tot.</div>
+                </div>
+                <div class="selection-stat">
+                    <div class="stat-number" id="selectionValue">€0.00</div>
+                    <div class="stat-label">Valore Tot.</div>
+                </div>
+            </div>
+            <div class="selection-actions">
+                <a href="{{ url_for('ddt.new') }}" class="btn-action btn-cancel">
+                    <i class="fas fa-times"></i>Annulla
+                </a>
+                <button type="button" class="btn-action btn-preview" id="createDDTBtn" disabled>
+                    <i class="fas fa-eye"></i>Anteprima DDT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal per visualizzazione ticket di un prodotto -->
+    <div class="modal fade" id="ticketsModal" tabindex="-1" aria-labelledby="ticketsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen-lg-down" style="max-width: 95%; width: 1400px;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ticketsModalLabel">
+                        <i class="fas fa-ticket-alt me-2"></i>
+                        Ticket per: <span id="modalProductName"></span>
+                        <span class="filtered-count" id="filteredCount" style="display: none;">0 su 0</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <!-- Sezione Filtri Avanzati -->
+                <div class="modal-filters">
+                    <div class="row g-3">
+                        <!-- Prima riga filtri -->
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label class="filter-label"><i class="fas fa-sort me-1"></i>Ordinamento</label>
+                                <select class="form-select form-select-sm" id="sortBy">
+                                    <option value="date_desc">📅 Data (più recente)</option>
+                                    <option value="date_asc">📅 Data (più vecchio)</option>
+                                    <option value="weight_desc">⚖️ Peso (maggiore)</option>
+                                    <option value="weight_asc">⚖️ Peso (minore)</option>
+                                    <option value="value_desc">💰 Valore (maggiore)</option>
+                                    <option value="value_asc">💰 Valore (minore)</option>
+                                    <option value="expiry_asc">⏰ Scadenza (prima)</option>
+                                    <option value="ticket_number_desc">🎫 Numero Ticket (DESC)</option>
+                                    <option value="ticket_number_asc">🎫 Numero Ticket (ASC)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="filter-group">
+                                <label class="filter-label"><i class="fas fa-calendar-alt me-1"></i>Periodo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">Da</span>
+                                    <input type="date" class="form-control" id="dateFrom">
+                                    <span class="input-group-text">A</span>
+                                    <input type="date" class="form-control" id="dateTo">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label class="filter-label"><i class="fas fa-weight me-1"></i>Range Peso</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" id="weightMin" step="0.001" placeholder="Min">
+                                    <span class="input-group-text">-</span>
+                                    <input type="number" class="form-control" id="weightMax" step="0.001" placeholder="Max">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <div class="filter-group">
+                                <label class="filter-label"><i class="fas fa-clock me-1"></i>Scadenza</label>
+                                <select class="form-select form-select-sm" id="expiryFilter">
+                                    <option value="all">🔄 Tutti</option>
+                                    <option value="with_expiry">📋 Con scadenza</option>
+                                    <option value="without_expiry">🚫 Senza scadenza</option>
+                                    <option value="expiring_soon">⚠️ In scadenza (7gg)</option>
+                                    <option value="expired">💥 Scaduti</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seconda riga con filtri rapidi e statistiche -->
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-4">
+                            <div class="filter-group">
+                                <label class="filter-label"><i class="fas fa-search me-1"></i>Ricerca Veloce</label>
+                                <input type="text" class="form-control form-control-sm" id="quickSearch" placeholder="Cerca per numero ticket o codice...">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label class="filter-label"><i class="fas fa-euro-sign me-1"></i>Range Valore €</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" class="form-control" id="valueMin" step="0.01" placeholder="Min">
+                                    <span class="input-group-text">-</span>
+                                    <input type="number" class="form-control" id="valueMax" step="0.01" placeholder="Max">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="clearFilters">
+                                <i class="fas fa-eraser"></i> Reset Filtri
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-body p-0">
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-light border-bottom">
+                        <div class="d-flex align-items-center gap-4">
+                            <div>
+                                <strong><i class="fas fa-box me-1"></i>Prodotto:</strong> 
+                                <span class="badge bg-primary" id="modalProductId"></span> - 
+                                <span class="fw-bold" id="modalProductType"></span>
+                            </div>
+                            <div id="modalFilterStats" class="text-muted small">
+                                <!-- Statistiche filtri caricate dinamicamente -->
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success" id="selectAllTicketsBtn">
+                                <i class="fas fa-check-double"></i> Seleziona Tutti
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="deselectAllTicketsBtn">
+                                <i class="fas fa-times"></i> Deseleziona Tutti
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" id="proceedBtn" data-bs-dismiss="modal">
+                                <i class="fas fa-arrow-right"></i> Avanti
+                            </button>
+                        </div>
+                    </div>
+                    <div class="tickets-list-modal">
+                        <!-- Header della lista (fisso) -->
+                        <div class="ticket-list-header">
+                            <div class="ticket-list-header-left">
+                                <div class="header-checkbox-placeholder" style="width: 20px;"></div>
+                                <div class="ticket-list-header-info">
+                                    <div style="min-width: 100px;"><i class="fas fa-ticket-alt me-1"></i>Ticket #</div>
+                                    <div style="min-width: 120px;"><i class="fas fa-calendar me-1"></i>Data/Ora</div>
+                                    <div style="min-width: 90px; text-align: center;"><i class="fas fa-weight me-1"></i>Peso</div>
+                                    <div style="min-width: 90px; text-align: center;"><i class="fas fa-euro-sign me-1"></i>Valore</div>
+                                    <div style="min-width: 140px; text-align: center;"><i class="fas fa-barcode me-1"></i>Codice Prodotto</div>
+                                </div>
+                            </div>
+                            <div class="ticket-list-header-right">
+                                <div style="min-width: 110px; text-align: center;"><i class="fas fa-clock me-1"></i>Scadenza</div>
+                                <div style="min-width: 70px; text-align: center;"><i class="fas fa-info-circle me-1"></i>Stato</div>
+                            </div>
+                        </div>
+                        <!-- Contenuto della lista scrollabile -->
+                        <div class="tickets-scroll-container">
+                            <div id="modalTicketsGrid">
+                                <!-- I ticket verranno caricati qui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form nascosto per l'invio -->
+    <form id="ddtForm" method="POST" action="{{ url_for('ddt.preview') }}" style="display: none;">
+        {{ create_form.hidden_tag() }}
+        <input type="hidden" name="cliente_id" value="{{ cliente.IdCliente }}">
+        <input type="hidden" name="id_empresa" value="{{ id_empresa }}">
+        <input type="hidden" name="selected_tickets" id="selectedTicketsInput">
+    </form>
+</div>
+
+<!-- Dati prodotti per JavaScript -->
+<script type="application/json" id="productsData">
+{{ products|tojson }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elimina schermata bianca - mostra contenuto gradualmente
+    setTimeout(function() {
+        document.querySelector('.page-container').classList.add('loaded');
+    }, 100);
+    
+    const productsData = JSON.parse(document.getElementById('productsData').textContent);
+    
+    // Elementi del DOM
+    const createDDTBtn = document.getElementById('createDDTBtn');
+    const selectedTicketsInput = document.getElementById('selectedTicketsInput');
+    
+    // Elementi statistiche
+    const selectionProducts = document.getElementById('selectionProducts');
+    const selectionTickets = document.getElementById('selectionTickets');
+    const selectionWeight = document.getElementById('selectionWeight');
+    const selectionValue = document.getElementById('selectionValue');
+    
+    // Modal elements
+    const modalProductName = document.getElementById('modalProductName');
+    const modalProductId = document.getElementById('modalProductId');
+    const modalProductType = document.getElementById('modalProductType');
+    const modalTicketsGrid = document.getElementById('modalTicketsGrid');
+    const selectAllTicketsBtn = document.getElementById('selectAllTicketsBtn');
+    const deselectAllTicketsBtn = document.getElementById('deselectAllTicketsBtn');
+    
+    // Filter elements
+    const sortBySelect = document.getElementById('sortBy');
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+    const weightMinInput = document.getElementById('weightMin');
+    const weightMaxInput = document.getElementById('weightMax');
+    const expiryFilterSelect = document.getElementById('expiryFilter');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    const filteredCountEl = document.getElementById('filteredCount');
+    const quickSearchInput = document.getElementById('quickSearch');
+    const valueMinInput = document.getElementById('valueMin');
+    const valueMaxInput = document.getElementById('valueMax');
+    // Pulsanti selectVisibleBtn e deselectVisibleBtn rimossi
+    const modalFilterStats = document.getElementById('modalFilterStats');
+    
+    // State
+    let selectedTickets = new Set();
+    let currentProductForModal = null;
+    let allTicketsInModal = [];
+    
+    // localStorage key for selected tickets
+    const SELECTED_TICKETS_STORAGE_KEY = 'ddt_selected_tickets_temp';
+    
+    // localStorage management functions
+    function saveSelectedTicketsToStorage() {
+        try {
+            const ticketsArray = Array.from(selectedTickets);
+            const clientIdInput = document.querySelector('input[name="cliente_id"]');
+            const clientId = clientIdInput ? parseInt(clientIdInput.value) : null;
+            
+            if (!clientId) {
+                console.error('❌ Impossibile ottenere l\'ID cliente per il salvataggio');
+                return;
+            }
+            
+            const storageData = {
+                cliente_id: clientId,
+                selected_tickets: ticketsArray,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(SELECTED_TICKETS_STORAGE_KEY, JSON.stringify(storageData));
+            console.log('💾 Ticket selezionati salvati nel localStorage:', ticketsArray.length);
+        } catch (e) {
+            console.error('❌ Errore nel salvataggio ticket selezionati:', e);
+        }
+    }
+    
+    function loadSelectedTicketsFromStorage() {
+        try {
+            const stored = localStorage.getItem(SELECTED_TICKETS_STORAGE_KEY);
+            if (!stored) {
+                console.log('ℹ️ Nessun ticket selezionato trovato nel localStorage');
+                return;
+            }
+            
+            const storageData = JSON.parse(stored);
+            const clientIdInput = document.querySelector('input[name="cliente_id"]');
+            const clientId = clientIdInput ? parseInt(clientIdInput.value) : null;
+            
+            if (!clientId) {
+                console.error('❌ Impossibile ottenere l\'ID cliente per il ripristino');
+                return;
+            }
+            
+            // Check if the stored data is for the current client
+            if (storageData.cliente_id !== clientId) {
+                console.log('⚠️ Ticket salvati per un altro cliente, cancello...');
+                localStorage.removeItem(SELECTED_TICKETS_STORAGE_KEY);
+                return;
+            }
+            
+            // Check if data is not too old (1 hour max)
+            const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
+            if (Date.now() - storageData.timestamp > maxAge) {
+                console.log('⚠️ Ticket salvati troppo vecchi, cancello...');
+                localStorage.removeItem(SELECTED_TICKETS_STORAGE_KEY);
+                return;
+            }
+            
+            // Restore selected tickets
+            selectedTickets = new Set(storageData.selected_tickets);
+            console.log('🔄 Ticket selezionati ripristinati dal localStorage:', selectedTickets.size);
+            
+        } catch (e) {
+            console.error('❌ Errore nel caricamento ticket selezionati:', e);
+            selectedTickets = new Set();
+        }
+    }
+    
+    function clearSelectedTicketsFromStorage() {
+        try {
+            localStorage.removeItem(SELECTED_TICKETS_STORAGE_KEY);
+            console.log('🗑️ Ticket selezionati rimossi dal localStorage');
+        } catch (e) {
+            console.error('❌ Errore nella rimozione ticket selezionati:', e);
+        }
+    }
+    
+    // Product search elements
+    const productSearchInput = document.getElementById('productSearchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    let allProductItems = [];
+    let noResultsMessageElement = null;
+    
+    // Initialize product search functionality
+    function initializeProductSearch() {
+        // Get all product items
+        allProductItems = Array.from(document.querySelectorAll('.product-item'));
+        
+        // Setup search input event listeners
+        if (productSearchInput) {
+            productSearchInput.addEventListener('input', handleProductSearch);
+            productSearchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Escape') {
+                    clearProductSearch();
+                }
+            });
+        }
+        
+        // Setup clear search button
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', clearProductSearch);
+        }
+        
+        // Initial count
+        updateSearchResults(allProductItems.length);
+    }
+    
+    function handleProductSearch() {
+        const searchTerm = productSearchInput.value.toLowerCase().trim();
+        
+        // Show/hide clear button
+        if (clearSearchBtn) {
+            clearSearchBtn.style.display = searchTerm.length > 0 ? 'flex' : 'none';
+        }
+        
+        let visibleCount = 0;
+        
+        if (searchTerm.length === 0) {
+            // Show all products
+            allProductItems.forEach(item => {
+                item.classList.remove('search-hidden', 'search-highlight');
+                visibleCount++;
+            });
+            hideNoResultsMessage();
+        } else {
+            // Filter products
+            allProductItems.forEach(item => {
+                const productName = item.dataset.productName.toLowerCase();
+                const isMatch = productName.includes(searchTerm);
+                
+                if (isMatch) {
+                    item.classList.remove('search-hidden');
+                    item.classList.add('search-highlight');
+                    visibleCount++;
+                } else {
+                    item.classList.add('search-hidden');
+                    item.classList.remove('search-highlight');
+                }
+            });
+            
+            // Show no results message if needed
+            if (visibleCount === 0) {
+                showNoResultsMessage(searchTerm);
+            } else {
+                hideNoResultsMessage();
+            }
+        }
+        
+        updateSearchResults(visibleCount);
+    }
+    
+    function clearProductSearch() {
+        if (productSearchInput) {
+            productSearchInput.value = '';
+        }
+        
+        if (clearSearchBtn) {
+            clearSearchBtn.style.display = 'none';
+        }
+        
+        // Show all products
+        allProductItems.forEach(item => {
+            item.classList.remove('search-hidden', 'search-highlight');
+        });
+        
+        hideNoResultsMessage();
+        updateSearchResults(allProductItems.length);
+        
+        // Focus back on search input
+        if (productSearchInput) {
+            productSearchInput.focus();
+        }
+    }
+    
+    function updateSearchResults(count) {
+        if (searchResultsCount) {
+            const totalProducts = allProductItems.length;
+            if (count === totalProducts) {
+                searchResultsCount.textContent = `${totalProducts} prodotti`;
+            } else {
+                searchResultsCount.textContent = `${count} di ${totalProducts} prodotti`;
+            }
+        }
+    }
+    
+    function showNoResultsMessage(searchTerm) {
+        hideNoResultsMessage(); // Remove any existing message
+        
+        const productsList = document.querySelector('.products-list');
+        if (productsList) {
+            noResultsMessageElement = document.createElement('div');
+            noResultsMessageElement.className = 'no-results-message';
+            noResultsMessageElement.innerHTML = `
+                <i class="fas fa-search"></i>
+                <h6>Nessun prodotto trovato</h6>
+                <p>Non ci sono prodotti che corrispondono a "<strong>${searchTerm}</strong>"</p>
+                <small>Prova a modificare il termine di ricerca</small>
+            `;
+            productsList.appendChild(noResultsMessageElement);
+        }
+    }
+    
+    function hideNoResultsMessage() {
+        if (noResultsMessageElement && noResultsMessageElement.parentNode) {
+            noResultsMessageElement.parentNode.removeChild(noResultsMessageElement);
+            noResultsMessageElement = null;
+        }
+    }
+    
+    // Gestione click diretto sulla riga prodotto (invece del bottone)
+    document.querySelectorAll('.product-item').forEach(productItem => {
+        productItem.addEventListener('click', function(e) {
+            // Previeni il click se si clicca sulla checkbox
+            if (e.target.classList.contains('product-checkbox')) {
+                return;
+            }
+            
+            const productId = parseInt(this.dataset.productId);
+            const productName = this.dataset.productName;
+            const product = productsData.find(p => p.id_articulo === productId);
+            
+            if (!product) return;
+            
+            currentProductForModal = product;
+            allTicketsInModal = [...product.tickets];
+            
+            modalProductName.textContent = productName;
+            modalProductId.textContent = productId;
+            modalProductType.textContent = product.comportamiento === 0 ? 'A Pezzi (PZ)' : 'A Peso (KG)';
+            
+            // Reset filtri
+            resetFilters();
+            
+            // Carica e ordina i ticket
+            loadTicketsInModal(product);
+            
+            // Mostra il modale
+            const modal = new bootstrap.Modal(document.getElementById('ticketsModal'));
+            modal.show();
+        });
+    });
+    
+    // Gestione checkbox prodotti
+    document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            e.stopPropagation(); // Previeni il click sulla riga
+            
+            const productId = parseInt(this.dataset.productId);
+            const product = productsData.find(p => p.id_articulo === productId);
+            
+            if (!product) return;
+            
+            const ticketIds = product.tickets.map(t => t.id_ticket);
+            
+            if (this.checked) {
+                ticketIds.forEach(id => selectedTickets.add(id));
+            } else {
+                ticketIds.forEach(id => selectedTickets.delete(id));
+            }
+            
+            // Save to localStorage after product selection change
+            saveSelectedTicketsToStorage();
+            
+            updateUI();
+        });
+    });
+    
+    // Filtri e ordinamento avanzati
+    function setupFilters() {
+        [sortBySelect, dateFromInput, dateToInput, weightMinInput, weightMaxInput, 
+         expiryFilterSelect, quickSearchInput, valueMinInput, valueMaxInput].forEach(element => {
+            element.addEventListener('change', applyFiltersAndSort);
+            element.addEventListener('input', applyFiltersAndSort);
+        });
+        
+        clearFiltersBtn.addEventListener('click', resetFilters);
+    }
+    
+    function resetFilters() {
+        sortBySelect.value = 'date_desc';
+        dateFromInput.value = '';
+        dateToInput.value = '';
+        weightMinInput.value = '';
+        weightMaxInput.value = '';
+        expiryFilterSelect.value = 'all';
+        quickSearchInput.value = '';
+        valueMinInput.value = '';
+        valueMaxInput.value = '';
+        
+        if (currentProductForModal) {
+            allTicketsInModal = [...currentProductForModal.tickets];
+            applyFiltersAndSort();
+        }
+    }
+    
+    function applyFiltersAndSort() {
+        if (!currentProductForModal) return;
+        
+        let filteredTickets = [...allTicketsInModal];
+        
+        // Filtro per ricerca veloce
+        const quickSearch = quickSearchInput.value.toLowerCase().trim();
+        if (quickSearch) {
+            filteredTickets = filteredTickets.filter(ticket => {
+                return (ticket.num_ticket && ticket.num_ticket.toString().includes(quickSearch)) ||
+                       (ticket.id_ticket && ticket.id_ticket.toString().includes(quickSearch)) ||
+                       (ticket.codigo_barras && ticket.codigo_barras.toLowerCase().includes(quickSearch));
+            });
+        }
+        
+        // Filtro per data
+        const dateFrom = dateFromInput.value ? new Date(dateFromInput.value) : null;
+        const dateTo = dateToInput.value ? new Date(dateToInput.value) : null;
+        
+        if (dateFrom || dateTo) {
+            filteredTickets = filteredTickets.filter(ticket => {
+                const ticketDate = new Date(ticket.fecha_raw);
+                if (dateFrom && ticketDate < dateFrom) return false;
+                if (dateTo && ticketDate > dateTo) return false;
+                return true;
+            });
+        }
+        
+        // Filtro per peso
+        const weightMin = parseFloat(weightMinInput.value);
+        const weightMax = parseFloat(weightMaxInput.value);
+        
+        if (!isNaN(weightMin)) {
+            filteredTickets = filteredTickets.filter(ticket => ticket.peso >= weightMin);
+        }
+        
+        if (!isNaN(weightMax)) {
+            filteredTickets = filteredTickets.filter(ticket => ticket.peso <= weightMax);
+        }
+        
+        // Filtro per valore
+        const valueMin = parseFloat(valueMinInput.value);
+        const valueMax = parseFloat(valueMaxInput.value);
+        
+        if (!isNaN(valueMin)) {
+            filteredTickets = filteredTickets.filter(ticket => ticket.importe >= valueMin);
+        }
+        
+        if (!isNaN(valueMax)) {
+            filteredTickets = filteredTickets.filter(ticket => ticket.importe <= valueMax);
+        }
+        
+        // Filtro per scadenza
+        const expiryFilter = expiryFilterSelect.value;
+        if (expiryFilter !== 'all') {
+            const now = new Date();
+            const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            filteredTickets = filteredTickets.filter(ticket => {
+                const hasExpiry = ticket.fecha_caducidad && ticket.fecha_caducidad !== '';
+                
+                switch (expiryFilter) {
+                    case 'with_expiry':
+                        return hasExpiry;
+                    case 'without_expiry':
+                        return !hasExpiry;
+                    case 'expiring_soon':
+                        if (!hasExpiry) return false;
+                        
+                        // Parse corretto della data DD/MM/YYYY
+                        const dateStr = ticket.fecha_caducidad.trim();
+                        let expiryDate = null;
+                        
+                        if (dateStr.includes('/')) {
+                            const parts = dateStr.split('/');
+                            if (parts.length === 3) {
+                                const day = parseInt(parts[0], 10);
+                                const month = parseInt(parts[1], 10) - 1;
+                                const year = parseInt(parts[2], 10);
+                                expiryDate = new Date(year, month, day);
+                            }
+                        } else if (dateStr.includes('-')) {
+                            expiryDate = new Date(dateStr);
+                        }
+                        
+                        if (!expiryDate || isNaN(expiryDate.getTime())) return false;
+                        expiryDate.setHours(23, 59, 59, 999);
+                        return expiryDate <= sevenDaysFromNow && expiryDate >= now;
+                        
+                    case 'expired':
+                        if (!hasExpiry) return false;
+                        
+                        // Parse corretto della data DD/MM/YYYY
+                        const expDateStr = ticket.fecha_caducidad.trim();
+                        let expiredDate = null;
+                        
+                        if (expDateStr.includes('/')) {
+                            const parts = expDateStr.split('/');
+                            if (parts.length === 3) {
+                                const day = parseInt(parts[0], 10);
+                                const month = parseInt(parts[1], 10) - 1;
+                                const year = parseInt(parts[2], 10);
+                                expiredDate = new Date(year, month, day);
+                            }
+                        } else if (expDateStr.includes('-')) {
+                            expiredDate = new Date(expDateStr);
+                        }
+                        
+                        if (!expiredDate || isNaN(expiredDate.getTime())) return false;
+                        expiredDate.setHours(23, 59, 59, 999);
+                        return expiredDate < now;
+                        
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // Ordinamento
+        const sortBy = sortBySelect.value;
+        filteredTickets.sort((a, b) => {
+            switch (sortBy) {
+                case 'date_desc':
+                    return new Date(b.fecha_raw) - new Date(a.fecha_raw);
+                case 'date_asc':
+                    return new Date(a.fecha_raw) - new Date(b.fecha_raw);
+                case 'weight_desc':
+                    return b.peso - a.peso;
+                case 'weight_asc':
+                    return a.peso - b.peso;
+                case 'value_desc':
+                    return b.importe - a.importe;
+                case 'value_asc':
+                    return a.importe - b.importe;
+                case 'expiry_asc':
+                    // Parse corretto delle date per l'ordinamento
+                    function parseExpiryDate(dateStr) {
+                        if (!dateStr) return new Date('9999-12-31');
+                        
+                        if (dateStr.includes('/')) {
+                            const parts = dateStr.split('/');
+                            if (parts.length === 3) {
+                                const day = parseInt(parts[0], 10);
+                                const month = parseInt(parts[1], 10) - 1;
+                                const year = parseInt(parts[2], 10);
+                                return new Date(year, month, day);
+                            }
+                        } else if (dateStr.includes('-')) {
+                            return new Date(dateStr);
+                        }
+                        
+                        return new Date('9999-12-31');
+                    }
+                    
+                    const aExp = parseExpiryDate(a.fecha_caducidad);
+                    const bExp = parseExpiryDate(b.fecha_caducidad);
+                    return aExp - bExp;
+                case 'ticket_number_desc':
+                    return (b.num_ticket || b.id_ticket) - (a.num_ticket || a.id_ticket);
+                case 'ticket_number_asc':
+                    return (a.num_ticket || a.id_ticket) - (b.num_ticket || b.id_ticket);
+                default:
+                    return 0;
+            }
+        });
+        
+        // Aggiorna statistiche e conteggio filtrati
+        updateFilterStats(filteredTickets);
+        updateFilteredCount(filteredTickets.length, allTicketsInModal.length);
+        
+        // Ricarica i ticket nel modale
+        loadFilteredTicketsInModal(filteredTickets);
+    }
+    
+    function updateFilteredCount(filtered, total) {
+        if (filtered === total) {
+            filteredCountEl.style.display = 'none';
+        } else {
+            filteredCountEl.style.display = 'inline';
+            filteredCountEl.textContent = `${filtered} su ${total}`;
+        }
+    }
+    
+    function updateFilterStats(filteredTickets) {
+        if (!modalFilterStats) return;
+        
+        const totalWeight = filteredTickets.reduce((sum, ticket) => sum + ticket.peso, 0);
+        const totalValue = filteredTickets.reduce((sum, ticket) => sum + ticket.importe, 0);
+        const selectedCount = filteredTickets.filter(ticket => selectedTickets.has(ticket.id_ticket)).length;
+        
+        modalFilterStats.innerHTML = `
+            <i class="fas fa-list-ol me-1"></i>Ticket: <strong>${filteredTickets.length}</strong> |
+            <i class="fas fa-check-circle me-1"></i>Selezionati: <strong>${selectedCount}</strong> |
+            <i class="fas fa-weight me-1"></i>Peso Tot: <strong>${totalWeight.toFixed(3)} ${currentProductForModal.comportamiento === 0 ? 'PZ' : 'KG'}</strong> |
+            <i class="fas fa-euro-sign me-1"></i>Valore Tot: <strong>€${totalValue.toFixed(2)}</strong>
+        `;
+    }
+    
+    // Funzioni selectAllVisible e deselectAllVisible rimosse (pulsanti eliminati)
+    
+    function loadTicketsInModal(product) {
+        allTicketsInModal = [...product.tickets];
+        applyFiltersAndSort();
+    }
+    
+    function loadFilteredTicketsInModal(tickets) {
+        modalTicketsGrid.innerHTML = '';
+        
+        tickets.forEach(ticket => {
+                    const ticketListItem = createTicketListItem(ticket, currentProductForModal);
+        modalTicketsGrid.appendChild(ticketListItem);
+        });
+    }
+    
+    function createTicketListItem(ticket, product) {
+        const isSelected = selectedTickets.has(ticket.id_ticket);
+        
+        const listItem = document.createElement('div');
+        listItem.className = `ticket-list-item ${isSelected ? 'selected' : ''}`;
+        listItem.dataset.ticketId = ticket.id_ticket;
+        
+        const peso = product.comportamiento === 0 
+            ? `${ticket.peso % 1 === 0 ? parseInt(ticket.peso) : ticket.peso} PZ`
+            : `${ticket.peso.toFixed(3)} KG`;
+        
+        // Evidenzia i ticket in scadenza
+        const now = new Date();
+        let isExpiringSoon = false;
+        let isExpired = false;
+        
+        if (ticket.fecha_caducidad && ticket.fecha_caducidad !== '') {
+            // Parse della data nel formato DD/MM/YYYY
+            const dateStr = ticket.fecha_caducidad.trim();
+            let expiryDate = null;
+            
+            // Prova diversi formati di data
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    // Assume formato DD/MM/YYYY (formato italiano)
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-indexed
+                    const year = parseInt(parts[2], 10);
+                    expiryDate = new Date(year, month, day);
+                }
+            } else if (dateStr.includes('-')) {
+                // Formato YYYY-MM-DD
+                expiryDate = new Date(dateStr);
+            }
+            
+            if (expiryDate && !isNaN(expiryDate.getTime())) {
+                // Imposta l'ora a fine giornata per il confronto
+                expiryDate.setHours(23, 59, 59, 999);
+                const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                
+                isExpired = expiryDate < now;
+                isExpiringSoon = !isExpired && expiryDate <= sevenDaysFromNow;
+            }
+        }
+        
+        const expiryText = ticket.fecha_caducidad 
+            ? ticket.fecha_caducidad 
+            : 'N/A';
+        
+        // Determina stato del ticket
+        let statusClass = 'normal';
+        let statusText = 'OK';
+        let statusIcon = 'fas fa-check-circle';
+        
+        if (isExpired) {
+            statusClass = 'danger';
+            statusText = 'SCAD';
+            statusIcon = 'fas fa-times-circle';
+        } else if (isExpiringSoon) {
+            statusClass = 'warning';
+            statusText = 'WARN';
+            statusIcon = 'fas fa-exclamation-triangle';
+        }
+        
+        // Formatta codice barras o ID balanza (più lungo per migliore visibilità)
+        const ticketCode = ticket.codigo_barras 
+            ? ticket.codigo_barras
+            : `ID:${ticket.id_balanza_maestra || 'N/A'}`;
+        
+        // Formatta data con ora
+        const dateWithTime = ticket.fecha || 'N/A';
+        
+        listItem.innerHTML = `
+            <div class="ticket-list-left">
+                <input type="checkbox" class="ticket-checkbox-modal" 
+                       ${isSelected ? 'checked' : ''}
+                       data-ticket-id="${ticket.id_ticket}">
+                <div class="ticket-list-info">
+                    <div class="ticket-id-modal">
+                        <i class="fas fa-ticket-alt me-1"></i>#${ticket.id_ticket}
+                        ${isExpiringSoon || isExpired ? `<i class="${statusIcon} ms-1" title="${isExpired ? 'Scaduto' : 'In scadenza entro 7 giorni'}"></i>` : ''}
+                    </div>
+                    <div class="ticket-date">${dateWithTime}</div>
+                    <div class="ticket-weight">${peso}</div>
+                    <div class="ticket-value">€${ticket.importe.toFixed(2)}</div>
+                    <div class="ticket-code">${ticketCode}</div>
+                </div>
+            </div>
+            <div class="ticket-list-right">
+                <div class="ticket-expiry ${isExpiringSoon ? 'warning' : (isExpired ? 'danger' : '')}">${expiryText}</div>
+                <div class="ticket-status ${statusClass}">
+                    <i class="${statusIcon} me-1"></i>${statusText}
+                </div>
+            </div>
+        `;
+        
+        const checkbox = listItem.querySelector('.ticket-checkbox-modal');
+        checkbox.addEventListener('change', function(e) {
+            e.stopPropagation();
+            toggleTicketSelection(ticket.id_ticket);
+        });
+        
+        listItem.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+                checkbox.checked = !checkbox.checked;
+                toggleTicketSelection(ticket.id_ticket);
+            }
+        });
+        
+        return listItem;
+    }
+    
+    function toggleTicketSelection(ticketId) {
+        if (selectedTickets.has(ticketId)) {
+            selectedTickets.delete(ticketId);
+        } else {
+            selectedTickets.add(ticketId);
+        }
+        
+        // Save to localStorage after each selection change
+        saveSelectedTicketsToStorage();
+        
+        updateUI();
+        updateModalTicketsUI();
+        // Aggiorna statistiche se la modale è aperta
+        if (currentProductForModal) {
+            applyFiltersAndSort();
+        }
+    }
+    
+    function updateModalTicketsUI() {
+        if (!currentProductForModal) return;
+        
+        document.querySelectorAll('.ticket-list-item').forEach(item => {
+            const ticketId = parseInt(item.dataset.ticketId);
+            const checkbox = item.querySelector('.ticket-checkbox-modal');
+            const isSelected = selectedTickets.has(ticketId);
+            
+            checkbox.checked = isSelected;
+            item.classList.toggle('selected', isSelected);
+        });
+    }
+    
+    // Gestione pulsanti modal
+    selectAllTicketsBtn.addEventListener('click', function() {
+        if (!currentProductForModal) return;
+        
+        // Seleziona tutti i ticket visibili (filtrati)
+        document.querySelectorAll('.ticket-list-item:not(.filtered-hidden)').forEach(item => {
+            const ticketId = parseInt(item.dataset.ticketId);
+            selectedTickets.add(ticketId);
+        });
+        
+        // Save to localStorage after bulk selection
+        saveSelectedTicketsToStorage();
+        
+        updateUI();
+        updateModalTicketsUI();
+        applyFiltersAndSort(); // Per aggiornare le statistiche
+    });
+    
+    deselectAllTicketsBtn.addEventListener('click', function() {
+        if (!currentProductForModal) return;
+        
+        // Deseleziona tutti i ticket visibili (filtrati)
+        document.querySelectorAll('.ticket-list-item:not(.filtered-hidden)').forEach(item => {
+            const ticketId = parseInt(item.dataset.ticketId);
+            selectedTickets.delete(ticketId);
+        });
+        
+        // Save to localStorage after bulk deselection
+        saveSelectedTicketsToStorage();
+        
+        updateUI();
+        updateModalTicketsUI();
+        applyFiltersAndSort(); // Per aggiornare le statistiche
+    });
+    
+    function updateUI() {
+        // Calcola statistiche
+        let totalWeight = 0;
+        let totalValueAmount = 0;
+        let selectedProductsSet = new Set();
+        
+        selectedTickets.forEach(ticketId => {
+            productsData.forEach(product => {
+                const ticket = product.tickets.find(t => t.id_ticket === ticketId);
+                if (ticket) {
+                    selectedProductsSet.add(product.id_articulo);
+                    totalWeight += ticket.peso;
+                    totalValueAmount += ticket.importe;
+                }
+            });
+        });
+        
+        const selectedProductsCountValue = selectedProductsSet.size;
+        const selectedTicketsCountValue = selectedTickets.size;
+        
+        selectionProducts.textContent = selectedProductsCountValue;
+        selectionTickets.textContent = selectedTicketsCountValue;
+        selectionWeight.textContent = totalWeight.toFixed(3);
+        selectionValue.textContent = '€' + totalValueAmount.toFixed(2);
+        
+        createDDTBtn.disabled = selectedTickets.size === 0;
+        createDDTBtn.innerHTML = selectedTickets.size > 0 
+            ? `<i class="fas fa-eye"></i>Anteprima DDT (${selectedTickets.size})`
+            : '<i class="fas fa-eye"></i>Anteprima DDT';
+        
+        updateProductCheckboxes();
+        updateForm();
+    }
+    
+    function updateProductCheckboxes() {
+        document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+            const productId = parseInt(checkbox.dataset.productId);
+            const product = productsData.find(p => p.id_articulo === productId);
+            
+            if (!product) return;
+            
+            const ticketIds = product.tickets.map(t => t.id_ticket);
+            const selectedCount = ticketIds.filter(id => selectedTickets.has(id)).length;
+            
+            checkbox.checked = selectedCount === ticketIds.length && selectedCount > 0;
+            checkbox.indeterminate = selectedCount > 0 && selectedCount < ticketIds.length;
+            
+            const productItem = checkbox.closest('.product-item');
+            productItem.classList.toggle('selected', selectedCount > 0);
+        });
+    }
+    
+    function updateForm() {
+        const ticketDataForForm = [];
+        
+        selectedTickets.forEach(ticketId => {
+            productsData.forEach(product => {
+                const ticket = product.tickets.find(t => t.id_ticket === ticketId);
+                if (ticket) {
+                    ticketDataForForm.push({
+                        id_ticket: ticket.id_ticket,
+                        id_empresa: ticket.id_empresa,
+                        id_tienda: ticket.id_tienda,
+                        id_balanza_maestra: ticket.id_balanza_maestra,
+                        id_balanza_esclava: ticket.id_balanza_esclava,
+                        tipo_venta: ticket.tipo_venta
+                    });
+                }
+            });
+        });
+        
+        selectedTicketsInput.value = JSON.stringify(ticketDataForForm);
+    }
+    
+    createDDTBtn.addEventListener('click', function() {
+        if (selectedTickets.size > 0) {
+            // Don't clear localStorage yet - keep it for potential recovery
+            // It will be cleared later after successful DDT creation
+            document.getElementById('ddtForm').submit();
+        }
+    });
+    
+    // Load previously selected tickets from localStorage
+    loadSelectedTicketsFromStorage();
+    
+    // Inizializza filtri
+    setupFilters();
+    
+    // Inizializza ricerca prodotti
+    initializeProductSearch();
+    
+    // Inizializza UI
+    updateUI();
+});
+</script>
+{% endblock %} 

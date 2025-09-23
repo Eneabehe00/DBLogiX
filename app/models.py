@@ -1612,7 +1612,7 @@ class FatturaLinea(db.Model):
         else:
             # Articolo numerabile - usa Cantidad2, fallback su Peso se non disponibile
             return float(self.Cantidad2 or self.Peso or 0)
-    
+        
     @property
     def prezzo_unitario(self):
         """Ritorna il prezzo unitario"""

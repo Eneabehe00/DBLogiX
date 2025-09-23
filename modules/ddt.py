@@ -24,6 +24,8 @@ import time
 from app.models import SystemConfig
 from services.utils import admin_required
 from app.config import get_system_config_from_file
+import platform
+import subprocess
 
 ddt_bp = Blueprint('ddt', __name__)
 
@@ -171,6 +173,7 @@ def get_cliente_listino_price(cliente_id, articolo_id, default_price):
         return default_price
 
 @ddt_bp.route('/')
+@ddt_bp.route('/index')
 @login_required
 def index():
     """Display a list of all DDTs with enhanced search functionality"""
@@ -224,16 +227,27 @@ def index():
     
     # Preparare i dati per la visualizzazione
     combined_ddts = []
-    
+
     for ddt in ddts:
+        # Calcola il totale dinamicamente dalle righe del DDT (come nella pagina detail)
+        lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
+        total_without_vat = 0
+        total_vat = 0
+
+        for line in lines:
+            total_without_vat += float(line.ImporteSinIVASinDtoL or 0)
+            total_vat += float(line.ImporteDelIVAConDtoL or 0)
+
+        total = total_without_vat + total_vat
+
         combined_ddts.append({
             'id': ddt.NumAlbaran,  # Usa NumAlbaran per l'identificazione visuale
             'internal_id': ddt.IdAlbaran,  # Mantieni IdAlbaran per i link interni
             'date': ddt.Fecha,
-            'formatted_date': ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else 'N/A',
+            'formatted_date': ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A',
             'cliente_id': ddt.IdCliente,
             'cliente_nome': ddt.NombreCliente,
-            'totale': float(ddt.ImporteTotal) if ddt.ImporteTotal else 0,
+            'totale': total,
             'num_linee': ddt.NumLineas,
             'model_type': 'albaran',
             'created_by': ddt.Usuario  # Add the Usuario field to identify the creator
@@ -348,14 +362,25 @@ def api_sort_ddts():
     combined_ddts = []
 
     for ddt in ddts:
+        # Calcola il totale dinamicamente dalle righe del DDT (come nella pagina detail)
+        lines = AlbaranLinea.query.filter_by(IdAlbaran=ddt.IdAlbaran).all()
+        total_without_vat = 0
+        total_vat = 0
+
+        for line in lines:
+            total_without_vat += float(line.ImporteSinIVASinDtoL or 0)
+            total_vat += float(line.ImporteDelIVAConDtoL or 0)
+
+        total = total_without_vat + total_vat
+
         combined_ddts.append({
             'id': ddt.NumAlbaran,  # Usa NumAlbaran per l'identificazione visuale
             'internal_id': ddt.IdAlbaran,  # Mantieni IdAlbaran per i link interni
             'date': ddt.Fecha.isoformat() if ddt.Fecha else None,
-            'formatted_date': ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else 'N/A',
+            'formatted_date': ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A',
             'cliente_id': ddt.IdCliente,
             'cliente_nome': ddt.NombreCliente,
-            'totale': float(ddt.ImporteTotal) if ddt.ImporteTotal else 0,
+            'totale': total,
             'num_linee': ddt.NumLineas,
             'model_type': 'albaran',
             'created_by': ddt.Usuario  # Add the Usuario field to identify the creator
@@ -940,7 +965,6 @@ def api_update_ticket_line():
         # Gestione data di scadenza
         if data.get('fecha_caducidad'):
             try:
-                from datetime import datetime
                 fecha_caducidad = datetime.strptime(data['fecha_caducidad'], '%Y-%m-%d')
                 ticket_line.FechaCaducidad = fecha_caducidad
             except ValueError:
@@ -1077,9 +1101,19 @@ def create():
     note = request.form.get('note')
     creation_date_str = request.form.get('creation_date')  # Data creazione personalizzata
 
+    # 🔥 NUOVO: Campi configurabili DDT
+    ddt_causale = request.form.get('causale')
+    ddt_aspetto_esteriore = request.form.get('aspetto_esteriore')
+    ddt_trasporto_a_cura = request.form.get('trasporto_a_cura')
+
     # DEBUG: Log del parametro creation_date ricevuto
     current_app.logger.info(f"🔍 DEBUG CREATION DATE: creation_date_str = '{creation_date_str}'")
     current_app.logger.info(f"🔍 DEBUG CREATION DATE: request.form keys = {list(request.form.keys())}")
+
+    # DEBUG: Log dei nuovi campi configurabili
+    current_app.logger.info(f"🔍 DEBUG DDT CONFIG: causale = '{ddt_causale}'")
+    current_app.logger.info(f"🔍 DEBUG DDT CONFIG: aspetto_esteriore = '{ddt_aspetto_esteriore}'")
+    current_app.logger.info(f"🔍 DEBUG DDT CONFIG: trasporto_a_cura = '{ddt_trasporto_a_cura}'")
     
     # Gestione task
     from_task = request.form.get('from_task') == 'true'
@@ -1262,15 +1296,16 @@ def create():
             PaisCliente=client.Pais or "IT",
             CPCliente=client.CodPostal or "",
             TelefonoCliente=client.Telefono1 or "",
-            ObservacionesCliente=client.Observaciones or "None",
-            EANCliente=client.EANScanner or "",
+            # 🔥 NUOVO: Campi configurabili DDT - priorità assoluta
+            ObservacionesCliente=ddt_aspetto_esteriore if ddt_aspetto_esteriore else (client.Observaciones or ""),
+            EANCliente=ddt_causale if ddt_causale else (client.EANScanner or ""),
 
             # Informazioni DDT
             Tipo="A",
             IdVendedor=1,  # Valore predefinito
             NombreVendedor="IL CAPO",  # Valore predefinito
             ReferenciaDocumento="",
-            ObservacionesDocumento=note or "",
+            ObservacionesDocumento=ddt_trasporto_a_cura if ddt_trasporto_a_cura else (note or ""),
             TipoVenta=2,  # Valore predefinito
             
             # Date
@@ -1523,6 +1558,11 @@ def create():
                 albaran_line.Modificado = 1
                 albaran_line.Operacion = "A"
                 albaran_line.Usuario = "DBLogiX"
+
+                # ✅ NUOVA FUNZIONALITÀ: Salva l'ID del ticket nel campo NombrePlataforma
+                # Per i ticket normali, salva l'ID del ticket utilizzato
+                albaran_line.NombrePlataforma = str(ticket['id_ticket'])
+                current_app.logger.info(f"📋 Ticket normale - NombrePlataforma impostato a: {albaran_line.NombrePlataforma}")
                 
                 # Debug line info
                 current_app.logger.info(f"📝 DEBUG: Linea DDT {line_count} - Ticket {ticket['id_ticket']}")
@@ -1676,6 +1716,10 @@ def create():
                 albaran_line.Modificado = 1
                 albaran_line.Operacion = "A"
                 albaran_line.Usuario = "DBLogiX"
+
+                # ✅ NUOVA FUNZIONALITÀ: Per i ticket manuali, salva l'ID del ticket nel campo NombrePlataforma
+                albaran_line.NombrePlataforma = f"#{manual_ticket['id_ticket']}"
+                current_app.logger.info(f"📋 Ticket manuale - NombrePlataforma impostato a: {albaran_line.NombrePlataforma}")
                 
                 # Debug line info
                 current_app.logger.info(f"✋ DEBUG: Linea DDT manuale {line_count}")
@@ -1800,6 +1844,15 @@ def create_invoice_only():
     ticket_modifications_data = request.form.get('ticket_modifications')  # 🔥 NUOVO: Modifiche prezzi dal localStorage
     note = request.form.get('note')
     creation_date_str = request.form.get('creation_date')  # Data creazione personalizzata
+    
+    # 🔥 NUOVO: Campi configurabili DDT anche per fatture
+    ddt_causale = request.form.get('causale')
+    ddt_aspetto_esteriore = request.form.get('aspetto_esteriore')
+    ddt_trasporto_a_cura = request.form.get('trasporto_a_cura')
+    
+    current_app.logger.info(f"🔍 DEBUG INVOICE DDT CONFIG: causale = '{ddt_causale}'")
+    current_app.logger.info(f"🔍 DEBUG INVOICE DDT CONFIG: aspetto_esteriore = '{ddt_aspetto_esteriore}'")
+    current_app.logger.info(f"🔍 DEBUG INVOICE DDT CONFIG: trasporto_a_cura = '{ddt_trasporto_a_cura}'")
     
     if not cliente_id:
         return jsonify({'success': False, 'error': 'Cliente mancante'})
@@ -2169,15 +2222,16 @@ def create_invoice_only():
                 PaisCliente=client.Pais or "IT",
                 CPCliente=client.CodPostal or "",
                 TelefonoCliente=client.Telefono1 or "",
-                ObservacionesCliente=client.Observaciones or "None",
-                EANCliente=client.EANScanner or "",
+                # 🔥 NUOVO: Campi configurabili DDT - priorità assoluta anche per fatture
+                ObservacionesCliente=ddt_aspetto_esteriore if ddt_aspetto_esteriore else (client.Observaciones or "None"),
+                EANCliente=ddt_causale if ddt_causale else (client.EANScanner or ""),
 
                 # Informazioni Albaran
                 Tipo="A",
                 IdVendedor=1,
                 NombreVendedor="IL CAPO",
                 ReferenciaDocumento="",
-                ObservacionesDocumento=note or "",
+                ObservacionesDocumento=ddt_trasporto_a_cura if ddt_trasporto_a_cura else (note or ""),
                 TipoVenta=2,
 
                 # Date
@@ -2475,7 +2529,6 @@ def create_invoice_only():
                     # Data scadenza se presente
                     if ticket_line.get('fecha_caducidad'):
                         try:
-                            from datetime import datetime
                             albaran_linea.FechaCaducidad = datetime.strptime(ticket_line['fecha_caducidad'], '%Y-%m-%d')
                         except:
                             albaran_linea.FechaCaducidad = None
@@ -2557,7 +2610,7 @@ def save_ddt_pdf_automatically(ddt, cliente, empresa):
     
     try:
         # Genera il PDF
-        pdf_data = generate_ddt_pdf(ddt, cliente, empresa)
+        pdf_data = generate_ddt_pdf(ddt, cliente, empresa, is_muto=False, color_mode='color')
         
         # Ottieni l'anno corrente dalla data del DDT
         ddt_year = ddt.Fecha.year if ddt.Fecha else datetime.now().year
@@ -2765,7 +2818,7 @@ def get_all_clients():
 @ddt_bp.route('/<int:ddt_id>/export', methods=['POST', 'GET'])
 @login_required
 def export(ddt_id):
-    """Export DDT as PDF"""
+    """Export DDT as PDF or print directly to specified printer"""
     # Per richieste GET, creiamo un form fittizio
     if request.method == 'GET':
         form = DDTExportForm(format='pdf')
@@ -2782,23 +2835,971 @@ def export(ddt_id):
             cliente = Client.query.get(ddt.IdCliente)
             empresa = Company.query.get(ddt.IdEmpresa)
             
-            # Generate PDF
-            pdf_data = generate_ddt_pdf(ddt, cliente, empresa)
+            # Ottieni i parametri dal URL
+            tipo_stampa = request.args.get('tipo', 'con-prezzi')
+            printer_name = request.args.get('printer', '')
+            copies = int(request.args.get('copies', '1'))
+            duplex = request.args.get('duplex', 'off')
+            color = request.args.get('color', 'color')
+            destination = request.args.get('destination', 'printer')
+
+            current_app.logger.info(f"🔍 Parametri stampa: tipo='{tipo_stampa}', stampante='{printer_name}', copie={copies}, duplex={duplex}, colore={color}, destinazione={destination}")
             
+            # Generate PDF based on tipo_stampa
+            tipo_stampa_clean = tipo_stampa.strip().lower()
+            
+            if tipo_stampa_clean == 'muto':
+                current_app.logger.info(f"🔇 Generando DDT MUTO per ID {ddt_id}")
+                pdf_data = generate_ddt_pdf(ddt, cliente, empresa, is_muto=True, color_mode=color)
+                download_filename = f'DDT_MUTO_{ddt_id}.pdf'
+            else:
+                current_app.logger.info(f"💰 Generando DDT CON PREZZI per ID {ddt_id}")
+                pdf_data = generate_ddt_pdf(ddt, cliente, empresa, is_muto=False, color_mode=color)
+                download_filename = f'DDT_{ddt_id}.pdf'
+            
+            # Gestisci la destinazione della stampa
+            if destination == 'preview':
+                # Anteprima: sempre apri nel browser
+                current_app.logger.info("📄 Modalità anteprima: apertura PDF nel browser")
+                return send_file(
+                    io.BytesIO(pdf_data),
+                    mimetype='application/pdf',
+                    as_attachment=False,
+                    download_name=download_filename
+                )
+            elif printer_name and printer_name != 'browser' and not printer_name.startswith('Mostra finestra'):
+                # Stampa diretta con parametri avanzati
+                current_app.logger.info(f"🖨️ Tentativo di stampa diretta su: {printer_name} ({copies} copie, duplex={duplex}, color={color})")
+
+                try:
+                    # Stampa direttamente alla stampante specifica con parametri avanzati
+                    success = print_pdf_to_printer(pdf_data, printer_name, download_filename, copies, duplex, color)
+
+                    if success:
+                        copies_text = f"{copies} copie" if copies > 1 else "1 copia"
+                        current_app.logger.info(f"✅ PDF stampato con successo: {copies_text} su {printer_name}")
+                        return jsonify({
+                            'success': True,
+                            'message': f'DDT {"MUTO" if tipo_stampa_clean == "muto" else "con prezzi"} stampato: {copies_text} su {printer_name}',
+                            'printer': printer_name,
+                            'filename': download_filename,
+                            'copies': copies
+                        })
+                    else:
+                        current_app.logger.error(f"❌ Errore nella stampa su {printer_name}")
+                        # Fallback: restituisci PDF per download manuale
+                        current_app.logger.info("📄 Fallback: restituendo PDF per download")
+                        return send_file(
+                            io.BytesIO(pdf_data),
+                            mimetype='application/pdf',
+                            as_attachment=True,
+                            download_name=download_filename
+                        )
+                        
+                except Exception as print_error:
+                    current_app.logger.error(f"❌ Errore stampa diretta: {str(print_error)}")
+                    # Fallback: restituisci PDF per download manuale
+                    current_app.logger.info("📄 Fallback: restituendo PDF per download")
+                    return send_file(
+                        io.BytesIO(pdf_data),
+                        mimetype='application/pdf',
+                        as_attachment=True,
+                        download_name=download_filename
+                    )
+            
+            # Altrimenti restituisci il PDF per download/browser
+            current_app.logger.info(f"📄 Restituendo PDF per download/browser")
             return send_file(
                 io.BytesIO(pdf_data),
                 mimetype='application/pdf',
-                as_attachment=True,
-                download_name=f'DDT_{ddt_id}.pdf'
+                as_attachment=printer_name != 'browser',
+                download_name=download_filename
             )
         
         except Exception as e:
+            current_app.logger.error(f"❌ Errore nell'esportazione DDT: {str(e)}")
             flash(f'Errore durante l\'esportazione del DDT: {str(e)}', 'danger')
     
     return redirect(url_for('ddt.detail', ddt_id=ddt_id))
 
-def generate_ddt_pdf(ddt, cliente, empresa):
-    """Generate a stunning, professional PDF document for the DDT with exceptional layout"""
+def print_pdf_to_printer(pdf_data, printer_name, filename, copies=1, duplex='off', color='color'):
+    """Stampa il PDF direttamente alla stampante specificata con parametri avanzati"""
+    try:
+        current_app.logger.info(f"🖨️ Avvio stampa PDF su {printer_name} ({copies} copie, duplex={duplex}, color={color})")
+
+        if platform.system() == 'Windows':
+            # Prova prima con win32print (metodo più affidabile)
+            try:
+                return print_pdf_windows_win32(pdf_data, printer_name, filename, copies, duplex, color)
+            except ImportError:
+                current_app.logger.warning("⚠️ win32print non disponibile, usando PowerShell")
+                return print_pdf_windows_powershell(pdf_data, printer_name, filename, copies, duplex, color)
+        else:
+            # Per sistemi Unix/Linux
+            return print_pdf_unix(pdf_data, printer_name, filename, copies, duplex, color)
+
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore generale nella stampa: {str(e)}")
+        return False
+
+def print_pdf_windows_win32(pdf_data, printer_name, filename, copies=1, duplex='off', color='color'):
+    """Stampa PDF su Windows usando win32print con driver PDF appropriati"""
+    try:
+        import win32print
+        import win32api
+    except ImportError as e:
+        current_app.logger.error(f"❌ Libreria win32print non trovata: {str(e)}")
+        current_app.logger.info("💡 Suggerimento: installa pywin32 con 'pip install pywin32'")
+        raise ImportError("pywin32 not installed")
+    
+    import tempfile
+    import os
+    
+    current_app.logger.info(f"🖨️ Stampa Windows win32print su: {printer_name}")
+    
+    # Crea file temporaneo
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+        tmp_file.write(pdf_data)
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Verifica che la stampante esista
+        try:
+            printer_handle = win32print.OpenPrinter(printer_name)
+            win32print.ClosePrinter(printer_handle)
+            current_app.logger.info(f"✅ Stampante {printer_name} trovata e accessibile")
+        except Exception as printer_error:
+            current_app.logger.error(f"❌ Stampante {printer_name} non trovata: {str(printer_error)}")
+            return False
+        
+        # Prova diversi metodi di stampa PDF in ordine di affidabilità
+        current_app.logger.info(f"📄 Tentativo stampa PDF: {tmp_file_path}")
+        
+        # Metodo 1: Adobe Acrobat Reader (più affidabile)
+        if print_with_adobe_reader(tmp_file_path, printer_name, copies, duplex, color):
+            current_app.logger.info("✅ Stampato con Adobe Acrobat Reader")
+            return True
+        
+        # Metodo 2: SumatraPDF (leggero e affidabile)
+        if print_with_sumatra_pdf(tmp_file_path, printer_name, copies, duplex, color):
+            current_app.logger.info("✅ Stampato con SumatraPDF")
+            return True
+        
+        # Metodo 3: Ghostscript (converte PDF)
+        if print_with_ghostscript(tmp_file_path, printer_name, copies, duplex, color):
+            current_app.logger.info("✅ Stampato con Ghostscript")
+            return True
+        
+        # Metodo 4: Comando Windows print (migliore del ShellExecute)
+        if print_with_windows_command(tmp_file_path, printer_name, copies, duplex, color):
+            current_app.logger.info("✅ Stampato con comando Windows print")
+            return True
+        
+        # Metodo 5: Fallback Windows ShellExecute (può causare geroglifici)
+        current_app.logger.warning("⚠️ Usando metodo Windows ShellExecute fallback - potrebbe causare geroglifici")
+        current_app.logger.warning("💡 Suggerimento: installa Adobe Reader o SumatraPDF per stampa affidabile")
+        
+        win32api.ShellExecute(
+            0,                    # hwnd
+            "print",             # operation
+            tmp_file_path,       # file
+            f'"{printer_name}"', # parameters
+            ".",                 # directory
+            0                    # show command
+        )
+        
+        current_app.logger.info(f"✅ Comando di stampa ShellExecute inviato a {printer_name}")
+        
+        # Aspetta un momento prima di cancellare il file
+        import time
+        time.sleep(3)
+        
+        return True
+        
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore win32print: {str(e)}")
+        return False
+    finally:
+        # Pulisci il file temporaneo dopo un delay
+        try:
+            import time
+            time.sleep(5)  # Aspetta che la stampa sia completata
+            if os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path)
+                current_app.logger.info(f"🗑️ File temporaneo cancellato: {tmp_file_path}")
+        except Exception as cleanup_error:
+            current_app.logger.warning(f"⚠️ Errore nella pulizia del file temporaneo: {str(cleanup_error)}")
+
+def print_with_adobe_reader(pdf_path, printer_name, copies=1, duplex='off', color='color'):
+    """Stampa usando Adobe Acrobat Reader se disponibile"""
+    try:
+        # Cerca Adobe Reader nei percorsi comuni
+        adobe_paths = [
+            r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
+            r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe",
+            r"C:\Program Files\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe",
+            r"C:\Program Files (x86)\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
+        ]
+        
+        adobe_exe = None
+        for path in adobe_paths:
+            if os.path.exists(path):
+                adobe_exe = path
+                break
+        
+        if not adobe_exe:
+            current_app.logger.info("📄 Adobe Reader non trovato")
+            return False
+        
+        current_app.logger.info(f"📄 Usando Adobe Reader: {adobe_exe}")
+        
+        # Comando per stampare con Adobe Reader con parametri avanzati
+        cmd = [
+            adobe_exe,
+            "/t",           # print
+            pdf_path,       # file
+            printer_name    # printer
+        ]
+
+        # Adobe Reader supporta alcuni parametri tramite registry o configurazione
+        # Per ora implementiamo stampe multiple eseguendo il comando più volte
+        # e utilizziamo un approccio diverso per il bianco e nero
+
+        # Per il bianco e nero, possiamo tentare di impostare le preferenze di Adobe Reader
+        if color == 'bw':
+            current_app.logger.info("📄 Adobe Reader: tentativo conversione bianco e nero")
+            # Nota: Adobe Reader non ha parametri diretti per bianco/nero,
+            # ma possiamo impostare preferenze tramite registry se necessario
+
+        if copies > 1:
+            current_app.logger.info(f"📄 Adobe Reader: stampando {copies} copie")
+            
+        success_count = 0
+        for copy_num in range(copies):
+            if copies > 1:
+                current_app.logger.info(f"📄 Stampa copia {copy_num + 1}/{copies}")
+                
+            result = subprocess.run(cmd, capture_output=True, timeout=30)
+            
+            if result.returncode == 0:
+                success_count += 1
+                if copies > 1:
+                    time.sleep(1)  # Piccola pausa tra le copie
+            else:
+                current_app.logger.warning(f"⚠️ Adobe Reader errore copia {copy_num + 1}: {result.stderr.decode('utf-8', errors='ignore')}")
+                
+        return success_count == copies
+            
+    except Exception as e:
+        current_app.logger.warning(f"⚠️ Errore Adobe Reader: {str(e)}")
+        return False
+
+def print_with_sumatra_pdf(pdf_path, printer_name, copies=1, duplex='off', color='color'):
+    """Stampa usando SumatraPDF se disponibile"""
+    try:
+        # Cerca SumatraPDF nei percorsi comuni
+        sumatra_paths = [
+            r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
+            r"C:\Program Files (x86)\SumatraPDF\SumatraPDF.exe",
+            r"C:\Users\Public\SumatraPDF\SumatraPDF.exe"
+        ]
+        
+        sumatra_exe = None
+        for path in sumatra_paths:
+            if os.path.exists(path):
+                sumatra_exe = path
+                break
+        
+        if not sumatra_exe:
+            current_app.logger.info("📄 SumatraPDF non trovato")
+            return False
+        
+        current_app.logger.info(f"📄 Usando SumatraPDF: {sumatra_exe}")
+        
+        # Comando per stampare con SumatraPDF con parametri avanzati
+        cmd = [
+            sumatra_exe,
+            "-print-to", printer_name,
+            "-silent",
+            pdf_path
+        ]
+        
+        # SumatraPDF supporta alcuni parametri di stampa
+        if duplex == 'on':
+            cmd.extend(["-print-settings", "duplex"])
+            current_app.logger.info("📄 SumatraPDF: abilitato duplex")
+
+        if color == 'bw':
+            cmd.extend(["-print-settings", "monochrome"])
+            current_app.logger.info("📄 SumatraPDF: abilitato bianco e nero")
+
+        # Per stampe multiple, eseguiamo il comando più volte
+        if copies > 1:
+            current_app.logger.info(f"📄 SumatraPDF: stampando {copies} copie")
+            
+        success_count = 0
+        for copy_num in range(copies):
+            if copies > 1:
+                current_app.logger.info(f"📄 Stampa copia {copy_num + 1}/{copies}")
+                
+            result = subprocess.run(cmd, capture_output=True, timeout=30)
+            
+            if result.returncode == 0:
+                success_count += 1
+                if copies > 1:
+                    import time
+                    time.sleep(1)  # Piccola pausa tra le copie
+            else:
+                current_app.logger.warning(f"⚠️ SumatraPDF errore copia {copy_num + 1}: {result.stderr.decode('utf-8', errors='ignore')}")
+                
+        return success_count == copies
+            
+    except Exception as e:
+        current_app.logger.warning(f"⚠️ Errore SumatraPDF: {str(e)}")
+        return False
+
+def print_with_ghostscript(pdf_path, printer_name, copies=1, duplex='off', color='color'):
+    """Stampa convertendo PDF in PostScript con Ghostscript"""
+    try:
+        # Cerca Ghostscript nei percorsi comuni
+        gs_paths = [
+            r"C:\Program Files\gs\gs*\bin\gswin64c.exe",
+            r"C:\Program Files (x86)\gs\gs*\bin\gswin32c.exe",
+        ]
+        
+        import glob
+        gs_exe = None
+        for path_pattern in gs_paths:
+            matches = glob.glob(path_pattern)
+            if matches:
+                gs_exe = matches[0]  # Prendi la prima versione trovata
+                break
+        
+        if not gs_exe:
+            current_app.logger.info("📄 Ghostscript non trovato")
+            return False
+        
+        current_app.logger.info(f"📄 Usando Ghostscript: {gs_exe}")
+        
+        # Converti PDF in PostScript e stampa
+        ps_path = pdf_path.replace('.pdf', '.ps')
+        
+        # Converti PDF a PostScript con parametri avanzati
+        convert_cmd = [
+            gs_exe,
+            "-dNOPAUSE", "-dBATCH", "-dSAFER",
+            "-sDEVICE=ps2write",
+            f"-sOutputFile={ps_path}",
+            pdf_path
+        ]
+        
+        # Aggiungi parametri per colore/bianco e nero
+        if color == 'bw':
+            convert_cmd.extend(["-sColorConversionStrategy=Gray", "-dProcessColorModel=/DeviceGray"])
+            current_app.logger.info("📄 Ghostscript: conversione in scala di grigi")
+        else:
+            current_app.logger.info("📄 Ghostscript: conversione a colori")
+        
+        result = subprocess.run(convert_cmd, capture_output=True, timeout=30)
+        
+        if result.returncode != 0:
+            current_app.logger.warning("⚠️ Ghostscript conversione fallita")
+            return False
+        
+        # Stampa il file PostScript con parametri avanzati
+        success_count = 0
+        for copy_num in range(copies):
+            if copies > 1:
+                current_app.logger.info(f"📄 Ghostscript: stampa copia {copy_num + 1}/{copies}")
+                
+            print_cmd = [
+                "print", 
+                f"/D:{printer_name}",
+                ps_path
+            ]
+            
+            result = subprocess.run(print_cmd, shell=True, capture_output=True, timeout=30)
+            
+            if result.returncode == 0:
+                success_count += 1
+                if copies > 1:
+                    import time
+                    time.sleep(1)  # Piccola pausa tra le copie
+            else:
+                current_app.logger.warning(f"⚠️ Ghostscript errore stampa copia {copy_num + 1}")
+        
+        # Pulisci il file PostScript
+        try:
+            if os.path.exists(ps_path):
+                os.unlink(ps_path)
+        except:
+            pass
+            
+        return success_count == copies
+            
+    except Exception as e:
+        current_app.logger.warning(f"⚠️ Errore Ghostscript: {str(e)}")
+        return False
+
+def print_with_windows_command(pdf_path, printer_name, copies=1, duplex='off', color='color'):
+    """Stampa usando il comando print di Windows con coda di stampa"""
+    try:
+        current_app.logger.info(f"🖨️ Usando comando Windows print per {printer_name}")
+        
+        # Usa il comando print di Windows per inviare alla coda con parametri avanzati
+        success_count = 0
+        for copy_num in range(copies):
+            if copies > 1:
+                current_app.logger.info(f"🖨️ Windows command: stampa copia {copy_num + 1}/{copies}")
+
+            # Il comando print di Windows ha limitate opzioni per il colore
+            # Possiamo tentare di impostare preferenze tramite registry o utilizzare
+            # un approccio alternativo per il bianco e nero
+            cmd = f'print /D:"{printer_name}" "{pdf_path}"'
+
+            if color == 'bw':
+                current_app.logger.info("🖨️ Windows command: tentativo bianco e nero")
+                # Nota: il comando print di Windows non supporta direttamente bianco/nero
+                # ma possiamo tentare di impostare preferenze di stampa
+            
+            result = subprocess.run(
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=20
+            )
+            
+            if result.returncode == 0:
+                success_count += 1
+                if copies > 1:
+                    import time
+                    time.sleep(2)  # Pausa più lunga per il comando Windows
+            else:
+                current_app.logger.warning(f"⚠️ Windows command errore copia {copy_num + 1}: {result.stderr.strip()}")
+                
+        return success_count == copies
+            
+    except subprocess.TimeoutExpired:
+        current_app.logger.error("❌ Timeout comando Windows print")
+        return False
+    except Exception as e:
+        current_app.logger.warning(f"⚠️ Errore comando Windows print: {str(e)}")
+        return False
+
+def print_pdf_windows_powershell(pdf_data, printer_name, filename, copies=1, duplex='off', color='color'):
+    """Stampa PDF su Windows usando PowerShell con Start-Process (migliorato)"""
+    import tempfile
+    import os
+    
+    current_app.logger.info(f"🖨️ Stampa Windows PowerShell su: {printer_name}")
+    
+    # Crea file temporaneo
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+        tmp_file.write(pdf_data)
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Comando PowerShell migliorato per stampare PDF
+        ps_command = f'''
+        $printer = "{printer_name}"
+        $file = "{tmp_file_path}"
+        $copies = {copies}
+        $duplex = "{duplex}"
+        $color = "{color}"
+        
+        # Verifica che la stampante esista
+        $printerExists = Get-Printer -Name $printer -ErrorAction SilentlyContinue
+        if (-not $printerExists) {{
+            Write-Error "Stampante non trovata: $printer"
+            exit 1
+        }}
+        
+        Write-Output "Stampa con parametri: $copies copie, duplex=$duplex, color=$color"
+
+        # Gestisci impostazioni di colore
+        if ($color -eq "bw") {{
+            Write-Output "Impostazione bianco e nero abilitata"
+        }} else {{
+            Write-Output "Impostazione a colori"
+        }}
+
+        # Gestisci duplex
+        if ($duplex -eq "on") {{
+            Write-Output "Duplex abilitato"
+        }} else {{
+            Write-Output "Duplex disabilitato"
+        }}
+        
+        # Prova a utilizzare Adobe Reader se disponibile
+        $adobePaths = @(
+            "C:\\Program Files\\Adobe\\Acrobat DC\\Acrobat\\Acrobat.exe",
+            "C:\\Program Files (x86)\\Adobe\\Acrobat Reader DC\\Reader\\AcroRd32.exe",
+            "C:\\Program Files\\Adobe\\Acrobat Reader DC\\Reader\\AcroRd32.exe"
+        )
+        
+        $adobeFound = $false
+        foreach ($path in $adobePaths) {{
+            if (Test-Path $path) {{
+                Write-Output "Usando Adobe Reader: $path"
+                # Stampa multiple copie con Adobe Reader utilizzando le impostazioni
+                for ($i = 1; $i -le $copies; $i++) {{
+                    Write-Output "Stampa copia $i di $copies"
+                    Start-Process -FilePath $path -ArgumentList "/t", $file, $printer -Wait -WindowStyle Hidden
+                    if ($i -lt $copies) {{ Start-Sleep -Seconds 1 }}
+                }}
+                $adobeFound = $true
+                break
+            }}
+        }}
+        
+        if (-not $adobeFound) {{
+            # Fallback: usa associazione file Windows con gestione copie
+            Write-Output "Adobe Reader non trovato, usando associazione Windows"
+            for ($i = 1; $i -le $copies; $i++) {{
+                Write-Output "Stampa copia $i di $copies con associazione Windows"
+                Start-Process -FilePath $file -Verb Print -WindowStyle Hidden -Wait
+                if ($i -lt $copies) {{ Start-Sleep -Seconds 2 }}
+            }}
+        }}
+        
+        Write-Output "PDF stampato con successo su $printer"
+        '''
+        
+        # Esegui comando PowerShell
+        try:
+            result = subprocess.run(
+                ['powershell', '-Command', ps_command],
+                capture_output=True,
+                text=True,
+                timeout=45  # Aumentato timeout per Adobe Reader
+            )
+        except subprocess.TimeoutExpired:
+            current_app.logger.error(f"❌ Timeout PowerShell stampa dopo 45 secondi")
+            return False
+        except Exception as ps_error:
+            current_app.logger.error(f"❌ Errore esecuzione PowerShell: {str(ps_error)}")
+            return False
+        
+        if result.returncode == 0:
+            current_app.logger.info(f"✅ PowerShell stampa completata: {result.stdout.strip()}")
+            return True
+        else:
+            current_app.logger.error(f"❌ Errore PowerShell: {result.stderr.strip()}")
+            return False
+    finally:
+        # Pulisci il file temporaneo dopo un delay
+        try:
+            import time
+            time.sleep(5)  # Aspetta che la stampa sia completata
+            if os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path)
+        except:
+            pass
+
+def print_pdf_unix(pdf_data, printer_name, filename, copies=1, duplex='off', color='color'):
+    """Stampa PDF su sistemi Unix/Linux"""
+    import tempfile
+    import os
+    
+    current_app.logger.info(f"🖨️ Stampa Unix su: {printer_name}")
+    
+    # Crea file temporaneo
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+        tmp_file.write(pdf_data)
+        tmp_file_path = tmp_file.name
+    
+    try:
+        # Usa lp per stampare su Unix
+        result = subprocess.run(
+            ['lp', '-d', printer_name, tmp_file_path],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        
+        if result.returncode == 0:
+            current_app.logger.info(f"✅ Unix stampa completata: {result.stdout.strip()}")
+            return True
+        else:
+            current_app.logger.error(f"❌ Errore Unix lp: {result.stderr.strip()}")
+            return False
+            
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore Unix: {str(e)}")
+        return False
+    finally:
+        # Pulisci il file temporaneo
+        try:
+            if os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path)
+        except:
+            pass
+
+def get_system_printers():
+    """Recupera la lista delle stampanti disponibili nel sistema"""
+    printers = []
+    
+    try:
+        # Prova prima con win32print (Windows)
+        if platform.system() == 'Windows':
+            try:
+                import win32print
+                current_app.logger.info("🖨️ Recuperando stampanti Windows con win32print...")
+                
+                # Ottieni la stampante predefinita
+                default_printer = win32print.GetDefaultPrinter()
+                current_app.logger.info(f"🖨️ Stampante predefinita: {default_printer}")
+                
+                # Enumera tutte le stampanti
+                printer_list = win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)
+                
+                for printer in printer_list:
+                    printer_name = printer[2]  # Nome stampante
+                    is_default = printer_name == default_printer
+                    
+                    printers.append({
+                        'name': printer_name,
+                        'is_default': is_default,
+                        'status': 'available',
+                        'type': 'local' if printer[0] & win32print.PRINTER_ENUM_LOCAL else 'network'
+                    })
+                    current_app.logger.info(f"🖨️ Trovata stampante: {printer_name} (default: {is_default})")
+                
+            except ImportError:
+                current_app.logger.warning("⚠️ win32print non disponibile, usando metodo alternativo...")
+                # Fallback con PowerShell
+                printers = get_printers_powershell()
+                
+        else:
+            # Per sistemi non-Windows (Linux/Mac)
+            current_app.logger.info("🖨️ Sistema non-Windows rilevato, usando lpstat...")
+            printers = get_printers_unix()
+            
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore nel recupero stampanti: {str(e)}")
+        # Fallback con stampanti di default
+        printers = get_default_printers()
+    
+    # Ordina per mettere la predefinita per prima
+    printers.sort(key=lambda x: (not x.get('is_default', False), x['name']))
+    
+    current_app.logger.info(f"✅ Trovate {len(printers)} stampanti totali")
+    return printers
+
+def get_printers_powershell():
+    """Recupera stampanti Windows usando PowerShell (fallback)"""
+    printers = []
+    
+    try:
+        current_app.logger.info("🖨️ Recuperando stampanti con PowerShell...")
+        
+        # Comando PowerShell per ottenere le stampanti
+        cmd = ['powershell', '-Command', 'Get-Printer | Select-Object Name,Default | ConvertTo-Json']
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            import json
+            printer_data = json.loads(result.stdout)
+            
+            # Se c'è una sola stampante, PowerShell potrebbe non restituire un array
+            if isinstance(printer_data, dict):
+                printer_data = [printer_data]
+            
+            for printer in printer_data:
+                printers.append({
+                    'name': printer['Name'],
+                    'is_default': printer.get('Default', False),
+                    'status': 'available',
+                    'type': 'local'
+                })
+                current_app.logger.info(f"🖨️ Trovata stampante PowerShell: {printer['Name']}")
+        
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore PowerShell: {str(e)}")
+    
+    return printers
+
+def get_printers_unix():
+    """Recupera stampanti per sistemi Unix/Linux/Mac"""
+    printers = []
+    
+    try:
+        current_app.logger.info("🖨️ Recuperando stampanti Unix con lpstat...")
+        
+        # Usa lpstat per ottenere le stampanti
+        result = subprocess.run(['lpstat', '-p'], capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            for line in result.stdout.split('\n'):
+                if line.startswith('printer '):
+                    printer_name = line.split(' ')[1]
+                    printers.append({
+                        'name': printer_name,
+                        'is_default': False,  # Determina la predefinita separatamente
+                        'status': 'available',
+                        'type': 'local'
+                    })
+                    current_app.logger.info(f"🖨️ Trovata stampante Unix: {printer_name}")
+        
+        # Ottieni la stampante predefinita
+        default_result = subprocess.run(['lpstat', '-d'], capture_output=True, text=True, timeout=5)
+        if default_result.returncode == 0:
+            for line in default_result.stdout.split('\n'):
+                if 'system default destination' in line:
+                    default_name = line.split(':')[-1].strip()
+                    for printer in printers:
+                        if printer['name'] == default_name:
+                            printer['is_default'] = True
+                            break
+        
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore Unix: {str(e)}")
+    
+    return printers
+
+def get_default_printers():
+    """Restituisce stampanti di fallback quando il rilevamento automatico fallisce"""
+    current_app.logger.info("🖨️ Usando stampanti di fallback...")
+    
+    return [
+        {
+            'name': 'Stampante predefinita del sistema',
+            'is_default': True,
+            'status': 'unknown',
+            'type': 'default'
+        },
+        {
+            'name': 'Microsoft Print to PDF',
+            'is_default': False,
+            'status': 'available',
+            'type': 'virtual'
+        }
+    ]
+
+@ddt_bp.route('/api/printers', methods=['GET'])
+@login_required
+def get_printers_api():
+    """API endpoint per recuperare la lista delle stampanti disponibili"""
+    try:
+        current_app.logger.info("🖨️ API chiamata per recuperare stampanti...")
+        
+        # Recupera le stampanti del sistema
+        printers = get_system_printers()
+        
+        # Verifica software PDF disponibili
+        pdf_software = check_pdf_software_availability()
+        
+        # Aggiungi alcune opzioni speciali
+        special_options = [
+            {
+                'name': '🌐 Mostra finestra di stampa del browser',
+                'is_default': False,
+                'status': 'available',
+                'type': 'browser'
+            }
+        ]
+        
+        # Combina tutto
+        all_options = special_options + printers
+        
+        return jsonify({
+            'success': True,
+            'printers': all_options,
+            'total': len(all_options),
+            'pdf_software': pdf_software,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore nell'API stampanti: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'printers': get_default_printers(),
+            'total': 0
+        }), 500
+
+def check_pdf_software_availability():
+    """Verifica la disponibilità di software per stampare PDF"""
+    pdf_software = {
+        'adobe_reader': False,
+        'sumatra_pdf': False,
+        'ghostscript': False,
+        'recommendations': []
+    }
+    
+    try:
+        # Cerca Adobe Reader
+        adobe_paths = [
+            r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe",
+            r"C:\Program Files (x86)\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe",
+            r"C:\Program Files\Adobe\Acrobat Reader DC\Reader\AcroRd32.exe"
+        ]
+        
+        for path in adobe_paths:
+            if os.path.exists(path):
+                pdf_software['adobe_reader'] = True
+                current_app.logger.info(f"✅ Adobe Reader trovato: {path}")
+                break
+        
+        # Cerca SumatraPDF
+        sumatra_paths = [
+            r"C:\Program Files\SumatraPDF\SumatraPDF.exe",
+            r"C:\Program Files (x86)\SumatraPDF\SumatraPDF.exe"
+        ]
+        
+        for path in sumatra_paths:
+            if os.path.exists(path):
+                pdf_software['sumatra_pdf'] = True
+                current_app.logger.info(f"✅ SumatraPDF trovato: {path}")
+                break
+        
+        # Cerca Ghostscript
+        import glob
+        gs_patterns = [
+            r"C:\Program Files\gs\gs*\bin\gswin64c.exe",
+            r"C:\Program Files (x86)\gs\gs*\bin\gswin32c.exe"
+        ]
+        
+        for pattern in gs_patterns:
+            if glob.glob(pattern):
+                pdf_software['ghostscript'] = True
+                current_app.logger.info(f"✅ Ghostscript trovato")
+                break
+        
+        # Genera raccomandazioni
+        if not pdf_software['adobe_reader'] and not pdf_software['sumatra_pdf']:
+            pdf_software['recommendations'].append(
+                "⚠️ IMPORTANTE: Installa Adobe Reader o SumatraPDF per evitare stampe di geroglifici"
+            )
+            pdf_software['recommendations'].append(
+                "💡 Download Adobe Reader: https://get.adobe.com/reader/"
+            )
+            pdf_software['recommendations'].append(
+                "💡 Download SumatraPDF: https://www.sumatrapdfreader.org/download-free-pdf-viewer.html"
+            )
+        
+        current_app.logger.info(f"📊 Software PDF disponibili: {pdf_software}")
+        
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore nel check software PDF: {str(e)}")
+    
+    return pdf_software
+
+def rgb_to_grayscale(rgb_color):
+    """Converte un colore RGB in scala di grigi usando la formula standard"""
+    if hasattr(rgb_color, 'red') and hasattr(rgb_color, 'green') and hasattr(rgb_color, 'blue'):
+        # È un colore ReportLab
+        gray = 0.299 * rgb_color.red + 0.587 * rgb_color.green + 0.114 * rgb_color.blue
+        return colors.HexColor(f'#{int(gray * 255):02x}{int(gray * 255):02x}{int(gray * 255):02x}')
+    elif isinstance(rgb_color, str) and rgb_color.startswith('#'):
+        # È un colore hex
+        rgb_color = rgb_color.lstrip('#')
+        r = int(rgb_color[0:2], 16) / 255.0
+        g = int(rgb_color[2:4], 16) / 255.0
+        b = int(rgb_color[4:6], 16) / 255.0
+        gray = 0.299 * r + 0.587 * g + 0.114 * b
+        return colors.HexColor(f'#{int(gray * 255):02x}{int(gray * 255):02x}{int(gray * 255):02x}')
+    else:
+        # Colore non riconosciuto, restituisci nero
+        return colors.black
+
+def convert_logo_to_grayscale(logo_path, output_path=None, darken_factor=1.2):
+    """
+    Converte il logo in scala di grigi e lo rende più scuro se necessario,
+    con analisi intelligente della luminosità e scurimento adattivo
+
+    Args:
+        logo_path: Path del logo originale
+        output_path: Path dove salvare il logo convertito (se None, usa un path temporaneo)
+        darken_factor: Fattore base per scurire il logo (1.0 = no change, >1.0 = più scuro)
+
+    Returns:
+        str: Path del logo convertito
+    """
+    try:
+        from PIL import Image, ImageOps, ImageStat
+        import numpy as np
+
+        # Se non specificato output_path, usa un path temporaneo
+        if output_path is None:
+            import tempfile
+            output_path = os.path.join(tempfile.gettempdir(), 'logo_grayscale.png')
+
+        # Carica l'immagine
+        img = Image.open(logo_path).convert('RGBA')
+
+        # Analizza la luminosità dell'immagine originale
+        brightness = ImageStat.Stat(img.convert('L')).mean[0]  # Luminosità media (0-255)
+        current_app.logger.info(f"🎨 Luminosità logo originale: {brightness:.1f}/255")
+
+        # Calcola il fattore di scurimento basato sulla luminosità
+        # Nota: fattori < 1 scuriscono, fattori > 1 schiariscono
+        if brightness > 220:  # Logo molto chiaro (quasi bianco)
+            final_darken_factor = 0.33  # Scurimento molto aggressivo (1/3 della luminosità)
+            current_app.logger.info(f"🌟 Logo molto chiaro - applico scurimento massimo: {final_darken_factor:.2f}x")
+        elif brightness > 180:  # Logo chiaro
+            final_darken_factor = 0.40  # Scurimento aggressivo (40% della luminosità)
+            current_app.logger.info(f"☀️ Logo chiaro - applico scurimento forte: {final_darken_factor:.2f}x")
+        elif brightness > 140:  # Logo medio-chiaro
+            final_darken_factor = 0.50  # Scurimento significativo (50% della luminosità)
+            current_app.logger.info(f"🌤️ Logo medio-chiaro - applico scurimento medio: {final_darken_factor:.2f}x")
+        elif brightness > 100:  # Logo medio-scuro
+            final_darken_factor = 0.67  # Scurimento moderato (67% della luminosità)
+            current_app.logger.info(f"🌥️ Logo medio-scuro - applico scurimento leggero: {final_darken_factor:.2f}x")
+        else:  # Logo già scuro
+            final_darken_factor = 0.83  # Scurimento minimo (83% della luminosità)
+            current_app.logger.info(f"🌙 Logo scuro - applico scurimento minimo: {final_darken_factor:.2f}x")
+
+        # Converti in scala di grigi
+        grayscale_img = ImageOps.grayscale(img)
+
+        # Applica il fattore di scurimento intelligente
+        if final_darken_factor != 1.0:
+            # Crea una nuova immagine con i valori scuriti
+            img_array = np.array(grayscale_img)
+
+            # Crea una maschera per le aree bianche/chiarissime (da preservare)
+            # Le aree con luminosità > 240 dovrebbero rimanere bianche
+            white_mask = img_array > 240
+
+            # Applica il fattore di scurimento (fattori < 1 scuriscono)
+            darkened_array = img_array * final_darken_factor
+
+            # Mantieni le aree bianche originali
+            darkened_array[white_mask] = img_array[white_mask]
+
+            img_array = np.clip(darkened_array, 0, 255).astype(np.uint8)
+            grayscale_img = Image.fromarray(img_array, mode='L')
+
+        # Verifica la luminosità finale
+        final_brightness = ImageStat.Stat(grayscale_img).mean[0]
+        current_app.logger.info(f"🎨 Luminosità logo finale: {final_brightness:.1f}/255")
+
+        # Salva l'immagine convertita
+        grayscale_img.save(output_path)
+
+        current_app.logger.info(f"✅ Logo convertito in scala di grigi con scurimento adattivo: {output_path}")
+        return output_path
+
+    except ImportError as e:
+        current_app.logger.warning(f"⚠️ PIL/Pillow non disponibile, impossibile convertire il logo: {e}")
+        return logo_path
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore nella conversione del logo: {str(e)}")
+        return logo_path
+
+def generate_ddt_pdf(ddt, cliente, empresa, is_muto=False, color_mode='color'):
+    """Generate a stunning, professional PDF document for the DDT with exceptional layout
+
+    Args:
+        ddt: DDT object
+        cliente: Client object
+        empresa: Company object
+        is_muto: If True, generates a muted version without prices
+        color_mode: 'color' for full color, 'bw' for grayscale
+    """
     buffer = io.BytesIO()
     
     # Create the PDF document with optimized margins
@@ -2809,22 +3810,39 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         leftMargin=15*mm,
         topMargin=80*mm,  # Slightly increased for better header
         bottomMargin=40*mm,  # Optimized for footer with signatures
-        title=f"DDT #{ddt.IdAlbaran}",
+        title=f"DDT {'MUTO ' if is_muto else ''}#{ddt.IdAlbaran}",
         author=empresa.NombreEmpresa if empresa else "DBLogiX"
     )
     
     # Original sophisticated color palette - restored
-    primary_color = colors.HexColor('#1a365d')      # Deep professional blue
-    secondary_color = colors.HexColor('#2d5a7b')    # Lighter blue
-    accent_color = colors.HexColor('#e53e3e')       # Elegant red accent
-    success_color = colors.HexColor('#38a169')      # Success green
-    text_primary = colors.HexColor('#2d3748')       # Primary text
-    text_secondary = colors.HexColor('#4a5568')     # Secondary text
-    text_muted = colors.HexColor('#718096')         # Muted text
-    border_light = colors.HexColor('#e2e8f0')       # Light borders
-    background_light = colors.HexColor('#f7fafc')   # Light background
-    background_accent = colors.HexColor('#ebf8ff')  # Accent background
-    white = colors.white
+    if color_mode == 'bw':
+        # Modalità bianco e nero - converti tutti i colori in scala di grigi
+        primary_color = colors.HexColor('#333333')      # Grigio scuro
+        secondary_color = colors.HexColor('#555555')    # Grigio medio
+        accent_color = colors.HexColor('#777777')       # Grigio chiaro
+        success_color = colors.HexColor('#333333')      # Grigio scuro
+        text_primary = colors.HexColor('#333333')       # Grigio scuro
+        text_secondary = colors.HexColor('#555555')     # Grigio medio
+        text_muted = colors.HexColor('#777777')         # Grigio chiaro
+        border_light = colors.HexColor('#CCCCCC')       # Grigio chiaro per bordi
+        background_light = colors.HexColor('#F5F5F5')   # Grigio molto chiaro
+        background_accent = colors.HexColor('#EEEEEE')  # Grigio chiaro per accenti
+        white = colors.white
+        current_app.logger.info(f"🎨 Modalità bianco e nero attivata - PDF generato in scala di grigi")
+    else:
+        # Modalità colore
+        primary_color = colors.HexColor('#1a365d')      # Deep professional blue
+        secondary_color = colors.HexColor('#2d5a7b')    # Lighter blue
+        accent_color = colors.HexColor('#e53e3e')       # Elegant red accent
+        success_color = colors.HexColor('#38a169')      # Success green
+        text_primary = colors.HexColor('#2d3748')       # Primary text
+        text_secondary = colors.HexColor('#4a5568')     # Secondary text
+        text_muted = colors.HexColor('#718096')         # Muted text
+        border_light = colors.HexColor('#e2e8f0')       # Light borders
+        background_light = colors.HexColor('#f7fafc')   # Light background
+        background_accent = colors.HexColor('#ebf8ff')  # Accent background
+        white = colors.white
+        current_app.logger.info(f"🎨 Modalità colore attivata - PDF generato a colori")
     
     # Premium typography system with improved sizes
     styles = getSampleStyleSheet()
@@ -2960,23 +3978,44 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         leading=12
     ))
     
+    # Footer Style - for DDT MUTO notes
+    styles.add(ParagraphStyle(
+        name='FooterStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=text_muted,
+        fontName='Helvetica',
+        alignment=1,
+        leading=12
+    ))
+    
     # Collect all elements
     elements = []
     
     # === PREMIUM PRODUCTS TABLE ===
     products_data = []
     
-    # Sophisticated table header
-    header_style = [
-        Paragraph("<b>COD.</b>", styles['TableHeader']),
-        Paragraph("<b>DESCRIZIONE ARTICOLO</b>", styles['TableHeader']),
-        Paragraph("<b>U.M.</b>", styles['TableHeader']),
-        Paragraph("<b>QUANTITÀ</b>", styles['TableHeader']),
-        Paragraph("<b>PREZZO</b>", styles['TableHeader']),
-        Paragraph("<b>SCONTO</b>", styles['TableHeader']),
-        Paragraph("<b>IVA</b>", styles['TableHeader']),
-        Paragraph("<b>IMPORTO</b>", styles['TableHeader']),
-    ]
+    # Sophisticated table header (conditional based on is_muto)
+    if is_muto:
+        # DDT MUTO - only 4 columns
+        header_style = [
+            Paragraph("<b>COD.</b>", styles['TableHeader']),
+            Paragraph("<b>DESCRIZIONE ARTICOLO</b>", styles['TableHeader']),
+            Paragraph("<b>U.M.</b>", styles['TableHeader']),
+            Paragraph("<b>QUANTITÀ</b>", styles['TableHeader']),
+        ]
+    else:
+        # DDT completo - 8 columns with prices
+        header_style = [
+            Paragraph("<b>COD.</b>", styles['TableHeader']),
+            Paragraph("<b>DESCRIZIONE ARTICOLO</b>", styles['TableHeader']),
+            Paragraph("<b>U.M.</b>", styles['TableHeader']),
+            Paragraph("<b>QUANTITÀ</b>", styles['TableHeader']),
+            Paragraph("<b>PREZZO</b>", styles['TableHeader']),
+            Paragraph("<b>SCONTO</b>", styles['TableHeader']),
+            Paragraph("<b>IVA</b>", styles['TableHeader']),
+            Paragraph("<b>IMPORTO</b>", styles['TableHeader']),
+        ]
     products_data.append(header_style)
     
     # Get product lines
@@ -3021,20 +4060,36 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         else:  # Unit-based product
             quantity_display = f"{quantity:.0f}"
         
-        # Create elegant table rows
-        products_data.append([
-            Paragraph(code if code != '999' else '', styles['TableCell']),
-            Paragraph(description, styles['TableCellLeft']),
-            Paragraph(unit, styles['TableCell']),
-            Paragraph(quantity_display, styles['TableCellRight']),
-            Paragraph(f"€ {price:.2f}", styles['TableCellRight']),
-            Paragraph(discount_display, styles['TableCell']),
-            Paragraph(f"{vat_rate:.0f}%", styles['TableCell']),
-            Paragraph(f"<b>€ {line_total:.2f}</b>", styles['TableCellRight']),
-        ])
+        # Create elegant table rows (conditional based on is_muto)
+        if is_muto:
+            # DDT MUTO - only 4 columns, no prices
+            products_data.append([
+                Paragraph(code if code != '999' else '', styles['TableCell']),
+                Paragraph(description, styles['TableCellLeft']),
+                Paragraph(unit, styles['TableCell']),
+                Paragraph(quantity_display, styles['TableCellRight']),
+            ])
+        else:
+            # DDT completo - 8 columns with prices
+            products_data.append([
+                Paragraph(code if code != '999' else '', styles['TableCell']),
+                Paragraph(description, styles['TableCellLeft']),
+                Paragraph(unit, styles['TableCell']),
+                Paragraph(quantity_display, styles['TableCellRight']),
+                Paragraph(f"€ {price:.2f}", styles['TableCellRight']),
+                Paragraph(discount_display, styles['TableCell']),
+                Paragraph(f"{vat_rate:.0f}%", styles['TableCell']),
+                Paragraph(f"<b>€ {line_total:.2f}</b>", styles['TableCellRight']),
+            ])
     
-    # Create sophisticated products table with updated column widths
-    col_widths = [16*mm, 78*mm, 11*mm, 18*mm, 18*mm, 12*mm, 11*mm, 20*mm]
+    # Create sophisticated products table with updated column widths (conditional)
+    if is_muto:
+        # DDT MUTO - 4 columns responsive layout  
+        col_widths = [25*mm, 120*mm, 15*mm, 24*mm]  # Total: 184mm (fits in A4)
+    else:
+        # DDT completo - 8 columns with prices
+        col_widths = [16*mm, 78*mm, 11*mm, 18*mm, 18*mm, 12*mm, 11*mm, 20*mm]
+    
     products_table = Table(products_data, colWidths=col_widths, repeatRows=1)
     
     # Apply modern table styling
@@ -3083,109 +4138,111 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     elements.append(products_table)
     elements.append(Spacer(1, 8*mm))
     
-    # === DISCOUNT SUMMARY (if any discounts applied) ===
-    total_discount_amount = 0
-    lines_with_discount = 0
-    
-    # Calculate total discount savings
-    for line in lines:
-        discount_percent = float(line.Descuento or 0)
-        if discount_percent > 0:
-            lines_with_discount += 1
-            price = float(line.PrecioSinIVA or 0)
-            quantity = float(line.Peso or 0)
-            
-            # Calculate original amount (without discount)
-            original_subtotal = price * quantity
-            # Apply correct rounding to original subtotal
-            original_subtotal = round_product_amount(original_subtotal)
-            
-            # Calculate discount on subtotal (before VAT) - FIXED: Only show discount on base amount
-            discount_amount_subtotal = original_subtotal * (discount_percent / 100)
-            discount_amount_subtotal = round_product_amount(discount_amount_subtotal)
-            
-            # Only add the discount on the subtotal (excluding VAT on discount)
-            # This is the correct way to show discounts in commercial documents
-            total_discount_amount += discount_amount_subtotal
-    
-    # Add discount summary if there are discounts
-    if total_discount_amount > 0:
-        discount_summary_data = [
+    # === DISCOUNT SUMMARY AND FINANCIAL SUMMARY (only for DDT con prezzi) ===
+    if not is_muto:
+        # === DISCOUNT SUMMARY (if any discounts applied) ===
+        total_discount_amount = 0
+        lines_with_discount = 0
+
+        # Calculate total discount savings
+        for line in lines:
+            discount_percent = float(line.Descuento or 0)
+            if discount_percent > 0:
+                lines_with_discount += 1
+                price = float(line.PrecioSinIVA or 0)
+                quantity = float(line.Peso or 0)
+
+                # Calculate original amount (without discount)
+                original_subtotal = price * quantity
+                # Apply correct rounding to original subtotal
+                original_subtotal = round_product_amount(original_subtotal)
+
+                # Calculate discount on subtotal (before VAT)
+                discount_amount_subtotal = original_subtotal * (discount_percent / 100)
+                discount_amount_subtotal = round_product_amount(discount_amount_subtotal)
+
+                # Only add the discount on the subtotal
+                total_discount_amount += discount_amount_subtotal
+
+        # Add discount summary if there are discounts
+        if total_discount_amount > 0:
+            discount_summary_data = [
+                [
+                    Paragraph(f"<b>Sconti applicati su {lines_with_discount} articoli</b>", styles['SummaryLabel']),
+                    Paragraph(f"<b>- € {total_discount_amount:.2f}</b>", ParagraphStyle(
+                        name='DiscountValue',
+                        parent=styles['SummaryValue'],
+                        textColor=colors.HexColor('#e53e3e')  # Red color for discount
+                    ))
+                ]
+            ]
+
+            discount_summary_table = Table(discount_summary_data, colWidths=[40*mm, 30*mm])
+            discount_summary_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fff5f5')),
+                ('GRID', (0, 0), (-1, -1), 0.5, border_light),
+                ('ROUNDEDCORNERS', [3, 3, 3, 3]),
+            ]))
+
+            # Right align the discount summary
+            discount_summary_container = Table([[discount_summary_table]], colWidths=[doc.width])
+            discount_summary_container.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
+                ('VALIGN', (0, 0), (0, 0), 'TOP'),
+            ]))
+
+            elements.append(discount_summary_container)
+            elements.append(Spacer(1, 5*mm))
+
+    if not is_muto:
+        # === IMPROVED FINANCIAL SUMMARY ===
+        # Create a more prominent summary box
+        summary_data = [
             [
-                Paragraph(f"<b>Sconti applicati su {lines_with_discount} articoli</b>", styles['SummaryLabel']),
-                Paragraph(f"<b>- € {total_discount_amount:.2f}</b>", ParagraphStyle(
-                    name='DiscountValue',
-                    parent=styles['SummaryValue'],
-                    textColor=colors.HexColor('#e53e3e')  # Red color for discount
-                ))
+                Paragraph("<b>Subtotale (esclusa IVA)</b>", styles['SummaryLabel']),
+                Paragraph(f"<b>€ {subtotal_without_vat:.2f}</b>", styles['SummaryValue'])
+            ],
+            [
+                Paragraph("<b>Totale IVA</b>", styles['SummaryLabel']),
+                Paragraph(f"<b>€ {total_vat:.2f}</b>", styles['SummaryValue'])
+            ],
+            [
+                Paragraph("<b>TOTALE GENERALE</b>", styles['SummaryLabel']),
+                Paragraph(f"<b>€ {total_amount:.2f}</b>", styles['SummaryValue'])
             ]
         ]
-        
-        discount_summary_table = Table(discount_summary_data, colWidths=[40*mm, 30*mm])
-        discount_summary_table.setStyle(TableStyle([
+
+        summary_table = Table(summary_data, colWidths=[40*mm, 30*mm])
+        summary_table.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
             ('TOPPADDING', (0, 0), (-1, -1), 4),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
             ('LEFTPADDING', (0, 0), (-1, -1), 8),
             ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#fff5f5')),  # Light red background
+            ('BACKGROUND', (0, 0), (-1, 1), background_light),
+            ('BACKGROUND', (0, 2), (-1, 2), background_accent),
+            ('LINEABOVE', (0, 2), (-1, 2), 1, success_color),
+            ('LINEBELOW', (0, 2), (-1, 2), 1, success_color),
             ('GRID', (0, 0), (-1, -1), 0.5, border_light),
             ('ROUNDEDCORNERS', [3, 3, 3, 3]),
         ]))
-        
-        # Right align the discount summary
-        discount_summary_container = Table([[discount_summary_table]], colWidths=[doc.width])
-        discount_summary_container.setStyle(TableStyle([
+
+        # Right align the summary
+        summary_container = Table([[summary_table]], colWidths=[doc.width])
+        summary_container.setStyle(TableStyle([
             ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
             ('VALIGN', (0, 0), (0, 0), 'TOP'),
         ]))
-        
-        elements.append(discount_summary_container)
-        elements.append(Spacer(1, 5*mm))
-    
-    # === IMPROVED FINANCIAL SUMMARY ===
-    # Create a more prominent summary box
-    summary_data = [
-        [
-            Paragraph("<b>Subtotale (esclusa IVA)</b>", styles['SummaryLabel']),
-            Paragraph(f"<b>€ {subtotal_without_vat:.2f}</b>", styles['SummaryValue'])
-        ],
-        [
-            Paragraph("<b>Totale IVA</b>", styles['SummaryLabel']),
-            Paragraph(f"<b>€ {total_vat:.2f}</b>", styles['SummaryValue'])
-        ],
-        [
-            Paragraph("<b>TOTALE GENERALE</b>", styles['SummaryLabel']),
-            Paragraph(f"<b>€ {total_amount:.2f}</b>", styles['SummaryValue'])
-        ]
-    ]
-    
-    summary_table = Table(summary_data, colWidths=[40*mm, 30*mm])
-    summary_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('LEFTPADDING', (0, 0), (-1, -1), 8),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-        ('BACKGROUND', (0, 0), (-1, 1), background_light),
-        ('BACKGROUND', (0, 2), (-1, 2), background_accent),
-        ('LINEABOVE', (0, 2), (-1, 2), 1, success_color),
-        ('LINEBELOW', (0, 2), (-1, 2), 1, success_color),
-        ('GRID', (0, 0), (-1, -1), 0.5, border_light),
-        ('ROUNDEDCORNERS', [3, 3, 3, 3]),
-    ]))
-    
-    # Right align the summary
-    summary_container = Table([[summary_table]], colWidths=[doc.width])
-    summary_container.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (0, 0), 'RIGHT'),
-        ('VALIGN', (0, 0), (0, 0), 'TOP'),
-    ]))
-    
-    elements.append(summary_container)
-    elements.append(Spacer(1, 10*mm))
+
+        elements.append(summary_container)
+        elements.append(Spacer(1, 10*mm))
     
     # === COMPACT TRANSPORT CONDITIONS ===
     # Calculate number of packages (colli) based on system configuration
@@ -3201,13 +4258,18 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     # Calculate number of packages
     num_packages = max(1, (total_articles + articles_per_package - 1) // articles_per_package)  # Round up division
     
+    # 🔥 NUOVO: Valori configurabili DDT dal database
+    causale_trasporto = ddt.EANCliente or "Vendita"
+    trasporto_a_cura = ddt.ObservacionesDocumento or "Mittente" 
+    aspetto_esteriore_beni = ddt.ObservacionesCliente or "Confezioni integre"
+    
     transport_data = [
         [
-            Paragraph("<b>Causale trasporto:</b> Vendita", styles['TransportInfo']),
-            Paragraph("<b>Trasporto a cura:</b> Mittente", styles['TransportInfo'])
+            Paragraph(f"<b>Causale del trasporto:</b> {causale_trasporto}", styles['TransportInfo']),
+            Paragraph(f"<b>Trasporto a cura:</b> {trasporto_a_cura}", styles['TransportInfo'])
         ],
         [
-            Paragraph("<b>Aspetto esteriore beni:</b> Confezioni integre", styles['TransportInfo']),
+            Paragraph(f"<b>Aspetto esteriore beni:</b> {aspetto_esteriore_beni}", styles['TransportInfo']),
             Paragraph(f"<b>Numero colli:</b> {num_packages}", styles['TransportInfo'])
         ],
         [
@@ -3231,6 +4293,14 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     
     elements.append(transport_table)
     
+    # Add note if DDT MUTO
+    if is_muto:
+        elements.append(Spacer(1, 5*mm))
+        elements.append(Paragraph(
+            "<b>DDT MUTO</b> - Documento di trasporto senza indicazione dei prezzi",
+            styles['FooterStyle']
+        ))
+    
     # === PREMIUM HEADER AND FOOTER FUNCTIONS ===
     def draw_premium_header_footer(canvas, doc):
         canvas.saveState()
@@ -3249,7 +4319,14 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         
         if os.path.exists(logo_path):
             try:
-                canvas.drawImage(logo_path, doc.leftMargin, A4[1] - 30*mm, 
+                # Se siamo in modalità bianco e nero, converti il logo
+                if color_mode == 'bw':
+                    current_app.logger.info("🎨 Conversione logo in scala di grigi per modalità bianco e nero")
+                    grayscale_logo_path = convert_logo_to_grayscale(logo_path, darken_factor=1.3)
+                    canvas.drawImage(grayscale_logo_path, doc.leftMargin, A4[1] - 30*mm,
+                                   width=logo_width, height=logo_height, mask='auto')
+                else:
+                    canvas.drawImage(logo_path, doc.leftMargin, A4[1] - 30*mm, 
                                width=logo_width, height=logo_height, mask='auto')
             except:
                 # Fallback elegant company name
@@ -3283,7 +4360,9 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         
         # Document number and date
         canvas.setFont('Helvetica', 10)
-        subtitle_text = f"N° {ddt.IdAlbaran} del {ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}"
+        # Controlla se il documento è MUTO dal titolo
+        is_muto_doc = 'MUTO' in doc.title if hasattr(doc, 'title') and doc.title else False
+        subtitle_text = f"{'DDT MUTO ' if is_muto_doc else ''}N° {ddt.IdAlbaran} del {ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A'}"
         subtitle_width = canvas.stringWidth(subtitle_text, 'Helvetica', 10)
         canvas.drawString(title_x + (title_width - subtitle_width)/2, title_y + 6*mm, subtitle_text)
         
@@ -3385,7 +4464,9 @@ def generate_ddt_pdf(ddt, cliente, empresa):
         # Document info footer
         canvas.setFont('Helvetica', 7)
         canvas.setFillColor(text_muted)
-        footer_text = f"DDT #{ddt.IdAlbaran} • Generato il {datetime.now().strftime('%d/%m/%Y alle ore %H:%M')} • DBLogiX Professional"
+        # Controlla se il documento è MUTO dal titolo
+        is_muto_doc = 'MUTO' in doc.title if hasattr(doc, 'title') and doc.title else False
+        footer_text = f"DDT {'MUTO ' if is_muto_doc else ''}#{ddt.IdAlbaran} • Generato il {datetime.now().strftime('%d/%m/%Y alle ore %H:%M')} • DBLogiX Professional"
         canvas.drawString(doc.leftMargin, 8*mm, footer_text)
         
         # Page number
@@ -3406,6 +4487,7 @@ def generate_ddt_pdf(ddt, cliente, empresa):
     buffer.close()
     
     return pdf_content
+
 
 # Utility function for calculating VAT rate from IdIva
 def get_vat_rate(id_iva):
@@ -5480,94 +6562,42 @@ def api_update_ticket_field():
                 'message': 'ID ticket non valido'
             }), 400
 
-        current_app.logger.info(f"🔍 TIPO TICKET: {'MANUALE (localStorage)' if is_manual_ticket else 'DATABASE'} - ID: {ticket_id_int}")
+        current_app.logger.info(f"🔍 TIPO TICKET: {'MANUALE' if is_manual_ticket else 'DATABASE'} - ID: {ticket_id_int}")
 
-        if is_manual_ticket:
-            # GESTIONE TICKET MANUALE - SALVATAGGIO SOLO IN SESSION
-            current_app.logger.info(f"💾 Salvataggio ticket manuale in session: {field} = {value}")
+        # NUOVO FLUSSO: SALVA TUTTE LE MODIFICHE IN LOCALSTORAGE (SESSION) PRIMA
+        current_app.logger.info(f"💾 Accumulo modifica in localStorage per ticket {ticket_id_int}: {field} = {value}")
 
-            # Salva in session per i ticket manuali
-            if 'manual_ticket_modifications' not in session:
-                session['manual_ticket_modifications'] = {}
+        # Salva tutte le modifiche in session (che funge da localStorage lato server)
+        if 'ddt_ticket_modifications' not in session:
+            session['ddt_ticket_modifications'] = {}
 
-            field_key = f"{ticket_id_int}_{line_id}_{field}" if line_id else f"{ticket_id_int}_{field}"
-            from datetime import datetime as dt
-            session['manual_ticket_modifications'][field_key] = {
-                'ticket_id': ticket_id_int,
-                'line_id': line_id,
-                'field': field,
-                'value': value,
-                'timestamp': dt.now().isoformat(),
-                'saved_to_db': False,
-                'is_manual': True
-            }
-            session.modified = True
+        field_key = f"{ticket_id_int}_{line_id}_{field}" if line_id else f"{ticket_id_int}_{field}"
+        from datetime import datetime as dt
+        session['ddt_ticket_modifications'][field_key] = {
+            'ticket_id': ticket_id_int,
+            'line_id': line_id,
+            'field': field,
+            'value': value,
+            'timestamp': dt.now().isoformat(),
+            'saved_to_db': False,
+            'is_manual': is_manual_ticket,
+            'original_value': None  # TODO: recuperare valore originale per confronto
+        }
+        session.modified = True
 
-            current_app.logger.info(f"✅ Campo {field} salvato in session per ticket manuale {ticket_id_int}, linea {line_id}: {value}")
+        current_app.logger.info(f"✅ Campo {field} accumulato in localStorage per ticket {ticket_id_int}, linea {line_id}: {value}")
 
-            return jsonify({
-                'success': True,
-                'message': f'{field.replace("_", " ").title()} salvato in session (ticket manuale)',
-                'ticket_id': ticket_id_int,
-                'line_id': line_id,
-                'field': field,
-                'value': value,
-                'saved_to_db': False,
-                'is_manual': True
-            })
-
-        # SALVATAGGIO DIRETTO NEL DATABASE (solo per ticket non manuali)
-        try:
-            current_app.logger.info(f"💾 Salvataggio diretto nel database: {field} = {value}")
-
-            if line_id:
-                # Aggiorna una linea specifica del ticket
-                success = update_ticket_line_in_database(ticket_id_int, line_id, field, value)
-            else:
-                # Aggiorna il ticket header (es. totale ticket)
-                success = update_ticket_header_in_database(ticket_id_int, field, value)
-            
-            if success:
-                current_app.logger.info(f"✅ Campo {field} salvato nel database per ticket {ticket_id_int}, linea {line_id}: {value}")
-
-                # Mantieni traccia in sessione per debug (opzionale)
-                if 'db_saved_fields' not in session:
-                    session['db_saved_fields'] = {}
-
-                field_key = f"{ticket_id_int}_{line_id}_{field}" if line_id else f"{ticket_id_int}_{field}"
-                from datetime import datetime as dt
-                session['db_saved_fields'][field_key] = {
-                    'ticket_id': ticket_id_int,
-                    'line_id': line_id,
-                    'field': field,
-                    'value': value,
-                    'timestamp': dt.now().isoformat(),
-                    'saved_to_db': True
-                }
-                session.modified = True
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'{field.replace("_", " ").title()} salvato nel database',
-                    'ticket_id': ticket_id_int,
-                    'line_id': line_id,
-                    'field': field,
-                    'value': value,
-                    'saved_to_db': True
-                })
-            else:
-                current_app.logger.error(f"❌ Errore nel salvataggio del campo {field} nel database")
-                return jsonify({
-                    'success': False,
-                    'message': 'Errore nel salvataggio del campo nel database'
-                }), 500
-                
-        except Exception as db_error:
-            current_app.logger.error(f"❌ Errore database durante salvataggio: {str(db_error)}")
-            return jsonify({
-                'success': False,
-                'message': f'Errore database: {str(db_error)}'
-            }), 500
+        return jsonify({
+            'success': True,
+            'message': f'{field.replace("_", " ").title()} accumulato in localStorage',
+            'ticket_id': ticket_id_int,
+            'line_id': line_id,
+            'field': field,
+            'value': value,
+            'saved_to_db': False,
+            'is_manual': is_manual_ticket,
+            'pending_save': True
+        })
         
     except Exception as e:
         current_app.logger.error(f"❌ Errore aggiornamento campo ticket: {str(e)}")
@@ -5890,102 +6920,141 @@ def modify(ddt_id):
             flash('Nessuna linea trovata nel DDT selezionato', 'warning')
             return redirect(url_for('ddt.detail', ddt_id=ddt_id))
 
+        # 🔥 NUOVO: Estrai valori campi configurabili dal DDT esistente
+        # I campi sono ora mappati direttamente sui campi della tabella
+        
+        ddt_config_values = {
+            'causale': ddt.EANCliente or '',
+            'aspetto_esteriore': ddt.ObservacionesCliente or '',
+            'trasporto_a_cura': ddt.ObservacionesDocumento or ''
+        }
+
+        current_app.logger.info(f"🔧 Valori campi configurabili DDT {ddt_id}: {ddt_config_values}")
+
         # Convert DDT lines to preview format
         preview_data = []
 
-        # Group lines by some identifier (since DDT doesn't have tickets, we'll create virtual tickets)
-        # We'll group by a sequential number for simplicity
-        ticket_counter = 1
+        # Group lines by NombrePlataforma (which contains the original ticket ID)
+        from collections import defaultdict
+        lines_by_ticket = defaultdict(list)
 
-        # Process each line
         for line in lines:
-            # Get product info
-            product = Article.query.get(line.IdArticulo)
+            # Use NombrePlataforma as ticket identifier
+            ticket_id = line.NombrePlataforma or f"virtual-{len(lines_by_ticket) + 1}"
+            lines_by_ticket[ticket_id].append(line)
 
-            # Calculate prices
-            line_price_without_vat = float(line.PrecioSinIVA or 0)
-            line_price_with_vat = float(line.PrecioConIVASinDtoL or 0)
+        # Process each ticket group
+        for ticket_id, ticket_lines in lines_by_ticket.items():
+            # Determine if this is a manual ticket (starts with "#-")
+            is_manual_ticket = ticket_id.startswith('#-')
 
-            # Calculate VAT rate
-            vat_rate = 0
-            if line.PorcentajeIVA:
-                vat_rate = float(line.PorcentajeIVA) / 100
+            # Extract the actual ticket ID
+            if is_manual_ticket:
+                actual_ticket_id = ticket_id[2:]  # Remove "#-" prefix
+            else:
+                actual_ticket_id = ticket_id
 
-            # If price with VAT is not available, calculate it from price without VAT
-            if line_price_with_vat == 0 and line_price_without_vat > 0:
-                line_price_with_vat = line_price_without_vat * (1 + vat_rate)
+            # Initialize totals for this ticket
+            ticket_lines_data = []
+            total_amount_with_vat = 0
 
-            # Apply discount to prices
-            discount_rate = float(line.Descuento or 0) / 100
-            if discount_rate > 0:
-                line_price_without_vat = line_price_without_vat * (1 - discount_rate)
-                line_price_with_vat = line_price_with_vat * (1 - discount_rate)
+            # Process each line in this ticket
+            for line in ticket_lines:
+                # Get product info
+                product = Article.query.get(line.IdArticulo)
 
-            # Calculate amounts
-            peso_value = float(line.Peso or 0)
-            comportamiento = getattr(line, 'Comportamiento', 0)
+                # Calculate prices
+                line_price_without_vat = float(line.PrecioSinIVA or 0)
+                line_price_with_vat = float(line.PrecioConIVASinDtoL or 0)
 
-            if comportamiento == 1:  # Weight-based
-                line_amount = peso_value * line_price_without_vat
-                line_amount_with_vat = peso_value * line_price_with_vat
-            else:  # Unit-based
-                line_amount = peso_value * line_price_without_vat
-                line_amount_with_vat = peso_value * line_price_with_vat
+                # Calculate VAT rate
+                vat_rate = 0
+                if line.PorcentajeIVA:
+                    vat_rate = float(line.PorcentajeIVA) / 100
 
-            # Create virtual ticket data
-            ticket_lines_data = [{
-                'id_linea_ticket': line.IdLineaAlbaran,  # Use IdLineaAlbaran as line identifier
-                'id_ticket': ticket_counter,  # Virtual ticket ID
-                'id_articulo': line.IdArticulo,
-                'descripcion': line.Descripcion,
-                'peso': line.Peso,
-                'quantita': line.Peso,  # Quantity field for ticket table
-                'precio': line_price_with_vat,
-                'precio_senza_iva': line_price_without_vat,
-                'precio_con_iva': line_price_with_vat,
-                'precio_standard': line_price_without_vat,
-                'precio_listino': line_price_without_vat,
-                'has_custom_price': False,
-                'price_difference': 0,
-                'importe': line_amount,
-                'importe_con_iva': line_amount_with_vat,
-                'desquento': float(line.Descuento or 0),  # Discount field for ticket table
-                'fecha_caducidad': line.FechaCaducidad,
-                'comportamiento': comportamiento,
-                'id_iva': line.IdIVA or 1,
-                'vat_rate': vat_rate,
-                'porcentaje_iva': int(float(line.PorcentajeIVA or 0)),
-                'texto_lote': line.TextoLote
-            }]
+                # If price with VAT is not available, calculate it from price without VAT
+                if line_price_with_vat == 0 and line_price_without_vat > 0:
+                    line_price_with_vat = line_price_without_vat * (1 + vat_rate)
 
-            # Create virtual ticket
+                # Apply discount to prices
+                discount_rate = float(line.Descuento or 0) / 100
+                if discount_rate > 0:
+                    line_price_without_vat = line_price_without_vat * (1 - discount_rate)
+                    line_price_with_vat = line_price_with_vat * (1 - discount_rate)
+
+                # Calculate amounts
+                peso_value = float(line.Peso or 0)
+                comportamiento = getattr(line, 'Comportamiento', 0)
+
+                if comportamiento == 1:  # Weight-based
+                    line_amount = peso_value * line_price_without_vat
+                    line_amount_with_vat = peso_value * line_price_with_vat
+                else:  # Unit-based
+                    line_amount = peso_value * line_price_without_vat
+                    line_amount_with_vat = peso_value * line_price_with_vat
+
+                # Add to total
+                total_amount_with_vat += line_amount_with_vat
+
+                # Create line data
+                line_data = {
+                    'id_linea_ticket': line.IdLineaAlbaran,  # Use IdLineaAlbaran as line identifier
+                    'id_ticket': actual_ticket_id,  # Use actual ticket ID from NombrePlataforma
+                    'id_articulo': line.IdArticulo,
+                    'descripcion': line.Descripcion,
+                    'peso': line.Peso,
+                    'quantita': line.Peso,  # Quantity field for ticket table
+                    'precio': line_price_with_vat,
+                    'precio_senza_iva': line_price_without_vat,
+                    'precio_con_iva': line_price_with_vat,
+                    'precio_standard': line_price_without_vat,
+                    'precio_listino': line_price_without_vat,
+                    'has_custom_price': False,
+                    'price_difference': 0,
+                    'importe': line_amount,
+                    'importe_con_iva': line_amount_with_vat,
+                    'desquento': float(line.Descuento or 0),  # Discount field for ticket table
+                    'fecha_caducidad': line.FechaCaducidad,
+                    'comportamiento': comportamiento,
+                    'id_iva': line.IdIVA or 1,
+                    'vat_rate': vat_rate,
+                    'porcentaje_iva': int(float(line.PorcentajeIVA or 0)),
+                    'texto_lote': line.TextoLote
+                }
+
+                ticket_lines_data.append(line_data)
+
+            # Create virtual ticket with correct ID
             virtual_ticket = {
-                'IdTicket': ticket_counter,
-                'NumTicket': f"DDT-{ddt.NumAlbaran}-{ticket_counter}",
+                'IdTicket': actual_ticket_id,
+                'NumTicket': f"DDT-{ddt.NumAlbaran}-{actual_ticket_id}",
                 'Fecha': ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else None,
                 'IdEmpresa': ddt.IdEmpresa,
                 'IdTienda': ddt.IdTienda,
                 'IdBalanzaMaestra': ddt.IdBalanzaMaestra,
                 'IdBalanzaEsclava': ddt.IdBalanzaEsclava,
-                'TipoVenta': line.TipoVenta or 0
+                'TipoVenta': ticket_lines[0].TipoVenta or 0,
+                'IsManualTicket': is_manual_ticket,
+                'OriginalNombrePlataforma': ticket_id
             }
 
             preview_data.append({
                 'ticket': virtual_ticket,
                 'ticket_info': {
-                    'id_ticket': ticket_counter,
-                    'id_empresa': ddt.IdEmpresa
+                    'id_ticket': actual_ticket_id,
+                    'id_empresa': ddt.IdEmpresa,
+                    'is_manual_ticket': is_manual_ticket
                 },
                 'lines': ticket_lines_data,
-                'ticket_total': line_amount_with_vat
+                'ticket_total': total_amount_with_vat
             })
-
-            ticket_counter += 1
 
         # Convert to JSON for JavaScript
         selected_tickets_json = json.dumps([{
             'id_ticket': item['ticket']['IdTicket'],
-            'id_empresa': item['ticket']['IdEmpresa']
+            'id_empresa': item['ticket']['IdEmpresa'],
+            'is_manual_ticket': item['ticket']['IsManualTicket'],
+            'original_nombre_plataforma': item['ticket']['OriginalNombrePlataforma']
         } for item in preview_data])
 
         # Ottieni informazioni listino del cliente se il modulo è abilitato
@@ -6034,17 +7103,49 @@ def modify(ddt_id):
                              create_form=create_form,
                              listini_enabled=listini_enabled,
                              has_dedicated_listino=has_dedicated_listino,
-                             listino_info=listino_info)
+                             listino_info=listino_info,
+                             ddt_config_values=ddt_config_values)  # 🔥 NUOVO: Valori campi configurabili
 
     except Exception as e:
         current_app.logger.error(f"❌ Errore caricamento modifica DDT {ddt_id}: {str(e)}")
         flash('Errore durante il caricamento della pagina di modifica', 'danger')
         return redirect(url_for('ddt.detail', ddt_id=ddt_id))
 
+@ddt_bp.route('/api/save_ticket_discounts', methods=['POST'])
+@login_required
+def api_save_ticket_discounts():
+    """Salva gli sconti dei ticket nella session del server"""
+    from flask import session
+
+    try:
+        data = request.get_json()
+        ticket_discounts = data.get('ticket_discounts', {})
+
+        current_app.logger.info(f"💰 Salvataggio sconti ticket nella session: {ticket_discounts}")
+
+        # Salva gli sconti nella session
+        session['ddt_ticket_discounts'] = json.dumps(ticket_discounts)
+        session.modified = True
+
+        return jsonify({
+            'success': True,
+            'message': f'Salvati {len(ticket_discounts)} sconti ticket nella session'
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore salvataggio sconti ticket: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Errore interno: {str(e)}'
+        }), 500
+
 @ddt_bp.route('/api/save_modifications/<int:ddt_id>', methods=['POST'])
 @login_required
 def api_save_ddt_modifications(ddt_id):
     """API to save DDT modifications to DAT_ALBARAN_LINEA table"""
+    from flask import session
+    from datetime import datetime
+
     try:
         # Controllo permessi personalizzato per DDT
         if not check_ddt_permissions():
@@ -6055,10 +7156,30 @@ def api_save_ddt_modifications(ddt_id):
 
         # Get the modifications data from request
         modifications = request.get_json()
-        if not modifications or 'lines' not in modifications:
+        current_app.logger.info(f"📥 Dati modifiche ricevuti per DDT {ddt_id}: {modifications}")
+
+        if not modifications:
+            current_app.logger.error(f"❌ Nessun dato ricevuto per DDT {ddt_id}")
             return jsonify({
                 'success': False,
-                'message': 'Dati modifiche non validi'
+                'message': 'Nessun dato ricevuto'
+            }), 400
+
+        # Verifica se ci sono linee, ticket aggiunti o data DDT modificata
+        has_lines = modifications.get('lines') and len(modifications.get('lines', [])) > 0
+        has_added_tickets = modifications.get('added_tickets') and len(modifications.get('added_tickets', [])) > 0
+        has_ddt_date = modifications.get('ddt_date') and modifications.get('ddt_date').strip() != ''
+
+        # 🔥 NUOVO: Verifica se ci sono campi configurabili DDT modificati
+        has_config_fields = any(key in modifications for key in ['causale', 'aspetto_esteriore', 'trasporto_a_cura'])
+
+        current_app.logger.info(f"🔍 Analisi dati ricevuti: lines={has_lines} ({len(modifications.get('lines', []))}), added_tickets={has_added_tickets} ({len(modifications.get('added_tickets', []))}), ddt_date={has_ddt_date} ({modifications.get('ddt_date', 'N/A')}), config_fields={has_config_fields}")
+
+        if not has_lines and not has_added_tickets and not has_ddt_date and not has_config_fields:
+            current_app.logger.warning(f"⚠️ Nessuna modifica valida trovata per DDT {ddt_id}")
+            return jsonify({
+                'success': False,
+                'message': 'Nessuna modifica valida trovata'
             }), 400
 
         # Verify DDT exists
@@ -6069,26 +7190,210 @@ def api_save_ddt_modifications(ddt_id):
                 'message': f'DDT {ddt_id} non trovato'
             }), 404
 
+        # ✅ NUOVO: AGGIORNA DATA DDT SE FORNITA
+        ddt_date_updated = False
+        if has_ddt_date:
+            try:
+                new_date = datetime.strptime(modifications['ddt_date'], '%Y-%m-%d').date()
+                current_app.logger.info(f"📅 Aggiornamento data DDT {ddt_id}: da {ddt.Fecha.date() if ddt.Fecha else 'N/A'} a {new_date}")
+
+                # Aggiorna la data nel database
+                ddt.Fecha = datetime.combine(new_date, ddt.Fecha.time()) if ddt.Fecha else datetime.combine(new_date, datetime.min.time())
+                ddt.FechaModificacion = datetime.now()
+
+                ddt_date_updated = True
+                current_app.logger.info(f"✅ Data DDT aggiornata con successo: {ddt.Fecha}")
+
+            except Exception as e:
+                current_app.logger.error(f"❌ Errore aggiornamento data DDT {ddt_id}: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Errore aggiornamento data DDT: {str(e)}'
+                }), 500
+
+        # 🔥 NUOVO: AGGIORNA CAMPI CONFIGURABILI DDT SE FORNITI
+        config_fields_updated = False
+        if has_config_fields:
+            try:
+                current_app.logger.info(f"🔧 Aggiornamento campi configurabili DDT {ddt_id}")
+
+                # 🔥 NUOVO: Aggiorna i campi configurabili con il nuovo mapping
+                if 'causale' in modifications:
+                    ddt.EANCliente = modifications['causale'] or ""
+                    current_app.logger.info(f"📝 Aggiornato causale in EANCliente: '{modifications['causale']}'")
+                    config_fields_updated = True
+
+                if 'aspetto_esteriore' in modifications:
+                    ddt.ObservacionesCliente = modifications['aspetto_esteriore'] or ""
+                    current_app.logger.info(f"📦 Aggiornato aspetto_esteriore in ObservacionesCliente: '{modifications['aspetto_esteriore']}'")
+                    config_fields_updated = True
+                    
+                if 'trasporto_a_cura' in modifications:
+                    ddt.ObservacionesDocumento = modifications['trasporto_a_cura'] or ""
+                    current_app.logger.info(f"🚚 Aggiornato trasporto_a_cura in ObservacionesDocumento: '{modifications['trasporto_a_cura']}'")
+                    config_fields_updated = True
+
+                # Aggiorna data modifica
+                if config_fields_updated:
+                    ddt.FechaModificacion = datetime.now()
+
+            except Exception as e:
+                current_app.logger.error(f"❌ Errore aggiornamento campi configurabili DDT {ddt_id}: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Errore aggiornamento campi configurabili: {str(e)}'
+                }), 500
+
+        # ✅ NUOVO: APPLICA MODIFICHE ACCUMULATE DAL LOCALSTORAGE AL DATABASE
+        applied_modifications = 0
+        ticket_modifications = session.get('ddt_ticket_modifications', {})
+        if ticket_modifications:
+            current_app.logger.info(f"🔄 Applicazione modifiche accumulate dal localStorage: {len(ticket_modifications)} modifiche")
+
+            for field_key, modification in ticket_modifications.items():
+                try:
+                    ticket_id = modification['ticket_id']
+                    line_id = modification['line_id']
+                    field = modification['field']
+                    value = modification['value']
+                    is_manual = modification['is_manual']
+
+                    current_app.logger.info(f"💾 Applicazione modifica: ticket={ticket_id}, linea={line_id}, campo={field}, valore={value}")
+
+                    # Applica la modifica al database
+                    if line_id:
+                        # Aggiorna una linea specifica del ticket
+                        success = update_ticket_line_in_database(ticket_id, line_id, field, value)
+                    else:
+                        # Aggiorna il ticket header (es. totale ticket)
+                        success = update_ticket_header_in_database(ticket_id, field, value)
+
+                    if success:
+                        # Marca come applicata al database
+                        modification['saved_to_db'] = True
+                        modification['applied_at'] = datetime.now().isoformat()
+                        applied_modifications += 1
+                        current_app.logger.info(f"✅ Modifica applicata: {field_key}")
+                    else:
+                        current_app.logger.error(f"❌ Errore applicazione modifica: {field_key}")
+
+                except Exception as e:
+                    current_app.logger.error(f"❌ Errore applicazione modifica {field_key}: {str(e)}")
+                    continue
+
+            current_app.logger.info(f"🎯 Modifiche applicate dal localStorage: {applied_modifications}/{len(ticket_modifications)}")
+
+        # ✅ NUOVO: APPLICA SCONTI TICKET DAL LOCALSTORAGE AL DATABASE
+        applied_discounts = 0
+        ticket_discounts_data = session.get('ddt_ticket_discounts')
+        if ticket_discounts_data:
+            try:
+                ticket_discounts = json.loads(ticket_discounts_data) if isinstance(ticket_discounts_data, str) else ticket_discounts_data
+                current_app.logger.info(f"💰 Applicazione sconti ticket dal localStorage: {ticket_discounts}")
+
+                for ticket_id_str, discount_percent in ticket_discounts.items():
+                    try:
+                        discount_percent = float(discount_percent)
+                        if discount_percent <= 0:
+                            continue
+
+                        current_app.logger.info(f"💸 Applicando sconto {discount_percent}% al ticket {ticket_id_str}")
+
+                        # Trova tutte le linee del ticket nel DDT
+                        ticket_lines = AlbaranLinea.query.filter_by(
+                            IdAlbaran=ddt_id,
+                            NombrePlataforma=str(ticket_id_str)
+                        ).all()
+
+                        if ticket_lines:
+                            current_app.logger.info(f"📋 Trovate {len(ticket_lines)} linee per ticket {ticket_id_str}")
+
+                            # Applica lo sconto a tutte le linee del ticket
+                            for line in ticket_lines:
+                                # Salva lo sconto nel campo Descuento
+                                line.Descuento = discount_percent
+                                line.TimeStamp = datetime.now()
+                                line.Modificado = 1
+
+                                # Converti i valori a float per evitare problemi di tipo con decimal.Decimal
+                                precio_sin_iva = float(line.PrecioSinIVA)
+                                peso = float(line.Peso)
+                                porcentaje_iva = float(line.PorcentajeIVA)
+
+                                # Ricalcola gli importi considerando lo sconto
+                                # Lo sconto viene applicato al prezzo senza IVA
+                                precio_sin_iva_scontato = precio_sin_iva * (1 - discount_percent / 100)
+                                line.ImporteSinIVASinDtoL = peso * precio_sin_iva_scontato
+                                line.ImporteDelIVAConDtoL = line.ImporteSinIVASinDtoL * (porcentaje_iva / 100)
+                                line.ImporteSinIVAConDtoL = line.ImporteSinIVASinDtoL
+                                line.ImporteDelIVAConDtoLConDtoTotal = line.ImporteDelIVAConDtoL
+                                line.ImporteConIVASinDtoL = line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL
+                                line.ImporteSinIVAConDtoLConDtoTotal = line.ImporteSinIVASinDtoL
+                                line.ImporteDelRE = 0
+                                line.ImporteDelDescuento = peso * precio_sin_iva * (discount_percent / 100)  # Importo dello sconto
+                                line.ImporteConDtoTotal = line.ImporteConIVASinDtoL
+                                line.Importe = line.ImporteConDtoTotal
+
+                                current_app.logger.info(f"✅ Sconto {discount_percent}% applicato alla linea {line.IdLineaAlbaran}: prezzo base €{precio_sin_iva:.2f}, prezzo scontato €{precio_sin_iva_scontato:.2f}, totale €{line.Importe:.2f}")
+
+                            applied_discounts += 1
+                        else:
+                            current_app.logger.warning(f"⚠️ Nessuna linea trovata per ticket {ticket_id_str} nel DDT {ddt_id}")
+
+                    except Exception as e:
+                        current_app.logger.error(f"❌ Errore applicazione sconto al ticket {ticket_id_str}: {str(e)}")
+                        continue
+
+                current_app.logger.info(f"🎯 Sconti applicati dal localStorage: {applied_discounts}/{len(ticket_discounts)}")
+
+            except Exception as e:
+                current_app.logger.error(f"❌ Errore parsing sconti ticket dal localStorage: {str(e)}")
+
         # Process each line modification
         updated_lines = 0
         for line_data in modifications['lines']:
             try:
-                # Find the line by IdLineaAlbaran (which is stored in ticket_id for virtual tickets)
-                line_id = line_data.get('ticket_id')
-                if not line_id:
+                # Find the line by ticket_id stored in NombrePlataforma (not by IdLineaAlbaran)
+                ticket_id = line_data.get('ticket_id')
+                if not ticket_id:
                     continue
 
-                # Get the line from database
+                # Get the line from database by NombrePlataforma (which contains the original ticket_id)
                 line = AlbaranLinea.query.filter_by(
                     IdAlbaran=ddt_id,
-                    IdLineaAlbaran=int(line_id)
+                    NombrePlataforma=str(ticket_id)
                 ).first()
 
                 if line:
+                    current_app.logger.info(f"🔍 Ricerca linea DDT per ticket_id={ticket_id}: TROVATA (IdLineaAlbaran={line.IdLineaAlbaran})")
                     # Get values from request data
                     peso = float(line_data.get('peso', line.Peso))
                     precio_con_iva = float(line_data.get('precio', line.PrecioSinIVA))  # This is the price WITH VAT from frontend
-                    porcentaje_iva = int(line_data.get('iva', line.PorcentajeIVA or 22))
+
+                    # Check if there are accumulated modifications for IVA in localStorage
+                    accumulated_iva = None
+                    iva_key = f"{ticket_id}_1_id_iva"  # IVA is typically on line 1
+                    if 'ddt_ticket_modifications' in session and iva_key in session['ddt_ticket_modifications']:
+                        accumulated_iva = session['ddt_ticket_modifications'][iva_key].get('value')
+                        current_app.logger.info(f"📊 IVA dal localStorage per ticket {ticket_id}: {accumulated_iva}")
+
+                    # Use accumulated IVA if available, otherwise use payload IVA, otherwise keep existing
+                    if accumulated_iva is not None:
+                        # Convert IVA ID to percentage if needed (assuming ID: 1=4%, 2=10%, 3=22%, 4=0%)
+                        if accumulated_iva == 1:
+                            porcentaje_iva = 4
+                        elif accumulated_iva == 2:
+                            porcentaje_iva = 10
+                        elif accumulated_iva == 3:
+                            porcentaje_iva = 22
+                        elif accumulated_iva == 4:
+                            porcentaje_iva = 0
+                        else:
+                            porcentaje_iva = int(accumulated_iva)  # Assume it's already a percentage
+                    else:
+                        porcentaje_iva = int(line_data.get('iva', line.PorcentajeIVA or 22))
+
+                    current_app.logger.info(f"🎯 IVA finale per linea {ticket_id}: {porcentaje_iva}%")
 
                     # ✅ CORRECTION: Calculate price WITHOUT VAT from price WITH VAT
                     # The frontend sends price WITH VAT, but we need to store price WITHOUT VAT
@@ -6103,22 +7408,53 @@ def api_save_ddt_modifications(ddt_id):
                     # Apply commercial rounding to price without VAT
                     precio_sin_iva = round(precio_sin_iva, 2)
 
+                    # ✅ PRESERVA SCONTI: Controlla se c'è uno sconto già applicato per questo ticket
+                    discount_percent = 0
+                    if ticket_discounts_data:
+                        try:
+                            ticket_discounts = json.loads(ticket_discounts_data) if isinstance(ticket_discounts_data, str) else ticket_discounts_data
+                            discount_percent = float(ticket_discounts.get(str(ticket_id), 0))
+                            if discount_percent > 0:
+                                current_app.logger.info(f"🔍 Preservando sconto {discount_percent}% per ticket {ticket_id}")
+                        except:
+                            pass
+
                     # Update line fields with corrected values
                     line.Peso = peso
+                    line.Precio = precio_con_iva  # Store price WITH VAT (unit price)
                     line.PrecioSinIVA = precio_sin_iva  # Store price WITHOUT VAT
                     line.PorcentajeIVA = porcentaje_iva
 
-                    # Recalculate all amounts based on the corrected price without VAT
-                    line.ImporteSinIVASinDtoL = peso * precio_sin_iva
+                    # ✅ APPLICA SCONTO AI CALCOLI SE PRESENTE
+                    if discount_percent > 0:
+                        # Applica lo sconto al prezzo senza IVA
+                        precio_sin_iva_scontato = precio_sin_iva * (1 - discount_percent / 100)
+                        line.ImporteSinIVASinDtoL = peso * precio_sin_iva_scontato
+                        line.Descuento = discount_percent  # Salva la percentuale di sconto
+                        line.ImporteDelDescuento = peso * precio_sin_iva * (discount_percent / 100)  # Importo dello sconto
+                        current_app.logger.info(f"💰 Sconto {discount_percent}% preservato: prezzo base €{precio_sin_iva:.2f} → prezzo scontato €{precio_sin_iva_scontato:.2f}")
+                    else:
+                        # Nessuno sconto
+                        line.ImporteSinIVASinDtoL = peso * precio_sin_iva
+                        line.Descuento = 0
+                        line.ImporteDelDescuento = 0
+
+                    # Calcola gli altri importi basandosi sul prezzo (eventualmente scontato)
                     line.ImporteDelIVAConDtoL = line.ImporteSinIVASinDtoL * (porcentaje_iva / 100)
                     line.ImporteSinIVAConDtoL = line.ImporteSinIVASinDtoL
                     line.ImporteDelIVAConDtoLConDtoTotal = line.ImporteDelIVAConDtoL
                     line.ImporteConIVASinDtoL = line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL
                     line.ImporteSinIVAConDtoLConDtoTotal = line.ImporteSinIVASinDtoL
                     line.ImporteDelRE = 0
-                    line.ImporteDelDescuento = 0
                     line.ImporteConDtoTotal = line.ImporteConIVASinDtoL
+                    line.Importe = line.ImporteConDtoTotal  # Total amount with IVA
                     line.TextoLote = line_data.get('texto_lote', line.TextoLote or '')
+
+                    # Update description if changed
+                    descripcion = line_data.get('descripcion', '').strip()
+                    if descripcion and descripcion != line.Descripcion:
+                        line.Descripcion = descripcion
+                        current_app.logger.info(f"📝 Descrizione aggiornata per linea {line.IdLineaAlbaran}: '{descripcion}'")
 
                     # Handle date fields
                     fecha_caducidad = line_data.get('fecha_caducidad', '')
@@ -6134,26 +7470,539 @@ def api_save_ddt_modifications(ddt_id):
 
                     updated_lines += 1
 
-                    current_app.logger.info(f"✅ Linea {line.IdLineaAlbaran} aggiornata: peso={line.Peso}, precio_con_iva={precio_con_iva:.2f}, precio_sin_iva={precio_sin_iva:.2f}, iva={porcentaje_iva}%")
+                    if discount_percent > 0:
+                        current_app.logger.info(f"✅ Linea {line.IdLineaAlbaran} aggiornata CON SCONTO {discount_percent}%: peso={line.Peso}, precio_unitario_con_iva={line.Precio:.2f}, precio_sin_iva={line.PrecioSinIVA:.2f}, iva={porcentaje_iva}%, totale_SCONTATO={line.Importe:.2f}")
+                    else:
+                        current_app.logger.info(f"✅ Linea {line.IdLineaAlbaran} aggiornata: peso={line.Peso}, precio_unitario_con_iva={line.Precio:.2f}, precio_sin_iva={line.PrecioSinIVA:.2f}, iva={porcentaje_iva}%, totale_con_iva={line.Importe:.2f}")
+
+                else:
+                    current_app.logger.warning(f"⚠️ Linea DDT non trovata per ticket_id={ticket_id}, skip aggiornamento")
 
             except Exception as e:
                 current_app.logger.error(f"❌ Errore aggiornamento linea {line_data.get('ticket_id')}: {str(e)}")
                 continue
 
+        # Process added existing tickets (nuove righe da inserire)
+        added_tickets = modifications.get('added_tickets', [])
+        inserted_lines = 0
+        
+        current_app.logger.info(f"🎯 Processamento ticket aggiunti: trovati {len(added_tickets)} ticket")
+
+        for i, ticket_data in enumerate(added_tickets):
+            try:
+                current_app.logger.info(f"📋 Ticket {i+1}/{len(added_tickets)}: {ticket_data}")
+                
+                ticket_id = ticket_data.get('id_ticket')
+                if not ticket_id:
+                    current_app.logger.warning(f"⚠️ Ticket {i+1} senza id_ticket, skip")
+                    continue
+
+                current_app.logger.info(f"🔄 Processando ticket aggiunto: {ticket_id}")
+
+                # Get ticket lines from TicketLine table
+                ticket_lines = TicketLine.query.filter_by(IdTicket=ticket_id).all()
+                if not ticket_lines:
+                    current_app.logger.warning(f"⚠️ Nessuna linea trovata per ticket {ticket_id}")
+                    continue
+
+                # Get ticket header for additional info
+                ticket_header = TicketHeader.query.filter_by(IdTicket=ticket_id).first()
+                if not ticket_header:
+                    current_app.logger.warning(f"⚠️ Ticket header non trovato per {ticket_id}")
+                    continue
+
+                # Find the next IdLineaAlbaran for this DDT
+                max_line_id = db.session.query(db.func.max(AlbaranLinea.IdLineaAlbaran)).filter_by(IdAlbaran=ddt_id).scalar() or 0
+                next_line_id = max_line_id + 1
+
+                # Insert each line from the ticket
+                for ticket_line in ticket_lines:
+                    try:
+                        # Get product info
+                        product = Article.query.get(ticket_line.IdArticulo)
+                        if not product:
+                            current_app.logger.warning(f"⚠️ Prodotto {ticket_line.IdArticulo} non trovato, skip")
+                            continue
+
+                        # Calculate prices with VAT logic
+                        precio_sin_iva = float(ticket_line.PrecioSinIVA or 0)
+                        porcentaje_iva = int(ticket_line.PorcentajeIVA or 22)
+
+                        # Calculate price with VAT
+                        if porcentaje_iva > 0:
+                            precio_con_iva = precio_sin_iva * (1 + porcentaje_iva / 100)
+                        else:
+                            precio_con_iva = precio_sin_iva
+
+                        # Calculate amounts
+                        peso = float(ticket_line.Peso or 0)
+                        importe_sin_iva_sin_dto_l = peso * precio_sin_iva
+                        importe_del_iva_con_dto_l = importe_sin_iva_sin_dto_l * (porcentaje_iva / 100)
+                        importe_sin_iva_con_dto_l = importe_sin_iva_sin_dto_l
+                        importe_con_iva_sin_dto_l = importe_sin_iva_sin_dto_l + importe_del_iva_con_dto_l
+
+                        # Create new AlbaranLinea record
+                        new_line = AlbaranLinea(
+                            IdAlbaran=ddt_id,
+                            IdLineaAlbaran=next_line_id,
+                            IdArticulo=ticket_line.IdArticulo,
+                            Descripcion=product.Descripcion or ticket_line.Descripcion,
+                            Peso=peso,
+                            PrecioSinIVA=precio_sin_iva,
+                            PorcentajeIVA=porcentaje_iva,
+                            ImporteSinIVASinDtoL=importe_sin_iva_sin_dto_l,
+                            ImporteDelIVAConDtoL=importe_del_iva_con_dto_l,
+                            ImporteSinIVAConDtoL=importe_sin_iva_con_dto_l,
+                            ImporteDelIVAConDtoLConDtoTotal=importe_del_iva_con_dto_l,
+                            ImporteConIVASinDtoL=importe_con_iva_sin_dto_l,
+                            ImporteSinIVAConDtoLConDtoTotal=importe_sin_iva_sin_dto_l,
+                            ImporteDelRE=0,
+                            ImporteDelDescuento=0,
+                            ImporteConDtoTotal=importe_con_iva_sin_dto_l,
+                            PrecioConIVASinDtoL=precio_con_iva,
+                            TipoVenta=ticket_line.TipoVenta or 0,
+                            TextoLote=ticket_line.TextoLote,
+                            FechaCaducidad=ticket_line.FechaCaducidad,
+                            Comportamiento=ticket_line.comportamiento or 0,  # ✅ CORRETTO: minuscolo
+                            IdIVA=ticket_line.IdIVA or 1,
+                            NombrePlataforma=str(ticket_id),  # Store ticket ID for identification
+                            Modificado=1,
+                            TimeStamp=datetime.now()
+                        )
+
+                        db.session.add(new_line)
+                        next_line_id += 1
+                        inserted_lines += 1
+
+                        current_app.logger.info(f"✅ Linea inserita per ticket {ticket_id}: prodotto={ticket_line.IdArticulo}, peso={peso}")
+
+                    except Exception as e:
+                        current_app.logger.error(f"❌ Errore inserimento linea ticket {ticket_id}: {str(e)}")
+                        continue
+
+            except Exception as e:
+                current_app.logger.error(f"❌ Errore processamento ticket aggiunto {ticket_data.get('id_ticket')}: {str(e)}")
+                continue
+
+        # ✅ NUOVO: GESTIONE TICKET MANUALI DAL LOCALSTORAGE
+        manual_tickets = modifications.get('manual_tickets', [])
+        inserted_manual_lines = 0
+
+        current_app.logger.info(f"🎫 Processamento ticket manuali: trovati {len(manual_tickets)} ticket")
+
+        for i, manual_ticket in enumerate(manual_tickets):
+            try:
+                # Usa .get() per accedere ai dati del dict in sicurezza
+                ticket_id = manual_ticket.get('id_ticket')
+                if not ticket_id:
+                    current_app.logger.warning(f"⚠️ Ticket manuale {i+1} senza id_ticket, skip")
+                    continue
+
+                current_app.logger.info(f"🔄 Processando ticket manuale: {ticket_id}")
+
+                # I ticket manuali hanno le linee direttamente nell'oggetto
+                ticket_lines = manual_ticket.get('lines') or []
+                if not ticket_lines:
+                    current_app.logger.warning(f"⚠️ Ticket manuale {ticket_id} senza linee")
+                    continue
+
+                # Trova il prossimo IdLineaAlbaran per questo DDT
+                max_line_id = db.session.query(db.func.max(AlbaranLinea.IdLineaAlbaran)).filter_by(IdAlbaran=ddt_id).scalar() or 0
+                next_line_id = max_line_id + 1
+
+                # Inserisci ciascuna linea del ticket manuale
+                for ticket_line in ticket_lines:
+                    try:
+                        # Ottieni info prodotto
+                        product_id = ticket_line.get('id_articulo')
+                        if not product_id:
+                            current_app.logger.warning(f"⚠️ Linea senza id_articulo per ticket manuale {ticket_id}, skip")
+                            continue
+
+                        product = Article.query.get(product_id)
+                        if not product:
+                            current_app.logger.warning(f"⚠️ Prodotto {product_id} non trovato per ticket manuale, skip")
+                            continue
+
+                        # Calcola importi con IVA per ticket manuale
+                        peso = float(ticket_line.get('peso') or 0)
+                        precio_con_iva = float(ticket_line.get('precio') or 0)  # I ticket manuali hanno già il prezzo CON IVA
+                        iva_value = int(ticket_line.get('iva') or 22)
+
+                        # Per ticket manuali, il prezzo è già CON IVA
+                        precio_sin_iva = precio_con_iva / (1 + iva_value / 100) if iva_value > 0 else precio_con_iva
+
+                        # Calcola importi
+                        importe_sin_iva_sin_dto_l = peso * precio_sin_iva
+                        importe_del_iva_con_dto_l = importe_sin_iva_sin_dto_l * (iva_value / 100)
+                        importe_sin_iva_con_dto_l = importe_sin_iva_sin_dto_l
+                        importe_con_iva_sin_dto_l = importe_sin_iva_sin_dto_l + importe_del_iva_con_dto_l
+
+                        # ✅ CORREZIONE: Per ticket manuali, usa l'importo calcolato
+                        importe_final = importe_con_iva_sin_dto_l
+
+                        # Crea nuova linea AlbaranLinea per ticket manuale
+                        new_line = AlbaranLinea(
+                            IdAlbaran=ddt_id,
+                            IdLineaAlbaran=next_line_id,
+                            IdArticulo=product_id,
+                            Descripcion=product.Descripcion or ticket_line.get('descripcion'),
+                            Peso=peso,
+                            PrecioSinIVA=precio_sin_iva,
+                            PorcentajeIVA=iva_value,
+                            ImporteSinIVASinDtoL=importe_sin_iva_sin_dto_l,
+                            ImporteDelIVAConDtoL=importe_del_iva_con_dto_l,
+                            ImporteSinIVAConDtoL=importe_sin_iva_con_dto_l,
+                            ImporteDelIVAConDtoLConDtoTotal=importe_del_iva_con_dto_l,
+                            ImporteConIVASinDtoL=importe_con_iva_sin_dto_l,
+                            ImporteSinIVAConDtoLConDtoTotal=importe_sin_iva_sin_dto_l,
+                            ImporteDelRE=0,
+                            ImporteDelDescuento=0,
+                            ImporteConDtoTotal=importe_final,
+                            PrecioConIVASinDtoL=precio_con_iva,
+                            TipoVenta=0,  # Ticket manuale
+                            TextoLote=ticket_line.get('texto_lote') or ticket_line.get('lotto') or '',
+                            FechaCaducidad=None,  # I ticket manuali potrebbero non avere data scadenza
+                            Comportamiento=ticket_line.get('comportamiento') or 0,
+                            IdIVA=4 if iva_value == 0 else (1 if iva_value == 4 else (2 if iva_value == 10 else (3 if iva_value == 22 else 1))),  # Mappa IVA frontend a backend
+                            NombrePlataforma=f"#-{ticket_id}",  # ✅ IMPORTANTE: Salva con prefisso #- per identificare ticket manuali
+                            Modificado=1,
+                            TimeStamp=datetime.now()
+                        )
+
+                        db.session.add(new_line)
+                        next_line_id += 1
+                        inserted_manual_lines += 1
+
+                        current_app.logger.info(f"✅ Linea inserita per ticket manuale {ticket_id}: prodotto={product_id}, peso={peso}, nombreplataforma=#-{ticket_id}")
+
+                    except Exception as e:
+                        current_app.logger.error(f"❌ Errore inserimento linea ticket manuale {ticket_id}: {str(e)}")
+                        continue
+
+            except Exception as e:
+                current_app.logger.error(f"❌ Errore processamento ticket manuale {ticket_id if 'ticket_id' in locals() else 'SCONOSCIUTO'}: {str(e)}")
+                continue
+
         # Commit all changes
         db.session.commit()
 
-        current_app.logger.info(f"✅ Modifiche DDT {ddt_id} salvate: {updated_lines} linee aggiornate")
+        # ✅ PULISCI LOCALSTORAGE: rimuovi modifiche applicate con successo
+        if 'ddt_ticket_modifications' in session and ticket_modifications:
+            current_app.logger.info(f"🧹 Pulizia localStorage: rimozione modifiche applicate")
+
+            # Rimuovi solo le modifiche che sono state applicate con successo
+            modifications_to_keep = {}
+            for field_key, modification in ticket_modifications.items():
+                if not modification.get('saved_to_db', False):
+                    modifications_to_keep[field_key] = modification
+                else:
+                    current_app.logger.info(f"🗑️ Rimosso dal localStorage: {field_key}")
+
+            if modifications_to_keep:
+                session['ddt_ticket_modifications'] = modifications_to_keep
+                current_app.logger.info(f"📦 Mantenute {len(modifications_to_keep)} modifiche non applicate nel localStorage")
+            else:
+                session.pop('ddt_ticket_modifications', None)
+                current_app.logger.info(f"🧽 LocalStorage completamente pulito")
+
+            session.modified = True
+
+        current_app.logger.info(f"✅ Modifiche DDT {ddt_id} salvate: {updated_lines} linee aggiornate, {inserted_lines} linee inserite, {inserted_manual_lines} linee ticket manuali, {applied_modifications} modifiche ticket applicate, data_ddt={'aggiornata' if ddt_date_updated else 'non modificata'}")
+
+        message_parts = []
+        if ddt_date_updated:
+            message_parts.append('Data DDT aggiornata')
+        if config_fields_updated:
+            message_parts.append('campi configurabili aggiornati')
+        if updated_lines > 0:
+            message_parts.append(f'{updated_lines} linee aggiornate')
+        if inserted_lines > 0:
+            message_parts.append(f'{inserted_lines} linee inserite')
+        if inserted_manual_lines > 0:
+            message_parts.append(f'{inserted_manual_lines} linee ticket manuali')
+        if applied_modifications > 0:
+            message_parts.append(f'{applied_modifications} modifiche ticket applicate')
+
+        message = 'Modifiche salvate con successo.'
+        if message_parts:
+            message += ' ' + ', '.join(message_parts) + '.'
+        else:
+            message += ' Nessuna modifica applicata.'
 
         return jsonify({
             'success': True,
-            'message': f'Modifiche salvate con successo. {updated_lines} linee aggiornate.',
-            'updated_lines': updated_lines
+            'message': message,
+            'updated_lines': updated_lines,
+            'inserted_lines': inserted_lines,
+            'inserted_manual_lines': inserted_manual_lines,  # ✅ AGGIUNTO
+            'applied_ticket_modifications': applied_modifications,
+            'ddt_date_updated': ddt_date_updated,  # ✅ AGGIUNTO
+            'config_fields_updated': config_fields_updated  # 🔥 NUOVO: Campi configurabili aggiornati
         })
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"❌ Errore salvataggio modifiche DDT {ddt_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Errore interno del server: {str(e)}'
+        }), 500
+
+# ============================================================================
+# API per gestione array configurabili DDT
+# ============================================================================
+
+@ddt_bp.route('/api/config/<field_name>', methods=['GET'])
+@login_required
+def api_get_config_array(field_name):
+    """API per ottenere l'array configurabile per un campo DDT"""
+    try:
+        valid_fields = ['causale', 'aspetto_esteriore', 'trasporto_a_cura']
+        if field_name not in valid_fields:
+            return jsonify({
+                'success': False,
+                'message': f'Campo non valido. Valori ammessi: {", ".join(valid_fields)}'
+            }), 400
+
+        config_key = f'ddt_{field_name}_options'
+        config = SystemConfig.query.filter_by(config_key=config_key).first()
+
+        if config:
+            # Parse JSON array
+            try:
+                options = json.loads(config.config_value)
+                if not isinstance(options, list):
+                    options = []
+            except:
+                options = []
+        else:
+            # Return default empty array
+            options = []
+
+        return jsonify({
+            'success': True,
+            'field': field_name,
+            'options': options
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"❌ Errore recupero config {field_name}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Errore interno del server: {str(e)}'
+        }), 500
+
+@ddt_bp.route('/api/config/<field_name>/add', methods=['POST'])
+@login_required
+@admin_required
+def api_add_config_option(field_name):
+    """API per aggiungere una nuova opzione all'array configurabile"""
+    try:
+        valid_fields = ['causale', 'aspetto_esteriore', 'trasporto_a_cura']
+        if field_name not in valid_fields:
+            return jsonify({
+                'success': False,
+                'message': f'Campo non valido. Valori ammessi: {", ".join(valid_fields)}'
+            }), 400
+
+        data = request.get_json()
+        if not data or 'option' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Parametro "option" richiesto'
+            }), 400
+
+        new_option = data['option'].strip()
+        if not new_option:
+            return jsonify({
+                'success': False,
+                'message': 'L\'opzione non può essere vuota'
+            }), 400
+
+        config_key = f'ddt_{field_name}_options'
+
+        # Get current config or create new one
+        config = SystemConfig.query.filter_by(config_key=config_key).first()
+
+        if config:
+            # Parse existing options
+            try:
+                options = json.loads(config.config_value)
+                if not isinstance(options, list):
+                    options = []
+            except:
+                options = []
+        else:
+            options = []
+            config = SystemConfig(
+                config_key=config_key,
+                description=f'Opzioni configurabili per campo DDT {field_name}',
+                data_type='json'
+            )
+
+        # Check if option already exists
+        if new_option in options:
+            return jsonify({
+                'success': False,
+                'message': 'Questa opzione esiste già'
+            }), 400
+
+        # Add new option
+        options.append(new_option)
+        config.config_value = json.dumps(options)
+
+        db.session.add(config)
+        db.session.commit()
+
+        current_app.logger.info(f"✅ Aggiunta nuova opzione '{new_option}' al campo {field_name}")
+
+        return jsonify({
+            'success': True,
+            'message': f'Opzione "{new_option}" aggiunta con successo',
+            'options': options
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"❌ Errore aggiunta opzione {field_name}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Errore interno del server: {str(e)}'
+        }), 500
+
+@ddt_bp.route('/api/config/<field_name>/remove', methods=['POST'])
+@login_required
+@admin_required
+def api_remove_config_option(field_name):
+    """API per rimuovere un'opzione dall'array configurabile"""
+    try:
+        valid_fields = ['causale', 'aspetto_esteriore', 'trasporto_a_cura']
+        if field_name not in valid_fields:
+            return jsonify({
+                'success': False,
+                'message': f'Campo non valido. Valori ammessi: {", ".join(valid_fields)}'
+            }), 400
+
+        data = request.get_json()
+        if not data or 'option' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Parametro "option" richiesto'
+            }), 400
+
+        option_to_remove = data['option'].strip()
+        if not option_to_remove:
+            return jsonify({
+                'success': False,
+                'message': 'L\'opzione da rimuovere non può essere vuota'
+            }), 400
+
+        config_key = f'ddt_{field_name}_options'
+
+        # Get current config
+        config = SystemConfig.query.filter_by(config_key=config_key).first()
+
+        if not config:
+            return jsonify({
+                'success': False,
+                'message': 'Configurazione non trovata'
+            }), 404
+
+        # Parse existing options
+        try:
+            options = json.loads(config.config_value)
+            if not isinstance(options, list):
+                options = []
+        except:
+            options = []
+
+        # Check if option exists
+        if option_to_remove not in options:
+            return jsonify({
+                'success': False,
+                'message': 'Opzione non trovata'
+            }), 400
+
+        # Remove option
+        options.remove(option_to_remove)
+        config.config_value = json.dumps(options)
+
+        db.session.commit()
+
+        current_app.logger.info(f"✅ Rimossa opzione '{option_to_remove}' dal campo {field_name}")
+
+        return jsonify({
+            'success': True,
+            'message': f'Opzione "{option_to_remove}" rimossa con successo',
+            'options': options
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"❌ Errore rimozione opzione {field_name}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Errore interno del server: {str(e)}'
+        }), 500
+
+@ddt_bp.route('/api/config/<field_name>/update', methods=['POST'])
+@login_required
+@admin_required
+def api_update_config_array(field_name):
+    """API per aggiornare completamente l'array configurabile"""
+    try:
+        valid_fields = ['causale', 'aspetto_esteriore', 'trasporto_a_cura']
+        if field_name not in valid_fields:
+            return jsonify({
+                'success': False,
+                'message': f'Campo non valido. Valori ammessi: {", ".join(valid_fields)}'
+            }), 400
+
+        data = request.get_json()
+        if not data or 'options' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Parametro "options" richiesto'
+            }), 400
+
+        if not isinstance(data['options'], list):
+            return jsonify({
+                'success': False,
+                'message': 'Il parametro "options" deve essere un array'
+            }), 400
+
+        options = data['options']
+        config_key = f'ddt_{field_name}_options'
+
+        # Get or create config
+        config = SystemConfig.query.filter_by(config_key=config_key).first()
+
+        if config:
+            config.config_value = json.dumps(options)
+            config.updated_at = datetime.utcnow()
+        else:
+            config = SystemConfig(
+                config_key=config_key,
+                config_value=json.dumps(options),
+                description=f'Opzioni configurabili per campo DDT {field_name}',
+                data_type='json'
+            )
+
+        db.session.add(config)
+        db.session.commit()
+
+        current_app.logger.info(f"✅ Aggiornato array configurabile per campo {field_name}: {len(options)} opzioni")
+
+        return jsonify({
+            'success': True,
+            'message': 'Array aggiornato con successo',
+            'options': options
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"❌ Errore aggiornamento array {field_name}: {str(e)}")
         return jsonify({
             'success': False,
             'message': f'Errore interno del server: {str(e)}'

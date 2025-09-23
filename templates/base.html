@@ -142,8 +142,19 @@
                                     <span>Sezioni</span>
                                 </a>
                             </li>
-                            {% if is_module_enabled('ingredients') %}
-                            <li class="{% if request.endpoint and request.endpoint.startswith('ingredients.') and 'fornitori' not in request.endpoint %}active{% endif %}">
+                        </ul>
+                    </li>
+                    
+                    <!-- Ingredienti Dropdown -->
+                    {% if is_module_enabled('ingredients') %}
+                    <li class="sidebar-item has-submenu {% if request.endpoint and request.endpoint.startswith('ingredients.') %}active open{% endif %}">
+                        <a href="javascript:void(0)" class="sidebar-link submenu-toggle">
+                            <i class="fas fa-leaf"></i>
+                            <span>Ingredienti</span>
+                            <i class="submenu-arrow fas fa-chevron-right ms-auto"></i>
+                        </a>
+                        <ul class="sidebar-submenu">
+                            <li class="{% if request.endpoint and request.endpoint.startswith('ingredients.') and 'fornitori' not in request.endpoint and 'fatture' not in request.endpoint %}active{% endif %}">
                                 <a href="{{ safe_url_for('ingredients.index') }}">
                                     <i class="fas fa-leaf"></i>
                                     <span>Ingredienti</span>
@@ -161,9 +172,9 @@
                                     <span>Fatture PDF</span>
                                 </a>
                             </li>
-                            {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
                     
                     <!-- Ticket -->
                     <li class="sidebar-item {% if request.endpoint and request.endpoint == 'warehouse.tickets' %}active{% endif %}">

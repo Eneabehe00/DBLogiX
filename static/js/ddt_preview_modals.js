@@ -525,7 +525,7 @@ function saveLineChanges() {
         const errors = results.filter(result => !result.success);
         
         if (allSuccess) {
-            showNotification('Linea aggiornata con successo!', 'success');
+            showNotification('Modifiche accumulate nel localStorage - salvare il DDT per confermare!', 'info');
 
             // Debug: Log specifico per IVA se presente nei risultati
             const ivaCall = apiCalls.find(call => call.field === 'id_iva');

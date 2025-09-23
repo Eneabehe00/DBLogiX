@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Dettaglio Fattura #{{ fattura.NumFactura }} - DBLogiX{% endblock %}
+{% block title %}Fattura #{{ fattura.NumFactura }} - {{ fattura.NombreCliente }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/fattura_pa.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ddt.css') }}">
 <style>
     .fattura-card {
         border: none;
@@ -12,56 +13,78 @@
         overflow: hidden;
     }
     
-    .fattura-header {
-        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-        color: white;
-        padding: 2rem;
-    }
-    
-    .section-card {
-        border: 1px solid #e2e8f0;
-        border-radius: 0.5rem;
+    .info-section {
         margin-bottom: 1.5rem;
     }
     
-    .section-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #e2e8f0;
-        padding: 1rem 1.25rem;
+    .section-title {
+        color: #495057;
         font-weight: 600;
+        margin-bottom: 1rem;
     }
     
-    .stato-badge {
-        font-size: 0.875rem;
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f9fa;
     }
     
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1rem;
+    .detail-label {
+        color: #6c757d;
+        font-weight: 500;
     }
     
-    .info-item {
-        padding: 0.75rem;
-        border-left: 3px solid #e2e8f0;
-        background: #f8f9fa;
-        border-radius: 0 0.375rem 0.375rem 0;
+    .detail-value {
+        font-weight: 600;
+        color: #495057;
     }
     
-    .info-item.primary { border-left-color: #3b82f6; }
-    .info-item.success { border-left-color: #10b981; }
-    .info-item.warning { border-left-color: #f59e0b; }
-    .info-item.info { border-left-color: #06b6d4; }
-    
-    .linee-table {
+    /* Tabella linee con stile DDT - tema navy */
+    .ticket-table {
         font-size: 0.9rem;
     }
     
-    .totali-card {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border: 2px solid #cbd5e0;
+    .ticket-table th {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+        color: white;
+        font-weight: 600;
+        border-top: 2px solid #1e40af;
+        border-bottom: 2px solid #1e40af;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .ticket-table thead th {
+        vertical-align: middle;
+        padding: 1rem 0.75rem;
+    }
+    
+    .ticket-table tbody tr:hover {
+        background-color: rgba(30, 58, 138, 0.05);
+    }
+    
+    .ticket-table tbody tr:nth-child(even) {
+        background-color: rgba(248, 250, 252, 0.5);
+    }
+    
+    /* Tab styling */
+    .nav-tabs .nav-link {
+        border: none;
+        border-radius: 0;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 1rem 1.5rem;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background-color: #f8f9fa;
+        color: #495057;
+        border-bottom: 3px solid #007bff;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border: none;
+        background-color: #f8f9fa;
     }
 </style>
 {% endblock %}
@@ -70,7 +93,8 @@
 <!-- Page Header -->
 <div class="page-header shadow-sm mb-4">
     <div class="container-fluid">
-        <nav aria-label="breadcrumb">
+        <div class="page-id">#{{ fattura.NumFactura }}</div>
+        <nav aria-label="breadcrumb" class="no-print">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-white">Home</a></li>
                 <li class="breadcrumb-item"><a href="{{ url_for('fattura_pa.list_invoices') }}" class="text-white">Fatture PA</a></li>
@@ -83,11 +107,17 @@
                     <i class="fas fa-file-invoice me-2"></i>Fattura #{{ fattura.NumFactura }}
                 </h1>
                 <p class="page-subtitle mt-2 mb-0">
-                    <span class="text-white-50">{{ fattura.tipo_documento_display }} del {{ fattura.Fecha.strftime('%d/%m/%Y') if fattura.Fecha else 'N/A' }}</span>
-                    <span class="badge bg-light text-dark ms-2">{{ fattura.stato_display }}</span>
+                    <span class="status-badge info">
+                        <i class="fas fa-calendar me-1"></i>{{ fattura.Fecha.strftime('%d/%m/%Y') if fattura.Fecha else 'N/A' }}
+                    </span>
+                    <span class="status-badge success">
+                        <i class="fas fa-user me-1"></i>{{ fattura.NombreCliente }}
+                    </span>
+                    <span class="text-white-50">·</span>
+                    <span class="text-white-50">{{ fattura.numero_linee }} linee</span>
                 </p>
             </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="col-md-4 text-md-end mt-3 mt-md-0 no-print">
                 <div class="d-grid d-md-block gap-2">
                     <a href="{{ url_for('fattura_pa.download_invoice_db', fattura_id=fattura.IdFactura) }}" class="btn btn-light action-btn">
                         <i class="fas fa-download me-1"></i>Scarica XML
@@ -102,295 +132,383 @@
 </div>
 
 <div class="container-fluid">
-    <!-- Main Fattura Card -->
-    <div class="fattura-card card mb-4">
-        <div class="fattura-header">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h2 class="mb-1">{{ fattura.NombreCliente }}</h2>
-                    <p class="mb-0 opacity-75">
-                        {% if fattura.DNICliente and fattura.DNICliente.startswith('IT') %}
-                        Partita IVA: {{ fattura.DNICliente }}
-                        {% elif fattura.DNICliente %}
-                        Codice Fiscale: {{ fattura.DNICliente }}
-                        {% endif %}
-                    </p>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    <div class="stato-badge bg-light text-dark">
-                        <i class="fas fa-info-circle me-1"></i>{{ fattura.stato_display }}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <!-- Tabs navigation -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body p-0">
+            <ul class="nav nav-tabs card-header-tabs" id="fattura-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+                        <i class="fas fa-info-circle me-1"></i><span class="d-none d-sm-inline">Dettagli Fattura</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="lines-tab" data-bs-toggle="tab" data-bs-target="#lines" type="button" role="tab" aria-controls="lines" aria-selected="false">
+                        <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">Linee Fattura</span>
+                    </button>
+                </li>
+                {% if current_user.is_admin %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="admin-tab" data-bs-toggle="tab" data-bs-target="#admin" type="button" role="tab" aria-controls="admin" aria-selected="false">
+                        <i class="fas fa-cogs me-1"></i><span class="d-none d-sm-inline">Gestione</span>
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <div class="tab-content p-3" id="fattura-tabs-content">
+                
+                <!-- Details Tab -->
+                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-file-invoice text-primary me-2"></i>Informazioni Fattura</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Numero Fattura</span>
+                                    <span class="detail-value">{{ fattura.NumFactura }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Data Emissione</span>
+                                    <span class="detail-value">{{ fattura.Fecha.strftime('%d/%m/%Y') if fattura.Fecha else 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Documento</span>
+                                    <span class="detail-value">{{ fattura.tipo_documento_display }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Stato Fattura</span>
+                                    <span class="detail-value">
+                                        {% if fattura.EstadoFactura == 'generata' %}
+                                        <span class="badge bg-warning">{{ fattura.stato_display }}</span>
+                                        {% elif fattura.EstadoFactura == 'inviata' %}
+                                        <span class="badge bg-info">{{ fattura.stato_display }}</span>
+                                        {% elif fattura.EstadoFactura == 'pagata' %}
+                                        <span class="badge bg-success">{{ fattura.stato_display }}</span>
+                                        {% elif fattura.EstadoFactura == 'annullata' %}
+                                        <span class="badge bg-danger">{{ fattura.stato_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ fattura.stato_display }}</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                {% if fattura.Tipo == 'TD24' %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Origine</span>
+                                    <span class="detail-value">
+                                        <span class="badge bg-primary">Da DDT</span>
+                                    </span>
+                                </div>
+                                {% endif %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Modalità Pagamento</span>
+                                    <span class="detail-value">Bonifico Bancario</span>
+                                </div>
+                                {% if fattura.DiasEntreVencimientos %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Scadenza Pagamento</span>
+                                    <span class="detail-value">{{ fattura.DiasEntreVencimientos }} giorni</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-calculator text-primary me-2"></i>Totali Fattura</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Imponibile</span>
+                                    <span class="detail-value">€ {{ "%.2f"|format(fattura.importo_imponibile) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">IVA</span>
+                                    <span class="detail-value">€ {{ "%.2f"|format(fattura.importo_iva) }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Totale Fattura</span>
+                                    <span class="detail-value fs-5 fw-bold text-primary">€ {{ "%.2f"|format(fattura.importo_totale) }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if fattura.ObservacionesDocumento or fattura.ObservacionesCliente %}
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-comment text-primary me-2"></i>Note e Causali</h5>
+                                {% if fattura.ObservacionesDocumento %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Causale</span>
+                                    <span class="detail-value">{{ fattura.ObservacionesDocumento }}</span>
+                                </div>
+                                {% endif %}
+                                {% if fattura.ObservacionesCliente %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Note Cliente</span>
+                                    <span class="detail-value">{{ fattura.ObservacionesCliente }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-user text-primary me-2"></i>Dati Cliente</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Nome/Ragione Sociale</span>
+                                    <span class="detail-value">{{ fattura.NombreCliente }}</span>
+                                </div>
+                                {% if fattura.DireccionCliente %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Indirizzo</span>
+                                    <span class="detail-value">{{ fattura.DireccionCliente }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Località</span>
+                                    <span class="detail-value">{{ fattura.PoblacionCliente }} {{ fattura.CPCliente }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Provincia - Paese</span>
+                                    <span class="detail-value">{{ fattura.ProvinciaCliente }} - {{ fattura.PaisCliente }}</span>
+                                </div>
+                                {% endif %}
+                                {% if fattura.DNICliente %}
+                                <div class="detail-item">
+                                    <span class="detail-label">
+                                        {% if fattura.DNICliente.startswith('IT') %}Partita IVA{% else %}Codice Fiscale{% endif %}
+                                    </span>
+                                    <span class="detail-value">{{ fattura.DNICliente }}</span>
+                                </div>
+                                {% endif %}
+                                {% if fattura.EmailCliente %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Email</span>
+                                    <span class="detail-value">{{ fattura.EmailCliente }}</span>
+                                </div>
+                                {% endif %}
+                                {% if fattura.TelefonoCliente %}
+                                <div class="detail-item">
+                                    <span class="detail-label">Telefono</span>
+                                    <span class="detail-value">{{ fattura.TelefonoCliente }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-cog text-primary me-2"></i>Informazioni Tecniche</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Nome File XML</span>
+                                    <span class="detail-value"><code>{{ fattura.ReferenciaDocumento or 'N/A' }}</code></span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Codice Hash</span>
+                                    <span class="detail-value"><small>{{ fattura.CodigoHash or 'N/A' }}</small></span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Numero Linee</span>
+                                    <span class="detail-value">{{ fattura.NumLineas or 0 }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Creato il</span>
+                                    <span class="detail-value">{{ fattura.TimeStamp.strftime('%d/%m/%Y %H:%M') if fattura.TimeStamp else 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Creato da</span>
+                                    <span class="detail-value">{{ fattura.Usuario or 'Sistema' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Versione</span>
+                                    <span class="detail-value">{{ fattura.Version or 1 }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    {% if fattura.DiasEntreVencimientos %}
-                    <p class="mb-0 mt-2 opacity-75">
-                        <small><i class="fas fa-calendar me-1"></i>Scadenza: {{ fattura.DiasEntreVencimientos }} giorni</small>
-                    </p>
+                </div>
+                
+                <!-- Lines Tab -->
+                <div class="tab-pane fade" id="lines" role="tabpanel" aria-labelledby="lines-tab">
+                    {% if fattura.linee %}
+                        <div class="info-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="section-title mb-0"><i class="fas fa-list text-primary me-2"></i>Dettaglio Linee Fattura</h5>
+                                <span class="badge bg-primary">{{ fattura.numero_linee }} Linee</span>
+                            </div>
+                            
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover ticket-table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="d-none d-lg-table-cell">
+                                                    <i class="fas fa-hashtag me-1"></i>ID
+                                                </th>
+                                                <th>
+                                                    <i class="fas fa-tag me-1"></i>Descrizione
+                                                </th>
+                                                <th>
+                                                    <i class="fas fa-balance-scale me-1"></i>Peso/Qta.
+                                                </th>
+                                                <th class="d-none d-md-table-cell">
+                                                    <i class="fas fa-euro-sign me-1"></i>Prezzo
+                                                </th>
+                                                <th class="d-none d-lg-table-cell">
+                                                    <i class="fas fa-percentage me-1"></i>IVA %
+                                                </th>
+                                                <th class="d-none d-lg-table-cell">
+                                                    <i class="fas fa-percent me-1"></i>Sconto %
+                                                </th>
+                                                <th class="d-none d-md-table-cell">
+                                                    <i class="fas fa-receipt me-1"></i>Imponibile
+                                                </th>
+                                                <th class="d-none d-lg-table-cell">
+                                                    <i class="fas fa-plus-circle me-1"></i>IVA
+                                                </th>
+                                                <th>
+                                                    <i class="fas fa-calculator me-1"></i>Totale
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for linea in fattura.linee %}
+                                            <tr>
+                                                <td class="d-none d-lg-table-cell">{{ loop.index }}</td>
+                                                <td>
+                                                    <div class="text-truncate" style="max-width: 200px;">
+                                                        <strong>{{ linea.Descripcion }}</strong>
+                                                        {% if linea.TextoLibre %}
+                                                        <br><small class="text-muted">{{ linea.TextoLibre }}</small>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {{ "%.3f"|format(linea.quantita) }} {{ linea.Medida2 or 'PZ' }}
+                                                </td>
+                                                <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(linea.prezzo_unitario) }}</td>
+                                                <td class="d-none d-lg-table-cell">{{ "%.1f"|format(linea.aliquota_iva) }}%</td>
+                                                <td class="d-none d-lg-table-cell">
+                                                    {% if linea.Descuento and linea.Descuento > 0 %}
+                                                        <span class="text-success">-{{ linea.Descuento }}%</span>
+                                                    {% else %}
+                                                        <span class="text-muted">-</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="d-none d-md-table-cell">€ {{ "%.2f"|format(linea.Importe or 0) }}</td>
+                                                <td class="d-none d-lg-table-cell">€ {{ "%.2f"|format(linea.importo_iva_linea) }}</td>
+                                                <td>€ {{ "%.2f"|format(linea.importo_totale_con_iva) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Totals Summary -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-primary text-white py-3">
+                                <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Riepilogo Totali</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3 mb-md-0">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <h6 class="text-muted mb-2">Imponibile</h6>
+                                            <h4 class="mb-0">€ {{ "%.2f"|format(fattura.importo_imponibile) }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3 mb-md-0">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <h6 class="text-muted mb-2">IVA</h6>
+                                            <h4 class="mb-0">€ {{ "%.2f"|format(fattura.importo_iva) }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                                            <h6 class="text-primary mb-2">Totale</h6>
+                                            <h4 class="mb-0 text-primary">€ {{ "%.2f"|format(fattura.importo_totale) }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> Nessuna linea trovata in questa fattura.
+                        </div>
                     {% endif %}
                 </div>
-            </div>
-        </div>
-        
-        <div class="card-body p-4">
-            <!-- Informazioni Generali -->
-            <div class="section-card">
-                <div class="section-header">
-                    <i class="fas fa-info-circle me-2"></i>Informazioni Generali
-                </div>
-                <div class="p-3">
-                    <div class="info-grid">
-                        <div class="info-item primary">
-                            <div class="text-muted small">Numero Fattura</div>
-                            <div class="fw-bold">{{ fattura.NumFactura }}</div>
-                        </div>
-                        <div class="info-item primary">
-                            <div class="text-muted small">Data Emissione</div>
-                            <div class="fw-bold">{{ fattura.Fecha.strftime('%d/%m/%Y') if fattura.Fecha else 'N/A' }}</div>
-                        </div>
-                        <div class="info-item info">
-                            <div class="text-muted small">Tipo Documento</div>
-                            <div class="fw-bold">{{ fattura.tipo_documento_display }}</div>
-                        </div>
-                        <div class="info-item warning">
-                            <div class="text-muted small">Stato</div>
-                            <div class="fw-bold">{{ fattura.stato_display }}</div>
-                        </div>
-                        {% if fattura.Tipo == 'TD24' %}
-                        <div class="info-item info">
-                            <div class="text-muted small">Origine</div>
-                            <div class="fw-bold">Da DDT</div>
-                        </div>
-                        <div class="info-item info">
-                            <div class="text-muted small">Tipo Origine</div>
-                            <div class="fw-bold">{{ fattura.TipoOrigen or 'DDT' }}</div>
-                        </div>
-                        {% endif %}
-                        <div class="info-item success">
-                            <div class="text-muted small">Modalità Pagamento</div>
-                            <div class="fw-bold">{{ 'Bonifico Bancario' }}</div>
-                        </div>
-                        {% if fattura.DiasEntreVencimientos %}
-                        <div class="info-item warning">
-                            <div class="text-muted small">Giorni Scadenza</div>
-                            <div class="fw-bold">{{ fattura.DiasEntreVencimientos }} giorni</div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dati Cliente -->
-            <div class="section-card">
-                <div class="section-header">
-                    <i class="fas fa-user me-2"></i>Dati Cliente
-                </div>
-                <div class="p-3">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>{{ fattura.NombreCliente }}</strong>
-                            {% if fattura.DireccionCliente %}
-                            <br><small class="text-muted">{{ fattura.DireccionCliente }}</small>
-                            <br><small class="text-muted">{{ fattura.PoblacionCliente }} {{ fattura.CPCliente }}</small>
-                            <br><small class="text-muted">{{ fattura.ProvinciaCliente }} - {{ fattura.PaisCliente }}</small>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            {% if fattura.DNICliente %}
-                            {% if fattura.DNICliente.startswith('IT') %}
-                            <div><strong>Partita IVA:</strong> {{ fattura.DNICliente }}</div>
-                            {% else %}
-                            <div><strong>Codice Fiscale:</strong> {{ fattura.DNICliente }}</div>
-                            {% endif %}
-                            {% endif %}
-                            {% if fattura.EmailCliente %}
-                            <div><strong>Email:</strong> {{ fattura.EmailCliente }}</div>
-                            {% endif %}
-                            {% if fattura.TelefonoCliente %}
-                            <div><strong>Telefono:</strong> {{ fattura.TelefonoCliente }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Linee Fattura -->
-            <div class="section-card">
-                <div class="section-header">
-                    <i class="fas fa-list me-2"></i>Dettaglio Linee Fattura ({{ fattura.numero_linee }} linee)
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm linee-table mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Descrizione</th>
-                                <th>Qtà</th>
-                                <th>Unità</th>
-                                <th>Prezzo Unit.</th>
-                                <th>Totale</th>
-                                <th>IVA %</th>
-                                <th>IVA €</th>
-                                <th>Totale IVA</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for linea in fattura.linee %}
-                            <tr>
-                                <td><span class="badge bg-secondary">{{ loop.index }}</span></td>
-                                <td>
-                                    <strong>{{ linea.Descripcion }}</strong>
-                                    {% if linea.TextoLibre %}
-                                    <br><small class="text-muted">{{ linea.TextoLibre }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ "%.3f"|format(linea.quantita) }}</td>
-                                <td>{{ linea.Medida2 or 'PZ' }}</td>
-                                <td class="text-end">€{{ "%.2f"|format(linea.prezzo_unitario) }}</td>
-                                <td class="text-end"><strong>€{{ "%.2f"|format(linea.Importe or 0) }}</strong></td>
-                                <td class="text-center">{{ "%.1f"|format(linea.aliquota_iva) }}%</td>
-                                <td class="text-end">€{{ "%.2f"|format(linea.importo_iva_linea) }}</td>
-                                <td class="text-end"><strong>€{{ "%.2f"|format(linea.importo_totale_con_iva) }}</strong></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Totali -->
-            <div class="section-card totali-card">
-                <div class="section-header bg-primary text-white">
-                    <i class="fas fa-calculator me-2"></i>Riepilogo Totali
-                </div>
-                <div class="p-4">
-                    <div class="row">
-                        <div class="col-md-8">
-                            {% if fattura.ObservacionesDocumento %}
-                            <div class="mb-3">
-                                <strong>Causale:</strong>
-                                <p class="mb-0">{{ fattura.ObservacionesDocumento }}</p>
-                            </div>
-                            {% endif %}
-                            {% if fattura.ObservacionesCliente %}
-                            <div class="mb-3">
-                                <strong>Note Cliente:</strong>
-                                <p class="mb-0">{{ fattura.ObservacionesCliente }}</p>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-4">
-                            <table class="table table-borderless mb-0">
-                                <tr>
-                                    <td>Imponibile:</td>
-                                    <td class="text-end"><strong>€{{ "%.2f"|format(fattura.importo_imponibile) }}</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>IVA:</td>
-                                    <td class="text-end"><strong>€{{ "%.2f"|format(fattura.importo_iva) }}</strong></td>
-                                </tr>
-                                <tr class="table-primary">
-                                    <td><strong>TOTALE:</strong></td>
-                                    <td class="text-end"><strong>€{{ "%.2f"|format(fattura.importo_totale) }}</strong></td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gestione Stato -->
-            {% if current_user.is_admin %}
-            <div class="section-card">
-                <div class="section-header">
-                    <i class="fas fa-cogs me-2"></i>Gestione Fattura
-                </div>
-                <div class="p-3">
-                    <div class="row align-items-end">
-                        <div class="col-md-6">
-                            <form method="POST" action="{{ url_for('fattura_pa.update_stato_fattura', fattura_id=fattura.IdFactura) }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <div class="row align-items-end">
-                                    <div class="col-md-6">
-                                        <label for="stato" class="form-label">Stato Fattura</label>
-                                        <select name="stato" id="stato" class="form-select">
-                                            <option value="generata" {% if fattura.EstadoFactura == 'generata' %}selected{% endif %}>Generata</option>
-                                            <option value="inviata" {% if fattura.EstadoFactura == 'inviata' %}selected{% endif %}>Inviata</option>
-                                            <option value="pagata" {% if fattura.EstadoFactura == 'pagata' %}selected{% endif %}>Pagata</option>
-                                            <option value="annullata" {% if fattura.EstadoFactura == 'annullata' %}selected{% endif %}>Annullata</option>
-                                        </select>
+                
+                <!-- Admin Tab -->
+                {% if current_user.is_admin %}
+                <div class="tab-pane fade" id="admin" role="tabpanel" aria-labelledby="admin-tab">
+                    <div class="info-section">
+                        <h5 class="section-title"><i class="fas fa-cogs text-primary me-2"></i>Gestione Fattura</h5>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-edit me-2"></i>Modifica Stato</h6>
                                     </div>
-                                    <div class="col-md-6">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save me-1"></i>Aggiorna Stato
-                                        </button>
+                                    <div class="card-body">
+                                        <form method="POST" action="{{ url_for('fattura_pa.update_stato_fattura', fattura_id=fattura.IdFactura) }}">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <div class="mb-3">
+                                                <label for="stato" class="form-label">Stato Fattura</label>
+                                                <select name="stato" id="stato" class="form-select">
+                                                    <option value="generata" {% if fattura.EstadoFactura == 'generata' %}selected{% endif %}>Generata</option>
+                                                    <option value="inviata" {% if fattura.EstadoFactura == 'inviata' %}selected{% endif %}>Inviata</option>
+                                                    <option value="pagata" {% if fattura.EstadoFactura == 'pagata' %}selected{% endif %}>Pagata</option>
+                                                    <option value="annullata" {% if fattura.EstadoFactura == 'annullata' %}selected{% endif %}>Annullata</option>
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save me-1"></i>Aggiorna Stato
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-                            </form>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            <form method="POST" action="{{ url_for('fattura_pa.delete_invoice_db', fattura_id=fattura.IdFactura) }}" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questa fattura?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" name="delete_file" value="true" id="deleteFile">
-                                    <label class="form-check-label" for="deleteFile">Elimina anche file XML</label>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card border-danger">
+                                    <div class="card-header bg-danger text-white">
+                                        <h6 class="mb-0"><i class="fas fa-trash me-2"></i>Elimina Fattura</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted mb-3">
+                                            <i class="fas fa-exclamation-triangle me-1 text-warning"></i>
+                                            Attenzione: questa azione non è reversibile.
+                                        </p>
+                                        <form method="POST" action="{{ url_for('fattura_pa.delete_invoice_db', fattura_id=fattura.IdFactura) }}" onsubmit="return confirm('Sei sicuro di voler eliminare questa fattura?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" name="delete_file" value="true" id="deleteFile">
+                                                <label class="form-check-label" for="deleteFile">
+                                                    Elimina anche file XML
+                                                </label>
+                                            </div>
+                                            <button type="submit" class="btn btn-outline-danger">
+                                                <i class="fas fa-trash me-1"></i>Elimina Fattura
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn btn-outline-danger ms-2">
-                                    <i class="fas fa-trash me-1"></i>Elimina Fattura
-                                </button>
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            {% endif %}
-
-            <!-- Informazioni Tecniche -->
-            <div class="section-card">
-                <div class="section-header">
-                    <i class="fas fa-cog me-2"></i>Informazioni Tecniche
-                </div>
-                <div class="p-3">
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="text-muted small">Nome File XML</div>
-                            <div class="fw-bold"><code>{{ fattura.ReferenciaDocumento or 'N/A' }}</code></div>
-                        </div>
-                        <div class="info-item">
-                            <div class="text-muted small">Codice Hash</div>
-                            <div class="fw-bold">{{ fattura.CodigoHash or 'N/A' }}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="text-muted small">Numero Linee</div>
-                            <div class="fw-bold">{{ fattura.NumLineas or 0 }}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="text-muted small">Creato il</div>
-                            <div class="fw-bold">{{ fattura.TimeStamp.strftime('%d/%m/%Y %H:%M') if fattura.TimeStamp else 'N/A' }}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="text-muted small">Creato da</div>
-                            <div class="fw-bold">{{ fattura.Usuario or 'Sistema' }}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="text-muted small">Versione</div>
-                            <div class="fw-bold">{{ fattura.Version or 1 }}</div>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
-
-<!-- Messages -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-    {% for category, message in messages %}
-    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
-{% endif %}
-{% endwith %}
 
 {% endblock %}
 
@@ -405,6 +523,17 @@
                 bsAlert.close();
             });
         }, 5000);
+
+        // Attiva il tab corretto se specificato nell'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab');
+        if (activeTab) {
+            const tabElement = document.querySelector(`#${activeTab}-tab`);
+            if (tabElement) {
+                const tab = new bootstrap.Tab(tabElement);
+                tab.show();
+            }
+        }
     });
 </script>
 {% endblock %}

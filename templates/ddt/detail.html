@@ -40,9 +40,9 @@
                     <a href="{{ url_for('ddt.modify', ddt_id=ddt.IdAlbaran) }}" class="btn btn-primary action-btn mb-2 mb-md-0">
                         <i class="fas fa-edit me-1"></i>Modifica DDT
                     </a>
-                    <a href="javascript:void(0)" onclick="printDDT('{{ ddt.IdAlbaran }}')" class="btn btn-light action-btn mb-2 mb-md-0">
-                        <i class="fas fa-print me-1"></i>Stampa
-                    </a>
+                    <button type="button" class="btn btn-light action-btn mb-2 mb-md-0" data-bs-toggle="modal" data-bs-target="#printModal">
+                        <i class="fas fa-print me-1"></i>Stampa DDT
+                    </button>
                     {% if current_user.is_admin %}
                     <form action="{{ url_for('fattura_pa.create_invoice', ddt_id=ddt.IdAlbaran) }}" method="post" class="d-inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -119,7 +119,7 @@
                                 <h5 class="section-title"><i class="fas fa-receipt text-primary me-2"></i>Informazioni DDT</h5>
                                 <div class="detail-item">
                                     <span class="detail-label">Data Creazione</span>
-                                    <span class="detail-value">{{ ddt.Fecha.strftime('%d/%m/%Y %H:%M') if ddt.Fecha else 'N/A' }}</span>
+                                    <span class="detail-value">{{ ddt.Fecha.strftime('%d/%m/%Y') if ddt.Fecha else 'N/A' }}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Numero DDT</span>
@@ -196,6 +196,22 @@
                                 <div class="detail-item">
                                     <span class="detail-label">P.IVA</span>
                                     <span class="detail-value">{{ empresa.CIF_VAT or 'N/A' }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="section-title"><i class="fas fa-cogs text-primary me-2"></i>Informazioni DDT</h5>
+                                <div class="detail-item">
+                                    <span class="detail-label">Causale</span>
+                                    <span class="detail-value">{{ ddt.EANCliente or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Aspetto esteriore dei beni</span>
+                                    <span class="detail-value">{{ ddt.ObservacionesCliente or 'N/A' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Trasporto a cura</span>
+                                    <span class="detail-value">{{ ddt.ObservacionesDocumento or 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -313,13 +329,500 @@
         </div>
     </div>
 </div>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="printModalLabel">
+                    <i class="fas fa-print text-primary me-2"></i>Opzioni di Stampa DDT #{{ ddt.NumAlbaran }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Riga 1: Tipo DDT e Numero copie -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Tipo di DDT:</h6>
+                        <div class="d-grid gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="printType" id="printWithPrices" value="con-prezzi" checked>
+                                <label class="form-check-label fw-bold text-success" for="printWithPrices">
+                                    <i class="fas fa-euro-sign me-2"></i>DDT con prezzi
+                                    <small class="d-block text-muted">Include prezzi, sconti, IVA e totali</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="printType" id="printMute" value="muto">
+                                <label class="form-check-label fw-bold text-info" for="printMute">
+                                    <i class="fas fa-box me-2"></i>DDT muto
+                                    <small class="d-block text-muted">Solo informazioni logistiche</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Numero di copie -->
+                        <div class="mb-3">
+                            <label for="copiesInput" class="form-label fw-bold">
+                                <i class="fas fa-copy me-1"></i>Numero di copie:
+                            </label>
+                            <input type="number" class="form-control" id="copiesInput" value="1" min="1" max="99">
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Numero di copie da stampare (1-99)
+                            </small>
+                        </div>
+
+                        <!-- Destinazione -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Destinazione:</label>
+                            <div class="d-grid gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="destination" id="destPrinter" value="printer" checked>
+                                    <label class="form-check-label" for="destPrinter">
+                                        <i class="fas fa-print me-2"></i>Stampa diretta
+                                        <small class="d-block text-muted">Invia alla stampante selezionata</small>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="destination" id="destPreview" value="preview">
+                                    <label class="form-check-label" for="destPreview">
+                                        <i class="fas fa-eye me-2"></i>Anteprima
+                                        <small class="d-block text-muted">Apri PDF nel browser</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riga 2: Layout pagine e Tipo colore -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Layout pagine:</h6>
+                        <div class="d-grid gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="duplexMode" id="duplexOff" value="off" checked>
+                                <label class="form-check-label" for="duplexOff">
+                                    <i class="fas fa-file-alt me-2"></i>Fogli separati
+                                    <small class="d-block text-muted">Ogni pagina su foglio diverso</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="duplexMode" id="duplexOn" value="on">
+                                <label class="form-check-label" for="duplexOn">
+                                    <i class="fas fa-file-invoice me-2"></i>Fronte-Retro
+                                    <small class="d-block text-muted">Richiede stampante duplex</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Tipo di stampa:</h6>
+                        <div class="d-grid gap-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="colorMode" id="colorOn" value="color" checked>
+                                <label class="form-check-label" for="colorOn">
+                                    <i class="fas fa-palette me-2 text-primary"></i>A colori
+                                    <small class="d-block text-muted">Stampa a colori completa</small>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="colorMode" id="colorOff" value="bw">
+                                <label class="form-check-label" for="colorOff">
+                                    <i class="fas fa-tint-slash me-2 text-secondary"></i>Bianco e nero
+                                    <small class="d-block text-muted">Stampa in scala di grigi</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Riga 3: Stampante (full width quando visibile) -->
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Stampante (solo se destinazione è stampante) -->
+                        <div id="printerSection">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0">
+                                    <i class="fas fa-print me-2"></i>Stampante:
+                                </h6>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshPrinters()" title="Aggiorna lista stampanti">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <select class="form-select" id="printerSelect">
+                                <option value="">🔄 Caricamento stampanti...</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Le stampanti vengono rilevate automaticamente dal sistema Windows. Usa il bottone ↻ per aggiornare la lista.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-primary" onclick="executePrint()">
+                    <i class="fas fa-print me-1"></i>Stampa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function printDDT(id) {
-        // Reindirizza direttamente all'URL di esportazione in una nuova finestra
-        window.open(`{{ url_for('ddt.export', ddt_id=ddt.IdAlbaran) }}`, '_blank');
+    let printWindow = null;
+
+    // Inizializza il modale di stampa
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAvailablePrinters();
+        loadPrintSettings(); // Carica impostazioni salvate
+
+        const printModal = document.getElementById('printModal');
+        if (printModal) {
+            printModal.addEventListener('hidden.bs.modal', function() {
+                resetPrintModal();
+            });
+            printModal.addEventListener('shown.bs.modal', function() {
+                // Carica impostazioni ogni volta che il modal si apre
+                loadPrintSettings();
+            });
+        }
+
+        // Gestisci cambio destinazione (mostra/nascondi sezione stampante)
+        const destinationRadios = document.querySelectorAll('input[name="destination"]');
+        destinationRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                togglePrinterSection(this.value);
+            });
+        });
+
+        // Inizializza stato sezione stampante
+        togglePrinterSection('printer');
+    });
+
+    // Esegue la stampa con le opzioni selezionate
+    function executePrint() {
+        const tipoRadio = document.querySelector('input[name="printType"]:checked');
+        const copiesInput = document.getElementById('copiesInput');
+        const duplexRadio = document.querySelector('input[name="duplexMode"]:checked');
+        const colorRadio = document.querySelector('input[name="colorMode"]:checked');
+        const destinationRadio = document.querySelector('input[name="destination"]:checked');
+        const printerSelect = document.getElementById('printerSelect');
+
+        if (!tipoRadio || !copiesInput || !duplexRadio || !colorRadio || !destinationRadio) {
+            console.error('❌ Elementi del modale non trovati');
+            return;
+        }
+
+        const tipo = tipoRadio.value;
+        const copies = parseInt(copiesInput.value) || 1;
+        const duplex = duplexRadio.value;
+        const color = colorRadio.value;
+        const destination = destinationRadio.value;
+        const printer = printerSelect ? printerSelect.value : '';
+        const ddtId = '{{ ddt.IdAlbaran }}';
+
+        console.log('🖨️ Eseguendo stampa:', {
+            tipo, copies, duplex, color, destination, printer, ddtId
+        });
+
+        // Salva le impostazioni scelte per la prossima volta
+        savePrintSettings(tipo, copies, duplex, color, destination, printer);
+
+        // Costruisci URL per il PDF
+        let url = `{{ url_for('ddt.export', ddt_id=ddt.IdAlbaran) }}`;
+        url += `?tipo=${tipo}&copies=${copies}&duplex=${duplex}&color=${color}&destination=${destination}`;
+
+        // Chiudi il modale
+        const modal = document.getElementById('printModal');
+        if (modal) {
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) bsModal.hide();
+        }
+
+        // Gestisci la stampa
+        if (destination === 'preview') {
+            printWithBrowserDialog(url, tipo);
+        } else {
+            if (!printer || printer === '') {
+                showNotification('❌ Seleziona una stampante', 'error');
+                return;
+            }
+            printDirectlyServer(url, tipo, printer, copies, duplex, color);
+        }
+    }
+
+    // Stampa con finestra di dialogo del browser (anteprima)
+    function printWithBrowserDialog(url, tipo) {
+        console.log('🌐 Apertura anteprima PDF nel browser');
+        printWindow = window.open(url, '_blank');
+        if (printWindow) {
+            printWindow.onload = function() {
+                // Per l'anteprima non apriamo automaticamente la finestra di stampa
+                showNotification('📄 PDF aperto in anteprima - usa Ctrl+P per stampare', 'info');
+            };
+        }
+    }
+
+    // Stampa diretta lato server
+    async function printDirectlyServer(url, tipo, printerName, copies = 1, duplex = 'off', color = 'color') {
+        console.log('🖨️ Stampa server-side su:', printerName, { copies, duplex, color });
+
+        try {
+            const printUrl = url + `&printer=${encodeURIComponent(printerName)}&copies=${copies}&duplex=${duplex}&color=${color}`;
+            const response = await fetch(printUrl);
+            
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                const result = await response.json();
+                if (result.success) {
+                    const copiesText = copies > 1 ? `${copies} copie` : '1 copia';
+                    showNotification(`✅ Stampato ${copiesText} su: ${printerName}`, 'success');
+                } else {
+                    showNotification(`❌ Errore: ${result.error}`, 'error');
+                }
+            } else {
+                const blob = await response.blob();
+                const pdfUrl = URL.createObjectURL(blob);
+                window.open(pdfUrl, '_blank');
+                showNotification('📄 PDF aperto nel browser', 'info');
+            }
+        } catch (error) {
+            console.error('Errore stampa:', error);
+            window.open(url, '_blank');
+            showNotification('⚠️ Fallback: PDF aperto nel browser', 'warning');
+        }
+    }
+
+    // Reset del modal alle impostazioni predefinite
+    function resetPrintModal() {
+        // Carica le impostazioni salvate invece di resettare ai valori di default
+        loadPrintSettings();
+
+        // Se non ci sono impostazioni salvate, usa i valori di default
+        if (!localStorage.getItem('ddtPrintSettings')) {
+            const conPrezziRadio = document.querySelector('input[name="printType"][value="con-prezzi"]');
+            const copiesInput = document.getElementById('copiesInput');
+            const duplexOffRadio = document.querySelector('input[name="duplexMode"][value="off"]');
+            const colorOnRadio = document.querySelector('input[name="colorMode"][value="color"]');
+            const destPrinterRadio = document.querySelector('input[name="destination"][value="printer"]');
+            const printerSelect = document.getElementById('printerSelect');
+
+            if (conPrezziRadio) conPrezziRadio.checked = true;
+            if (copiesInput) copiesInput.value = '1';
+            if (duplexOffRadio) duplexOffRadio.checked = true;
+            if (colorOnRadio) colorOnRadio.checked = true;
+            if (destPrinterRadio) destPrinterRadio.checked = true;
+            if (printerSelect) printerSelect.value = printerSelect.options[0]?.value || '';
+
+            togglePrinterSection('printer');
+        }
+    }
+
+    // Mostra/nasconde la sezione stampante
+    function togglePrinterSection(destination) {
+        const printerSection = document.getElementById('printerSection');
+        if (printerSection) {
+            if (destination === 'printer') {
+                printerSection.style.display = 'block';
+            } else {
+                printerSection.style.display = 'none';
+            }
+        }
+    }
+
+    // Salva le impostazioni di stampa nel localStorage
+    function savePrintSettings(tipo, copies, duplex, color, destination, printer) {
+        const settings = {
+            tipo: tipo,
+            copies: copies,
+            duplex: duplex,
+            color: color,
+            destination: destination,
+            printer: printer,
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            localStorage.setItem('ddtPrintSettings', JSON.stringify(settings));
+            console.log('💾 Impostazioni di stampa salvate:', settings);
+        } catch (error) {
+            console.warn('⚠️ Impossibile salvare le impostazioni:', error);
+        }
+    }
+
+    // Carica le impostazioni di stampa dal localStorage
+    function loadPrintSettings() {
+        try {
+            const savedSettings = localStorage.getItem('ddtPrintSettings');
+            if (!savedSettings) {
+                console.log('📄 Nessuna impostazione salvata trovata');
+                return;
+            }
+
+            const settings = JSON.parse(savedSettings);
+            console.log('📋 Caricamento impostazioni salvate:', settings);
+
+            // Applica le impostazioni salvate
+            if (settings.tipo) {
+                const tipoRadio = document.querySelector(`input[name="printType"][value="${settings.tipo}"]`);
+                if (tipoRadio) tipoRadio.checked = true;
+            }
+
+            if (settings.copies) {
+                const copiesInput = document.getElementById('copiesInput');
+                if (copiesInput) copiesInput.value = settings.copies;
+            }
+
+            if (settings.duplex) {
+                const duplexRadio = document.querySelector(`input[name="duplexMode"][value="${settings.duplex}"]`);
+                if (duplexRadio) duplexRadio.checked = true;
+            }
+
+            if (settings.color) {
+                const colorRadio = document.querySelector(`input[name="colorMode"][value="${settings.color}"]`);
+                if (colorRadio) colorRadio.checked = true;
+            }
+
+            if (settings.destination) {
+                const destRadio = document.querySelector(`input[name="destination"][value="${settings.destination}"]`);
+                if (destRadio) {
+                    destRadio.checked = true;
+                    togglePrinterSection(settings.destination);
+                }
+            }
+
+            // Nota: la stampante non viene ripristinata automaticamente per evitare problemi
+            // se la stampante salvata non è più disponibile
+
+            showNotification('✅ Impostazioni precedenti caricate', 'info');
+
+        } catch (error) {
+            console.warn('⚠️ Errore nel caricamento delle impostazioni:', error);
+        }
+    }
+
+    // Sistema di notifiche semplice
+    function showNotification(message, type = 'success') {
+        const colors = { success: '#28a745', error: '#dc3545', warning: '#ffc107', info: '#17a2b8' };
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed; top: 20px; right: 20px;
+            background: ${colors[type]}; color: white; padding: 15px 20px;
+            border-radius: 8px; z-index: 9999; font-family: Arial, sans-serif;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => document.body.removeChild(notification), 4000);
+    }
+
+    // Carica stampanti (versione semplificata)
+    async function loadAvailablePrinters() {
+        const printerSelect = document.getElementById('printerSelect');
+        if (!printerSelect) return;
+        
+        try {
+            const response = await fetch('/ddt/api/printers');
+            const data = await response.json();
+            
+            printerSelect.innerHTML = '';
+            
+            if (data.success && data.printers) {
+                data.printers.forEach(printer => {
+                    const option = document.createElement('option');
+                    option.value = printer.type === 'browser' ? 'browser' : printer.name;
+                    option.textContent = `${printer.type === 'browser' ? '🌐' : '🖨️'} ${printer.name}${printer.is_default ? ' (Predefinita)' : ''}`;
+                    if (printer.is_default) option.selected = true;
+                    printerSelect.appendChild(option);
+                });
+                
+                // Mostra avvisi software PDF se necessario
+                if (data.pdf_software && data.pdf_software.recommendations && data.pdf_software.recommendations.length > 0) {
+                    showPDFSoftwareWarning(data.pdf_software);
+                }
+            } else {
+                printerSelect.innerHTML = '<option value="browser">🌐 Mostra finestra di stampa</option>';
+            }
+        } catch (error) {
+            console.error('Errore caricamento stampanti:', error);
+            printerSelect.innerHTML = '<option value="browser">🌐 Mostra finestra di stampa</option>';
+        }
+    }
+
+    function refreshPrinters() {
+        loadAvailablePrinters();
+    }
+
+    // Mostra avviso per software PDF mancanti
+    function showPDFSoftwareWarning(pdfSoftware) {
+        // Controlla se abbiamo già mostrato l'avviso in questa sessione
+        if (sessionStorage.getItem('pdf_warning_shown')) {
+            return;
+        }
+        
+        console.log('⚠️ Software PDF mancanti, mostrando avviso');
+        
+        // Crea avviso nella parte superiore del modale
+        const modalBody = document.querySelector('#printModal .modal-body');
+        if (!modalBody) return;
+        
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning alert-dismissible';
+        warningDiv.innerHTML = `
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="alert-heading">⚠️ Attenzione: Software PDF non trovato</h6>
+                    <p class="mb-2">Per evitare stampe di "geroglifici", installa uno di questi programmi:</p>
+                    <ul class="mb-2">
+                        <li><strong>Adobe Reader</strong> - <a href="https://get.adobe.com/reader/" target="_blank">Download gratis</a></li>
+                        <li><strong>SumatraPDF</strong> - <a href="https://www.sumatrapdfreader.org/download-free-pdf-viewer.html" target="_blank">Download gratis</a></li>
+                    </ul>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Senza questi programmi, la tua stampante RICOH potrebbe stampare caratteri incomprensibili.
+                    </small>
+                </div>
+                <button type="button" class="btn-close" onclick="dismissPDFWarning()"></button>
+            </div>
+        `;
+        
+        // Inserisci all'inizio del modal body
+        modalBody.insertBefore(warningDiv, modalBody.firstChild);
+        
+        // Segna come mostrato per questa sessione
+        sessionStorage.setItem('pdf_warning_shown', 'true');
+    }
+
+    // Nascondi avviso PDF
+    function dismissPDFWarning() {
+        const warning = document.querySelector('#printModal .alert-warning');
+        if (warning) {
+            warning.remove();
+        }
+    }
+
+    // Funzione legacy per compatibilità
+    function printDDT(id, tipo = 'con-prezzi') {
+        const modal = document.getElementById('printModal');
+        if (modal) {
+            new bootstrap.Modal(modal).show();
+        } else {
+            window.open(`{{ url_for('ddt.export', ddt_id=ddt.IdAlbaran) }}?tipo=${tipo}`, '_blank');
+        }
     }
 </script>
 {% endblock %}

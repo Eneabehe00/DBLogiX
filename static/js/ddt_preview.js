@@ -15,6 +15,22 @@ let selectedTicketsIds = new Set();
 // Carica dati dal server
 let serverData, INITIAL_TICKETS_DATA, INITIAL_PREVIEW_DATA, FROM_TASK, CLIENTE_ID, EMPRESA_ID;
 
+// ===== FUNZIONI DI UTILITÀ =====
+
+// Funzione di utilità per estrarre ID numerico da NombrePlataforma
+function extractNumericTicketId(ticketId) {
+    if (typeof ticketId === 'string') {
+        // Se inizia con "#-", rimuovi il prefisso e converti
+        if (ticketId.startsWith('#-')) {
+            return parseInt(ticketId.substring(2));
+        }
+        // Altrimenti, prova a convertire direttamente
+        return parseInt(ticketId);
+    }
+    // Se è già un numero, restituiscilo
+    return typeof ticketId === 'number' ? ticketId : parseInt(ticketId);
+}
+
 // ===== INIZIALIZZAZIONE =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DDT Preview inizializzato');
@@ -222,7 +238,7 @@ function setupEventListeners() {
         
         if (e.target.closest('.btn-remove-ticket')) {
             const button = e.target.closest('.btn-remove-ticket');
-            const ticketId = parseInt(button.getAttribute('data-ticket-id'));
+            const ticketId = extractNumericTicketId(button.getAttribute('data-ticket-id'));
             console.log('🗑️ Rimozione ticket:', ticketId);
             removeTicket(ticketId);
         }
@@ -740,8 +756,31 @@ function loadTicketDiscountsFromStorage() {
     }
 }
 
-function saveTicketDiscountsToStorage() {
+async function saveTicketDiscountsToStorage() {
+    // Salva nel localStorage del browser
     localStorage.setItem('ddt_ticket_discounts', JSON.stringify(ticketDiscounts));
+
+    // Salva anche nella session del server
+    try {
+        const response = await fetch('/ddt/api/save_ticket_discounts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
+            },
+            body: JSON.stringify({
+                ticket_discounts: ticketDiscounts
+            })
+        });
+
+        if (response.ok) {
+            console.log('✅ Sconti ticket salvati nella session del server');
+        } else {
+            console.error('❌ Errore salvataggio sconti nella session del server');
+        }
+    } catch (error) {
+        console.error('❌ Errore chiamata API salvataggio sconti:', error);
+    }
 }
 
 // ===== GESTIONE TICKET ESISTENTI AGGIUNTI =====
@@ -1165,6 +1204,26 @@ function updateFormData() {
 
     manualTicketsInput.value = JSON.stringify(manualTickets);
 
+    // 🔥 NUOVO: Aggiungi i campi configurabili DDT al form
+    const ddtConfigValues = window.DDTConfigManager ? window.DDTConfigManager.getValues() : {
+        causale: document.getElementById('ddt-causale-value')?.value || '',
+        aspetto_esteriore: document.getElementById('ddt-aspetto-esteriore-value')?.value || '',
+        trasporto_a_cura: document.getElementById('ddt-trasporto-a-cura-value')?.value || ''
+    };
+    
+    // Aggiungi ogni campo configurabile come input nascosto
+    ['causale', 'aspetto_esteriore', 'trasporto_a_cura'].forEach(fieldName => {
+        let fieldInput = form.querySelector(`input[name="${fieldName}"]`);
+        if (!fieldInput) {
+            fieldInput = document.createElement('input');
+            fieldInput.type = 'hidden';
+            fieldInput.name = fieldName;
+            form.appendChild(fieldInput);
+        }
+        fieldInput.value = ddtConfigValues[fieldName] || '';
+        console.log(`🔧 Campo configurabile ${fieldName} aggiunto al form:`, ddtConfigValues[fieldName]);
+    });
+
     let discountsInput = form.querySelector('input[name="ticket_discounts"]');
 
     if (!discountsInput) {
@@ -1285,7 +1344,7 @@ function handleTableClicks(e) {
     // Click su rimozione ticket
     if (e.target.closest('.btn-remove-ticket')) {
         const btn = e.target.closest('.btn-remove-ticket');
-        const ticketId = parseInt(btn.getAttribute('data-ticket-id'));
+        const ticketId = extractNumericTicketId(btn.getAttribute('data-ticket-id'));
         removeTicket(ticketId);
     }
     
@@ -1980,7 +2039,14 @@ function updateSelectedTicketsCount() {
         
         // Aggiungi alla lista dei ticket esistenti aggiunti per la persistenza (solo se non esiste già)
         if (!addedExistingTickets.find(t => t.id_ticket === ticket.id_ticket)) {
+            console.log('📝 Aggiungendo ticket a addedExistingTickets:', {
+                id_ticket: ticket.id_ticket,
+                data: tableTicketData
+            });
             addedExistingTickets.push(tableTicketData);
+            console.log('📊 addedExistingTickets ora contiene:', addedExistingTickets.length, 'ticket');
+        } else {
+            console.log('⚠️ Ticket già presente in addedExistingTickets:', ticket.id_ticket);
         }
         
         // Aggiungi alla tabella visuale
@@ -1991,9 +2057,12 @@ function updateSelectedTicketsCount() {
      
      // Salva nel localStorage
      saveAddedExistingTicketsToStorage();
-     
-    // Aggiorna riepilogo e form
-    updateFormData();
+
+     // ✅ Salva anche le modifiche complessive del DDT (include i ticket aggiunti)
+     saveDDTModificationsToStorage();
+
+     // Aggiorna riepilogo e form
+     updateFormData();
 
     // Aggiorna la barra dei totali
     setTimeout(updateTotalsBar, 100);
@@ -2288,22 +2357,102 @@ function handleCreateInvoiceOnly() {
         return;
     }
 
-    // Pulisci localStorage prima della generazione
-    localStorage.removeItem('ddt_ticket_modifications');
-    localStorage.removeItem('ddt_manual_tickets');
-    localStorage.removeItem('ddt_added_existing_tickets');
-    localStorage.removeItem('ddt_ticket_discounts');
-    localStorage.removeItem('ddt_selected_tickets_temp');
+    // Prepara i dati per la chiamata al server
+    const formData = new FormData();
 
+    // Cliente e azienda
+    formData.append('cliente_id', CLIENTE_ID || 1);
+    formData.append('id_empresa', EMPRESA_ID || 1);
+
+    // Ticket normali
+    const ticketsForServer = currentTickets.map(ticketId => ({
+        id_ticket: ticketId,
+        id_empresa: EMPRESA_ID || 1
+    }));
+    formData.append('tickets', JSON.stringify(ticketsForServer));
+
+    // Ticket manuali
+    formData.append('manual_tickets', JSON.stringify(manualTickets));
+
+    // Sconti
+    formData.append('ticket_discounts', JSON.stringify(ticketDiscounts));
+
+    // Modifiche prezzi
+    const storedModifications = localStorage.getItem('ddt_ticket_modifications') || '{}';
+    formData.append('ticket_modifications', storedModifications);
+
+    // Note
+    const notes = document.getElementById('ddt-notes') ? document.getElementById('ddt-notes').value : '';
+    formData.append('note', notes);
+
+    // Data creazione
+    const selectedDateInput = document.getElementById('selected-creation-date');
+    if (selectedDateInput && selectedDateInput.value) {
+        formData.append('creation_date', selectedDateInput.value);
+    }
+
+    // Token CSRF
+    const csrfToken = document.querySelector('input[name="csrf_token"]');
+    if (csrfToken) {
+        formData.append('csrf_token', csrfToken.value);
+    }
+
+    // Mostra loading
     const btn = document.getElementById('create-invoice-only');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generazione fattura...';
     btn.disabled = true;
-    
-    setTimeout(() => {
-        showNotification('Fattura elettronica generata con successo!', 'success');
+
+    // Chiamata AJAX al backend
+    fetch('/ddt/create_invoice_only', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('✅ Fattura generata con successo:', data);
+
+            // Mostra notifica di successo
+            showNotification('Fattura elettronica generata con successo!', 'success');
+
+            // Pulisci localStorage dopo il successo
+            localStorage.removeItem('ddt_ticket_modifications');
+            localStorage.removeItem('ddt_manual_tickets');
+            localStorage.removeItem('ddt_added_existing_tickets');
+            localStorage.removeItem('ddt_ticket_discounts');
+            localStorage.removeItem('ddt_selected_tickets_temp');
+
+            // Reindirizza alla fattura se fornita l'URL
+            if (data.invoice_url) {
+                setTimeout(() => {
+                    window.location.href = data.invoice_url;
+                }, 1500);
+            } else {
+                // Fallback: ricarica la pagina dopo un po'
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        } else {
+            console.error('❌ Errore generazione fattura:', data.error);
+            showNotification(`Errore generazione fattura: ${data.error}`, 'error');
+
+            // Riabilita il pulsante
+            btn.innerHTML = '<i class="fas fa-file-invoice-dollar me-2"></i>Genera solo fattura';
+            btn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('❌ Errore chiamata AJAX:', error);
+        showNotification('Errore di connessione durante la generazione della fattura', 'error');
+
+        // Riabilita il pulsante
         btn.innerHTML = '<i class="fas fa-file-invoice-dollar me-2"></i>Genera solo fattura';
         btn.disabled = false;
-    }, 2000);
+    });
 }
 
 
@@ -2338,6 +2487,26 @@ function updateFormData() {
         }
         
         manualTicketsInput.value = JSON.stringify(manualTickets);
+        
+        // 🔥 NUOVO: Aggiungi i campi configurabili DDT al form
+        const ddtConfigValues = window.DDTConfigManager ? window.DDTConfigManager.getValues() : {
+            causale: document.getElementById('ddt-causale-value')?.value || '',
+            aspetto_esteriore: document.getElementById('ddt-aspetto-esteriore-value')?.value || '',
+            trasporto_a_cura: document.getElementById('ddt-trasporto-a-cura-value')?.value || ''
+        };
+        
+        // Aggiungi ogni campo configurabile come input nascosto
+        ['causale', 'aspetto_esteriore', 'trasporto_a_cura'].forEach(fieldName => {
+            let fieldInput = form.querySelector(`input[name="${fieldName}"]`);
+            if (!fieldInput) {
+                fieldInput = document.createElement('input');
+                fieldInput.type = 'hidden';
+                fieldInput.name = fieldName;
+                form.appendChild(fieldInput);
+            }
+            fieldInput.value = ddtConfigValues[fieldName] || '';
+            console.log(`🔧 Campo configurabile ${fieldName} aggiunto al form:`, ddtConfigValues[fieldName]);
+        });
         
         let discountsInput = form.querySelector('input[name="ticket_discounts"]');
         
@@ -2848,13 +3017,13 @@ function updateTicketTotal() {
 // ===== GESTIONE TICKET ESISTENTI =====
 function loadExistingTickets() {
     console.log('📋 Caricamento ticket esistenti...');
-    
+
     const loadingDiv = document.getElementById('existing-tickets-loading');
     const listDiv = document.getElementById('existing-products-list');
-    
+
     if (loadingDiv) loadingDiv.style.display = 'block';
     if (listDiv) listDiv.innerHTML = '';
-    
+
     // Verifica che abbiamo il cliente ID
     if (!CLIENTE_ID) {
         console.error('❌ Cliente ID non disponibile');
@@ -2864,42 +3033,82 @@ function loadExistingTickets() {
         }
         return;
     }
-    
+
     // Chiamata API reale per caricare i ticket esistenti
     fetch(`/ddt/api/preview/search_tickets?cliente_id=${CLIENTE_ID}&limit=100`)
     .then(response => response.json())
     .then(data => {
+
         if (loadingDiv) loadingDiv.style.display = 'none';
-        
+
         if (data.success && data.products && data.products.length > 0) {
+            console.log(`✅ ${data.products.length} prodotti ricevuti dall'API`);
             // Carica i dati reali e filtra i ticket già aggiunti al DDT
             existingProductsData = data.products;
             
             // Crea set degli ID dei ticket già inclusi nel DDT
             const excludedTicketIds = new Set();
-            
-            // Aggiungi ticket iniziali già selezionati
-            currentTickets.forEach(ticketId => {
-                excludedTicketIds.add(parseInt(ticketId));
-            });
-            
-            // Aggiungi ticket esistenti già aggiunti
-            addedExistingTickets.forEach(ticket => {
-                excludedTicketIds.add(parseInt(ticket.id_ticket));
-            });
-            
-            // I ticket manuali hanno ID negativi quindi non dovrebbero essere nel database
-            // ma per sicurezza li aggiungiamo comunque al set di esclusione
-            manualTickets.forEach(ticket => {
-                excludedTicketIds.add(parseInt(ticket.id_ticket));
-            });
-            
-            console.log('🚫 Ticket da escludere dal modale:', Array.from(excludedTicketIds));
+
+            // In modalità modify, escludi i ticket esistenti già aggiunti al DDT corrente
+            // per evitare duplicati, ma permetti di aggiungere NUOVI ticket
+            const isModifyMode = serverData?.FROM_MODIFY === true;
+            console.log('🔧 Modalità modify:', isModifyMode);
+
+            if (!isModifyMode) {
+                // Solo in modalità preview/creazione escludi i ticket già selezionati
+                console.log('📋 Modalità preview/creazione - escludendo ticket già selezionati');
+
+                // Aggiungi ticket iniziali già selezionati (solo ID positivi per ticket reali)
+                currentTickets.forEach(ticketId => {
+                    const parsedId = extractNumericTicketId(ticketId);
+                    if (parsedId > 0) { // Solo ticket reali (ID positivi)
+                        excludedTicketIds.add(parsedId);
+                    }
+                });
+
+                // Aggiungi ticket esistenti già aggiunti (solo ID positivi per ticket reali)
+                addedExistingTickets.forEach(ticket => {
+                    const parsedId = extractNumericTicketId(ticket.id_ticket);
+                    if (parsedId > 0) { // Solo ticket reali (ID positivi)
+                        excludedTicketIds.add(parsedId);
+                    }
+                });
+            } else {
+                // In modalità modify, escludi i ticket manuali temporanei E i ticket già presenti nel DDT corrente
+                console.log('📋 Modalità modify - escludendo ticket manuali temporanei e ticket già nel DDT');
+
+                // Escludi i ticket manuali (ID negativi) che sono temporanei
+                manualTickets.forEach(ticket => {
+                    const parsedId = parseInt(ticket.id_ticket);
+                    if (parsedId < 0) { // Solo ticket manuali temporanei
+                        excludedTicketIds.add(parsedId);
+                    }
+                });
+
+                // ✅ AGGIUNTO: Escludi anche i ticket esistenti già aggiunti al DDT corrente
+                // Questo previene che gli stessi ticket appaiano nuovamente nel modale
+                currentTickets.forEach(ticketId => {
+                    const parsedId = extractNumericTicketId(ticketId);
+                    if (parsedId > 0) { // Solo ticket reali (ID positivi)
+                        excludedTicketIds.add(parsedId);
+                    }
+                });
+
+                addedExistingTickets.forEach(ticket => {
+                    const parsedId = extractNumericTicketId(ticket.id_ticket);
+                    if (parsedId > 0) { // Solo ticket reali (ID positivi)
+                        excludedTicketIds.add(parsedId);
+                    }
+                });
+            }
+
+            // I ticket virtuali della modalità modify hanno ID negativi e non dovrebbero
+            // essere nel database, quindi non li aggiungiamo al filtro
             
             // Filtra i prodotti rimuovendo i ticket già inclusi nel DDT
             const filteredProducts = existingProductsData.map(product => {
                 const filteredTickets = product.tickets.filter(ticket => {
-                    const ticketId = parseInt(ticket.IdTicket);
+                    const ticketId = extractNumericTicketId(ticket.IdTicket);
                     return !excludedTicketIds.has(ticketId);
                 });
                 
@@ -2914,7 +3123,7 @@ function loadExistingTickets() {
             }).filter(product => product !== null);
             
             existingProductsFiltered = filteredProducts;
-            
+
             displayExistingTickets(filteredProducts);
             console.log(`✅ Caricati ${data.products.length} prodotti, ${filteredProducts.length} con ticket disponibili dopo filtro`);
         } else {
@@ -4200,10 +4409,22 @@ function saveDDTModificationsToStorage() {
     const ddtId = getDDTIdFromURL();
     if (!ddtId) return;
 
+    console.log('📊 Stato addedExistingTickets prima del salvataggio:', {
+        count: addedExistingTickets.length,
+        tickets: addedExistingTickets.map(t => t.id_ticket)
+    });
+
+    // Raccogli la data del DDT se modificata
+    const selectedDateInput = document.getElementById('selected-creation-date');
+    const ddtDate = selectedDateInput ? selectedDateInput.value : null;
+
     const modifications = {
         ddt_id: ddtId,
         timestamp: new Date().toISOString(),
-        lines: []
+        ddt_date: ddtDate, // ✅ AGGIUNTO: Data del DDT
+        lines: [],
+        added_tickets: addedExistingTickets, // Includi i ticket esistenti aggiunti
+        manual_tickets: manualTickets // ✅ AGGIUNTO: Includi anche i ticket manuali
     };
 
     // Raccogli tutte le linee modificate dalla tabella
@@ -4230,62 +4451,214 @@ function saveDDTModificationsToStorage() {
     localStorage.setItem(storageKey, JSON.stringify(modifications));
 
     console.log('💾 Modifiche DDT salvate nel localStorage:', modifications);
+    console.log('🔑 Chiave utilizzata:', storageKey);
+    console.log('📅 Data DDT inclusa nel salvataggio:', ddtDate);
+
+    // ✅ Forza il salvataggio anche se non ci sono linee modificate ma ci sono ticket aggiunti
+    if (addedExistingTickets.length > 0) {
+        console.log('🎯 Salvataggio forzato perché ci sono ticket esistenti aggiunti:', addedExistingTickets.length);
+    }
 }
 
 // Funzione per caricare le modifiche dal localStorage
 function loadDDTModificationsFromStorage() {
     const ddtId = getDDTIdFromURL();
-    if (!ddtId) return null;
+    console.log('🔍 Tentativo caricamento modifiche per DDT ID:', ddtId);
+
+    if (!ddtId) {
+        console.error('❌ DDT ID non trovato per caricamento modifiche');
+        return null;
+    }
 
     const storageKey = `ddt_modifications_${ddtId}`;
+    console.log('🔑 Chiave localStorage cercata:', storageKey);
+
     const stored = localStorage.getItem(storageKey);
+    console.log('💾 Dati trovati nel localStorage:', stored ? 'Sì' : 'No');
 
     if (stored) {
         try {
             const modifications = JSON.parse(stored);
             console.log('📦 Modifiche DDT caricate dal localStorage:', modifications);
-            return modifications;
+
+            // ✅ Verifica che ci siano effettivamente modifiche o ticket aggiunti
+            const hasLines = modifications.lines && modifications.lines.length > 0;
+            const hasAddedTickets = modifications.added_tickets && modifications.added_tickets.length > 0;
+            const hasManualTickets = modifications.manual_tickets && modifications.manual_tickets.length > 0; // ✅ AGGIUNTO
+
+            const hasDDTDate = modifications.ddt_date && modifications.ddt_date.trim() !== '';
+
+            console.log('🔍 Controllo modifiche:', {
+                hasLines,
+                hasAddedTickets,
+                hasManualTickets, // ✅ AGGIUNTO
+                hasDDTDate, // ✅ AGGIUNTO: Verifica data DDT
+                linesCount: modifications.lines?.length || 0,
+                addedTicketsCount: modifications.added_tickets?.length || 0,
+                manualTicketsCount: modifications.manual_tickets?.length || 0, // ✅ AGGIUNTO
+                ddtDate: modifications.ddt_date // ✅ AGGIUNTO: Mostra data DDT
+            });
+
+            // ✅ Permetti il salvataggio anche se ci sono solo ticket aggiunti, manuali o data DDT modificata
+            if (hasLines || hasAddedTickets || hasManualTickets || hasDDTDate) {
+                console.log('✅ Modifiche valide trovate, permetto salvataggio');
+                return modifications;
+            } else {
+                console.log('⚠️ Nessuna modifica, ticket aggiunto o data DDT modificata trovato');
+                return null;
+            }
         } catch (e) {
             console.error('❌ Errore parsing modifiche DDT dal localStorage:', e);
             return null;
         }
     }
 
+    // Se non trova le modifiche specifiche, cerca eventuali modifiche esistenti
+    const allKeys = Object.keys(localStorage);
+    const modificationKeys = allKeys.filter(key => key.startsWith('ddt_modifications_'));
+    console.log('🔍 Chiavi modifiche esistenti:', modificationKeys);
+
+    if (modificationKeys.length > 0) {
+        console.log('⚠️ Nessuna modifica trovata per il DDT corrente, ma ci sono altre modifiche salvate');
+
+        // ✅ Prova a caricare dalla chiave più recente (utile per debug)
+        if (modificationKeys.length > 0) {
+            // Ordina le chiavi per data di modifica (più recente prima)
+            const sortedKeys = modificationKeys.sort((a, b) => {
+                try {
+                    const dataA = localStorage.getItem(a);
+                    const dataB = localStorage.getItem(b);
+                    if (dataA && dataB) {
+                        const timestampA = JSON.parse(dataA).timestamp;
+                        const timestampB = JSON.parse(dataB).timestamp;
+                        return new Date(timestampB) - new Date(timestampA);
+                    }
+                } catch (e) {
+                    return 0;
+                }
+                return 0;
+            });
+
+            const fallbackKey = sortedKeys[0];
+            console.log('🔄 Tentativo fallback con chiave più recente:', fallbackKey);
+            try {
+                const fallbackData = localStorage.getItem(fallbackKey);
+                if (fallbackData) {
+                    const fallbackModifications = JSON.parse(fallbackData);
+                    console.log('✅ Modifiche caricate dal fallback:', fallbackModifications);
+
+                    const hasLines = fallbackModifications.lines && fallbackModifications.lines.length > 0;
+                    const hasAddedTickets = fallbackModifications.added_tickets && fallbackModifications.added_tickets.length > 0;
+                    const hasManualTickets = fallbackModifications.manual_tickets && fallbackModifications.manual_tickets.length > 0; // ✅ AGGIUNTO
+
+                    if (hasLines || hasAddedTickets || hasManualTickets) {
+                        console.log('🎯 Fallback riuscito - modifiche valide trovate');
+                        return fallbackModifications;
+                    }
+                }
+            } catch (e) {
+                console.error('❌ Errore nel fallback:', e);
+            }
+        }
+    }
+
     return null;
 }
 
+// ===== FUNZIONE DI DEBUG =====
+window.debugDDTModifications = function() {
+    console.log('🔧 === DEBUG DDT MODIFICATIONS ===');
+    
+    const ddtId = getDDTIdFromURL();
+    console.log('🆔 DDT ID:', ddtId);
+    
+    console.log('📊 addedExistingTickets:', {
+        count: addedExistingTickets.length,
+        data: addedExistingTickets
+    });
+    
+    const storageKey = `ddt_modifications_${ddtId}`;
+    const stored = localStorage.getItem(storageKey);
+    console.log('💾 localStorage per chiave:', storageKey, stored ? 'TROVATO' : 'NON TROVATO');
+    
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            console.log('📦 Dati localStorage:', parsed);
+        } catch (e) {
+            console.error('❌ Errore parsing localStorage:', e);
+        }
+    }
+    
+    // Mostra tutte le chiavi di modifica
+    const allKeys = Object.keys(localStorage).filter(k => k.startsWith('ddt_'));
+    console.log('🔑 Tutte le chiavi DDT nel localStorage:', allKeys);
+    
+    allKeys.forEach(key => {
+        const data = localStorage.getItem(key);
+        console.log(`📝 ${key}:`, data ? data.substring(0, 200) + '...' : 'VUOTO');
+    });
+    
+    console.log('🔧 === FINE DEBUG ===');
+    
+    return {
+        ddtId,
+        addedTicketsCount: addedExistingTickets.length,
+        hasStoredModifications: !!stored,
+        allDDTKeys: allKeys
+    };
+};
+
 // Funzione per ottenere l'ID del DDT
 function getDDTIdFromURL() {
+    console.log('🔍 getDDTIdFromURL() chiamata');
+
     // Prima cerca nei serverData se disponibile
     if (typeof serverData !== 'undefined' && serverData && serverData.DDT_ID) {
+        console.log('✅ DDT ID trovato nei serverData:', serverData.DDT_ID);
         return serverData.DDT_ID;
     }
 
     // Poi cerca nei parametri dell'URL
     const urlParams = new URLSearchParams(window.location.search);
     const urlDdtId = urlParams.get('ddt_id');
-
-    if (urlDdtId) return urlDdtId;
+    if (urlDdtId) {
+        console.log('✅ DDT ID trovato nei parametri URL:', urlDdtId);
+        return urlDdtId;
+    }
 
     // Cerca nell'HTML per elementi che potrebbero contenere il ddt_id
     const ddtIdElement = document.querySelector('[data-ddt-id]');
     if (ddtIdElement) {
-        return ddtIdElement.getAttribute('data-ddt-id');
+        const ddtId = ddtIdElement.getAttribute('data-ddt-id');
+        console.log('✅ DDT ID trovato nell\'elemento HTML:', ddtId);
+        return ddtId;
     }
 
-    // Estrai dall'URL della pagina corrente se siamo nella pagina detail
-    const pathMatch = window.location.pathname.match(/\/ddt\/(\d+)/);
+    // Estrai dall'URL della pagina corrente se siamo nella pagina detail/modify
+    const pathMatch = window.location.pathname.match(/\/ddt\/(?:modify\/)?(\d+)/);
     if (pathMatch) {
+        console.log('✅ DDT ID estratto dal path URL:', pathMatch[1]);
         return pathMatch[1];
     }
+
+    console.error('❌ DDT ID non trovato in nessuna fonte');
+    console.log('🔍 URL corrente:', window.location.href);
+    console.log('🔍 Path corrente:', window.location.pathname);
+    console.log('🔍 serverData disponibile:', typeof serverData !== 'undefined');
 
     return null;
 }
 
 // Funzione per salvare le modifiche del DDT nel database
 async function saveDDTModifications() {
+    console.log('🔄 Inizio processo salvataggio DDT modifiche');
+    
     const ddtId = getDDTIdFromURL();
+    console.log('🆔 DDT ID rilevato:', ddtId);
+    
     if (!ddtId) {
+        console.error('❌ DDT ID non trovato');
         alert('ID DDT non trovato');
         return;
     }
@@ -4297,14 +4670,31 @@ async function saveDDTModifications() {
     saveBtn.disabled = true;
 
     try {
+        // ✅ FORZA il salvataggio delle modifiche correnti prima di caricarle
+        console.log('💾 Forzo salvataggio modifiche correnti...');
+        saveDDTModificationsToStorage();
+        
         // Raccogli le modifiche dal localStorage
         const modifications = loadDDTModificationsFromStorage();
+        console.log('📦 Modifiche caricate per il salvataggio:', modifications);
+        
         if (!modifications) {
+            console.error('❌ Nessuna modifica trovata nel localStorage');
             alert('Nessuna modifica trovata da salvare');
             return;
         }
 
+        console.log('📊 Dettagli modifiche da salvare:', {
+            lines: modifications.lines?.length || 0,
+            addedTickets: modifications.added_tickets?.length || 0,
+            manualTickets: modifications.manual_tickets?.length || 0, // ✅ AGGIUNTO
+            ddtId: modifications.ddt_id
+        });
+
         // Invia le modifiche al server
+        console.log('🌐 Invio richiesta al server:', `/ddt/api/save_modifications/${ddtId}`);
+        console.log('📤 Payload inviato:', JSON.stringify(modifications, null, 2));
+        
         const response = await fetch(`/ddt/api/save_modifications/${ddtId}`, {
             method: 'POST',
             headers: {
@@ -4314,7 +4704,10 @@ async function saveDDTModifications() {
             body: JSON.stringify(modifications)
         });
 
+        console.log('📡 Risposta server ricevuta:', response.status, response.statusText);
+        
         const result = await response.json();
+        console.log('📥 Risultato dal server:', result);
 
         if (result.success) {
             // Pulisci il localStorage dopo il salvataggio riuscito
@@ -4326,8 +4719,12 @@ async function saveDDTModifications() {
             localStorage.removeItem('ddt_ticket_discounts');
             localStorage.removeItem('ddt_selected_tickets_temp');
 
-            // Mostra messaggio di successo
-            alert('Modifiche salvate con successo!');
+            // Mostra messaggio di successo dettagliato
+            const message = `Modifiche salvate con successo!\n\nDettagli:\n- Linee aggiornate: ${result.updated_lines || 0}\n- Linee inserite: ${result.inserted_lines || 0}\n- Linee ticket manuali: ${result.inserted_manual_lines || 0}\n- Modifiche ticket applicate: ${result.applied_ticket_modifications || 0}`;
+            alert(message);
+
+            // Aggiorna l'indicatore delle modifiche dopo il salvataggio
+            updatePendingModificationsBadge();
 
             // Reindirizza al dettaglio del DDT modificato invece di ricaricare
             window.location.href = `/ddt/${ddtId}`;
@@ -4426,12 +4823,78 @@ function initializeDDTModifyMode() {
 
         console.log('🔧 Sistema di salvataggio automatico configurato');
     }
+
+    // ===== EVENT LISTENERS MODALI GLOBALI =====
+    // Event listener per il modale dei ticket esistenti quando viene mostrato
+    const existingTicketsModal = document.getElementById('existingTicketsModal');
+    if (existingTicketsModal) {
+        existingTicketsModal.addEventListener('show.bs.modal', function() {
+            console.log('📋 Modale ticket esistenti aperta - caricamento dati...');
+            // Carica i ticket esistenti quando il modale viene aperto
+            setTimeout(() => {
+                loadExistingTickets();
+            }, 100);
+        });
+    }
+
+    // Event listener per tutte le modali quando vengono nascoste
+    document.addEventListener('hidden.bs.modal', function (event) {
+        console.log('👁️ Modale nascosta:', event.target.id);
+
+        // Delay per assicurarsi che Bootstrap abbia finito
+        setTimeout(() => {
+            forceRemoveModalBackdrop();
+        }, 100);
+    });
+
+    // Event listener per il click sui pulsanti di chiusura
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('[data-bs-dismiss="modal"]') ||
+            e.target.closest('[data-bs-dismiss="modal"]')) {
+            console.log('❌ Pulsante chiusura modale cliccato');
+
+            setTimeout(() => {
+                forceRemoveModalBackdrop();
+            }, 300);
+        }
+    });
+
+    // Event listener per il tasto ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            console.log('⌨️ Tasto ESC premuto');
+
+            setTimeout(() => {
+                forceRemoveModalBackdrop();
+            }, 300);
+        }
+    });
+}
+
+// Funzione per aggiornare il badge delle modifiche in attesa
+function updatePendingModificationsBadge() {
+    const saveBtn = document.getElementById('save-ddt-modifications');
+    if (!saveBtn) return;
+
+    // Per ora, simuliamo il conteggio - in futuro potremmo avere un'API dedicata
+    // Il conteggio reale è nella session del server, non accessibile direttamente dal client
+
+    // Rimuovi eventuali badge esistenti
+    const existingBadge = saveBtn.querySelector('.badge');
+    if (existingBadge) {
+        existingBadge.remove();
+    }
+
+    // Nota: Il conteggio reale delle modifiche pendenti è gestito lato server
+    // Questa funzione è preparata per future implementazioni con API dedicata
+    console.log('📊 Badge modifiche aggiornato (funzione placeholder)');
 }
 
 // Inizializza la modalità modifica quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', function() {
     // Attendi un po' per assicurarsi che tutto sia caricato
     setTimeout(initializeDDTModifyMode, 1000);
+    updatePendingModificationsBadge();
 });
 
 console.log('✅ DDT Preview JS caricato completamente');

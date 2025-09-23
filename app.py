@@ -200,7 +200,8 @@ def create_app():
                         'ddt': {'module': 'ddt', 'base_url': '/ddt'},
                         'fattura_pa': {'module': 'fattura_pa', 'base_url': '/fattura_pa'},
                         'chat': {'module': 'chat', 'base_url': '/chat'},
-                        'listini': {'module': 'listini', 'base_url': '/listini'}
+                        'listini': {'module': 'listini', 'base_url': '/listini'},
+                        'ingredients': {'module': 'ingredients', 'base_url': '/ingredients'}
                     }
                     
                     # Se è un modulo opzionale, verifica se è abilitato
@@ -251,7 +252,8 @@ def create_app():
                         'ddt': 'ddt',
                         'fattura_pa': 'fattura_pa',
                         'chat': 'chat',
-                        'listini': 'listini'
+                        'listini': 'listini',
+                        'ingredients': 'ingredients'
                     }
                     
                     # Se è un modulo opzionale, verifica se è abilitato
@@ -472,7 +474,8 @@ def create_app():
                         'sections': 'sections',
                         'fattura_pa': 'fattura_pa',
                         'tasks': 'tasks',
-                        'chat': 'chat'
+                        'chat': 'chat',
+                        'ingredients': 'ingredients'
                     }
                     
                     module_name = blueprint_to_module.get(blueprint_name)

@@ -54,6 +54,65 @@
     z-index: 1050;
 }
 
+/* Z-index specifici per il modale di gestione opzioni configurabili */
+#manageConfigOptionsModal {
+    z-index: 1060 !important;
+}
+
+#manageConfigOptionsModal .modal-backdrop {
+    z-index: 1055 !important;
+}
+
+/* Assicurarsi che i dropdown nel modale abbiano priorità elevata */
+#manageConfigOptionsModal .config-options-list .option-item {
+    position: relative;
+    z-index: 1;
+}
+
+#manageConfigOptionsModal .dropdown-menu {
+    z-index: 1070 !important;
+}
+
+/* Fix per il modale "Aggiungi Opzione" - deve essere sopra il modale principale */
+#addOptionModal {
+    z-index: 1080 !important;
+}
+
+#addOptionModal .modal-backdrop {
+    z-index: 1075 !important;
+}
+
+/* Fix per dropdown DDT configurabili - permettere overflow fuori dal contenitore */
+/* Specifico per la sezione DDT configurabili - evita di influenzare altri card */
+.card-header:contains("Informazioni DDT Configurabili") + .card-body,
+.card:has(.ddt-config-dropdown) .card-body,
+.card-body:has(.ddt-config-dropdown) {
+    overflow: visible !important;
+}
+
+/* Fallback per browser senza supporto :has() */
+.ddt-configurable-section .card,
+.ddt-configurable-section .card-body {
+    overflow: visible !important;
+}
+
+.ddt-config-dropdown {
+    position: relative;
+    z-index: 10;
+}
+
+.ddt-config-dropdown .dropdown-menu {
+    position: absolute !important;
+    z-index: 1050 !important;
+    will-change: transform;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Assicurare che il card delle informazioni DDT abbia overflow visible */
+.card:has(.ddt-config-dropdown) {
+    overflow: visible !important;
+}
+
 /* Button Aggiungi Ticket Esistenti */
 .btn-add-existing-tickets {
     background-color: #0d6efd;
@@ -104,6 +163,162 @@
         transform: none;
         width: 100%;
     }
+}
+
+/* Stili per i campi configurabili DDT */
+.config-options-list {
+    min-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+}
+
+.config-options-list .option-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.config-options-list .option-item:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd;
+}
+
+.config-options-list .option-item .option-text {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.config-options-list .option-item .option-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.config-options-list .option-item .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.config-options-list .empty-state {
+    text-align: center;
+    color: #6c757d;
+    padding: 2rem 1rem;
+}
+
+.config-options-list .empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.5;
+}
+
+/* Miglioramenti per i dropdown */
+.dropdown-menu {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* Dropdown specifici per campi DDT configurabili */
+.ddt-config-dropdown .dropdown-menu {
+    z-index: 1060 !important;
+    position: absolute !important;
+    min-width: 100% !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid #dee2e6 !important;
+    background-color: white !important;
+}
+
+/* Assicurarsi che i dropdown siano visibili sopra il contenitore */
+.ddt-config-dropdown {
+    position: relative !important;
+    z-index: 1050 !important;
+}
+
+/* Quando il dropdown è mostrato */
+.ddt-config-dropdown.show {
+    z-index: 1060 !important;
+}
+
+/* Migliorare la visibilità degli item del dropdown */
+.ddt-config-dropdown .dropdown-item {
+    padding: 0.75rem 1rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+.ddt-config-dropdown .dropdown-item:hover {
+    background-color: #f8f9fa !important;
+    color: #0d6efd !important;
+    transform: translateX(2px) !important;
+}
+
+/* Animazioni e transizioni per i dropdown */
+.ddt-config-dropdown .dropdown-menu {
+    animation: dropdownFadeIn 0.2s ease-out;
+    transform-origin: top center;
+}
+
+.ddt-config-dropdown .dropdown-menu.show {
+    animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Migliorare la visibilità del dropdown anche su dispositivi mobili */
+@media (max-width: 768px) {
+    .ddt-config-dropdown .dropdown-menu {
+        position: fixed !important;
+        z-index: 1070 !important;
+        max-width: 90vw !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        margin-top: 5px !important;
+    }
+}
+
+/* Assicurarsi che il contenitore del dropdown non tagli il contenuto */
+.ddt-config-dropdown {
+    overflow: visible !important;
+}
+
+/* Migliorare l'aspetto del pulsante dropdown quando attivo */
+.ddt-config-dropdown.show .dropdown-toggle {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #0d6efd;
+}
+
+.dropdown-item.active {
+    background-color: #0d6efd;
+    color: white;
 }
 </style>
 {% endblock %}
@@ -222,6 +437,7 @@
     </div>
 </div>
 
+
 <div class="container-fluid">
     <div class="row">
         <!-- Anteprima DDT -->
@@ -304,7 +520,11 @@
                         {% for item in preview_data %}
                                     <tr data-ticket-id="{{ item.ticket.IdTicket }}">
                                         <td data-label="ID Ticket">
-                                            <span class="badge bg-primary">#{{ item.ticket.IdTicket }}</span>
+                                            {% if item.ticket.IsManualTicket %}
+                                                <span class="badge bg-warning text-dark" title="Ticket manuale">#-{{ item.ticket.IdTicket }}</span>
+                                            {% else %}
+                                                <span class="badge bg-primary" title="Ticket automatico">{{ item.ticket.OriginalNombrePlataforma }}</span>
+                                            {% endif %}
                                         </td>
                                         <td data-label="Data">
                                             <small class="text-muted">{{ item.ticket.Fecha }}</small>
@@ -394,13 +614,21 @@
             <!-- Button per Aggiungere Ticket Esistenti -->
             <div class="row mt-4">
                 <div class="col-12 text-center">
-                    <button type="button" 
-                            class="btn-add-existing-tickets" 
-                            data-bs-toggle="modal" 
+                    <button type="button"
+                            class="btn-add-existing-tickets"
+                            data-bs-toggle="modal"
                             data-bs-target="#existingTicketsModal"
                             title="Aggiungi ticket esistenti al DDT">
                         <i class="fas fa-plus me-2"></i>
                         Aggiungi Ticket Esistenti
+                    </button>
+                    <!-- Pulsante debug per modalità modify -->
+                    <button type="button"
+                            id="debug-modify-tickets"
+                            class="btn btn-sm btn-outline-info ms-2"
+                            style="display: none;"
+                            title="Debug: Test modal modify">
+                        <i class="fas fa-bug me-1"></i>Test Modify
                     </button>
                 </div>
             </div>
@@ -892,6 +1120,221 @@
                     </div>
                 </div>
             </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sezione Campi Configurabili DDT - Posizionata alla fine della pagina -->
+<div class="container-fluid mt-3 ddt-configurable-section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-primary text-white py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold">
+                            <i class="fas fa-cogs me-2"></i>Informazioni DDT Configurabili
+                        </h6>
+                        <button type="button" class="btn btn-sm btn-outline-light" id="btn-manage-config-options" title="Gestisci opzioni configurabili">
+                            <i class="fas fa-edit me-1"></i>Gestisci Opzioni
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row g-3">
+                        <!-- Campo Causale -->
+                        <div class="col-md-4">
+                            <label for="ddt-causale" class="form-label fw-semibold mb-2">
+                                <i class="fas fa-tag me-1 text-primary"></i>Causale
+                            </label>
+                            <div class="dropdown ddt-config-dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                                        type="button"
+                                        id="ddt-causale-dropdown"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        title="Seleziona causale DDT">
+                                    <span id="ddt-causale-selected">Seleziona causale...</span>
+                                    <input type="hidden" id="ddt-causale-value" name="causale">
+                                </button>
+                                <ul class="dropdown-menu w-100" id="ddt-causale-options" aria-labelledby="ddt-causale-dropdown">
+                                    <li><a class="dropdown-item" href="#" data-value="">Nessuna selezione</a></li>
+                                    <!-- Le opzioni verranno caricate dinamicamente -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Campo Aspetto Esteriore -->
+                        <div class="col-md-4">
+                            <label for="ddt-aspetto-esteriore" class="form-label fw-semibold mb-2">
+                                <i class="fas fa-box me-1 text-success"></i>Aspetto Esteriore dei Beni
+                            </label>
+                            <div class="dropdown ddt-config-dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                                        type="button"
+                                        id="ddt-aspetto-esteriore-dropdown"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        title="Seleziona aspetto esteriore">
+                                    <span id="ddt-aspetto-esteriore-selected">Seleziona aspetto esteriore...</span>
+                                    <input type="hidden" id="ddt-aspetto-esteriore-value" name="aspetto_esteriore">
+                                </button>
+                                <ul class="dropdown-menu w-100" id="ddt-aspetto-esteriore-options" aria-labelledby="ddt-aspetto-esteriore-dropdown">
+                                    <li><a class="dropdown-item" href="#" data-value="">Nessuna selezione</a></li>
+                                    <!-- Le opzioni verranno caricate dinamicamente -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Campo Trasporto a Cura -->
+                        <div class="col-md-4">
+                            <label for="ddt-trasporto-a-cura" class="form-label fw-semibold mb-2">
+                                <i class="fas fa-truck me-1 text-warning"></i>Trasporto a Cura
+                            </label>
+                            <div class="dropdown ddt-config-dropdown">
+                                <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                                        type="button"
+                                        id="ddt-trasporto-a-cura-dropdown"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                        title="Seleziona trasporto a cura">
+                                    <span id="ddt-trasporto-a-cura-selected">Seleziona trasporto a cura...</span>
+                                    <input type="hidden" id="ddt-trasporto-a-cura-value" name="trasporto_a_cura">
+                                </button>
+                                <ul class="dropdown-menu w-100" id="ddt-trasporto-a-cura-options" aria-labelledby="ddt-trasporto-a-cura-dropdown">
+                                    <li><a class="dropdown-item" href="#" data-value="">Nessuna selezione</a></li>
+                                    <!-- Le opzioni verranno caricate dinamicamente -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Questi campi verranno salvati nel DDT e utilizzati per la generazione del documento finale.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Gestione Opzioni Configurabili -->
+<div class="modal fade" id="manageConfigOptionsModal" tabindex="-1" aria-labelledby="manageConfigOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title fw-bold" id="manageConfigOptionsModalLabel">
+                    <i class="fas fa-edit me-2"></i>Gestisci Opzioni Configurabili
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Tabs per i diversi campi -->
+                <ul class="nav nav-tabs" id="configTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="causale-tab" data-bs-toggle="tab" data-bs-target="#causale-panel" type="button" role="tab" aria-controls="causale-panel" aria-selected="true">
+                            <i class="fas fa-tag me-1"></i>Causale
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="aspetto-tab" data-bs-toggle="tab" data-bs-target="#aspetto-panel" type="button" role="tab" aria-controls="aspetto-panel" aria-selected="false">
+                            <i class="fas fa-box me-1"></i>Aspetto Esteriore
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="trasporto-tab" data-bs-toggle="tab" data-bs-target="#trasporto-panel" type="button" role="tab" aria-controls="trasporto-panel" aria-selected="false">
+                            <i class="fas fa-truck me-1"></i>Trasporto a Cura
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-4" id="configTabsContent">
+                    <!-- Panel Causale -->
+                    <div class="tab-pane fade show active" id="causale-panel" role="tabpanel" aria-labelledby="causale-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 fw-bold text-primary">Opzioni Causale</h6>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addConfigOption('causale')">
+                                <i class="fas fa-plus me-1"></i>Aggiungi Opzione
+                            </button>
+                        </div>
+                        <div id="causale-options-list" class="config-options-list">
+                            <!-- Le opzioni verranno caricate dinamicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Panel Aspetto Esteriore -->
+                    <div class="tab-pane fade" id="aspetto-panel" role="tabpanel" aria-labelledby="aspetto-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 fw-bold text-success">Opzioni Aspetto Esteriore</h6>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addConfigOption('aspetto_esteriore')">
+                                <i class="fas fa-plus me-1"></i>Aggiungi Opzione
+                            </button>
+                        </div>
+                        <div id="aspetto-esteriore-options-list" class="config-options-list">
+                            <!-- Le opzioni verranno caricate dinamicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Panel Trasporto a Cura -->
+                    <div class="tab-pane fade" id="trasporto-panel" role="tabpanel" aria-labelledby="trasporto-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 fw-bold text-warning">Opzioni Trasporto a Cura</h6>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addConfigOption('trasporto_a_cura')">
+                                <i class="fas fa-plus me-1"></i>Aggiungi Opzione
+                            </button>
+                        </div>
+                        <div id="trasporto-a-cura-options-list" class="config-options-list">
+                            <!-- Le opzioni verranno caricate dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per Aggiungere Nuova Opzione -->
+<div class="modal fade" id="addOptionModal" tabindex="-1" aria-labelledby="addOptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-success text-white">
+                <h6 class="modal-title fw-bold" id="addOptionModalLabel">
+                    <i class="fas fa-plus me-2"></i>Aggiungi Nuova Opzione
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="add-option-form">
+                    <input type="hidden" id="current-field-name">
+                    <div class="mb-3">
+                        <label for="new-option-text" class="form-label fw-semibold">
+                            <i class="fas fa-edit me-1"></i>Testo dell'Opzione
+                        </label>
+                        <input type="text" class="form-control" id="new-option-text" placeholder="Inserisci il testo dell'opzione..." required>
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Il testo verrà mostrato nel dropdown di selezione.
+                            </small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annulla
+                </button>
+                <button type="button" class="btn btn-success" id="save-new-option">
+                    <i class="fas fa-save me-2"></i>Salva Opzione
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -977,11 +1420,20 @@ document.addEventListener('DOMContentLoaded', function() {
         datePicker.classList.add('d-none');
         document.removeEventListener('click', closeDatePickerOnOutsideClick);
 
+        // ✅ NUOVO: Salva la modifica della data nel localStorage
+        if (typeof saveDDTModificationsToStorage === 'function') {
+            console.log('💾 Salvataggio automatico modifica data DDT nel localStorage');
+            saveDDTModificationsToStorage();
+        } else {
+            console.warn('⚠️ Funzione saveDDTModificationsToStorage non disponibile');
+        }
+
         // Log per debug
         console.log('Data selezionata:', {
             display: formattedDate,
             database: dbFormattedDate,
-            input: selectedDateInput.value
+            input: selectedDateInput.value,
+            savedToStorage: typeof saveDDTModificationsToStorage === 'function'
         });
     });
 
@@ -1013,7 +1465,599 @@ document.addEventListener('DOMContentLoaded', function() {
     "FROM_MODIFY": {% if from_modify %}{{ from_modify|tojson|safe }}{% else %}false{% endif %},
     "DDT_ID": {% if ddt_id %}{{ ddt_id|tojson|safe }}{% else %}null{% endif %},
     "CLIENTE_ID": {% if cliente %}{{ cliente.IdCliente|tojson|safe }}{% else %}null{% endif %},
-    "EMPRESA_ID": {% if empresa %}{{ empresa.IdEmpresa|tojson|safe }}{% else %}null{% endif %}
+    "EMPRESA_ID": {% if empresa %}{{ empresa.IdEmpresa|tojson|safe }}{% else %}null{% endif %},
+    "DDT_CONFIG_VALUES": {% if ddt_config_values %}{{ ddt_config_values|tojson|safe }}{% else %}{}{% endif %}
 }
 </script>
+
+
+<!-- Debug functionality for modify mode -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show debug button only in modify mode
+    const debugBtn = document.getElementById('debug-modify-tickets');
+    const serverDataElement = document.getElementById('server-data');
+
+    if (debugBtn && serverDataElement) {
+        try {
+            const serverData = JSON.parse(serverDataElement.textContent);
+            if (serverData.FROM_MODIFY) {
+                debugBtn.style.display = 'inline-block';
+                console.log('🔧 Modalità modify rilevata - pulsante debug abilitato');
+
+                debugBtn.addEventListener('click', function() {
+                    console.log('🔧 DEBUG: Test modale in modalità modify');
+                    if (typeof loadExistingTickets === 'function') {
+                        const modal = new bootstrap.Modal(document.getElementById('existingTicketsModal'));
+                        modal.show();
+                    } else {
+                        console.error('❌ Funzione loadExistingTickets non trovata');
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('❌ Errore parsing server data:', e);
+        }
+    }
+});
+</script>
+
+<!-- DDT Configurable Fields Management -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inizializzazione dei campi configurabili DDT
+    initializeDDTConfigFields();
+
+    // Gestione del pulsante per gestire le opzioni configurabili
+    document.getElementById('btn-manage-config-options').addEventListener('click', function() {
+        loadConfigOptions();
+        const modal = new bootstrap.Modal(document.getElementById('manageConfigOptionsModal'));
+        modal.show();
+    });
+
+    // Gestione salvataggio nuova opzione
+    document.getElementById('save-new-option').addEventListener('click', function() {
+        saveNewOption();
+    });
+});
+
+// ============================================================================
+// GESTIONE CAMPI CONFIGURABILI DDT
+// ============================================================================
+
+/**
+ * Inizializza i campi configurabili DDT
+ */
+function initializeDDTConfigFields() {
+    // Carica le opzioni per tutti i campi
+    loadFieldOptions('causale');
+    loadFieldOptions('aspetto_esteriore');
+    loadFieldOptions('trasporto_a_cura');
+
+    // Gestione selezione opzioni nei dropdown
+    setupDropdownHandlers();
+}
+
+/**
+ * Carica le opzioni per un campo specifico
+ */
+function loadFieldOptions(fieldName) {
+    fetch(`/ddt/api/config/${fieldName}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateDropdown(fieldName, data.options);
+            } else {
+                console.error(`Errore caricamento opzioni ${fieldName}:`, data.message);
+            }
+        })
+        .catch(error => {
+            console.error(`Errore caricamento opzioni ${fieldName}:`, error);
+        });
+}
+
+/**
+ * Popola il dropdown con le opzioni caricate
+ */
+function populateDropdown(fieldName, options) {
+    const fieldId = fieldName.replaceAll('_', '-');
+    const dropdownMenu = document.getElementById(`ddt-${fieldId}-options`);
+    const selectedDisplay = document.getElementById(`ddt-${fieldId}-selected`);
+    const hiddenInput = document.getElementById(`ddt-${fieldId}-value`);
+
+    // Svuota il dropdown esistente (mantieni l'opzione "Nessuna selezione")
+    const noSelectionItem = dropdownMenu.querySelector('li:first-child');
+    dropdownMenu.innerHTML = '';
+    dropdownMenu.appendChild(noSelectionItem);
+
+    // Aggiungi le nuove opzioni
+    options.forEach(option => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.className = 'dropdown-item';
+        a.href = '#';
+        a.setAttribute('data-value', option);
+        a.textContent = option;
+
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            selectDropdownOption(fieldName, option);
+        });
+
+        li.appendChild(a);
+        dropdownMenu.appendChild(li);
+    });
+
+    // Aggiorna il display se c'è un valore già selezionato
+    const currentValue = hiddenInput.value;
+    if (currentValue && options.includes(currentValue)) {
+        selectedDisplay.textContent = currentValue;
+        selectedDisplay.classList.remove('text-muted');
+    } else {
+        selectedDisplay.textContent = 'Seleziona...';
+        selectedDisplay.classList.add('text-muted');
+    }
+}
+
+/**
+ * Gestisce la selezione di un'opzione nel dropdown
+ */
+function selectDropdownOption(fieldName, value) {
+    const fieldId = fieldName.replaceAll('_', '-');
+    const selectedDisplay = document.getElementById(`ddt-${fieldId}-selected`);
+    const hiddenInput = document.getElementById(`ddt-${fieldId}-value`);
+
+    selectedDisplay.textContent = value;
+    selectedDisplay.classList.remove('text-muted');
+    hiddenInput.value = value;
+
+    // Chiudi il dropdown
+    const dropdown = bootstrap.Dropdown.getInstance(document.getElementById(`ddt-${fieldId}-dropdown`));
+    if (dropdown) {
+        dropdown.hide();
+    }
+
+    // Salva automaticamente la selezione nel localStorage per la persistenza
+    saveDDTConfigSelection(fieldName, value);
+
+    console.log(`✅ Selezione campo ${fieldName}: ${value}`);
+}
+
+/**
+ * Salva la selezione nel localStorage per persistenza
+ */
+function saveDDTConfigSelection(fieldName, value) {
+    try {
+        const selections = JSON.parse(localStorage.getItem('ddt_config_selections') || '{}');
+        selections[fieldName] = value;
+        localStorage.setItem('ddt_config_selections', JSON.stringify(selections));
+    } catch (e) {
+        console.warn('⚠️ Impossibile salvare selezione nel localStorage:', e);
+    }
+}
+
+/**
+ * Carica le selezioni salvate dal localStorage
+ */
+function loadSavedSelections() {
+    try {
+        const selections = JSON.parse(localStorage.getItem('ddt_config_selections') || '{}');
+        return selections;
+    } catch (e) {
+        console.warn('⚠️ Impossibile caricare selezioni dal localStorage:', e);
+        return {};
+    }
+}
+
+/**
+ * Gestisce gli eventi specifici per i dropdown DDT config
+ */
+function setupDDTConfigDropdownEvents() {
+    const ddtConfigDropdowns = document.querySelectorAll('.ddt-config-dropdown');
+
+    ddtConfigDropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector('.dropdown-toggle');
+        const menu = dropdown.querySelector('.dropdown-menu');
+
+        if (toggle && menu) {
+            // Gestisci l'apertura del dropdown
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Chiudi altri dropdown prima di aprire questo
+                closeAllDDTConfigDropdowns();
+
+                // Toggle questo dropdown
+                const isOpen = dropdown.classList.contains('show');
+                if (!isOpen) {
+                    dropdown.classList.add('show');
+                    menu.classList.add('show');
+                    toggle.setAttribute('aria-expanded', 'true');
+                    console.log('🔽 Dropdown aperto:', toggle.id);
+                } else {
+                    closeDDTConfigDropdown(dropdown);
+                }
+            });
+
+            // Gestisci la selezione degli item
+            menu.addEventListener('click', function(e) {
+                if (e.target.classList.contains('dropdown-item')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Chiudi il dropdown dopo la selezione
+                    setTimeout(() => {
+                        closeDDTConfigDropdown(dropdown);
+                    }, 100);
+                }
+            });
+        }
+    });
+}
+
+/**
+ * Chiude tutti i dropdown DDT config
+ */
+function closeAllDDTConfigDropdowns() {
+    const ddtConfigDropdowns = document.querySelectorAll('.ddt-config-dropdown');
+    ddtConfigDropdowns.forEach(dropdown => {
+        closeDDTConfigDropdown(dropdown);
+    });
+}
+
+/**
+ * Chiude un singolo dropdown DDT config
+ */
+function closeDDTConfigDropdown(dropdown) {
+    const toggle = dropdown.querySelector('.dropdown-toggle');
+    const menu = dropdown.querySelector('.dropdown-menu');
+
+    dropdown.classList.remove('show');
+    menu.classList.remove('show');
+    if (toggle) {
+        toggle.setAttribute('aria-expanded', 'false');
+    }
+}
+
+/**
+ * Gestisce la chiusura dei dropdown quando si clicca fuori
+ */
+function setupDropdownClickOutsideHandler() {
+    document.addEventListener('click', function(e) {
+        // Chiudi tutti i dropdown DDT config se si clicca fuori
+        const ddtConfigDropdowns = document.querySelectorAll('.ddt-config-dropdown');
+        ddtConfigDropdowns.forEach(dropdown => {
+            if (!dropdown.contains(e.target)) {
+                const bsDropdown = bootstrap.Dropdown.getInstance(dropdown.querySelector('.dropdown-toggle'));
+                if (bsDropdown) {
+                    bsDropdown.hide();
+                }
+            }
+        });
+    });
+
+    // Previeni la chiusura quando si clicca dentro il dropdown
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.ddt-config-dropdown')) {
+            e.stopPropagation();
+        }
+    });
+}
+
+/**
+ * Configura i gestori per i dropdown
+ */
+function setupDropdownHandlers() {
+    // Configura il gestore per la chiusura dei dropdown
+    setupDropdownClickOutsideHandler();
+
+    // Gestisci gli eventi specifici per i dropdown DDT config
+    setupDDTConfigDropdownEvents();
+
+    // Carica le selezioni salvate
+    const savedSelections = loadSavedSelections();
+
+    // Applica le selezioni salvate
+    Object.keys(savedSelections).forEach(fieldName => {
+        const value = savedSelections[fieldName];
+        if (value) {
+            const fieldId = fieldName.replaceAll('_', '-');
+            const selectedDisplay = document.getElementById(`ddt-${fieldId}-selected`);
+            const hiddenInput = document.getElementById(`ddt-${fieldId}-value`);
+
+            if (selectedDisplay && hiddenInput) {
+                selectedDisplay.textContent = value;
+                selectedDisplay.classList.remove('text-muted');
+                hiddenInput.value = value;
+            }
+        }
+    });
+}
+
+// ============================================================================
+// GESTIONE OPZIONI CONFIGURABILI (MODALE GESTIONE)
+// ============================================================================
+
+/**
+ * Carica tutte le opzioni configurabili per la modale di gestione
+ */
+function loadConfigOptions() {
+    const fields = ['causale', 'aspetto_esteriore', 'trasporto_a_cura'];
+
+    fields.forEach(fieldName => {
+        fetch(`/ddt/api/config/${fieldName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    populateConfigOptionsList(fieldName, data.options);
+                } else {
+                    console.error(`Errore caricamento opzioni ${fieldName}:`, data.message);
+                    showConfigOptionsError(fieldName, data.message);
+                }
+            })
+            .catch(error => {
+                console.error(`Errore caricamento opzioni ${fieldName}:`, error);
+                showConfigOptionsError(fieldName, 'Errore di connessione');
+            });
+    });
+}
+
+/**
+ * Popola la lista delle opzioni nella modale di gestione
+ */
+function populateConfigOptionsList(fieldName, options) {
+    const container = document.getElementById(`${fieldName.replaceAll('_', '-')}-options-list`);
+    container.innerHTML = '';
+
+    if (options.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <div>Nessuna opzione configurata</div>
+                <small class="text-muted">Clicca "Aggiungi Opzione" per creare la prima opzione</small>
+            </div>
+        `;
+        return;
+    }
+
+    options.forEach(option => {
+        const optionItem = document.createElement('div');
+        optionItem.className = 'option-item';
+        optionItem.innerHTML = `
+            <div class="option-text">${option}</div>
+            <div class="option-actions">
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        onclick="removeConfigOption('${fieldName}', '${option}')"
+                        title="Rimuovi opzione">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(optionItem);
+    });
+}
+
+/**
+ * Mostra errore nel caricamento delle opzioni
+ */
+function showConfigOptionsError(fieldName, message) {
+    const container = document.getElementById(`${fieldName.replaceAll('_', '-')}-options-list`);
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-exclamation-triangle text-warning"></i>
+            <div>Errore caricamento opzioni</div>
+            <small class="text-muted">${message}</small>
+        </div>
+    `;
+}
+
+/**
+ * Apre la modale per aggiungere una nuova opzione
+ */
+function addConfigOption(fieldName) {
+    document.getElementById('current-field-name').value = fieldName;
+    document.getElementById('new-option-text').value = '';
+    document.getElementById('addOptionModalLabel').textContent = `Aggiungi Opzione - ${getFieldDisplayName(fieldName)}`;
+
+    const modal = new bootstrap.Modal(document.getElementById('addOptionModal'));
+    modal.show();
+}
+
+/**
+ * Salva una nuova opzione
+ */
+function saveNewOption() {
+    const fieldName = document.getElementById('current-field-name').value;
+    const optionText = document.getElementById('new-option-text').value.trim();
+
+    if (!optionText) {
+        alert('Inserisci il testo dell\'opzione');
+        return;
+    }
+
+    // Disabilita il pulsante durante il salvataggio
+    const saveBtn = document.getElementById('save-new-option');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+
+    fetch(`/ddt/api/config/${fieldName}/add`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ option: optionText })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Chiudi la modale di aggiunta
+            const addModal = bootstrap.Modal.getInstance(document.getElementById('addOptionModal'));
+            addModal.hide();
+
+            // Ricarica le opzioni
+            loadConfigOptions();
+
+            // Ricarica anche il dropdown principale
+            loadFieldOptions(fieldName);
+
+            // Mostra messaggio di successo
+            showToast('success', `Opzione "${optionText}" aggiunta con successo!`);
+        } else {
+            alert(`Errore: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('Errore aggiunta opzione:', error);
+        alert('Errore durante il salvataggio dell\'opzione');
+    })
+    .finally(() => {
+        // Riabilita il pulsante
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+    });
+}
+
+/**
+ * Rimuove un'opzione
+ */
+function removeConfigOption(fieldName, optionText) {
+    if (!confirm(`Sei sicuro di voler rimuovere l'opzione "${optionText}"?`)) {
+        return;
+    }
+
+    fetch(`/ddt/api/config/${fieldName}/remove`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ option: optionText })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Ricarica le opzioni
+            loadConfigOptions();
+
+            // Ricarica anche il dropdown principale
+            loadFieldOptions(fieldName);
+
+            // Se l'opzione rimossa era selezionata, deselezionala
+            const fieldId = fieldName.replaceAll('_', '-');
+            const hiddenInput = document.getElementById(`ddt-${fieldId}-value`);
+            if (hiddenInput.value === optionText) {
+                selectDropdownOption(fieldName, '');
+            }
+
+            // Mostra messaggio di successo
+            showToast('success', `Opzione "${optionText}" rimossa con successo!`);
+        } else {
+            alert(`Errore: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('Errore rimozione opzione:', error);
+        alert('Errore durante la rimozione dell\'opzione');
+    });
+}
+
+/**
+ * Ottiene il nome visualizzato per un campo
+ */
+function getFieldDisplayName(fieldName) {
+    const names = {
+        'causale': 'Causale',
+        'aspetto_esteriore': 'Aspetto Esteriore',
+        'trasporto_a_cura': 'Trasporto a Cura'
+    };
+    return names[fieldName] || fieldName;
+}
+
+/**
+ * Mostra un toast di notifica
+ */
+function showToast(type, message) {
+    // Implementazione semplice di toast (può essere migliorata)
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Rimuovi automaticamente dopo 3 secondi
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 3000);
+}
+
+// ============================================================================
+// INTEGRAZIONE CON IL SALVATAGGIO DDT
+// ============================================================================
+
+/**
+ * Ottiene i valori dei campi configurabili per il salvataggio
+ */
+function getDDTConfigValues() {
+    return {
+        causale: document.getElementById('ddt-causale-value').value || null,
+        aspetto_esteriore: document.getElementById('ddt-aspetto-esteriore-value').value || null,
+        trasporto_a_cura: document.getElementById('ddt-trasporto-a-cura-value').value || null
+    };
+}
+
+/**
+ * Imposta i valori dei campi configurabili (per modifica DDT esistente)
+ */
+function setDDTConfigValues(values) {
+    if (!values) {
+        // 🔥 NUOVO: Carica valori dal backend se disponibili
+        try {
+            const serverDataElement = document.getElementById('server-data');
+            if (serverDataElement) {
+                const serverData = JSON.parse(serverDataElement.textContent);
+                if (serverData.DDT_CONFIG_VALUES && Object.keys(serverData.DDT_CONFIG_VALUES).length > 0) {
+                    values = serverData.DDT_CONFIG_VALUES;
+                    console.log('🔧 Caricamento valori campi configurabili dal backend:', values);
+                } else {
+                    console.log('⚪ Nessun valore di configurazione trovato nel backend');
+                    return;
+                }
+            } else {
+                console.warn('⚠️ Elemento server-data non trovato');
+                return;
+            }
+        } catch (e) {
+            console.error('❌ Errore parsing server data:', e);
+            return;
+        }
+    }
+
+    const fields = ['causale', 'aspetto_esteriore', 'trasporto_a_cura'];
+
+    fields.forEach(fieldName => {
+        const value = values[fieldName];
+        if (value && value.trim() !== '') {
+            selectDropdownOption(fieldName, value);
+            console.log(`✅ Campo ${fieldName} impostato a: "${value}"`);
+        } else {
+            console.log(`⚪ Campo ${fieldName} lasciato vuoto`);
+        }
+    });
+}
+
+// Esporta le funzioni per l'uso negli altri file JS
+window.DDTConfigManager = {
+    getValues: getDDTConfigValues,
+    setValues: setDDTConfigValues,
+    loadFieldOptions: loadFieldOptions
+};
+</script>
+
 {% endblock %}

@@ -185,9 +185,19 @@ function populateEditLineModal(ticketData, lineData, ticketId, lineId) {
     // ✅ CORREZIONE MAPPATURA IVA: Converti valori backend in valori frontend
     // Backend:  4=Esente, 1=4%, 2=10%, 3=22%
     // Frontend: 0=Esente, 4=4%, 10=10%, 22=22%
-    let ivaValue = '4'; // Default 4%
-    if (lineData.id_iva !== undefined) {
-        // Usa id_iva se disponibile (valore backend)
+    let ivaValue = '22'; // Default 22%
+    
+    // Prima prova con porcentaje_iva (più accurato)
+    if (lineData.porcentaje_iva !== undefined) {
+        const porcentaje = parseInt(lineData.porcentaje_iva);
+        console.log(`🔍 DEBUG IVA: porcentaje_iva dal database = ${porcentaje}%`);
+        if (porcentaje === 0) ivaValue = '0';      // Esente IVA
+        else if (porcentaje === 4) ivaValue = '4';  // 4%
+        else if (porcentaje === 10) ivaValue = '10'; // 10%
+        else if (porcentaje === 22) ivaValue = '22'; // 22%
+    } else if (lineData.id_iva !== undefined) {
+        // Fallback al mapping id_iva
+        console.log(`🔍 DEBUG IVA: id_iva dal database = ${lineData.id_iva}`);
         if (lineData.id_iva === 4) ivaValue = '0';      // Esente IVA (id_iva = 4)
         else if (lineData.id_iva === 1) ivaValue = '4';  // 4%
         else if (lineData.id_iva === 2) ivaValue = '10'; // 10%
@@ -195,11 +205,14 @@ function populateEditLineModal(ticketData, lineData, ticketId, lineId) {
     } else {
         // Fallback al vat_rate
         const vatRate = lineData.vat_rate || 0;
+        console.log(`🔍 DEBUG IVA: vat_rate dal database = ${vatRate}`);
         if (vatRate === 0.04) ivaValue = '4';
         else if (vatRate === 0.10) ivaValue = '10';
         else if (vatRate === 0.22) ivaValue = '22';
         else if (vatRate === 0) ivaValue = '0';
     }
+    
+    console.log(`🎯 DEBUG IVA: valore finale selezionato per dropdown = ${ivaValue}%`);
     document.getElementById('edit-iva').value = ivaValue;
     
     // Gestisci la data di scadenza
@@ -244,8 +257,8 @@ function setupModalEventListeners() {
         importeEl.addEventListener('input', calculateUnitPrice);
     }
     if (ivaEl) {
-        // ✅ AGGIUNTO: Event listener per cambio IVA
-        ivaEl.addEventListener('change', calculateLineTotal);
+        // ✅ AGGIUNTO: Event listener per cambio IVA - usa funzione specifica
+        ivaEl.addEventListener('change', recalculatePricesOnIvaChange);
     }
     if (comportamientoEl) {
         comportamientoEl.addEventListener('change', updatePesoUnit);
@@ -270,18 +283,57 @@ function calculateLineTotal() {
     const ivaValueRaw = parseInt(document.getElementById('edit-iva').value);
     const ivaValue = (ivaValueRaw !== null && !isNaN(ivaValueRaw)) ? ivaValueRaw : 4;
 
-    // ✅ CORREZIONE IVA 0%: Per IVA 0%, prezzo con IVA = prezzo senza IVA
-    if (ivaValue === 0) {
-        // IVA 0% - Esente IVA: prezzo rimane invariato
-        const total = peso * precio;
-        document.getElementById('edit-importe').value = total.toFixed(2);
-        console.log(`🧮 IVA 0% - Esente IVA: ${peso} × €${precio.toFixed(2)} = €${total.toFixed(2)} (prezzo invariato)`);
-    } else {
-        // IVA > 0%: Il prezzo è CON IVA, calcoliamo direttamente peso × prezzo
-        const total = peso * precio;
-        document.getElementById('edit-importe').value = total.toFixed(2);
-        console.log(`🧮 IVA ${ivaValue}%: ${peso} × €${precio.toFixed(2)} = €${total.toFixed(2)} (con IVA)`);
+    // ✅ CORREZIONE: Calcolo totale sempre peso × prezzo (prezzo è sempre CON IVA nel modale)
+    const total = peso * precio;
+    document.getElementById('edit-importe').value = total.toFixed(2);
+    console.log(`🧮 IVA ${ivaValue}%: ${peso} × €${precio.toFixed(2)} = €${total.toFixed(2)} (prezzo con IVA)`);
+    
+    // 🔥 NUOVO: Aggiorna immediatamente anche i dati in previewData per mantenere la coerenza
+    const ticketId = document.getElementById('edit-ticket-id').value;
+    const lineId = document.getElementById('edit-line-id').value;
+    
+    if (ticketId && lineId && previewData[ticketId]) {
+        const ticketData = previewData[ticketId];
+        if (ticketData.lines && Array.isArray(ticketData.lines)) {
+            const lineIndex = ticketData.lines.findIndex(line => line.id_linea_ticket == lineId);
+            if (lineIndex !== -1) {
+                // Aggiorna i dati della linea
+                ticketData.lines[lineIndex].peso = peso;
+                ticketData.lines[lineIndex].precio = precio;
+                ticketData.lines[lineIndex].importe = total;
+                ticketData.lines[lineIndex].iva = ivaValue;
+                
+                // Ricalcola il totale del ticket
+                ticketData.total = ticketData.lines.reduce((sum, l) => sum + (parseFloat(l.importe) || 0), 0);
+                ticketData.ticket_total = ticketData.total;
+                
+                console.log(`🔄 Dati previewData aggiornati per ticket ${ticketId}, linea ${lineId}: €${total.toFixed(2)}`);
+            }
+        }
     }
+}
+
+function recalculatePricesOnIvaChange() {
+    console.log('🔄 Ricalcolo prezzi dopo cambio IVA...');
+    
+    const peso = parseFloat(document.getElementById('edit-peso').value) || 0;
+    const ivaValueRaw = parseInt(document.getElementById('edit-iva').value);
+    const ivaValue = (ivaValueRaw !== null && !isNaN(ivaValueRaw)) ? ivaValueRaw : 22;
+    const currentImporte = parseFloat(document.getElementById('edit-importe').value) || 0;
+    
+    console.log(`📊 Valori correnti: peso=${peso}, IVA=${ivaValue}%, importo=€${currentImporte}`);
+    
+    if (peso > 0 && currentImporte > 0) {
+        // Mantieni l'importo totale e ricalcola il prezzo unitario
+        const newPrecio = currentImporte / peso;
+        document.getElementById('edit-precio').value = newPrecio.toFixed(2);
+        console.log(`🔄 Prezzo unitario ricalcolato: €${currentImporte} ÷ ${peso} = €${newPrecio.toFixed(2)}`);
+    } else {
+        // Se non ci sono valori base, mantieni i valori correnti e ricalcola il totale
+        calculateLineTotal();
+    }
+    
+    console.log(`✅ Ricalcolo completato per IVA ${ivaValue}%`);
 }
 
 function calculateUnitPrice() {
@@ -332,21 +384,28 @@ function saveLineChanges() {
 
     const ivaRate = finalIvaValue / 100;
 
-    // ✅ CORREZIONE COMPLETA: Calcolo valori con e senza IVA
-    // I valori nel modale sono CON IVA, dobbiamo calcolare entrambi i valori
-    const precioWithVAT = precio; // Prezzo unitario CON IVA (dal modale)
-    const importeWithVATFinal = importeWithVAT; // Importo totale CON IVA (dal modale)
+        // ✅ CORREZIONE COMPLETA: Calcolo valori con e senza IVA
+        // I valori nel modale sono CON IVA, dobbiamo calcolare entrambi i valori
+        const precioWithVAT = precio; // Prezzo unitario CON IVA (dal modale)
+        const importeWithVATFinal = importeWithVAT; // Importo totale CON IVA (dal modale)
 
-    // Calcola prezzo SENZA IVA e importo SENZA IVA
-    let precioSinIVA = precioWithVAT;
-    let importeSinIVA = importeWithVATFinal;
+        // Calcola prezzo SENZA IVA e importo SENZA IVA
+        let precioSinIVA = precioWithVAT;
+        let importeSinIVA = importeWithVATFinal;
 
-    // Per IVA > 0%, calcola il prezzo senza IVA dividendo per (1 + aliquota IVA)
-    if (finalIvaValue > 0) {
-        precioSinIVA = precioWithVAT / (1 + ivaRate);
-        importeSinIVA = importeWithVATFinal / (1 + ivaRate);
-    }
-    // Per IVA = 0% (Esente IVA), il prezzo rimane invariato
+        // Per IVA > 0%, calcola il prezzo senza IVA dividendo per (1 + aliquota IVA)
+        if (finalIvaValue > 0) {
+            precioSinIVA = precioWithVAT / (1 + ivaRate);
+            importeSinIVA = importeWithVATFinal / (1 + ivaRate);
+        }
+        // Per IVA = 0% (Esente IVA), il prezzo rimane invariato
+        
+        console.log(`💰 Calcoli IVA aggiornati:`);
+        console.log(`   - IVA selezionata: ${finalIvaValue}% (rate: ${ivaRate})`);
+        console.log(`   - Prezzo CON IVA: €${precioWithVAT.toFixed(2)}`);
+        console.log(`   - Prezzo SENZA IVA: €${precioSinIVA.toFixed(2)}`);
+        console.log(`   - Importo CON IVA: €${importeWithVATFinal.toFixed(2)}`);
+        console.log(`   - Importo SENZA IVA: €${importeSinIVA.toFixed(2)}`);
 
     // Applica arrotondamento commerciale ai valori senza IVA (massimo 2 decimali)
     const precioSinIVABefore = precioSinIVA;
@@ -558,24 +617,28 @@ function saveLineChanges() {
                                 console.error(`❌ Errore rete verifica IVA articolo: ${error}`);
                             });
 
-                        // Verifica IVA della linea del ticket
-                        fetch(`/ddt/api/check_ticket_line_iva/${formData.ticket_id}/${formData.line_id}`)
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    console.log(`📋 IVA linea ticket ${data.line_id} (${data.descripcion}): ${data.iva_description} (IdIVA: ${data.current_iva}, PorcentajeIVA: ${data.porcentaje_iva})`);
-                                    if (data.current_iva == ivaCall.value) {
-                                        console.log(`🎉 CONFERMA: IVA linea ticket aggiornata correttamente a ${data.iva_description}!`);
+                        // Verifica IVA della linea del ticket (solo per ticket esistenti, non manuali)
+                        if (formData.ticket_id > 0) {
+                            fetch(`/ddt/api/check_ticket_line_iva/${formData.ticket_id}/${formData.line_id}`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        console.log(`📋 IVA linea ticket ${data.line_id} (${data.descripcion}): ${data.iva_description} (IdIVA: ${data.current_iva}, PorcentajeIVA: ${data.porcentaje_iva})`);
+                                        if (data.current_iva == ivaCall.value) {
+                                            console.log(`🎉 CONFERMA: IVA linea ticket aggiornata correttamente a ${data.iva_description}!`);
+                                        } else {
+                                            console.error(`🚨 DISCREPANZA LINEA: IVA richiesta ${ivaCall.value} ma salvata ${data.current_iva}`);
+                                        }
                                     } else {
-                                        console.error(`🚨 DISCREPANZA LINEA: IVA richiesta ${ivaCall.value} ma salvata ${data.current_iva}`);
+                                        console.error(`❌ Errore verifica IVA linea ticket: ${data.message}`);
                                     }
-                                } else {
-                                    console.error(`❌ Errore verifica IVA linea ticket: ${data.message}`);
-                                }
-                            })
-                            .catch(error => {
-                                console.error(`❌ Errore rete verifica IVA linea ticket: ${error}`);
-                            });
+                                })
+                                .catch(error => {
+                                    console.error(`❌ Errore rete verifica IVA linea ticket: ${error}`);
+                                });
+                        } else {
+                            console.log(`📋 Ticket manuale (${formData.ticket_id}) - IVA verificata lato client: ${ivaCall.value}`);
+                        }
                     }, 1000); // Aspetta 1 secondo per essere sicuro che il DB sia aggiornato
 
                 } else {
@@ -845,7 +908,79 @@ function updateTicketPriceDisplay(ticketId) {
 function updateTicketDisplayInTable(ticketId, newData) {
     console.log('🔄 Aggiornamento visualizzazione tabella per ticket:', ticketId, newData);
     
-    // Usa la funzione migliorata per aggiornare il prezzo
+    // Trova la riga del ticket nella tabella
+    const ticketRow = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+    if (ticketRow) {
+        // Aggiorna tutti i campi modificabili nella riga
+        
+        // 1. Aggiorna descrizione se presente
+        if (newData.descripcion !== undefined) {
+            const descElement = ticketRow.querySelector('td[data-label="Prodotti"] .text-truncate');
+            if (descElement) {
+                descElement.textContent = newData.descripcion || '';
+                console.log(`🔄 Descrizione aggiornata: "${newData.descripcion}"`);
+            }
+        }
+        
+        // 2. Aggiorna quantità se presente
+        if (newData.peso !== undefined) {
+            const quantityElement = ticketRow.querySelector('.quantity-value');
+            if (quantityElement) {
+                quantityElement.textContent = parseFloat(newData.peso).toFixed(3);
+                console.log(`🔄 Quantità aggiornata: ${newData.peso}`);
+            }
+        }
+        
+        // 3. Aggiorna prezzo unitario se presente
+        if (newData.precio !== undefined) {
+            const unitPriceElement = ticketRow.querySelector('.unit-price-value');
+            if (unitPriceElement) {
+                unitPriceElement.textContent = `€${parseFloat(newData.precio).toFixed(2)}`;
+                console.log(`🔄 Prezzo unitario aggiornato: €${newData.precio}`);
+            }
+        }
+        
+        // 4. Aggiorna IVA se presente
+        if (newData.iva !== undefined || newData.porcentaje_iva !== undefined) {
+            const vatElement = ticketRow.querySelector('.vat-rate-display');
+            if (vatElement) {
+                const ivaValue = newData.iva || newData.porcentaje_iva || 22;
+                vatElement.textContent = `${ivaValue}%`;
+                console.log(`🔄 IVA aggiornata: ${ivaValue}%`);
+            }
+        }
+        
+        // 5. Ricalcola e aggiorna il totale della linea
+        const peso = parseFloat(newData.peso) || parseFloat(ticketRow.querySelector('.quantity-value')?.textContent) || 0;
+        const precio = parseFloat(newData.precio) || parseFloat(ticketRow.querySelector('.unit-price-value')?.textContent?.replace('€', '')) || 0;
+        const totalLinea = peso * precio;
+        
+        const priceWithVatElement = ticketRow.querySelector('.price-with-vat');
+        if (priceWithVatElement) {
+            priceWithVatElement.textContent = totalLinea.toFixed(2);
+            console.log(`🔄 Totale linea aggiornato: €${totalLinea.toFixed(2)} (${peso} × €${precio})`);
+        }
+        
+        // 6. Aggiorna il campo lotto se presente
+        if (newData.texto_lote !== undefined) {
+            const lotElement = ticketRow.querySelector('.lot-text-display');
+            if (lotElement) {
+                lotElement.textContent = newData.texto_lote || '';
+                console.log(`🔄 Lotto aggiornato: "${newData.texto_lote}"`);
+            }
+        }
+        
+        // 7. Aggiorna data scadenza se presente
+        if (newData.fecha_caducidad !== undefined) {
+            const expiryElement = ticketRow.querySelector('.expiry-date-display');
+            if (expiryElement) {
+                expiryElement.textContent = newData.fecha_caducidad || '';
+                console.log(`🔄 Data scadenza aggiornata: "${newData.fecha_caducidad}"`);
+            }
+        }
+    }
+    
+    // Usa la funzione migliorata per aggiornare il prezzo del ticket
     updateTicketPriceDisplay(ticketId);
     
     // Aggiorna anche il riepilogo generale
@@ -853,7 +988,7 @@ function updateTicketDisplayInTable(ticketId, newData) {
         updateSummary();
     }
     
-    console.log('✅ Visualizzazione tabella aggiornata');
+    console.log('✅ Visualizzazione tabella aggiornata completamente');
 }
 
 // ===== FUNZIONE PULIZIA BACKDROP =====

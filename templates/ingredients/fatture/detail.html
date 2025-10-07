@@ -1,282 +1,601 @@
 {% extends "base.html" %}
 
-{% block title %}Dettagli Fattura {{ file_info.filename }} - DBLogiX{% endblock %}
+{% block title %}Dettaglio Fattura - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<style>
+.invoice-header {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.invoice-title {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-processed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.status-duplicate {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.invoice-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.meta-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #007bff;
+}
+
+.meta-label {
+    font-size: 0.8em;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.meta-value {
+    font-size: 1.1em;
+    color: #333;
+    font-weight: 500;
+}
+
+.content-tabs {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.pdf-viewer {
+    width: 100%;
+    height: 80vh;
+    border: none;
+    background: #f8f9fa;
+}
+
+.data-section {
+    padding: 20px;
+}
+
+.supplier-info, .invoice-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.items-table {
+    margin-top: 20px;
+}
+
+.table th {
+    background: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.json-viewer {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    max-height: 500px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.log-entry {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: white;
+}
+
+.log-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.log-timestamp {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.log-user {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.log-action {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-weight: bold;
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.log-details {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85em;
+    margin-top: 10px;
+}
+
+.edit-form {
+    display: none;
+}
+
+.edit-form.active {
+    display: block;
+}
+
+.form-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.form-section h6 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.btn-group-actions {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row">
-        <div class="col-12">
-            <!-- Header con breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}">Ingredienti</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.fatture_list') }}">Fatture PDF</a></li>
-                    <li class="breadcrumb-item active">{{ file_info.filename }}</li>
-                </ol>
-            </nav>
-
-            <!-- Titolo e azioni -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">
-                    <i class="fas fa-file-pdf text-danger me-2"></i>
-                    {{ file_info.filename }}
-                </h1>
-                <div>
-                    <button type="button" class="btn btn-success me-2" id="processBtn" 
-                            data-filename="{{ file_info.filename }}">
-                        <i class="fas fa-cogs me-1"></i>
-                        Elabora Automaticamente
-                    </button>
-                    <a href="{{ url_for('ingredients.fatture_list') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-1"></i>
-                        Torna alla Lista
-                    </a>
-                </div>
-            </div>
-
-            <div class="row">
-                <!-- Info file -->
-                <div class="col-12 col-lg-4 mb-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Informazioni File
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <dl class="row">
-                                <dt class="col-sm-5">Nome:</dt>
-                                <dd class="col-sm-7">{{ file_info.filename }}</dd>
-                                
-                                <dt class="col-sm-5">Dimensione:</dt>
-                                <dd class="col-sm-7">{{ "%.1f"|format(file_info.size / 1024) }} KB</dd>
-                                
-                                <dt class="col-sm-5">Caricato:</dt>
-                                <dd class="col-sm-7">
-                                    <small>{{ file_info.created.strftime('%d/%m/%Y %H:%M') }}</small>
-                                </dd>
-                                
-                                <dt class="col-sm-5">Modificato:</dt>
-                                <dd class="col-sm-7">
-                                    <small>{{ file_info.modified.strftime('%d/%m/%Y %H:%M') }}</small>
-                                </dd>
-                            </dl>
-                        </div>
-                    </div>
-
-                    <!-- Informazioni fornitore -->
-                    {% if supplier_info and supplier_info.nome %}
-                    <div class="card mt-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-building me-1"></i>
-                                Fornitore Identificato
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <dl class="row">
-                                <dt class="col-sm-5">Nome:</dt>
-                                <dd class="col-sm-7">
-                                    <strong>{{ supplier_info.nome }}</strong>
-                                </dd>
-                                
-                                {% if supplier_info.email %}
-                                <dt class="col-sm-5">Email:</dt>
-                                <dd class="col-sm-7">{{ supplier_info.email }}</dd>
-                                {% endif %}
-                                
-                                {% if supplier_info.telefono %}
-                                <dt class="col-sm-5">Telefono:</dt>
-                                <dd class="col-sm-7">{{ supplier_info.telefono }}</dd>
-                                {% endif %}
-                                
-                                {% if supplier_info.partita_iva %}
-                                <dt class="col-sm-5">P.IVA:</dt>
-                                <dd class="col-sm-7">{{ supplier_info.partita_iva }}</dd>
-                                {% endif %}
-                                
-                                {% if supplier_info.indirizzo %}
-                                <dt class="col-sm-5">Indirizzo:</dt>
-                                <dd class="col-sm-7">
-                                    <small>{{ supplier_info.indirizzo }}</small>
-                                </dd>
-                                {% endif %}
-                            </dl>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="card mt-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0 text-warning">
-                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                Fornitore Non Identificato
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted mb-0">
-                                Il sistema non è riuscito a identificare automaticamente il fornitore da questo PDF.
-                                L'elaborazione automatica potrebbe non funzionare correttamente.
-                            </p>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Articoli estratti -->
-                <div class="col-12 col-lg-8 mb-4">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-list me-1"></i>
-                                Ingredienti Identificati
-                            </h5>
-                            <div>
-                                {% if items %}
-                                <span class="badge bg-success">{{ items|length }} trovati</span>
-                                <span class="badge bg-info">{{ total_items }} totali</span>
-                                {% else %}
-                                <span class="badge bg-warning">Nessun ingrediente trovato</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        {% if items %}
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Descrizione</th>
-                                            <th class="text-center">Quantità</th>
-                                            <th class="text-end">Prezzo Unit.</th>
-                                            <th class="text-end">Totale</th>
-                                            <th class="text-center">U.M.</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for item in items %}
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-start">
-                                                    <i class="fas fa-leaf text-success me-2 mt-1"></i>
-                                                    <div>
-                                                        <div class="fw-medium">{{ item.descrizione }}</div>
-                                                        {% if item.is_food_ingredient %}
-                                                        <small class="badge bg-success">Ingrediente Alimentare</small>
-                                                        {% else %}
-                                                        <small class="badge bg-secondary">Non Alimentare</small>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                {% if item.quantita > 0 %}
-                                                    {{ item.quantita|round(2) }}
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-end">
-                                                {% if item.prezzo_unitario > 0 %}
-                                                    €{{ item.prezzo_unitario|round(2) }}
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-end">
-                                                {% if item.importo_totale > 0 %}
-                                                    <strong>€{{ item.importo_totale|round(2) }}</strong>
-                                                {% else %}
-                                                    <span class="text-muted">-</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center">
-                                                <small class="text-muted">{{ item.unita_misura }}</small>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <!-- Riassunto -->
-                        <div class="card-footer bg-light">
-                            <div class="row text-center">
-                                <div class="col-md-3">
-                                    <div class="fw-medium">Ingredienti Alimentari</div>
-                                    <div class="h5 text-success mb-0">{{ items|length }}</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="fw-medium">Totale Articoli</div>
-                                    <div class="h5 text-info mb-0">{{ total_items }}</div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="fw-medium">Con Prezzo</div>
-                                    <div class="h5 text-primary mb-0">
-                                        {{ items|selectattr('prezzo_unitario', 'greaterthan', 0)|list|length }}
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="fw-medium">Valore Totale</div>
-                                    <div class="h5 text-success mb-0">
-                                        €{{ (items|sum(attribute='importo_totale'))|round(2) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="card-body text-center py-5">
-                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">Nessun ingrediente alimentare trovato</h5>
-                            <p class="text-muted mb-0">
-                                Il sistema non ha identificato ingredienti alimentari nelle tabelle del PDF.<br>
-                                Verifica che il PDF contenga tabelle con descrizioni di prodotti alimentari.
-                            </p>
-                        </div>
+        <!-- Colonna principale -->
+        <div class="col-lg-8">
+            <!-- Header fattura -->
+            <div class="invoice-header">
+                <div class="invoice-title">
+                    <div>
+                        <h2><i class="fas fa-file-invoice"></i> {{ invoice.filename }}</h2>
+                        {% if invoice.invoice.number %}
+                            <p class="text-muted mb-0">Fattura N° {{ invoice.invoice.number }}</p>
                         {% endif %}
                     </div>
-
-                    <!-- Suggerimenti -->
-                    <div class="alert alert-info mt-4">
-                        <h6><i class="fas fa-lightbulb me-1"></i>Come migliorare l'identificazione:</h6>
-                        <ul class="mb-0">
-                            <li><strong>PDF di qualità:</strong> Assicurati che il PDF sia leggibile (non scansione a bassa risoluzione)</li>
-                            <li><strong>Tabelle strutturate:</strong> Le tabelle dovrebbero avere header chiari (Descrizione, Quantità, Prezzo)</li>
-                            <li><strong>Nomi chiari:</strong> Le descrizioni dovrebbero contenere nomi riconoscibili di ingredienti alimentari</li>
-                            <li><strong>Dati fornitore:</strong> Nome, P.IVA e contatti dovrebbero essere presenti nelle prime righe</li>
-                        </ul>
+                    <div>
+                        <span class="status-badge status-{{ invoice.status }}">
+                            {{ invoice.status }}
+                        </span>
                     </div>
                 </div>
+                
+                <div class="invoice-meta">
+                    {% if invoice.supplier.name %}
+                    <div class="meta-item">
+                        <div class="meta-label">Fornitore</div>
+                        <div class="meta-value">{{ invoice.supplier.name }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if invoice.invoice.date %}
+                    <div class="meta-item">
+                        <div class="meta-label">Data Fattura</div>
+                        <div class="meta-value">{{ invoice.invoice.date }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if invoice.invoice.total %}
+                    <div class="meta-item">
+                        <div class="meta-label">Importo Totale</div>
+                        <div class="meta-value">€ {{ "%.2f"|format(invoice.invoice.total) }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="meta-item">
+                        <div class="meta-label">Righe</div>
+                        <div class="meta-value">{{ invoice.items_count }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabs contenuto -->
+            <div class="content-tabs">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#pdf-tab">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#data-tab">
+                            <i class="fas fa-database"></i> Dati Estratti
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#json-tab">
+                            <i class="fas fa-code"></i> JSON
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#log-tab">
+                            <i class="fas fa-history"></i> Log
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content">
+                    <!-- Tab PDF -->
+                    <div class="tab-pane fade show active" id="pdf-tab">
+                        <iframe src="{{ url_for('ingredients.fatture_pdf', invoice_id=invoice.id) }}" 
+                                class="pdf-viewer" 
+                                title="Fattura PDF">
+                        </iframe>
+                    </div>
+                    
+                    <!-- Tab Dati Estratti -->
+                    <div class="tab-pane fade" id="data-tab">
+                        <div class="data-section">
+                            <!-- Vista dati -->
+                            <div id="dataView">
+                                {% if invoice.normalized_data %}
+                                    <!-- Informazioni fornitore -->
+                                    {% if invoice.normalized_data.supplier %}
+                                    <div class="supplier-info">
+                                        <h5><i class="fas fa-building"></i> Fornitore</h5>
+                                        <div class="row">
+                                            {% if invoice.normalized_data.supplier.name %}
+                                            <div class="col-md-6">
+                                                <strong>Nome:</strong> {{ invoice.normalized_data.supplier.name }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.supplier.vat_number %}
+                                            <div class="col-md-6">
+                                                <strong>P.IVA:</strong> {{ invoice.normalized_data.supplier.vat_number }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.supplier.email %}
+                                            <div class="col-md-6">
+                                                <strong>Email:</strong> {{ invoice.normalized_data.supplier.email }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.supplier.phone %}
+                                            <div class="col-md-6">
+                                                <strong>Telefono:</strong> {{ invoice.normalized_data.supplier.phone }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.supplier.address %}
+                                            <div class="col-12">
+                                                <strong>Indirizzo:</strong> {{ invoice.normalized_data.supplier.address }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Informazioni fattura -->
+                                    {% if invoice.normalized_data.invoice %}
+                                    <div class="invoice-info">
+                                        <h5><i class="fas fa-file-invoice-dollar"></i> Fattura</h5>
+                                        <div class="row">
+                                            {% if invoice.normalized_data.invoice.number %}
+                                            <div class="col-md-4">
+                                                <strong>Numero:</strong> {{ invoice.normalized_data.invoice.number }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.invoice.date %}
+                                            <div class="col-md-4">
+                                                <strong>Data:</strong> {{ invoice.normalized_data.invoice.date }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.invoice.due_date %}
+                                            <div class="col-md-4">
+                                                <strong>Scadenza:</strong> {{ invoice.normalized_data.invoice.due_date }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.invoice.subtotal %}
+                                            <div class="col-md-4">
+                                                <strong>Imponibile:</strong> € {{ "%.2f"|format(invoice.normalized_data.invoice.subtotal) }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.invoice.tax_amount %}
+                                            <div class="col-md-4">
+                                                <strong>IVA:</strong> € {{ "%.2f"|format(invoice.normalized_data.invoice.tax_amount) }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.invoice.total %}
+                                            <div class="col-md-4">
+                                                <strong>Totale:</strong> € {{ "%.2f"|format(invoice.normalized_data.invoice.total) }}
+                                            </div>
+                                            {% endif %}
+                                            {% if invoice.normalized_data.invoice.payment_terms %}
+                                            <div class="col-12">
+                                                <strong>Pagamento:</strong> {{ invoice.normalized_data.invoice.payment_terms }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Righe fattura -->
+                                    {% if invoice.normalized_data.items %}
+                                    <div class="items-table">
+                                        <h5><i class="fas fa-list"></i> Righe Fattura</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Descrizione</th>
+                                                        <th>Quantità</th>
+                                                        <th>Prezzo Unit.</th>
+                                                        <th>IVA %</th>
+                                                        <th>Importo</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in invoice.normalized_data.items %}
+                                                    <tr>
+                                                        <td>{{ item.description or '-' }}</td>
+                                                        <td>
+                                                            {% if item.quantity %}
+                                                                {{ item.quantity }} {{ item.unit or '' }}
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            {% if item.unit_price %}
+                                                                € {{ "%.2f"|format(item.unit_price) }}
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ item.tax_rate or '-' }}%</td>
+                                                        <td>
+                                                            {% if item.amount %}
+                                                                € {{ "%.2f"|format(item.amount) }}
+                                                            {% else %}
+                                                                -
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Dati non disponibili o fattura non processata correttamente.
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Form modifica -->
+                            <div id="editForm" class="edit-form">
+                                <form id="updateForm">
+                                    <!-- Form per modifica manuale - implementato via JavaScript -->
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab JSON -->
+                    <div class="tab-pane fade" id="json-tab">
+                        <div class="data-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5>Dati JSON</h5>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="copyToClipboard('normalizedJson')">
+                                        <i class="fas fa-copy"></i> Copia Normalizzato
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('rawJson')">
+                                        <i class="fas fa-copy"></i> Copia Raw
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <ul class="nav nav-pills mb-3">
+                                <li class="nav-item">
+                                    <a class="nav-link active" data-bs-toggle="pill" href="#normalized-json">
+                                        Normalizzato
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="pill" href="#raw-json">
+                                        Raw (GEMINI)
+                                    </a>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="normalized-json">
+                                    <div class="json-viewer" id="normalizedJson">
+                                        {{ invoice.normalized_data | tojson(indent=2) if invoice.normalized_data else 'Dati non disponibili' }}
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="raw-json">
+                                    <div class="json-viewer" id="rawJson">
+                                        {{ invoice.raw_data | tojson(indent=2) if invoice.raw_data else 'Dati non disponibili' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Log -->
+                    <div class="tab-pane fade" id="log-tab">
+                        <div class="data-section">
+                            <h5><i class="fas fa-history"></i> Log Operazioni</h5>
+                            
+                            <div id="logEntries">
+                                <!-- Log entries caricate dinamicamente -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar azioni -->
+        <div class="col-lg-4">
+            <div class="btn-group-actions">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-cogs"></i> Azioni</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('ingredients.fatture_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Torna alla lista
+                            </a>
+                            
+                            {% if invoice.status == 'error' and is_admin() %}
+                            <button class="btn btn-warning" onclick="reprocessInvoice()">
+                                <i class="fas fa-redo"></i> Riprocessa
+                            </button>
+                            {% endif %}
+                            
+                            <button class="btn btn-outline-primary" onclick="toggleEditMode()">
+                                <i class="fas fa-edit"></i> Modifica Dati
+                            </button>
+                            
+                            <button class="btn btn-outline-info" onclick="downloadPDF()">
+                                <i class="fas fa-download"></i> Scarica PDF
+                            </button>
+                            
+                            {% if is_admin() %}
+                            <button class="btn btn-outline-danger" onclick="deleteInvoice()">
+                                <i class="fas fa-trash"></i> Elimina
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informazioni aggiuntive -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informazioni</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="small">
+                            <div class="mb-2">
+                                <strong>Hash File:</strong><br>
+                                <code class="text-muted">{{ invoice.file_hash[:16] }}...</code>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Caricata:</strong><br>
+                                {{ invoice.uploaded_at }}
+                            </div>
+                            {% if invoice.processed_at %}
+                            <div class="mb-2">
+                                <strong>Processata:</strong><br>
+                                {{ invoice.processed_at }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <strong>Aggiornamenti:</strong><br>
+                                {{ invoice.updates_count or 0 }} modifiche
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if invoice.error %}
+                <div class="card mt-3">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Errore</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-error mb-0">
+                            {{ invoice.error }}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal di elaborazione -->
-<div class="modal fade" id="processModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+<!-- Modal per conferma eliminazione -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Elaborazione Automatica</h5>
+                <h5 class="modal-title">Conferma eliminazione</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="processContent">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary me-2" role="status">
-                            <span class="visually-hidden">Caricamento...</span>
-                        </div>
-                        <span class="h6">Elaborazione in corso...</span>
-                        <div class="text-muted mt-2">
-                            Il sistema sta analizzando la fattura e aggiornando ingredienti e fornitori
-                        </div>
-                    </div>
-                </div>
+                <p>Sei sicuro di voler eliminare questa fattura?</p>
+                <p class="text-danger small">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Questa azione eliminerà permanentemente il file PDF e tutti i dati associati.
+                </p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form method="POST" action="{{ url_for('ingredients.fatture_delete', invoice_id=invoice.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Elimina
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -285,216 +604,216 @@
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
-    // Gestione elaborazione automatica
-    $('#processBtn').click(function() {
-        const filename = $(this).data('filename');
-        const button = $(this);
+let isEditMode = false;
+
+// Riprocessa fattura
+function reprocessInvoice() {
+    if (confirm('Riprocessare questa fattura? I dati esistenti verranno sovrascritti.')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("ingredients.fatture_reprocess", invoice_id=invoice.id) }}';
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Elimina fattura
+function deleteInvoice() {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Scarica PDF
+function downloadPDF() {
+    window.open('{{ url_for("ingredients.fatture_pdf", invoice_id=invoice.id) }}', '_blank');
+}
+
+// Copia JSON negli appunti
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        // Mostra feedback
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Copiato!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-primary', 'btn-outline-secondary');
         
-        // Disabilita il pulsante
-        button.prop('disabled', true);
-        button.find('i').removeClass('fa-cogs').addClass('fa-spinner fa-spin');
-        
-        // Mostra modal
-        $('#processModal').modal('show');
-        
-        // Chiamata API
-        console.log('Invio richiesta elaborazione per:', filename);
-        $.ajax({
-            url: '/ingredients/api/fatture/process',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({filename: filename}),
-            dataType: 'json',
-            timeout: 120000, // 2 minuti timeout
-            beforeSend: function(xhr) {
-                console.log('Headers inviati:', xhr.getAllResponseHeaders);
-                console.log('Dati inviati:', JSON.stringify({filename: filename}));
-            },
-            success: function(response) {
-                if (response.success) {
-                    const matching = response.matching_results;
-                    const supplier = response.supplier;
-                    
-                    $('#processContent').html(`
-                        <div class="alert alert-success">
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <h5><i class="fas fa-check-circle me-1"></i>Elaborazione Completata con Successo!</h5>
-                                    <ul class="mb-2">
-                                        <li><strong>Fornitore:</strong> ${supplier.nome} ${supplier.email ? '(' + supplier.email + ')' : ''}</li>
-                                        <li><strong>Articoli processati:</strong> ${response.items_processed}</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <div class="d-grid gap-1">
-                                        <a href="/ingredients/fornitori/${supplier.id}" class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-building me-1"></i>Vedi Fornitore
-                                        </a>
-                                        <a href="/ingredients/" class="btn btn-outline-success btn-sm">
-                                            <i class="fas fa-leaf me-1"></i>Vedi Ingredienti
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row text-center mb-4">
-                            <div class="col-3">
-                                <div class="card border-success">
-                                    <div class="card-body">
-                                        <i class="fas fa-search-plus fa-2x text-success mb-2"></i>
-                                        <h4 class="text-success">${matching.matched}</h4>
-                                        <small class="text-muted">Trovati</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="card border-info">
-                                    <div class="card-body">
-                                        <i class="fas fa-plus-circle fa-2x text-info mb-2"></i>
-                                        <h4 class="text-info">${matching.created}</h4>
-                                        <small class="text-muted">Creati</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="card border-warning">
-                                    <div class="card-body">
-                                        <i class="fas fa-sync-alt fa-2x text-warning mb-2"></i>
-                                        <h4 class="text-warning">${matching.updated}</h4>
-                                        <small class="text-muted">Aggiornati</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="card border-secondary">
-                                    <div class="card-body">
-                                        <i class="fas fa-minus-circle fa-2x text-secondary mb-2"></i>
-                                        <h4 class="text-secondary">${matching.skipped}</h4>
-                                        <small class="text-muted">Saltati</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        ${matching.details && matching.details.length > 0 ? `
-                            <div class="mt-4">
-                                <h6><i class="fas fa-list me-1"></i>Dettagli Elaborazione:</h6>
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table table-sm table-hover">
-                                        <thead class="table-light sticky-top">
-                                            <tr>
-                                                <th>Ingrediente</th>
-                                                <th>Fornitore</th>
-                                                <th class="text-end">Prezzo</th>
-                                                <th class="text-center">Azione</th>
-                                                <th class="text-center">Associazione</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${matching.details.map(detail => `
-                                                <tr>
-                                                    <td>
-                                                        <div class="fw-medium">${detail.ingrediente}</div>
-                                                    </td>
-                                                    <td>
-                                                        <small class="text-muted">${detail.fornitore}</small>
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <strong>€${detail.prezzo.toFixed(2)}</strong>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-${detail.action === 'created' ? 'success' : detail.action === 'matched' ? 'primary' : 'secondary'}">
-                                                            ${detail.action === 'created' ? 'Creato' : detail.action === 'matched' ? 'Trovato' : detail.action}
-                                                        </span>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <i class="fas fa-${detail.association_updated ? 'check text-success' : 'times text-danger'}"></i>
-                                                    </td>
-                                                </tr>
-                                            `).join('')}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="text-center mt-4">
-                            <button type="button" class="btn btn-success" onclick="location.reload()">
-                                <i class="fas fa-sync-alt me-1"></i>
-                                Aggiorna Pagina
-                            </button>
-                        </div>
-                    `);
-                } else {
-                    $('#processContent').html(`
-                        <div class="alert alert-danger">
-                            <h5><i class="fas fa-exclamation-triangle me-1"></i>Errori durante l'elaborazione:</h5>
-                            <ul class="mb-0">
-                                ${response.errors.map(error => `<li>${error}</li>`).join('')}
-                            </ul>
-                            <div class="mt-3">
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Verifica che il PDF contenga tabelle strutturate con ingredienti riconoscibili e informazioni del fornitore.
-                                </small>
-                            </div>
-                        </div>
-                    `);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Errore AJAX:', {
-                    status: xhr.status,
-                    statusText: xhr.statusText,
-                    responseText: xhr.responseText,
-                    ajaxStatus: status,
-                    error: error
-                });
-                
-                let errorMessage = 'Errore di connessione';
-                
-                if (xhr.status === 400) {
-                    errorMessage = 'Richiesta non valida (400): Verifica che il file sia corretto';
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.error) {
-                            errorMessage += ' - ' + response.error;
-                        }
-                    } catch (e) {
-                        errorMessage += ' - Risposta del server non valida';
-                    }
-                } else if (xhr.responseJSON && xhr.responseJSON.error) {
-                    errorMessage = xhr.responseJSON.error;
-                } else if (status === 'timeout') {
-                    errorMessage = 'Timeout: L\'elaborazione sta richiedendo troppo tempo';
-                } else if (xhr.status === 500) {
-                    errorMessage = 'Errore interno del server (500): Controlla i log del server';
-                } else if (error) {
-                    errorMessage = `${error} (${xhr.status})`;
-                }
-                
-                $('#processContent').html(`
-                    <div class="alert alert-danger">
-                        <h5><i class="fas fa-exclamation-triangle me-1"></i>Errore durante l'elaborazione</h5>
-                        <p class="mb-0">${errorMessage}</p>
-                        <div class="mt-3">
-                            <button type="button" class="btn btn-outline-danger" onclick="location.reload()">
-                                <i class="fas fa-redo me-1"></i>
-                                Riprova
-                            </button>
-                        </div>
-                    </div>
-                `);
-            },
-            complete: function() {
-                // Riabilita il pulsante
-                button.prop('disabled', false);
-                button.find('i').removeClass('fa-spinner fa-spin').addClass('fa-cogs');
-            }
-        });
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add(elementId === 'normalizedJson' ? 'btn-outline-primary' : 'btn-outline-secondary');
+        }, 2000);
+    }).catch(err => {
+        console.error('Errore nella copia:', err);
+        alert('Errore nella copia negli appunti');
     });
+}
+
+// Toggle modalità modifica
+function toggleEditMode() {
+    isEditMode = !isEditMode;
+    const dataView = document.getElementById('dataView');
+    const editForm = document.getElementById('editForm');
+    const btn = event.target;
+    
+    if (isEditMode) {
+        dataView.style.display = 'none';
+        editForm.classList.add('active');
+        btn.innerHTML = '<i class="fas fa-times"></i> Annulla';
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-outline-secondary');
+        
+        // Carica form di modifica
+        loadEditForm();
+    } else {
+        dataView.style.display = 'block';
+        editForm.classList.remove('active');
+        btn.innerHTML = '<i class="fas fa-edit"></i> Modifica Dati';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-outline-primary');
+    }
+}
+
+// Carica form di modifica
+function loadEditForm() {
+    // Implementazione del form di modifica basata sui dati esistenti
+    const formHtml = `
+        <div class="form-section">
+            <h6>Fornitore</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" name="supplier_name" 
+                           value="${'{{ invoice.normalized_data.supplier.name or "" }}'}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">P.IVA</label>
+                    <input type="text" class="form-control" name="supplier_vat" 
+                           value="${'{{ invoice.normalized_data.supplier.vat_number or "" }}'}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="supplier_email" 
+                           value="${'{{ invoice.normalized_data.supplier.email or "" }}'}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Telefono</label>
+                    <input type="text" class="form-control" name="supplier_phone" 
+                           value="${'{{ invoice.normalized_data.supplier.phone or "" }}'}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Indirizzo</label>
+                    <textarea class="form-control" name="supplier_address" rows="2">${'{{ invoice.normalized_data.supplier.address or "" }}'}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <h6>Fattura</h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Numero</label>
+                    <input type="text" class="form-control" name="invoice_number" 
+                           value="${'{{ invoice.normalized_data.invoice.number or "" }}'}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data</label>
+                    <input type="date" class="form-control" name="invoice_date" 
+                           value="${'{{ invoice.normalized_data.invoice.date or "" }}'}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Scadenza</label>
+                    <input type="date" class="form-control" name="invoice_due_date" 
+                           value="${'{{ invoice.normalized_data.invoice.due_date or "" }}'}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Imponibile</label>
+                    <input type="number" class="form-control" name="invoice_subtotal" step="0.01"
+                           value="${'{{ invoice.normalized_data.invoice.subtotal or "" }}'}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">IVA</label>
+                    <input type="number" class="form-control" name="invoice_tax" step="0.01"
+                           value="${'{{ invoice.normalized_data.invoice.tax_amount or "" }}'}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Totale</label>
+                    <input type="number" class="form-control" name="invoice_total" step="0.01"
+                           value="${'{{ invoice.normalized_data.invoice.total or "" }}'}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Condizioni Pagamento</label>
+                    <input type="text" class="form-control" name="invoice_payment_terms" 
+                           value="${'{{ invoice.normalized_data.invoice.payment_terms or "" }}'}">
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-end">
+            <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">Annulla</button>
+            <button type="button" class="btn btn-primary" onclick="saveChanges()">
+                <i class="fas fa-save"></i> Salva Modifiche
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('updateForm').innerHTML = formHtml;
+}
+
+// Salva modifiche
+function saveChanges() {
+    const form = document.getElementById('updateForm');
+    const formData = new FormData(form);
+    
+    // Costruisci oggetto dati aggiornati
+    const updatedData = {
+        supplier: {
+            name: formData.get('supplier_name'),
+            vat_number: formData.get('supplier_vat'),
+            email: formData.get('supplier_email'),
+            phone: formData.get('supplier_phone'),
+            address: formData.get('supplier_address')
+        },
+        invoice: {
+            number: formData.get('invoice_number'),
+            date: formData.get('invoice_date'),
+            due_date: formData.get('invoice_due_date'),
+            subtotal: parseFloat(formData.get('invoice_subtotal')) || null,
+            tax_amount: parseFloat(formData.get('invoice_tax')) || null,
+            total: parseFloat(formData.get('invoice_total')) || null,
+            payment_terms: formData.get('invoice_payment_terms')
+        },
+        items: {{ invoice.normalized_data.items | tojson if invoice.normalized_data.items else [] }}
+    };
+    
+    // Invia aggiornamenti
+    fetch('{{ url_for("ingredients.fatture_update", invoice_id=invoice.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Dati aggiornati con successo!');
+            location.reload();
+        } else {
+            alert('Errore nell\'aggiornamento: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Errore:', error);
+        alert('Errore nell\'aggiornamento dei dati');
+    });
+}
+
+// Carica log al caricamento della pagina
+document.addEventListener('DOMContentLoaded', function() {
+    // Implementazione caricamento log se necessario
 });
 </script>
 {% endblock %}

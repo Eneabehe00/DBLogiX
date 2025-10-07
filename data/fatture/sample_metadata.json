@@ -1,0 +1,26 @@
+{
+  "invoices": [
+    {
+      "id": "test123456",
+      "filename": "fattura_esempio.pdf",
+      "file_path": "test_fattura.pdf",
+      "file_hash": "abcdef123456789",
+      "uploaded_at": "2025-09-30T11:48:08.490573",
+      "processed_at": "2025-09-30T11:48:08.490573",
+      "status": "processed",
+      "supplier": {
+        "name": "Fornitore Test SRL",
+        "vat_number": "IT12345678901"
+      },
+      "invoice": {
+        "number": "FAT-2024-001",
+        "date": "2024-12-01",
+        "total": 150.5
+      },
+      "items_count": 3,
+      "updates_count": 2,
+      "error": null
+    }
+  ],
+  "last_updated": "2025-09-30T11:48:08.490573"
+}

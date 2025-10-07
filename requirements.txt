@@ -29,5 +29,3 @@ cheroot==10.0.0
 jaraco.functools==3.8.1
 more-itertools==10.1.0
 jaraco.classes==3.3.0
-pdfplumber==0.10.0
-rapidfuzz==3.6.1

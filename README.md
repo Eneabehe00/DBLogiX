@@ -77,9 +77,12 @@ DBLogiX/
 ├── 📁 modules/                # Moduli funzionali
 │   ├── admin.py               # Pannello amministrazione
 │   ├── articles.py            # Gestione articoli
+│   ├── chat.py                # Sistema chat interno
 │   ├── clients.py             # Gestione clienti
 │   ├── ddt.py                 # Documenti di trasporto
 │   ├── fattura_pa.py          # Fatturazione elettronica PA
+│   ├── ingredients.py         # Gestione ingredienti e food cost
+│   ├── listini.py             # Gestione listini prezzi
 │   ├── sections.py            # Gestione sezioni magazzino
 │   ├── tasks.py               # Sistema gestione task
 │   └── warehouse.py           # Gestione magazzino
@@ -154,24 +157,27 @@ DBLogiX/
 | **FontAwesome** | Icone |
 
 ### Fogli di Stile Specializzati
-| File CSS | Funzione | Dimensione |
-|----------|----------|------------|
-| `base.css` | Stili base globali | 15KB |
-| `tasks.css` | Sistema task management | 26KB |
-| `ddt.css` | Documenti di trasporto | 41KB |
-| `shared-components.css` | Componenti riutilizzabili | 20KB |
-| `fattura_pa.css` | Fatturazione elettronica | 18KB |
-| `articles.css` | Gestione articoli | 15KB |
-| `warehouse.css` | Interfaccia magazzino | 14KB |
-| `clients.css` | Gestione clienti | 13KB |
-| `sections.css` | Sezioni magazzino | 13KB |
-| `chat.css` | Sistema chat | 13KB |
-| `notifications.css` | Sistema notifiche | 11KB |
-| `home.css` | Dashboard principale | 10KB |
-| `admin.css` | Pannello amministrazione | 9.7KB |
-| `style.css` | Stili generici | 9.8KB |
-| `auth.css` | Autenticazione | 3.9KB |
-| `errors.css` | Pagine errore | 2.6KB |
+| File CSS | Funzione | Moduli |
+|----------|----------|---------|
+| `base.css` | Stili base globali | Core |
+| `tasks.css` | Sistema task management | Tasks |
+| `ddt.css` | Documenti di trasporto | DDT |
+| `ddt_preview.css` | Anteprime DDT | DDT |
+| `shared-components.css` | Componenti riutilizzabili | Core |
+| `fattura_pa.css` | Fatturazione elettronica | FatturaPA |
+| `articles.css` | Gestione articoli | Articles |
+| `warehouse.css` | Interfaccia magazzino | Warehouse |
+| `clients.css` | Gestione clienti | Clients |
+| `fornitori.css` | Gestione fornitori | Ingredients |
+| `ingredients.css` | Sistema ingredienti | Ingredients |
+| `sections.css` | Sezioni magazzino | Sections |
+| `chat.css` | Sistema chat | Chat |
+| `notifications.css` | Sistema notifiche | Core |
+| `home.css` | Dashboard principale | Core |
+| `admin.css` | Pannello amministrazione | Admin |
+| `style.css` | Stili generici | Core |
+| `auth.css` | Autenticazione | Auth |
+| `errors.css` | Pagine errore | Core |
 
 ### Database
 | Componente | Dettaglio |
@@ -186,12 +192,11 @@ DBLogiX/
 |----------|----------|----------|
 | **ReportLab** | 4.4.0 | Generazione PDF |
 | **QRCode** | 8.2 | Generazione QR Code |
-| **Cryptography** | 41.0.5 | Crittografia |
 | **Flask-CORS** | 4.0.0 | Cross-Origin Resource Sharing |
 | **PyWin32** | 306 | Servizi Windows nativi |
-| **Waitress** | 2.1.2 | Server WSGI production |
-| **Pillow** | 10.0.1 | Manipolazione immagini |
 | **Python-dotenv** | 1.0.0 | Gestione variabili ambiente |
+| **Pandas** | 2.1.3 | Manipolazione dati Excel |
+| **OpenPyXL** | 3.1.2 | Lettura/scrittura Excel |
 
 ### Runtime e Distribuzione
 | Componente | Versione | Utilizzo |
@@ -521,7 +526,28 @@ flowchart TD
 - **Visualizzazione Grafica**: Mappe interattive sezioni
 - **Ottimizzazione Layout**: Suggerimenti posizionamento
 
-### 9. 💬 Servizio Chat (`services/chat.py`)
+### 9. 🍎 Modulo Ingredients (`modules/ingredients.py`)
+**Funzionalità**: Gestione ingredienti e food cost
+
+#### Features:
+- **Catalogo Ingredienti**: Database completo ingredienti
+- **Gestione Fornitori**: Anagrafica fornitori ingredienti
+- **Associazione Articoli**: Collegamento ingredienti-prodotti
+- **Food Cost Calculation**: Calcolo automatico costi ricette
+- **Gestione Scorte**: Controllo giacenze ingredienti
+- **Report Analitici**: Analisi marginalità e redditività
+
+### 10. 💰 Modulo Listini (`modules/listini.py`)
+**Funzionalità**: Gestione listini prezzi e scontistiche
+
+#### Features:
+- **Listini Dinamici**: Prezzi differenziati per cliente/tipo
+- **Scontistiche Configurabili**: Regole prezzi personalizzate
+- **Gestione Promozioni**: Offerte temporanee e stagionali
+- **Integrazione Clienti**: Listini specifici per categorie
+- **Report Vendite**: Analisi prezzi e marginalità
+
+### 11. 💬 Servizio Chat (`services/chat.py`)
 **Funzionalità**: Sistema comunicazione interno
 
 #### Features:
@@ -706,6 +732,41 @@ PUT  /articles/edit/<id>         # Modifica articolo
 DELETE /articles/delete/<id>     # Eliminazione articolo
 GET  /articles/search            # Ricerca articoli
 POST /articles/import            # Importazione massiva
+```
+
+### Listini Management
+```python
+GET  /listini/                    # Lista listini prezzi
+POST /listini/new                 # Creazione listino
+GET  /listini/<id>               # Visualizzazione listino
+PUT  /listini/<id>/edit          # Modifica listino
+DELETE /listini/<id>/delete      # Eliminazione listino
+POST /listini/<id>/aggiungi_articoli  # Aggiunta articoli al listino
+POST /listini/<id>/rimuovi_articolo   # Rimozione articolo dal listino
+POST /listini/<id>/modifica_prezzo    # Modifica prezzo articolo
+POST /listini/<id>/copia         # Duplicazione listino
+GET  /listini/<id>/api/articoli_disponibili  # Articoli disponibili per listino
+GET  /listini/<id>/api/search_clients       # Ricerca clienti per assegnazione
+POST /listini/<id>/assign_client    # Assegnazione listino a cliente
+POST /listini/<id>/remove_client    # Rimozione listino da cliente
+GET  /listini/api/prezzi_per_cliente/<id>    # Prezzi per cliente specifico
+```
+
+### Ingredients Management
+```python
+GET  /ingredients/                   # Dashboard ingredienti
+GET  /ingredients/ingredienti        # Lista ingredienti
+POST /ingredients/ingredienti/new    # Creazione ingrediente
+GET  /ingredients/ingredienti/<id>   # Visualizzazione ingrediente
+PUT  /ingredients/ingredienti/<id>/edit  # Modifica ingrediente
+DELETE /ingredients/ingredienti/<id>/delete  # Eliminazione ingrediente
+GET  /ingredients/fornitori          # Lista fornitori
+POST /ingredients/fornitori/new      # Creazione fornitore
+GET  /ingredients/fornitori/<id>     # Visualizzazione fornitore
+PUT  /ingredients/fornitori/<id>/edit   # Modifica fornitore
+DELETE /ingredients/fornitori/<id>/delete  # Eliminazione fornitore
+GET  /ingredients/food_cost          # Dashboard food cost
+GET  /ingredients/api/search         # Ricerca ingredienti/fornitori
 ```
 
 ### Admin Panel
@@ -1369,32 +1430,30 @@ flowchart TD
 
 ## 📈 Roadmap
 
-### Versione 4.8 (Q1 2024) - CURRENT
+### Versione 4.8 - STABILE
 - [x] Sistema build modulare completo
 - [x] Installer Inno Setup automatico
 - [x] Servizio Windows nativo
 - [x] Modalità kiosk integrata
 - [x] Sistema di update automatico
 - [x] Configurazione .NET avanzata
+- [x] Moduli ingredients e listini completi
+- [x] Documentazione README aggiornata
 
-### Versione 5.0 (Q2 2024)
+### Prossime Versioni (Roadmap)
 - [ ] API REST complete con OpenAPI/Swagger
 - [ ] Mobile app per scansioni
 - [ ] Integrazione IoT sensori magazzino
 - [ ] Dashboard analytics avanzate
 - [ ] Sistema backup cloud
 - [ ] Container Docker ufficiali
-
-### Versione 5.1 (Q3 2024)  
 - [ ] Machine Learning per previsioni stock
 - [ ] Integrazione sistemi ERP esterni
 - [ ] Workflow automatizzati avanzati
 - [ ] Multi-tenant architecture
 - [ ] Plugin system per estensioni
-
-### Versione 5.2 (Q4 2024)
 - [ ] Blockchain per tracciabilità
-- [ ] AI per ottimizzazione logistica (integrazione RAG)
+- [ ] AI per ottimizzazione logistica
 - [ ] Realtà aumentata per picking
 - [ ] Integrazione e-commerce
 - [ ] Advanced reporting e BI
@@ -1526,6 +1585,6 @@ Il sistema supporta configurazioni stratificate:
 
 ---
 
-*Ultima modifica: Dicembre 2024*
-*Versione README: 3.0.0*
-*Build System: 4.7.0*
+*Ultima modifica: Gennaio 2025*
+*Versione README: 4.0.0*
+*Build System: 4.8.0*

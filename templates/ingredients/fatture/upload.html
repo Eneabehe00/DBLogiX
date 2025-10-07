@@ -1,122 +1,246 @@
 {% extends "base.html" %}
 
-{% block title %}Carica Fattura PDF - DBLogiX{% endblock %}
+{% block title %}Carica Fatture - DBLogiX{% endblock %}
+
+{% block extra_css %}
+<style>
+.upload-area {
+    border: 2px dashed #007bff;
+    border-radius: 10px;
+    padding: 60px 20px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #0056b3;
+    background: #e3f2fd;
+}
+
+.upload-area.dragover {
+    border-color: #28a745;
+    background: #d4edda;
+}
+
+.upload-icon {
+    font-size: 4em;
+    color: #007bff;
+    margin-bottom: 20px;
+}
+
+.upload-text {
+    font-size: 1.2em;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.upload-hint {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.file-list {
+    margin-top: 20px;
+}
+
+.file-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background: white;
+}
+
+.file-info {
+    flex: 1;
+}
+
+.file-name {
+    font-weight: bold;
+    color: #495057;
+}
+
+.file-size {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.file-status {
+    margin-left: 15px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-processing {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-duplicate {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #007bff;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.result-summary {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    display: none;
+}
+
+.result-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.result-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.result-details {
+    margin-top: 15px;
+}
+
+.result-item {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.result-item.success {
+    background: rgba(40, 167, 69, 0.1);
+    border-left: 3px solid #28a745;
+}
+
+.result-item.error {
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 3px solid #dc3545;
+}
+
+.result-item.duplicate {
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 3px solid #ffc107;
+}
+
+.updates-log {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 0.8em;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.btn-remove {
+    color: #dc3545;
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.btn-remove:hover {
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 3px;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12 col-lg-8 mx-auto">
-            <!-- Header con breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}">Ingredienti</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('ingredients.fatture_list') }}">Fatture PDF</a></li>
-                    <li class="breadcrumb-item active">Carica Fattura</li>
-                </ol>
-            </nav>
-
-            <!-- Titolo -->
-            <div class="text-center mb-5">
-                <h1 class="h2">
-                    <i class="fas fa-upload text-success me-2"></i>
-                    Carica Fattura PDF
-                </h1>
-                <p class="text-muted">
-                    Carica una fattura in formato PDF per l'elaborazione automatica di ingredienti e prezzi
-                </p>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-upload"></i> Carica Fatture</h1>
+                <a href="{{ url_for('ingredients.fatture_list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Torna alla lista
+                </a>
             </div>
 
-            <!-- Form di upload -->
-            <div class="card shadow">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-file-pdf text-danger me-2"></i>
-                        Seleziona File PDF
-                    </h5>
+            <!-- Area di upload -->
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
                 </div>
-                <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
-                        <!-- Area di drop file -->
-                        <div class="mb-4">
-                            <div id="dropZone" class="border border-2 border-dashed rounded p-5 text-center">
-                                <div id="dropContent">
-                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
-                                    <h5 class="text-muted">Trascina qui il tuo file PDF</h5>
-                                    <p class="text-muted mb-3">oppure</p>
-                                    <input type="file" name="file" id="fileInput" accept=".pdf" class="d-none" required>
-                                    <button type="button" class="btn btn-outline-primary" id="selectFileBtn">
-                                        <i class="fas fa-folder-open me-1"></i>
-                                        Sfoglia File
-                                    </button>
-                                    <p class="text-muted mt-3 mb-0">
-                                        <small>Solo file PDF • Max 10MB</small>
-                                    </p>
-                                </div>
-                                
-                                <!-- File selezionato -->
-                                <div id="fileSelected" class="d-none">
-                                    <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
-                                    <h5 id="fileName" class="text-dark"></h5>
-                                    <p id="fileSize" class="text-muted mb-3"></p>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="removeFileBtn">
-                                        <i class="fas fa-times me-1"></i>
-                                        Rimuovi
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="upload-text">
+                    Trascina qui i file PDF delle fatture
+                </div>
+                <div class="upload-hint">
+                    oppure clicca per selezionare i file
+                </div>
+                <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+            </div>
 
-                        <!-- Opzioni di elaborazione -->
-                        <div class="mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="auto_process" name="auto_process" value="true">
-                                <label class="form-check-label" for="auto_process">
-                                    <i class="fas fa-magic text-primary me-1"></i>
-                                    <strong>Elabora automaticamente dopo l'upload</strong>
-                                </label>
-                                <div class="form-text">
-                                    Se abilitato, il sistema elaborerà automaticamente la fattura estraendo ingredienti e prezzi.
-                                    Altrimenti potrai farlo manualmente dalla lista fatture.
-                                </div>
-                            </div>
-                        </div>
+            <!-- Lista file selezionati -->
+            <div id="fileList" class="file-list"></div>
 
-                        <!-- Informazioni processo -->
-                        <div class="alert alert-info">
-                            <h6><i class="fas fa-info-circle me-1"></i>Come funziona l'elaborazione automatica:</h6>
-                            <ul class="mb-0">
-                                <li><strong>Identificazione fornitore:</strong> Il sistema cerca i dati del fornitore nel PDF</li>
-                                <li><strong>Estrazione articoli:</strong> Legge le tabelle per trovare descrizioni, quantità e prezzi</li>
-                                <li><strong>Matching intelligente:</strong> Abbina gli articoli agli ingredienti esistenti</li>
-                                <li><strong>Aggiornamento prezzi:</strong> Crea/aggiorna le associazioni ingrediente-fornitore</li>
-                            </ul>
-                        </div>
-
-                        <!-- Pulsanti -->
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('ingredients.fatture_list') }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-1"></i>
-                                Torna alla Lista
-                            </a>
-                            <button type="submit" class="btn btn-success" id="uploadBtn" disabled>
-                                <i class="fas fa-upload me-1"></i>
-                                Carica Fattura
-                            </button>
-                        </div>
-                    </form>
+            <!-- Pulsanti azione -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div>
+                    <button id="clearBtn" class="btn btn-outline-secondary" style="display: none;">
+                        <i class="fas fa-times"></i> Cancella tutto
+                    </button>
+                </div>
+                <div>
+                    <button id="uploadBtn" class="btn btn-primary" style="display: none;">
+                        <i class="fas fa-paper-plane"></i> Carica e Processa
+                    </button>
                 </div>
             </div>
 
-            <!-- Progress durante upload -->
-            <div id="uploadProgress" class="card mt-4 d-none">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                        <span id="uploadStatus">Caricamento in corso...</span>
-                    </div>
-                    <div class="progress">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                    </div>
+            <!-- Risultati -->
+            <div id="resultSummary" class="result-summary">
+                <h5><i class="fas fa-check-circle"></i> Risultati Upload</h5>
+                <div id="resultDetails" class="result-details"></div>
+                <div class="mt-3">
+                    <a href="{{ url_for('ingredients.fatture_list') }}" class="btn btn-primary">
+                        <i class="fas fa-list"></i> Vai alla lista fatture
+                    </a>
                 </div>
             </div>
         </div>
@@ -126,196 +250,296 @@
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
-    const dropZone = $('#dropZone');
-    const fileInput = $('#fileInput');
-    const selectFileBtn = $('#selectFileBtn');
-    const removeFileBtn = $('#removeFileBtn');
-    const dropContent = $('#dropContent');
-    const fileSelected = $('#fileSelected');
-    const fileName = $('#fileName');
-    const fileSize = $('#fileSize');
-    const uploadBtn = $('#uploadBtn');
-    const uploadForm = $('#uploadForm');
-    const uploadProgress = $('#uploadProgress');
-    const uploadStatus = $('#uploadStatus');
+let selectedFiles = [];
+let isUploading = false;
+
+// Elementi DOM
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const clearBtn = document.getElementById('clearBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const resultSummary = document.getElementById('resultSummary');
+const resultDetails = document.getElementById('resultDetails');
+
+// Event listeners per drag & drop
+uploadArea.addEventListener('click', () => {
+    if (!isUploading) fileInput.click();
+});
+
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
     
-    let selectedFile = null;
-
-    // Click per aprire file dialog
-    selectFileBtn.click(function() {
-        fileInput.click();
-    });
-
-    // Click su drop zone
-    dropZone.click(function(e) {
-        if (!$(e.target).is('#removeFileBtn, #removeFileBtn *')) {
-            fileInput.click();
-        }
-    });
-
-    // Drag & drop events
-    dropZone.on('dragover', function(e) {
-        e.preventDefault();
-        $(this).addClass('border-primary bg-light');
-    });
-
-    dropZone.on('dragleave', function(e) {
-        e.preventDefault();
-        $(this).removeClass('border-primary bg-light');
-    });
-
-    dropZone.on('drop', function(e) {
-        e.preventDefault();
-        $(this).removeClass('border-primary bg-light');
-        
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) {
-            handleFileSelection(files[0]);
-        }
-    });
-
-    // Selezione file tramite input
-    fileInput.change(function(e) {
-        if (e.target.files.length > 0) {
-            handleFileSelection(e.target.files[0]);
-        }
-    });
-
-    // Rimozione file
-    removeFileBtn.click(function(e) {
-        e.stopPropagation();
-        resetFileSelection();
-    });
-
-    // Gestione selezione file
-    function handleFileSelection(file) {
-        if (file.type !== 'application/pdf') {
-            alert('Solo file PDF sono consentiti');
-            return;
-        }
-
-        if (file.size > 10 * 1024 * 1024) { // 10MB
-            alert('File troppo grande. Dimensione massima: 10MB');
-            return;
-        }
-
-        selectedFile = file;
-        
-        // Mostra file selezionato
-        fileName.text(file.name);
-        fileSize.text(formatFileSize(file.size));
-        
-        dropContent.addClass('d-none');
-        fileSelected.removeClass('d-none');
-        uploadBtn.prop('disabled', false);
-        
-        // Aggiorna input file
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput[0].files = dt.files;
+    if (!isUploading) {
+        const files = Array.from(e.dataTransfer.files).filter(file => 
+            file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+        );
+        addFiles(files);
     }
+});
 
-    // Reset selezione
-    function resetFileSelection() {
-        selectedFile = null;
-        fileInput.val('');
-        
-        fileSelected.addClass('d-none');
-        dropContent.removeClass('d-none');
-        uploadBtn.prop('disabled', true);
-    }
+// Event listener per selezione file
+fileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    addFiles(files);
+});
 
-    // Formatta dimensione file
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
+// Event listeners per pulsanti
+clearBtn.addEventListener('click', clearFiles);
+uploadBtn.addEventListener('click', uploadFiles);
 
-    // Gestione submit form
-    uploadForm.submit(function(e) {
-        e.preventDefault();
-        
-        if (!selectedFile) {
-            alert('Seleziona un file PDF');
-            return;
+// Aggiunge file alla lista
+function addFiles(files) {
+    files.forEach(file => {
+        // Controlla se il file è già presente
+        if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+            selectedFiles.push(file);
         }
+    });
+    
+    updateFileList();
+    updateButtons();
+}
 
-        // Mostra progress
-        uploadProgress.removeClass('d-none');
-        uploadBtn.prop('disabled', true);
-        
-        // Simula progress (il vero progress è difficile con multipart form)
-        let progress = 0;
-        const progressInterval = setInterval(function() {
-            progress += Math.random() * 30;
-            if (progress > 90) progress = 90;
-            
-            $('.progress-bar').css('width', progress + '%');
-        }, 200);
+// Aggiorna la visualizzazione della lista file
+function updateFileList() {
+    fileList.innerHTML = '';
+    
+    selectedFiles.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <div class="file-name">
+                    <i class="fas fa-file-pdf text-danger"></i> ${file.name}
+                </div>
+                <div class="file-size">${formatFileSize(file.size)}</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-${index}"></div>
+                </div>
+            </div>
+            <div class="file-status status-pending" id="status-${index}">
+                In attesa
+            </div>
+            <button class="btn-remove" onclick="removeFile(${index})" ${isUploading ? 'disabled' : ''}>
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        fileList.appendChild(fileItem);
+    });
+}
 
-        // Crea FormData
-        const formData = new FormData(this);
+// Rimuove un file dalla lista
+function removeFile(index) {
+    if (!isUploading) {
+        selectedFiles.splice(index, 1);
+        updateFileList();
+        updateButtons();
+    }
+}
+
+// Cancella tutti i file
+function clearFiles() {
+    if (!isUploading) {
+        selectedFiles = [];
+        updateFileList();
+        updateButtons();
+        resultSummary.style.display = 'none';
+    }
+}
+
+// Aggiorna la visibilità dei pulsanti
+function updateButtons() {
+    const hasFiles = selectedFiles.length > 0;
+    clearBtn.style.display = hasFiles ? 'inline-block' : 'none';
+    uploadBtn.style.display = hasFiles ? 'inline-block' : 'none';
+}
+
+// Formatta la dimensione del file
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Carica i file
+async function uploadFiles() {
+    if (isUploading || selectedFiles.length === 0) return;
+    
+    isUploading = true;
+    uploadBtn.disabled = true;
+    clearBtn.disabled = true;
+    uploadArea.style.pointerEvents = 'none';
+    
+    // Aggiorna lo stato dei file
+    selectedFiles.forEach((file, index) => {
+        updateFileStatus(index, 'processing', 'Caricamento...');
+        updateProgress(index, 10);
+    });
+    
+    try {
+        const formData = new FormData();
+        selectedFiles.forEach(file => {
+            formData.append('files', file);
+        });
         
-        // Upload con fetch per maggior controllo
-        fetch(this.action, {
+        const response = await fetch('{{ url_for("ingredients.fatture_upload") }}', {
             method: 'POST',
             body: formData
-        })
-        .then(response => {
-            clearInterval(progressInterval);
-            $('.progress-bar').css('width', '100%');
-            
-            if (response.ok) {
-                uploadStatus.text('Upload completato! Reindirizzamento...');
-                return response.text();
-            } else {
-                throw new Error('Errore durante l\'upload');
-            }
-        })
-        .then(html => {
-            // Se la risposta è HTML, è un redirect manuale
-            setTimeout(() => {
-                window.location.href = "{{ url_for('ingredients.fatture_list') }}";
-            }, 1000);
-        })
-        .catch(error => {
-            clearInterval(progressInterval);
-            uploadProgress.addClass('d-none');
-            uploadBtn.prop('disabled', false);
-            
-            alert('Errore durante l\'upload: ' + error.message);
-            console.error('Upload error:', error);
         });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Processa i risultati
+            data.results.forEach((result, index) => {
+                updateProgress(index, 100);
+                
+                if (result.success) {
+                    if (result.duplicate) {
+                        updateFileStatus(index, 'duplicate', result.duplicate);
+                    } else {
+                        updateFileStatus(index, 'success', 'Processata con successo');
+                    }
+                } else {
+                    updateFileStatus(index, 'error', result.error || 'Errore sconosciuto');
+                }
+            });
+            
+            // Mostra il riassunto
+            showResultSummary(data.results);
+        } else {
+            // Errore generale
+            selectedFiles.forEach((file, index) => {
+                updateFileStatus(index, 'error', data.error || 'Errore nel caricamento');
+            });
+            showError(data.error || 'Errore nel caricamento dei file');
+        }
+        
+    } catch (error) {
+        console.error('Errore nell\'upload:', error);
+        selectedFiles.forEach((file, index) => {
+            updateFileStatus(index, 'error', 'Errore di connessione');
+        });
+        showError('Errore di connessione. Riprova più tardi.');
+    }
+    
+    isUploading = false;
+    uploadBtn.disabled = false;
+    clearBtn.disabled = false;
+    uploadArea.style.pointerEvents = 'auto';
+}
+
+// Aggiorna lo stato di un file
+function updateFileStatus(index, status, message) {
+    const statusElement = document.getElementById(`status-${index}`);
+    if (statusElement) {
+        statusElement.className = `file-status status-${status}`;
+        statusElement.textContent = message;
+    }
+}
+
+// Aggiorna la progress bar
+function updateProgress(index, percent) {
+    const progressElement = document.getElementById(`progress-${index}`);
+    if (progressElement) {
+        progressElement.style.width = `${percent}%`;
+    }
+}
+
+// Mostra il riassunto dei risultati
+function showResultSummary(results) {
+    const successCount = results.filter(r => r.success && !r.duplicate).length;
+    const errorCount = results.filter(r => !r.success).length;
+    const duplicateCount = results.filter(r => r.duplicate).length;
+    
+    let summaryClass = 'result-success';
+    let summaryIcon = 'fas fa-check-circle';
+    let summaryTitle = 'Upload completato con successo!';
+    
+    if (errorCount > 0) {
+        summaryClass = 'result-error';
+        summaryIcon = 'fas fa-exclamation-triangle';
+        summaryTitle = 'Upload completato con errori';
+    }
+    
+    resultSummary.className = `result-summary ${summaryClass}`;
+    resultSummary.style.display = 'block';
+    
+    let detailsHtml = `
+        <div class="mb-3">
+            <strong><i class="${summaryIcon}"></i> ${summaryTitle}</strong>
+        </div>
+        <div class="row text-center mb-3">
+            <div class="col-4">
+                <div class="text-success"><strong>${successCount}</strong></div>
+                <small>Processate</small>
+            </div>
+            <div class="col-4">
+                <div class="text-warning"><strong>${duplicateCount}</strong></div>
+                <small>Duplicate</small>
+            </div>
+            <div class="col-4">
+                <div class="text-danger"><strong>${errorCount}</strong></div>
+                <small>Errori</small>
+            </div>
+        </div>
+    `;
+    
+    // Dettagli per ogni file
+    results.forEach(result => {
+        let itemClass = 'success';
+        let itemIcon = 'fas fa-check';
+        
+        if (result.duplicate) {
+            itemClass = 'duplicate';
+            itemIcon = 'fas fa-exclamation-triangle';
+        } else if (!result.success) {
+            itemClass = 'error';
+            itemIcon = 'fas fa-times';
+        }
+        
+        detailsHtml += `
+            <div class="result-item ${itemClass}">
+                <div><i class="${itemIcon}"></i> <strong>${result.filename}</strong></div>
+                ${result.duplicate ? `<div class="text-warning small">${result.duplicate}</div>` : ''}
+                ${result.error ? `<div class="text-danger small">${result.error}</div>` : ''}
+                ${result.updates_log && result.updates_log.length > 0 ? `
+                    <div class="updates-log">
+                        ${result.updates_log.map(log => `<div>• ${log}</div>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
     });
-});
+    
+    resultDetails.innerHTML = detailsHtml;
+}
+
+// Mostra errore generale
+function showError(message) {
+    resultSummary.className = 'result-summary result-error';
+    resultSummary.style.display = 'block';
+    resultDetails.innerHTML = `
+        <div class="mb-3">
+            <strong><i class="fas fa-exclamation-triangle"></i> Errore nel caricamento</strong>
+        </div>
+        <div class="alert alert-danger">
+            ${message}
+        </div>
+    `;
+}
 </script>
-
-<style>
-#dropZone {
-    transition: all 0.3s ease;
-    cursor: pointer;
-    min-height: 200px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#dropZone:hover {
-    border-color: #0d6efd !important;
-    background-color: #f8f9fa;
-}
-
-#dropZone.border-primary {
-    border-color: #0d6efd !important;
-    background-color: #e3f2fd !important;
-}
-
-.progress-bar {
-    transition: width 0.3s ease;
-}
-</style>
 {% endblock %}

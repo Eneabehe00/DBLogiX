@@ -29,6 +29,9 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(hours=int(config_manager.get_setting('SESSION_TIMEOUT_HOURS', 2)))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # Configurazione GEMINI API per processamento fatture
+    GEMINI_API_KEY = config_manager.get_setting('GEMINI_API_KEY', None)
+    
     # SQLAlchemy Database URI - deve essere un attributo della classe per PyInstaller
     try:
         _remote_db_config = config_manager.get_db_config()

@@ -6,6 +6,8 @@
 {% block header_title %}Gestione Tickets{% endblock %}
 
 {% block extra_css %}
+<!-- Meta tag per CSRF token -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/warehouse.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/shared-components.css') }}">
 <style>
@@ -532,7 +534,7 @@
         opacity: 0;
         animation-delay: 0.1s;
     }
-    
+
     .ticket-card:nth-child(1) { animation-delay: 0.1s; }
     .ticket-card:nth-child(2) { animation-delay: 0.2s; }
     .ticket-card:nth-child(3) { animation-delay: 0.3s; }
@@ -621,34 +623,6 @@
             }
         ]
     }) }}
-
-    <!-- Unified Stats Grid -->
-    {{ render_stats_grid([
-        {
-            'value': tickets.total if tickets.total else 0,
-            'label': 'Totale Tickets',
-            'icon': 'fas fa-ticket-alt',
-            'variant': ''
-        },
-        {
-            'value': tickets.items|length,
-            'label': 'Tickets visualizzati',
-            'icon': 'fas fa-eye',
-            'variant': 'stat-success'
-        },
-        {
-            'value': expiring_count or 0,
-            'label': 'In Scadenza',
-            'icon': 'fas fa-exclamation-triangle',
-            'variant': 'stat-warning'
-        },
-        {
-            'value': expired_count or 0,
-            'label': 'Scaduti',
-            'icon': 'fas fa-times-circle',
-            'variant': 'stat-danger'
-        }
-    ]) }}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -955,7 +929,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Enhanced Pagination -->
             {% if tickets.pages > 1 %}
             <div class="p-3 border-top bg-light">
@@ -1024,11 +998,358 @@
             {% endif %}
         </div>
     </div>
+    
+    <!-- Modale Esportazione Personalizzata -->
+            <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                    <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="exportModalLabel">
+                        <i class="fas fa-download me-2"></i>Esporta Tickets - Impostazioni Personalizzate
+                            </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                    <form id="exportForm">
+                        <!-- Scelta Tipo di Esportazione -->
+                            <div class="mb-4">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-th-list me-2 text-primary"></i>Tipo di Esportazione
+                            </h6>
+                            <div class="row g-3">
+                                    <div class="col-md-6">
+                                    <div class="card border-primary export-type-card" data-export-type="current" style="cursor: pointer !important; border-width: 3px !important; border-color: #0d6efd !important;">
+                                        <div class="card-body text-center py-4" style="cursor: pointer !important;">
+                                            <input type="radio" name="exportType" value="current" id="exportType_current" class="form-check-input d-none" checked>
+                                            <label for="exportType_current" class="w-100" style="cursor: pointer !important;">
+                                                <i class="fas fa-table fa-3x text-primary mb-3"></i>
+                                                <h5 class="card-title">Tabella Corrente</h5>
+                                                <p class="card-text text-muted small">
+                                                    Esporta la tabella esattamente come la vedi ora con le stesse colonne e lo stesso ordine
+                                                </p>
+                                            </label>
+                                        </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                    <div class="card border-secondary export-type-card" data-export-type="custom" style="cursor: pointer !important; border-width: 3px !important;">
+                                        <div class="card-body text-center py-4" style="cursor: pointer !important;">
+                                            <input type="radio" name="exportType" value="custom" id="exportType_custom" class="form-check-input d-none">
+                                            <label for="exportType_custom" class="w-100" style="cursor: pointer !important;">
+                                                <i class="fas fa-cogs fa-3x text-success mb-3"></i>
+                                                <h5 class="card-title">Personalizzata</h5>
+                                                <p class="card-text text-muted small">
+                                                    Seleziona manualmente i campi da esportare dalle linee dei ticket
+                                                </p>
+                                            </label>
+                                        </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <!-- Filtro Date (sempre visibile) -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-calendar-alt me-2 text-primary"></i>Filtro Date
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="exportDateFrom" class="form-label">
+                                        <i class="fas fa-calendar-plus me-1"></i>Data Dal
+                                    </label>
+                                    <input type="date" class="form-control" id="exportDateFrom" name="dateFrom">
+                                    <div class="form-text">
+                                        <small>Data di inizio per il filtro</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="exportDateTo" class="form-label">
+                                        <i class="fas fa-calendar-minus me-1"></i>Data Al
+                                    </label>
+                                    <input type="date" class="form-control" id="exportDateTo" name="dateTo">
+                                    <div class="form-text">
+                                        <small>Data di fine per il filtro</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="enableDateFilter" name="enableDateFilter">
+                                    <label class="form-check-label" for="enableDateFilter">
+                                        <i class="fas fa-filter me-1"></i>Applica filtro date
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sezione Personalizzazione (nascosta inizialmente) -->
+                        <div id="customExportSection" class="mb-4" style="display: none;">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-columns me-2 text-success"></i>Seleziona Campi da Ticket Lines
+                            </h6>
+
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="alert alert-info py-2">
+                                        <small>
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Questi sono tutti i campi disponibili dalla tabella <strong>dat_ticket_linea</strong>
+                                        </small>
+                                    </div>
+                            </div>
+
+                            <!-- Tutti i campi in un'unica card -->
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-light py-2">
+                                        <h6 class="mb-0 text-primary"><i class="fas fa-database me-1"></i>Tutti i Campi Disponibili</h6>
+                                    </div>
+                                    <div class="card-body py-2" style="max-height: 400px; overflow-y: auto;">
+                                        <!-- Campi TicketLine -->
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdLineaTicket" id="col_IdLineaTicket" checked>
+                                            <label class="form-check-label" for="col_IdLineaTicket">ID Linea Ticket</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdTicket" id="col_IdTicketLine" checked>
+                                            <label class="form-check-label" for="col_IdTicketLine">ID Ticket</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdArticulo" id="col_IdArticulo" checked>
+                                            <label class="form-check-label" for="col_IdArticulo">ID Articolo</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="Descripcion" id="col_Descripcion" checked>
+                                            <label class="form-check-label" for="col_Descripcion">Descrizione</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="Peso" id="col_Peso" checked>
+                                            <label class="form-check-label" for="col_Peso">Peso</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="Precio" id="col_Precio" checked>
+                                            <label class="form-check-label" for="col_Precio">Prezzo</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="FechaCaducidad" id="col_FechaCaducidad" checked>
+                                            <label class="form-check-label" for="col_FechaCaducidad">Data Scadenza</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="comportamiento" id="col_comportamiento" checked>
+                                            <label class="form-check-label" for="col_comportamiento">Comportamento</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="TextoLote" id="col_TextoLote">
+                                            <label class="form-check-label" for="col_TextoLote">Testo Lotto</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdIVA" id="col_IdIVA">
+                                            <label class="form-check-label" for="col_IdIVA">ID IVA</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="PorcentajeIVA" id="col_PorcentajeIVA">
+                                            <label class="form-check-label" for="col_PorcentajeIVA">Percentuale IVA</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="PrecioSinIVA" id="col_PrecioSinIVA">
+                                            <label class="form-check-label" for="col_PrecioSinIVA">Prezzo senza IVA</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="Importe" id="col_Importe">
+                                            <label class="form-check-label" for="col_Importe">Importo</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdEmpresa" id="col_IdEmpresaLine">
+                                            <label class="form-check-label" for="col_IdEmpresaLine">ID Azienda</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdTienda" id="col_IdTiendaLine">
+                                            <label class="form-check-label" for="col_IdTiendaLine">ID Negozio</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="TipoVenta" id="col_TipoVentaLine">
+                                            <label class="form-check-label" for="col_TipoVentaLine">Tipo Vendita</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdBalanzaMaestra" id="col_IdBalanzaMaestraLine">
+                                            <label class="form-check-label" for="col_IdBalanzaMaestraLine">ID Bilancia Master</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="ticketLineColumns" value="IdBalanzaEsclava" id="col_IdBalanzaEsclavaLine">
+                                            <label class="form-check-label" for="col_IdBalanzaEsclavaLine">ID Bilancia Slave</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pulsanti Rapidi per Personalizzata -->
+                            <div class="mt-3 mb-4">
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="selectAllTicketLineColumns()">
+                                        <i class="fas fa-check-double me-1"></i>Seleziona Tutto
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectEssentialTicketLineColumns()">
+                                        <i class="fas fa-star me-1"></i>Solo Essenziali
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="deselectAllTicketLineColumns()">
+                                        <i class="fas fa-times me-1"></i>Deseleziona Tutto
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Ordine Colonne per Personalizzata -->
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-sort me-2 text-success"></i>Ordine Colonne
+                                </h6>
+                                <div class="alert alert-info py-2">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Trascina le colonne per riordinarle. Solo le colonne selezionate saranno esportate.
+                                    </small>
+                                </div>
+                                <div id="sortableTicketLineColumns" class="list-group">
+                                    <!-- Sarà popolato dinamicamente via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formato Esportazione -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-file-export me-2 text-primary"></i>Formato di Esportazione
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <select class="form-select" name="format" id="exportFormat">
+                                        <option value="xlsx" selected>
+                                            <span>📊 Excel (.xlsx)</span>
+                                        </option>
+                                        <option value="csv">
+                                            <span>📄 CSV (.csv)</span>
+                                        </option>
+                                        <option value="pdf">
+                                            <span>📋 PDF (.pdf)</span>
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-light py-2 mb-0">
+                                        <small id="formatDescription">
+                                            <i class="fas fa-info-circle text-success me-1"></i>
+                                            <strong>Excel:</strong> Formato completo con formattazione
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </form>
+                </div>
+                
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-1"></i>Annulla
+                            </button>
+                    <button type="button" class="btn btn-primary" onclick="performExport()">
+                                <i class="fas fa-download me-1"></i>Esporta
+                        <span class="spinner-border spinner-border-sm ms-2 d-none" id="exportSpinner"></span>
+                            </button>
+                        </div>
+                    </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/shared-components.js') }}"></script>
+
+<!-- Definizione precoce delle funzioni globali -->
+<script>
+// Definisci immediatamente la funzione exportTickets per evitare errori di timing
+function exportTickets() {
+    console.log('=== EXPORT FUNCTION CHIAMATA ===');
+    console.log('Timestamp:', new Date().toISOString());
+    
+    try {
+        const modalElement = document.getElementById('exportModal');
+        console.log('Modal element trovato:', !!modalElement);
+        
+        if (modalElement) {
+            console.log('Modal display attuale:', modalElement.style.display);
+            console.log('Modal classes:', modalElement.className);
+            
+            // Prova Bootstrap 5
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                console.log('Usando Bootstrap 5 Modal');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                console.log('Modale aperta con Bootstrap 5');
+                
+                // Reinizializza gli event listeners dopo l'apertura della modale
+                setTimeout(() => {
+                    console.log('=== REINIZIALIZZAZIONE EVENT LISTENERS ===');
+                    forceReinitializeExportModal();
+                    initializeDateFilter();
+
+                    console.log('=== POST APERTURA MODAL ===');
+                    const cards = document.querySelectorAll('.export-type-card');
+                    console.log('Cards trovate dopo apertura:', cards.length);
+                    cards.forEach((card, i) => {
+                        console.log(`Card ${i}:`, card.getAttribute('data-export-type'));
+                        console.log(`Card ${i} clickable:`, card.style.cursor || 'default');
+                    });
+                }, 500);
+                
+                return;
+            }
+            // Prova jQuery
+            if (typeof $ !== 'undefined' && $.fn.modal) {
+                console.log('Usando jQuery Modal');
+                $(modalElement).modal('show');
+                console.log('Modale aperta con jQuery');
+
+                // Reinizializza gli event listeners dopo l'apertura della modale
+                setTimeout(() => {
+                    console.log('=== REINIZIALIZZAZIONE EVENT LISTENERS (jQuery) ===');
+                    forceReinitializeExportModal();
+                    initializeDateFilter();
+                }, 500);
+
+                return;
+            }
+            // Fallback manuale
+            console.log('Usando fallback manuale');
+            modalElement.classList.add('show');
+            modalElement.style.display = 'block';
+            modalElement.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            if (document.body) {
+                document.body.classList.add('modal-open');
+            }
+            console.log('Modale aperta manualmente');
+
+            // Reinizializza gli event listeners dopo l'apertura della modale
+            setTimeout(() => {
+                console.log('=== REINIZIALIZZAZIONE EVENT LISTENERS (fallback) ===');
+                forceReinitializeExportModal();
+                initializeDateFilter();
+            }, 500);
+        } else {
+            console.error('Elemento modale #exportModal NON TROVATO!');
+            alert('Modale non trovata - controlla la console');
+        }
+    } catch (error) {
+        console.error('Errore nell\'apertura modale:', error);
+        alert('Errore: ' + error.message);
+    }
+}
+
+// Rendi la funzione disponibile globalmente
+window.exportTickets = exportTickets;
+</script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize tooltips
@@ -1178,16 +1499,13 @@
             });
         });
         
-        // Export functionality
-        window.exportTickets = function() {
-            alert('Funzionalità di esportazione non ancora implementata');
-        };
+        // Export functionality - La funzione è già definita globalmente in precedenza
         
         // Refresh table
         window.refreshTable = function() {
             window.location.reload();
         };
-        
+
         // Add keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'f') {
@@ -1222,9 +1540,9 @@
                 setTimeout(() => {
                     ripple.remove();
                 }, 600);
+                });
             });
-        });
-        
+
         // Mobile card lazy loading effect
         const observerOptions = {
             threshold: 0.1,
@@ -1249,6 +1567,937 @@
         console.log('Total tickets on page:', tableRows.length);
         console.log('Mobile cards initialized:', mobileCards.length);
         console.log('Active search:', hasActiveSearch);
+        
+        // TEST: Verifica che il JavaScript funzioni
+        console.log('=== DEBUG ESPORTAZIONE ===');
+        console.log('1. JavaScript caricato correttamente');
+        
+        // Verifica che gli elementi esistano
+        const exportModal = document.getElementById('exportModal');
+        console.log('2. Export modal trovata:', !!exportModal);
+        
+        const exportTypeCards = document.querySelectorAll('.export-type-card');
+        console.log('3. Export type cards trovate:', exportTypeCards.length);
+        
+        const customSection = document.getElementById('customExportSection');
+        console.log('4. Custom section trovata:', !!customSection);
+        
+        // Inizializza la modale di esportazione
+        console.log('5. Tentativo inizializzazione modale...');
+        try {
+            initializeExportModal();
+            console.log('6. Inizializzazione modale completata!');
+        } catch (error) {
+            console.error('6. ERRORE inizializzazione modale:', error);
+        }
     });
+    
+    // === FUNZIONALITÀ MODALE ESPORTAZIONE ===
+    
+    // Configurazione colonne TicketLine disponibili
+    const availableTicketLineColumns = {
+        'IdLineaTicket': { label: 'ID Linea Ticket', default: true },
+        'IdTicket': { label: 'ID Ticket', default: true },
+        'IdArticulo': { label: 'ID Articolo', default: true },
+        'Descripcion': { label: 'Descrizione', default: true },
+        'Peso': { label: 'Peso', default: true },
+        'Precio': { label: 'Prezzo', default: true },
+        'FechaCaducidad': { label: 'Data Scadenza', default: true },
+        'comportamiento': { label: 'Comportamento', default: true },
+        'TextoLote': { label: 'Testo Lotto', default: false },
+        'IdIVA': { label: 'ID IVA', default: false },
+        'PorcentajeIVA': { label: 'Percentuale IVA', default: false },
+        'PrecioSinIVA': { label: 'Prezzo senza IVA', default: false },
+        'Importe': { label: 'Importo', default: false },
+        'IdEmpresa': { label: 'ID Azienda', default: false },
+        'IdTienda': { label: 'ID Negozio', default: false },
+        'TipoVenta': { label: 'Tipo Vendita', default: false },
+        'IdBalanzaMaestra': { label: 'ID Bilancia Master', default: false },
+        'IdBalanzaEsclava': { label: 'ID Bilancia Slave', default: false }
+    };
+
+    let sortableInstance = null;
+
+    // Funzione di fallback per forzare il click (definita nel scope globale)
+    function forceSwitchExportType(exportType) {
+        console.log('🔄 Forzando switch a:', exportType);
+
+        try {
+            // Metodo diretto - cambia il radio button
+            const radio = document.getElementById(`exportType_${exportType}`);
+            if (radio) {
+                radio.checked = true;
+                console.log('✅ Radio button impostato a checked');
+            } else {
+                console.warn('⚠️ Radio button non trovato:', `exportType_${exportType}`);
+            }
+
+            // Aggiorna visual state manualmente - ottieni elementi dal DOM
+            const exportTypeCards = document.querySelectorAll('.export-type-card');
+            const customExportSection = document.getElementById('customExportSection');
+
+            if (exportTypeCards.length > 0) {
+                console.log('✅ Trovate', exportTypeCards.length, 'cards per aggiornamento visuale');
+
+                exportTypeCards.forEach(card => {
+                    card.classList.remove('border-success', 'border-primary');
+                    card.classList.add('border-secondary');
+
+                    if (card.getAttribute('data-export-type') === exportType) {
+                        card.classList.remove('border-secondary');
+                        if (exportType === 'current') {
+                            card.classList.add('border-primary');
+                        } else {
+                            card.classList.add('border-success');
+                        }
+                        console.log('✅ Card visuale aggiornata per:', exportType);
+                    }
+                });
+            } else {
+                console.warn('⚠️ Nessuna card trovata per aggiornamento visuale');
+            }
+
+            // Mostra/nascondi sezione personalizzata
+            if (customExportSection) {
+                if (exportType === 'custom') {
+                    customExportSection.style.display = 'block';
+                    console.log('✅ Modalità personalizzata forzata');
+                    // Aggiorna la lista delle colonne se è la prima volta che mostriamo la sezione
+                    setTimeout(() => {
+                        if (typeof updateSortableTicketLineColumnsList === 'function') {
+                            updateSortableTicketLineColumnsList();
+                        }
+                    }, 100);
+                } else {
+                    customExportSection.style.display = 'none';
+                    console.log('✅ Modalità tabella corrente forzata');
+                }
+            } else {
+                console.warn('⚠️ Sezione personalizzata non trovata');
+            }
+        } catch (error) {
+            console.error('❌ Errore in forceSwitchExportType:', error);
+        }
+    }
+
+    // Rendi la funzione disponibile globalmente
+    window.forceSwitchExportType = forceSwitchExportType;
+
+    // Funzione per reinizializzare gli event listeners delle cards dopo l'apertura della modale
+    function forceReinitializeExportModal() {
+        console.log('🔄 Forzando reinizializzazione event listeners...');
+
+        try {
+            const exportTypeCards = document.querySelectorAll('.export-type-card');
+            const customExportSection = document.getElementById('customExportSection');
+
+            if (exportTypeCards.length === 0) {
+                console.warn('⚠️ Nessuna card trovata per la reinizializzazione');
+                return;
+            }
+
+            console.log('✅ Trovate', exportTypeCards.length, 'cards per reinizializzazione');
+
+            // Rimuovi eventuali event listeners esistenti (se possibile)
+            // Aggiungi event listeners alle card E ai label interni
+            exportTypeCards.forEach((card, index) => {
+                console.log(`🔄 Reaggiungendo listener alla card ${index}:`, card.getAttribute('data-export-type'));
+
+                // Rimuovi eventuali listener esistenti
+                const newCard = card.cloneNode(true);
+                if (card.parentNode) {
+                    card.parentNode.replaceChild(newCard, card);
+                }
+
+                // Event listener per tutta la card (molteplici eventi)
+                newCard.addEventListener('click', function(e) {
+                    console.log('🎯 CLICK CARD (reinizializzata):', this.getAttribute('data-export-type'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.forceSwitchExportType(this.getAttribute('data-export-type'));
+                }, true);
+
+                newCard.addEventListener('mousedown', function(e) {
+                    console.log('🖱️ MOUSEDOWN CARD (reinizializzata):', this.getAttribute('data-export-type'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, true);
+
+                newCard.addEventListener('mouseup', function(e) {
+                    console.log('🖱️ MOUSEUP CARD (reinizializzata):', this.getAttribute('data-export-type'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, true);
+
+                // Event listener anche per il label interno
+                const label = newCard.querySelector('label');
+                if (label) {
+                    label.addEventListener('click', function(e) {
+                        console.log('🏷️ CLICK LABEL (reinizializzato):', this.getAttribute('for'));
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const radioId = this.getAttribute('for');
+                        const exportType = radioId.replace('exportType_', '');
+                        window.forceSwitchExportType(exportType);
+                    }, true);
+                }
+
+                // Event listener anche per il radio button
+                const radio = newCard.querySelector('input[type="radio"]');
+                if (radio) {
+                    radio.addEventListener('change', function(e) {
+                        console.log('📻 RADIO CHANGE (reinizializzato):', this.value);
+                        window.forceSwitchExportType(this.value);
+                    });
+                }
+
+                // Event listener per i click su qualsiasi elemento della card
+                const cardElements = newCard.querySelectorAll('*');
+                cardElements.forEach(element => {
+                    if (element !== label && element !== radio) {
+                        element.addEventListener('click', function(e) {
+                            console.log('🔗 CLICK ELEMENT (reinizializzato):', this.tagName);
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const exportType = newCard.getAttribute('data-export-type');
+                            window.forceSwitchExportType(exportType);
+                        }, true);
+                    }
+                });
+
+                // Assicurati che tutti gli elementi abbiano il cursore pointer
+                newCard.style.cursor = 'pointer !important';
+                const allDescendants = newCard.querySelectorAll('*');
+                allDescendants.forEach(desc => {
+                    desc.style.cursor = 'pointer';
+                    desc.style.pointerEvents = 'auto';
+                });
+
+                // Aggiungi un overlay invisibile per catturare i click
+                newCard.style.position = 'relative';
+                const overlay = document.createElement('div');
+                overlay.style.position = 'absolute';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.right = '0';
+                overlay.style.bottom = '0';
+                overlay.style.zIndex = '1000';
+                overlay.style.cursor = 'pointer';
+                overlay.addEventListener('click', function(e) {
+                    console.log('🎯 CLICK OVERLAY (reinizializzato):', newCard.getAttribute('data-export-type'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.forceSwitchExportType(newCard.getAttribute('data-export-type'));
+                }, true);
+
+                newCard.appendChild(overlay);
+            });
+
+            console.log('✅ Event listeners reinizializzati con successo');
+        } catch (error) {
+            console.error('❌ Errore nella reinizializzazione:', error);
+        }
+    }
+
+    // Rendi la funzione disponibile globalmente
+    window.forceReinitializeExportModal = forceReinitializeExportModal;
+
+    // Funzione di debug per testare la cliccabilità delle cards
+    window.testExportCards = function() {
+        console.log('=== TEST CLICCABILITÀ CARDS ===');
+
+        const cards = document.querySelectorAll('.export-type-card');
+        console.log('Cards trovate:', cards.length);
+
+        cards.forEach((card, i) => {
+            console.log(`Card ${i}: ${card.getAttribute('data-export-type')}`);
+            console.log(`  - Cursor: ${card.style.cursor || 'default'}`);
+            console.log(`  - Pointer events: ${getComputedStyle(card).pointerEvents}`);
+            console.log(`  - Z-index: ${getComputedStyle(card).zIndex}`);
+
+            // Simula un click per test
+            const event = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+            });
+
+            console.log(`  - Test click result: ${card.dispatchEvent(event)}`);
+        });
+
+        // Test anche gli overlay
+        const overlays = document.querySelectorAll('.export-type-card::after');
+        console.log('Overlays trovati:', overlays.length);
+
+        return 'Test completato - controlla la console';
+    };
+
+    function initializeExportModal() {
+        console.log('Inizializzazione modale export...');
+        
+        // Inizializza gestione cambio tipo esportazione
+        const exportTypeCards = document.querySelectorAll('.export-type-card');
+        const customExportSection = document.getElementById('customExportSection');
+        
+        console.log('Trovate', exportTypeCards.length, 'carte di esportazione');
+        console.log('Sezione custom:', customExportSection);
+        
+        // Aggiungi event listeners alle card E ai label interni
+        exportTypeCards.forEach((card, index) => {
+            console.log(`Aggiungendo listener alla card ${index}:`, card);
+            
+            // Event listener per tutta la card (molteplici eventi)
+            card.addEventListener('click', function(e) {
+                console.log('🎯 CLICK CARD:', this.getAttribute('data-export-type'));
+                console.log('Target:', e.target);
+                console.log('Current target:', e.currentTarget);
+                e.preventDefault();
+                    e.stopPropagation();
+                window.forceSwitchExportType(this.getAttribute('data-export-type'));
+            }, true);
+
+            card.addEventListener('mousedown', function(e) {
+                console.log('🖱️ MOUSEDOWN CARD:', this.getAttribute('data-export-type'));
+                e.preventDefault();
+                e.stopPropagation();
+            }, true);
+
+            card.addEventListener('mouseup', function(e) {
+                console.log('🖱️ MOUSEUP CARD:', this.getAttribute('data-export-type'));
+                e.preventDefault();
+                e.stopPropagation();
+            }, true);
+
+            // Event listener anche per il label interno
+            const label = card.querySelector('label');
+            if (label) {
+                label.addEventListener('click', function(e) {
+                    console.log('🏷️ CLICK LABEL:', this.getAttribute('for'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const radioId = this.getAttribute('for');
+                    const exportType = radioId.replace('exportType_', '');
+                    window.forceSwitchExportType(exportType);
+                }, true);
+            }
+
+            // Event listener anche per il radio button
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.addEventListener('change', function() {
+                    console.log('📻 RADIO CAMBIATO:', this.value);
+                    if (this.checked) {
+                        window.forceSwitchExportType(this.value);
+                    }
+                }, true);
+
+                radio.addEventListener('click', function(e) {
+                    console.log('📻 RADIO CLICK:', this.value);
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, true);
+            }
+
+            // Event listener per il body della card
+            const cardBody = card.querySelector('.card-body');
+            if (cardBody) {
+                cardBody.addEventListener('click', function(e) {
+                    console.log('💳 CLICK BODY:', card.getAttribute('data-export-type'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.forceSwitchExportType(card.getAttribute('data-export-type'));
+                }, true);
+            }
+
+            // Event listener per l'icona
+            const icon = card.querySelector('i.fas');
+            if (icon) {
+                icon.addEventListener('click', function(e) {
+                    console.log('🎨 CLICK ICONA:', card.getAttribute('data-export-type'));
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.forceSwitchExportType(card.getAttribute('data-export-type'));
+                }, true);
+            }
+        });
+        
+        // Funzione per cambiare tipo di esportazione (DEPRECATA - usa forceSwitchExportType)
+        // function switchExportType(exportType) {
+        //     console.log('Switching to export type:', exportType);
+        //     // ... contenuto rimosso per evitare conflitti
+        //     window.forceSwitchExportType(exportType); // Delega a forceSwitchExportType
+        // }
+
+        
+        // Inizializza lo stato iniziale
+        setTimeout(() => {
+            window.forceSwitchExportType('current');
+        }, 100);
+        
+        // Inizializza Sortable per custom columns
+        initializeSortable();
+        
+        // Event listeners per ticket line columns
+        document.querySelectorAll('input[name="ticketLineColumns"]').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSortableTicketLineColumnsList);
+        });
+        
+        // Format dropdown change
+        document.getElementById('exportFormat').addEventListener('change', updateFormatDescription);
+        
+        // Inizializzazione
+        updateFormatDescription();
+
+        // Event listener per la modale quando viene aperta
+        document.getElementById('exportModal').addEventListener('shown.bs.modal', function() {
+            initializeDateFilter();
+        });
+    }
+    
+    function initializeSortable() {
+        if (typeof Sortable !== 'undefined') {
+            // Distruggi istanza precedente se esiste
+            if (sortableInstance) {
+                sortableInstance.destroy();
+            }
+            
+            const sortableContainer = document.getElementById('sortableTicketLineColumns');
+            if (sortableContainer) {
+                sortableInstance = Sortable.create(sortableContainer, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    handle: '.fa-grip-vertical',
+                    onEnd: function() {
+                        console.log('Colonne riordinate');
+                    }
+                });
+            }
+        } else {
+            console.warn('Sortable.js non caricato - funzionalità drag&drop disabilitata');
+        }
+    }
+    
+    // Funzioni per TicketLine Columns
+    function selectAllTicketLineColumns() {
+        document.querySelectorAll('input[name="ticketLineColumns"]').forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSortableTicketLineColumnsList();
+    }
+    
+    function selectEssentialTicketLineColumns() {
+        document.querySelectorAll('input[name="ticketLineColumns"]').forEach(checkbox => {
+            const columnId = checkbox.value;
+            checkbox.checked = availableTicketLineColumns[columnId]?.default || false;
+        });
+        updateSortableTicketLineColumnsList();
+    }
+    
+    function deselectAllTicketLineColumns() {
+        document.querySelectorAll('input[name="ticketLineColumns"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateSortableTicketLineColumnsList();
+    }
+    
+    function removeColumnFromSortable(columnId) {
+        // Deseleziona il checkbox corrispondente
+        const checkbox = document.getElementById(`col_${columnId}`);
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+
+        // Aggiorna la lista ordinabile
+        updateSortableTicketLineColumnsList();
+    }
+
+    // Rendi la funzione disponibile globalmente
+    window.removeColumnFromSortable = removeColumnFromSortable;
+
+    function updateSortableTicketLineColumnsList() {
+        const sortableContainer = document.getElementById('sortableTicketLineColumns');
+        const selectedColumns = Array.from(document.querySelectorAll('input[name="ticketLineColumns"]:checked'))
+            .map(cb => cb.value);
+
+        if (!sortableContainer) return;
+
+        sortableContainer.innerHTML = '';
+
+        if (selectedColumns.length === 0) {
+            sortableContainer.innerHTML = `
+                <div class="alert alert-warning py-2 mb-0">
+                    <small><i class="fas fa-exclamation-triangle me-1"></i>Nessuna colonna selezionata</small>
+                </div>
+            `;
+            return;
+        }
+
+        // Crea elementi ordinabili per ogni colonna selezionata
+        selectedColumns.forEach((columnId, index) => {
+            const columnInfo = availableTicketLineColumns[columnId];
+            if (!columnInfo) return;
+
+            const listItem = document.createElement('div');
+            listItem.className = 'list-group-item d-flex align-items-center py-2 cursor-move';
+            listItem.setAttribute('data-column-id', columnId);
+            listItem.innerHTML = `
+                <div class="me-2">
+                    <i class="fas fa-grip-vertical text-muted"></i>
+                </div>
+                <div class="me-2">
+                    <span class="badge badge-soft-secondary">${index + 1}</span>
+                </div>
+                <div class="flex-grow-1">
+                    <strong>${columnInfo.label}</strong>
+                </div>
+                <div class="ms-2">
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeColumnFromSortable('${columnId}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            sortableContainer.appendChild(listItem);
+        });
+
+        // Reinizializza sortable dopo aver aggiornato il contenuto
+        initializeSortable();
+    }
+    
+    function updateAppliedFiltersText() {
+        const appliedFiltersElement = document.getElementById('appliedFiltersText');
+        if (!appliedFiltersElement) return;
+        
+            const currentUrl = new URL(window.location.href);
+        const filters = [];
+        
+        // Controlla i filtri attivi
+        const status = currentUrl.searchParams.get('status');
+        const query = currentUrl.searchParams.get('query');
+        const startDate = currentUrl.searchParams.get('start_date');
+        const endDate = currentUrl.searchParams.get('end_date');
+        
+        if (status) {
+            const statusLabels = {
+                'in_task': 'Dentro Task',
+                'processed': 'Processati',
+                'expired': 'Scaduti',
+                'expiring': 'In Scadenza'
+            };
+            filters.push(`Stato: ${statusLabels[status] || status}`);
+        }
+        
+        if (query) {
+            filters.push(`Ricerca: "${query}"`);
+        }
+        
+        if (startDate || endDate) {
+            let dateFilter = 'Periodo: ';
+            if (startDate && endDate) {
+                dateFilter += `dal ${startDate} al ${endDate}`;
+            } else if (startDate) {
+                dateFilter += `dal ${startDate}`;
+            } else if (endDate) {
+                dateFilter += `fino al ${endDate}`;
+            }
+            filters.push(dateFilter);
+        }
+        
+        let filtersText = '<i class="fas fa-info-circle me-1"></i>';
+        if (filters.length > 0) {
+            filtersText += `Filtri attivi: <strong>${filters.join(', ')}</strong>`;
+        } else {
+            filtersText += 'Verrà esportata l\'intera tabella (tutti i tickets)';
+        }
+        
+        appliedFiltersElement.innerHTML = filtersText;
+    }
+    
+    function updateFormatDescription() {
+        const formatSelect = document.getElementById('exportFormat');
+        const descriptionElement = document.getElementById('formatDescription');
+        
+        if (!formatSelect || !descriptionElement) return;
+        
+        const descriptions = {
+            'xlsx': '<i class="fas fa-info-circle text-success me-1"></i><strong>Excel:</strong> Formato completo con formattazione',
+            'csv': '<i class="fas fa-info-circle text-primary me-1"></i><strong>CSV:</strong> Formato testo compatibile con Excel',
+            'pdf': '<i class="fas fa-info-circle text-danger me-1"></i><strong>PDF:</strong> Documento stampabile (max 50 righe)'
+        };
+        
+        descriptionElement.innerHTML = descriptions[formatSelect.value] || descriptions['xlsx'];
+    }
+    
+    function performExport() {
+        try {
+            // Controlla il tipo di esportazione
+            const exportType = document.querySelector('input[name="exportType"]:checked').value;
+            const selectedFormat = document.getElementById('exportFormat').value;
+            
+            // Ottieni i filtri dalla modale
+            const enableDateFilter = document.getElementById('enableDateFilter').checked;
+            const dateFrom = document.getElementById('exportDateFrom').value;
+            const dateTo = document.getElementById('exportDateTo').value;
+
+            // Valida il filtro date se attivo
+            if (enableDateFilter) {
+                if (!dateFrom || !dateTo) {
+                    alert('Per applicare il filtro date, seleziona entrambe le date (Dal e Al)');
+                    return;
+                }
+                if (dateFrom > dateTo) {
+                    alert('La data "Dal" non può essere successiva alla data "Al"');
+                    return;
+                }
+            }
+
+            let exportData = {
+                format: selectedFormat,
+                exportType: exportType,
+                filters: {
+                    status: new URLSearchParams(window.location.search).get('status'),
+                    query: new URLSearchParams(window.location.search).get('query'),
+                    start_date: new URLSearchParams(window.location.search).get('start_date'),
+                    end_date: new URLSearchParams(window.location.search).get('end_date')
+                }
+            };
+
+            // Aggiungi filtro date se attivo
+            if (enableDateFilter) {
+                exportData.filters.start_date = dateFrom;
+                exportData.filters.end_date = dateTo;
+                exportData.filters.enableDateFilter = true;
+            }
+            
+            if (exportType === 'current') {
+                // Esportazione tabella corrente - usa colonne predefinite
+                exportData.columns = ['current_table'];
+                
+            } else if (exportType === 'custom') {
+                // Esportazione personalizzata - usa colonne selezionate da TicketLine
+                const selectedColumns = Array.from(document.querySelectorAll('input[name="ticketLineColumns"]:checked'))
+                    .map(cb => cb.value);
+                
+                if (selectedColumns.length === 0) {
+                    alert('Seleziona almeno una colonna da esportare per l\'esportazione personalizzata');
+                    return;
+                }
+                
+                // Ottieni l'ordine delle colonne dal sortable
+                const sortableItems = document.querySelectorAll('#sortableTicketLineColumns [data-column-id]');
+                if (sortableItems.length > 0) {
+                    exportData.columns = Array.from(sortableItems).map(item => item.getAttribute('data-column-id'));
+                } else {
+                    exportData.columns = selectedColumns;
+                }
+            }
+            
+            console.log('Invio dati esportazione:', exportData);
+            
+            // Mostra spinner
+            const exportButton = document.querySelector('#exportModal .btn-primary');
+            const spinner = document.getElementById('exportSpinner');
+            exportButton.disabled = true;
+            spinner.classList.remove('d-none');
+            
+            // Invia richiesta al server
+            fetch('/warehouse/export_tickets', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                },
+                body: JSON.stringify(exportData)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.error || 'Errore durante l\'esportazione');
+                    });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                // Scarica il file
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                a.download = `tickets_export_${new Date().toISOString().split('T')[0]}.${selectedFormat}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                
+                // Chiudi modale e mostra messaggio di successo
+                const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Mostra notifica di successo (se disponibile)
+                if (typeof showNotification === 'function') {
+                    showNotification('Esportazione completata con successo!', 'success');
+                } else {
+                    alert('Esportazione completata con successo!');
+                }
+                })
+                .catch(error => {
+                console.error('Errore esportazione:', error);
+                alert('Errore durante l\'esportazione: ' + error.message);
+            })
+            .finally(() => {
+                // Nascondi spinner e riabilita pulsante
+                exportButton.disabled = false;
+                spinner.classList.add('d-none');
+            });
+            
+        } catch (error) {
+            console.error('Errore in performExport:', error);
+            alert('Errore: ' + error.message);
+        }
+    }
+
+    // === GESTIONE FILTRO DATE ===
+    function initializeDateFilter() {
+        const enableDateFilter = document.getElementById('enableDateFilter');
+        const dateFrom = document.getElementById('exportDateFrom');
+        const dateTo = document.getElementById('exportDateTo');
+
+        if (!enableDateFilter || !dateFrom || !dateTo) return;
+
+        // Imposta data di oggi come default
+        const today = new Date().toISOString().split('T')[0];
+        dateFrom.value = today;
+        dateTo.value = today;
+
+        // Gestisce il checkbox di attivazione
+        enableDateFilter.addEventListener('change', function() {
+            if (this.checked) {
+                dateFrom.disabled = false;
+                dateTo.disabled = false;
+                dateFrom.closest('.col-md-6').style.opacity = '1';
+                dateTo.closest('.col-md-6').style.opacity = '1';
+            } else {
+                dateFrom.disabled = true;
+                dateTo.disabled = true;
+                dateFrom.closest('.col-md-6').style.opacity = '0.5';
+                dateTo.closest('.col-md-6').style.opacity = '0.5';
+            }
+        });
+
+        // Gestisce i cambiamenti nei campi date (non servono più per updateAppliedFiltersText)
+        dateFrom.addEventListener('change', function() {
+            // Log per debug
+            console.log('Data Dal cambiata:', this.value);
+        });
+        dateTo.addEventListener('change', function() {
+            // Log per debug
+            console.log('Data Al cambiata:', this.value);
+        });
+
+        // Disabilita i campi inizialmente
+        dateFrom.disabled = true;
+        dateTo.disabled = true;
+        dateFrom.closest('.col-md-6').style.opacity = '0.5';
+        dateTo.closest('.col-md-6').style.opacity = '0.5';
+    }
+
+    // Rendi la funzione disponibile globalmente
+    window.initializeDateFilter = initializeDateFilter;
 </script>
+
+<!-- Aggiungi SortableJS per il drag&drop delle colonne -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<style>
+/* Stili per la modale di esportazione */
+.cursor-move {
+    cursor: move;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    background-color: #f8f9fa;
+}
+
+.sortable-drag {
+    opacity: 0.8;
+    transform: rotate(5deg);
+}
+
+.badge-soft-secondary {
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #6c757d;
+    font-size: 0.7rem;
+    min-width: 24px;
+    text-align: center;
+}
+
+#exportModal .form-check {
+    margin-bottom: 0.5rem;
+}
+
+#exportModal .card-header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+#exportModal .list-group-item {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+}
+
+#exportModal .list-group-item:first-child {
+    border-top: 1px solid #dee2e6;
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+#exportModal .list-group-item:last-child {
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 0 0 0.375rem 0.375rem;
+}
+
+/* Stili per la nuova interfaccia */
+.export-type-card {
+    transition: all 0.3s ease;
+    cursor: pointer !important;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+
+.export-type-card * {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* Assicurati che la modale stessa non blocchi gli eventi */
+.modal.show {
+    pointer-events: none;
+}
+
+.modal.show .modal-dialog {
+    pointer-events: auto;
+}
+
+.modal.show .modal-content {
+    pointer-events: auto;
+}
+
+/* Stili specifici per garantire la cliccabilità */
+#exportModal .export-type-card,
+#exportModal .export-type-card *,
+#exportModal .export-type-card::after {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+/* Disabilita eventuali interferenze da parte della modale */
+#exportModal .modal-backdrop {
+    pointer-events: none !important;
+}
+
+.export-type-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.export-type-card.border-primary {
+    border-width: 3px !important;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(13, 110, 253, 0.12));
+    border-color: #0d6efd !important;
+}
+
+.export-type-card.border-success {
+    border-width: 3px !important;
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.08), rgba(25, 135, 84, 0.12));
+    border-color: #198754 !important;
+}
+
+.export-type-card label {
+    cursor: pointer !important;
+    width: 100%;
+    height: 100%;
+    margin: 0 !important;
+    display: block;
+}
+
+.export-type-card input[type="radio"] {
+    pointer-events: none;
+}
+
+/* Aggiungi stile per rendere ancora più cliccabile */
+.export-type-card {
+    position: relative;
+    z-index: 1001 !important; /* Z-index più alto per evitare interferenze della modale */
+}
+
+/* Assicurati che la modale non interferisca con le cards */
+#exportModal .modal-dialog {
+    z-index: 1000;
+}
+
+#exportModal .modal-backdrop {
+    z-index: 999;
+}
+
+.export-type-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1002; /* Z-index ancora più alto per l'overlay */
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+.export-type-card .card-body {
+    position: relative;
+    z-index: 11;
+}
+
+.export-type-card i.fas {
+    position: relative;
+    z-index: 11;
+}
+
+.export-type-card .card-title {
+    position: relative;
+    z-index: 11;
+}
+
+.export-type-card .card-text {
+    position: relative;
+    z-index: 11;
+}
+
+#customExportSection {
+    transition: all 0.4s ease-in-out;
+}
+
+/* Migliore gestione del sortable */
+.sortable-ghost {
+    opacity: 0.4;
+    transform: scale(0.98);
+}
+
+.sortable-chosen {
+    background-color: #f8f9fa;
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+}
+
+.sortable-drag {
+    opacity: 0.8;
+    transform: rotate(2deg) scale(1.02);
+    z-index: 1000;
+}
+</style>
 {% endblock %} 

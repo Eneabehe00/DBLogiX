@@ -317,6 +317,35 @@ def format_lot_for_ddt(ticket, ticket_line=None):
         logger.error(f"Error formatting lot for DDT: {str(e)}")
         return ""
 
+def extract_lot_from_description(description):
+    """
+    Extract lot information from description text.
+    
+    Args:
+        description (str): Full description that may contain lot information
+    
+    Returns:
+        tuple: (clean_description, lot_number) where:
+               - clean_description is the description without lot info
+               - lot_number is the extracted lot number or empty string
+    """
+    import re
+    
+    if not description:
+        return description, ""
+    
+    # Pattern per riconoscere il formato " - LOTTO N: XXXXXXXX" o " - LOTTO: XXXXXXXX"
+    lot_pattern = r'\s*-\s*LOTTO\s*N?:\s*(.+?)$'
+    
+    match = re.search(lot_pattern, description, re.IGNORECASE)
+    if match:
+        lot_number = match.group(1).strip()
+        # Rimuovi la parte del lotto dalla descrizione
+        clean_description = re.sub(lot_pattern, '', description, flags=re.IGNORECASE).strip()
+        return clean_description, lot_number
+    
+    return description, ""
+
 def get_lot_config_display():
     """
     Get lot configuration for display purposes.

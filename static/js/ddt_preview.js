@@ -2,7 +2,7 @@
 
 // ===== VARIABILI GLOBALI =====
 let currentTickets = [];
-let previewData = {};
+window.previewData = {};
 let manualTickets = [];
 let addedExistingTickets = []; // Nuova variabile per ticket esistenti aggiunti
 let ticketDiscounts = {};
@@ -269,11 +269,7 @@ function setupEventListeners() {
             }
             
             // Pulisci localStorage dopo conferma
-            localStorage.removeItem('ddt_ticket_modifications');
-            localStorage.removeItem('ddt_manual_tickets');
-            localStorage.removeItem('ddt_added_existing_tickets');
-            localStorage.removeItem('ddt_ticket_discounts');
-            localStorage.removeItem('ddt_selected_tickets_temp'); // Clear ticket selection from select_tickets page
+            clearDDTLocalStorage();
             
             // Mostra loading
             const btn = document.getElementById('create-final-ddt');
@@ -309,6 +305,8 @@ function clearAllDDTLocalStorage() {
     try {
         // Rimuovi tutti i localStorage specifici del DDT
         const keysToRemove = [
+            'ddt_config_selections',
+            'ddt_numero_colli',
             'ddt_ticket_modifications',
             'ddt_manual_tickets',
             'ddt_added_existing_tickets',
@@ -319,15 +317,18 @@ function clearAllDDTLocalStorage() {
         ];
 
         keysToRemove.forEach(key => {
-            localStorage.removeItem(key);
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                console.log(`🗑️ Rimosso: ${key}`);
+            }
         });
 
-        // Rimuovi anche eventuali modifiche specifiche per DDT (pattern: ddt_modifications_*)
+        // Rimuovi anche eventuali modifiche specifiche per DDT e chiavi listino
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('ddt_modifications_')) {
+            if (key && (key.startsWith('ddt_modifications_') || key.startsWith('listino_imponibile_'))) {
                 localStorage.removeItem(key);
-                console.log('🗑️ Rimosso:', key);
+                console.log(`🗑️ Rimosso: ${key}`);
             }
         }
 
@@ -1161,16 +1162,18 @@ function updateAllTicketsPriceDetails() {
      * Aggiorna i dettagli di prezzo per tutti i ticket visibili
      */
     console.log('🔄 Aggiornamento dettagli prezzi per tutti i ticket...');
-    
-    if (!previewData) {
-        console.warn('❌ Dati preview non disponibili');
+
+    if (!INITIAL_PREVIEW_DATA || INITIAL_PREVIEW_DATA.length === 0) {
+        console.warn('❌ Dati preview non disponibili o vuoti');
         return;
     }
-    
-    Object.keys(previewData).forEach(ticketId => {
-        updateTicketPriceDetails(ticketId);
+
+    INITIAL_PREVIEW_DATA.forEach(item => {
+        if (item && item.ticket && item.ticket.IdTicket) {
+            updateTicketPriceDetails(item.ticket.IdTicket);
+        }
     });
-    
+
     console.log('✅ Dettagli prezzi aggiornati per tutti i ticket');
 }
 
@@ -2419,11 +2422,7 @@ function handleCreateInvoiceOnly() {
             showNotification('Fattura elettronica generata con successo!', 'success');
 
             // Pulisci localStorage dopo il successo
-            localStorage.removeItem('ddt_ticket_modifications');
-            localStorage.removeItem('ddt_manual_tickets');
-            localStorage.removeItem('ddt_added_existing_tickets');
-            localStorage.removeItem('ddt_ticket_discounts');
-            localStorage.removeItem('ddt_selected_tickets_temp');
+            clearDDTLocalStorage();
 
             // Reindirizza alla fattura se fornita l'URL
             if (data.invoice_url) {
@@ -4051,8 +4050,8 @@ function applyDiscountToTicket(ticketId, discountValue) {
     // Aggiorna l'interfaccia
     updateDiscountDisplay(ticketId, discountValue);
 
-    // Aggiorna immediatamente i prezzi nella tabella con lo sconto applicato
-    updateTicketPriceDetails(ticketId);
+    // Aggiorna immediatamente i prezzi nella tabella principale con lo sconto applicato
+    updateMainTablePrices(ticketId, discountValue);
 
     // Aggiorna i prezzi nella tabella con animazione
     updateTicketPricesWithAnimation(ticketId, discountValue);
@@ -4135,6 +4134,68 @@ function hideRemoveDiscountButton(ticketId) {
     if (removeBtn) {
         removeBtn.style.display = 'none';
     }
+}
+
+// Aggiorna i prezzi nella tabella principale quando cambia lo sconto
+function updateMainTablePrices(ticketId, discount) {
+    if (!previewData[ticketId] || !previewData[ticketId].lines) {
+        return;
+    }
+
+    const discountValue = parseFloat(discount) || 0;
+
+    // Trova la riga della tabella principale per questo ticket
+    const lineRow = document.querySelector(`tr[data-ticket-id="${ticketId}"]`);
+    if (!lineRow) return;
+
+    // Usa la prima linea del ticket per calcolare i prezzi
+    const line = previewData[ticketId].lines[0];
+    if (!line) return;
+
+        // Calcola prezzi con sconto applicato
+        const originalPrecio = parseFloat(line.precio) || 0;
+        const originalPrecioSinIva = parseFloat(line.precio_sin_iva) || 0;
+        const iva = parseFloat(line.porcentaje_iva) || 0;
+
+        if (discountValue > 0) {
+            // Applica sconto ai prezzi
+            const discountedPrecio = originalPrecio * (1 - discountValue / 100);
+            const discountedPrecioSinIva = originalPrecioSinIva * (1 - discountValue / 100);
+
+            // Aggiorna prezzo unitario (con IVA)
+            const unitPriceElement = lineRow.querySelector('.unit-price-value');
+            if (unitPriceElement) {
+                unitPriceElement.textContent = discountedPrecio.toFixed(2);
+            }
+
+            // Aggiorna prezzo senza IVA
+            const priceNoVatElement = lineRow.querySelector('.price-no-vat');
+            if (priceNoVatElement) {
+                priceNoVatElement.textContent = discountedPrecioSinIva.toFixed(2);
+            }
+
+            // Aggiorna prezzo con IVA
+            const priceWithVatElement = lineRow.querySelector('.price-with-vat');
+            if (priceWithVatElement) {
+                priceWithVatElement.textContent = discountedPrecio.toFixed(2);
+            }
+        } else {
+            // Ripristina prezzi originali
+            const unitPriceElement = lineRow.querySelector('.unit-price-value');
+            if (unitPriceElement) {
+                unitPriceElement.textContent = originalPrecio.toFixed(2);
+            }
+
+            const priceNoVatElement = lineRow.querySelector('.price-no-vat');
+            if (priceNoVatElement) {
+                priceNoVatElement.textContent = originalPrecioSinIva.toFixed(2);
+            }
+
+            const priceWithVatElement = lineRow.querySelector('.price-with-vat');
+            if (priceWithVatElement) {
+                priceWithVatElement.textContent = originalPrecio.toFixed(2);
+            }
+        }
 }
 
 // Aggiorna i prezzi nella tabella con animazione
@@ -4427,23 +4488,53 @@ function saveDDTModificationsToStorage() {
         manual_tickets: manualTickets // ✅ AGGIUNTO: Includi anche i ticket manuali
     };
 
-    // Raccogli tutte le linee modificate dalla tabella
+    // Raccogli tutte le linee usando i dati originali e aggiornando solo i campi modificati
     document.querySelectorAll('#ddtTicketTable tbody tr').forEach(row => {
         const ticketId = row.getAttribute('data-ticket-id');
         if (!ticketId) return;
 
-        const line = {
-            ticket_id: ticketId,
-            descripcion: row.querySelector('td[data-label="Prodotti"] .text-truncate')?.textContent?.trim() || '',
-            peso: parseFloat(row.querySelector('.quantity-value')?.textContent?.replace(',', '.')) || 0,
-            precio: parseFloat(row.querySelector('.unit-price-value')?.textContent?.replace('€', '').replace(',', '.')) || 0,
-            iva: parseInt(row.querySelector('.vat-rate-display')?.textContent?.replace('%', '')) || 22,
-            importe: parseFloat(row.querySelector('.price-with-vat')?.textContent?.replace('€', '').replace(',', '.')) || 0,
-            texto_lote: row.querySelector('.lot-text-display')?.textContent?.trim() || '',
-            fecha_caducidad: row.querySelector('.expiry-date-display')?.textContent?.trim() || ''
-        };
+        // Trova i dati originali del ticket
+        let originalTicketData = null;
+        const previewData = Array.isArray(INITIAL_PREVIEW_DATA) ? INITIAL_PREVIEW_DATA : [];
+        for (let item of previewData) {
+            if (item.ticket && item.ticket.IdTicket == ticketId) {
+                originalTicketData = item;
+                break;
+            }
+        }
 
-        modifications.lines.push(line);
+        if (originalTicketData && originalTicketData.lines) {
+            originalTicketData.lines.forEach(originalLine => {
+                const line = {
+                    ticket_id: ticketId,
+                    descripcion: row.querySelector('td[data-label="Prodotti"] .text-truncate')?.textContent?.trim() || originalLine.descripcion || '',
+                    peso: parseFloat(row.querySelector('.quantity-value')?.textContent?.replace(',', '.')) || originalLine.peso || 0,
+                    precio: parseFloat(row.querySelector('.unit-price-value')?.textContent?.replace('€', '').replace(',', '.')) || originalLine.precio || 0,
+                    iva: parseInt(row.querySelector('.vat-rate-display')?.textContent?.replace('%', '')) || originalLine.iva || 22,
+                    importe: parseFloat(row.querySelector('.price-with-vat')?.textContent?.replace('€', '').replace(',', '.')) || originalLine.importe || 0,
+                    texto_lote: row.querySelector('.lot-text-display')?.textContent?.trim() || originalLine.texto_lote || '',
+                    fecha_caducidad: row.querySelector('.expiry-date-display')?.textContent?.trim() || originalLine.fecha_caducidad || '',
+                    descuento: originalLine.descuento || 0,  // ✅ Campo aggiunto
+                    // Altri campi necessari mantenuti dai dati originali
+                    id_linea_ticket: originalLine.id_linea_ticket,
+                    id_articulo: originalLine.id_articulo,
+                    comportamiento: originalLine.comportamiento || 0,
+                    id_iva: originalLine.id_iva || 3,
+                    vat_rate: originalLine.vat_rate || 0.22,
+                    porcentaje_iva: originalLine.porcentaje_iva || 22,
+                    precio_sin_iva: originalLine.precio_sin_iva || originalLine.precio || 0,
+                    precio_con_iva: originalLine.precio_con_iva || originalLine.precio || 0,
+                    precio_standard: originalLine.precio_standard || originalLine.precio || 0,
+                    precio_listino: originalLine.precio_listino || originalLine.precio || 0,
+                    has_custom_price: originalLine.has_custom_price || false,
+                    price_difference: originalLine.price_difference || 0,
+                    importe_con_iva: originalLine.importe_con_iva || (originalLine.importe || 0),
+                    quantita: originalLine.quantita || originalLine.peso || 0
+                };
+
+                modifications.lines.push(line);
+            });
+        }
     });
 
     // Salva nel localStorage con chiave specifica per il DDT
@@ -4454,10 +4545,155 @@ function saveDDTModificationsToStorage() {
     console.log('🔑 Chiave utilizzata:', storageKey);
     console.log('📅 Data DDT inclusa nel salvataggio:', ddtDate);
 
+    // ✅ Inizializza gli sconti dei ticket esistenti
+    initializeExistingTicketDiscounts();
+
     // ✅ Forza il salvataggio anche se non ci sono linee modificate ma ci sono ticket aggiunti
     if (addedExistingTickets.length > 0) {
         console.log('🎯 Salvataggio forzato perché ci sono ticket esistenti aggiunti:', addedExistingTickets.length);
     }
+}
+
+// Funzione per inizializzare gli sconti dei ticket esistenti
+function initializeExistingTicketDiscounts() {
+    console.log('🔄 Inizializzazione sconti ticket esistenti...');
+
+    const previewData = Array.isArray(INITIAL_PREVIEW_DATA) ? INITIAL_PREVIEW_DATA : [];
+
+    // Crea una mappa degli sconti per ticket basandosi sulle linee
+    const ticketDiscountsMap = {};
+
+    previewData.forEach(item => {
+        if (item && item.ticket && item.lines) {
+            let maxDiscount = 0;
+
+            item.lines.forEach(line => {
+                const lineDiscount = parseFloat(line.descuento || 0);
+                if (lineDiscount > maxDiscount) {
+                    maxDiscount = lineDiscount;
+                }
+            });
+
+            if (maxDiscount > 0) {
+                ticketDiscountsMap[item.ticket.IdTicket] = maxDiscount;
+                console.log(`💰 Ticket ${item.ticket.IdTicket} ha sconto ${maxDiscount}% dalle linee`);
+            }
+        }
+    });
+
+    // Carica eventuali sconti esistenti dal localStorage
+    const existingDiscounts = localStorage.getItem('ddt_ticket_discounts');
+    if (existingDiscounts) {
+        try {
+            const parsedDiscounts = JSON.parse(existingDiscounts);
+            Object.keys(parsedDiscounts).forEach(ticketId => {
+                ticketDiscountsMap[ticketId] = Math.max(ticketDiscountsMap[ticketId] || 0, parsedDiscounts[ticketId]);
+            });
+        } catch (e) {
+            console.error('Errore nel parsing sconti esistenti:', e);
+        }
+    }
+
+    // Salva gli sconti nel localStorage (solo se ci sono sconti)
+    if (Object.keys(ticketDiscountsMap).length > 0) {
+        localStorage.setItem('ddt_ticket_discounts', JSON.stringify(ticketDiscountsMap));
+        console.log('💾 Sconti ticket esistenti salvati nel localStorage:', ticketDiscountsMap);
+
+        // Applica gli sconti agli input field
+        Object.keys(ticketDiscountsMap).forEach(ticketId => {
+            const discountValue = ticketDiscountsMap[ticketId];
+            const container = document.querySelector(`.discount-container[data-ticket-id="${ticketId}"]`);
+            const inputField = container ? container.querySelector('.discount-input-field') : null;
+
+            if (inputField) {
+                inputField.value = discountValue;
+                if (discountValue > 0) {
+                    inputField.classList.add('has-discount');
+                }
+                updateTicketTotalDisplay(ticketId, discountValue);
+                updateDiscountInputDisplay(ticketId, discountValue);
+            }
+        });
+    }
+}
+
+// Funzione per creare automaticamente i dati iniziali nel localStorage per la modifica DDT
+function createInitialDDTModifications() {
+    const ddtId = getDDTIdFromURL();
+    if (!ddtId) return;
+
+    const storageKey = `ddt_modifications_${ddtId}`;
+    console.log('🔍 Verifica esistenza dati iniziali per chiave:', storageKey);
+
+    // Verifica se esistono già dati nel localStorage
+    const existingData = localStorage.getItem(storageKey);
+    if (existingData) {
+        console.log('✅ Dati iniziali già esistenti nel localStorage');
+        return;
+    }
+
+    console.log('🔄 Creazione dati iniziali nel localStorage per DDT:', ddtId);
+
+    // Crea i dati iniziali basandosi sui dati originali del DDT
+    const modifications = {
+        ddt_id: ddtId,
+        timestamp: new Date().toISOString(),
+        ddt_date: null, // Verrà impostato se modificato
+        lines: [],
+        added_tickets: [],
+        manual_tickets: []
+    };
+
+    // Raccogli i dati dalle righe della tabella usando i dati originali
+    document.querySelectorAll('#ddtTicketTable tbody tr').forEach(row => {
+        const ticketId = row.getAttribute('data-ticket-id');
+        if (!ticketId) return;
+
+        // Ottieni i dati originali del ticket dai dati iniziali
+        let originalTicketData = null;
+        const previewData = Array.isArray(INITIAL_PREVIEW_DATA) ? INITIAL_PREVIEW_DATA : [];
+        for (let item of previewData) {
+            if (item.ticket && item.ticket.IdTicket == ticketId) {
+                originalTicketData = item;
+                break;
+            }
+        }
+
+        if (originalTicketData && originalTicketData.lines) {
+            originalTicketData.lines.forEach(line => {
+                modifications.lines.push({
+                    ticket_id: ticketId,
+                    descripcion: line.descripcion || '',
+                    peso: line.peso || 0,
+                    precio: line.precio || 0,
+                    iva: line.iva || 22,
+                    importe: line.importe || 0,
+                    texto_lote: line.texto_lote || '',
+                    fecha_caducidad: line.fecha_caducidad || '',
+                    descuento: line.descuento || 0,  // ✅ Campo aggiunto
+                    // Altri campi necessari
+                    id_linea_ticket: line.id_linea_ticket,
+                    id_articulo: line.id_articulo,
+                    comportamiento: line.comportamiento || 0,
+                    id_iva: line.id_iva || 3,
+                    vat_rate: line.vat_rate || 0.22,
+                    porcentaje_iva: line.porcentaje_iva || 22,
+                    precio_sin_iva: line.precio_sin_iva || line.precio || 0,
+                    precio_con_iva: line.precio_con_iva || line.precio || 0,
+                    precio_standard: line.precio_standard || line.precio || 0,
+                    precio_listino: line.precio_listino || line.precio || 0,
+                    has_custom_price: line.has_custom_price || false,
+                    price_difference: line.price_difference || 0,
+                    importe_con_iva: line.importe_con_iva || (line.importe || 0),
+                    quantita: line.quantita || line.peso || 0
+                });
+            });
+        }
+    });
+
+    // Salva nel localStorage
+    localStorage.setItem(storageKey, JSON.stringify(modifications));
+    console.log('💾 Dati iniziali DDT creati nel localStorage:', modifications);
 }
 
 // Funzione per caricare le modifiche dal localStorage
@@ -4650,6 +4886,7 @@ function getDDTIdFromURL() {
     return null;
 }
 
+
 // Funzione per salvare le modifiche del DDT nel database
 async function saveDDTModifications() {
     console.log('🔄 Inizio processo salvataggio DDT modifiche');
@@ -4684,17 +4921,35 @@ async function saveDDTModifications() {
             return;
         }
 
+        // 🔥 NUOVO: Include i valori dei campi configurabili e numero di colli nelle modifiche
+        const configValues = {
+            causale: document.getElementById('ddt-causale-value')?.value || null,
+            aspetto_esteriore: document.getElementById('ddt-aspetto-esteriore-value')?.value || null,
+            trasporto_a_cura: document.getElementById('ddt-trasporto-a-cura-value')?.value || null,
+            numero_colli: parseInt(document.getElementById('ddt-numero-colli-value')?.value, 10) || null
+        };
+
+        Object.keys(configValues).forEach(key => {
+            if (configValues[key] !== null && configValues[key] !== '') {
+                modifications[key] = configValues[key];
+            }
+        });
+
         console.log('📊 Dettagli modifiche da salvare:', {
             lines: modifications.lines?.length || 0,
             addedTickets: modifications.added_tickets?.length || 0,
             manualTickets: modifications.manual_tickets?.length || 0, // ✅ AGGIUNTO
+            numeroColli: modifications.numero_colli, // 🔥 NUOVO
+            causale: modifications.causale, // 🔥 NUOVO
+            aspetto_esteriore: modifications.aspetto_esteriore, // 🔥 NUOVO
+            trasporto_a_cura: modifications.trasporto_a_cura, // 🔥 NUOVO
             ddtId: modifications.ddt_id
         });
 
         // Invia le modifiche al server
         console.log('🌐 Invio richiesta al server:', `/ddt/api/save_modifications/${ddtId}`);
         console.log('📤 Payload inviato:', JSON.stringify(modifications, null, 2));
-        
+
         const response = await fetch(`/ddt/api/save_modifications/${ddtId}`, {
             method: 'POST',
             headers: {
@@ -4711,17 +4966,14 @@ async function saveDDTModifications() {
 
         if (result.success) {
             // Pulisci il localStorage dopo il salvataggio riuscito
-            const storageKey = `ddt_modifications_${ddtId}`;
-            localStorage.removeItem(storageKey);
-            localStorage.removeItem('ddt_ticket_modifications');
-            localStorage.removeItem('ddt_manual_tickets');
-            localStorage.removeItem('ddt_added_existing_tickets');
-            localStorage.removeItem('ddt_ticket_discounts');
-            localStorage.removeItem('ddt_selected_tickets_temp');
+            clearAllDDTLocalStorage();
 
             // Mostra messaggio di successo dettagliato
             const message = `Modifiche salvate con successo!\n\nDettagli:\n- Linee aggiornate: ${result.updated_lines || 0}\n- Linee inserite: ${result.inserted_lines || 0}\n- Linee ticket manuali: ${result.inserted_manual_lines || 0}\n- Modifiche ticket applicate: ${result.applied_ticket_modifications || 0}`;
             alert(message);
+
+            // Ricarica la pagina per riflettere le modifiche
+            window.location.reload();
 
             // Aggiorna l'indicatore delle modifiche dopo il salvataggio
             updatePendingModificationsBadge();
@@ -4756,13 +5008,33 @@ function applyDDTModificationsFromStorage() {
             const priceElement = row.querySelector('.unit-price-value');
             const vatElement = row.querySelector('.vat-rate-display');
             const totalElement = row.querySelector('.price-with-vat');
+            const lotElement = row.querySelector('.lot-text-display');
 
             if (quantityElement) quantityElement.textContent = line.peso.toFixed(3);
             if (priceElement) priceElement.textContent = `€${line.precio.toFixed(2)}`;
             if (vatElement) vatElement.textContent = `${line.iva}%`;
             if (totalElement) totalElement.textContent = `€${line.importe.toFixed(2)}`;
+            if (lotElement) lotElement.textContent = line.texto_lote || '';
         }
     });
+
+    // Applica anche gli sconti se presenti nelle modifiche
+    if (modifications.ticket_discounts) {
+        Object.keys(modifications.ticket_discounts).forEach(ticketId => {
+            const discountValue = modifications.ticket_discounts[ticketId];
+            const container = document.querySelector(`.discount-container[data-ticket-id="${ticketId}"]`);
+            const inputField = container ? container.querySelector('.discount-input-field') : null;
+
+            if (inputField) {
+                inputField.value = discountValue;
+                if (discountValue > 0) {
+                    inputField.classList.add('has-discount');
+                }
+                updateTicketTotalDisplay(ticketId, discountValue);
+                updateDiscountInputDisplay(ticketId, discountValue);
+            }
+        });
+    }
 
     console.log('✅ Modifiche DDT applicate dalla cache');
 }
@@ -4794,8 +5066,14 @@ function initializeDDTModifyMode() {
     if (fromModify) {
         console.log('🔧 Modalità modifica DDT attivata');
 
+        // Crea automaticamente i dati iniziali nel localStorage se non esistono
+        setTimeout(createInitialDDTModifications, 500);
+
+        // Inizializza gli sconti esistenti
+        setTimeout(initializeExistingTicketDiscounts, 1500);
+
         // Applica le modifiche salvate dal localStorage
-        setTimeout(applyDDTModificationsFromStorage, 500);
+        setTimeout(applyDDTModificationsFromStorage, 2000);
 
         // Configura il salvataggio automatico ogni 30 secondi
         setInterval(saveDDTModificationsToStorage, 30000);

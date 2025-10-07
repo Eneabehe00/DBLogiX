@@ -1,14 +1,18 @@
-from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify, current_app
+from flask import Blueprint, render_template, flash, redirect, url_for, request, jsonify, current_app, send_file
 from flask_login import login_required, current_user
 from sqlalchemy import or_, desc, asc, func
 from app.models import db, Ingrediente, Fornitore, IngredienteFornitore, ArticoloIngrediente, Article, ViewFoodCost
 from datetime import datetime
 from decimal import Decimal
 from services.utils import admin_required, is_admin
-from services.pdf_invoice_processor import PDFInvoiceProcessor
+from services.invoice_processor import InvoiceProcessor
 from werkzeug.utils import secure_filename
 import os
 import logging
+import hashlib
+import json
+import requests
+from flask import Response
 
 ingredients_bp = Blueprint('ingredients', __name__)
 
@@ -998,301 +1002,330 @@ def api_update_article_price(article_id):
             'error': f'Errore durante l\'aggiornamento: {str(e)}'
         }), 500
 
+
 # ===========================================
-# GESTIONE FATTURE PDF
+# GESTIONE FATTURE - FILE SYSTEM BASED
 # ===========================================
 
-logger = logging.getLogger(__name__)
-
-def allowed_file(filename):
-    """Controlla se il file è un PDF"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'pdf'
+def _get_invoice_processor():
+    """Ottiene un'istanza del processore fatture"""
+    gemini_api_key = current_app.config.get('GEMINI_API_KEY')
+    if not gemini_api_key:
+        raise ValueError("GEMINI_API_KEY non configurata")
+    return InvoiceProcessor(gemini_api_key)
 
 @ingredients_bp.route('/fatture')
 @login_required
 def fatture_list():
     """Lista delle fatture caricate"""
     try:
-        fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-        fatture = []
+        processor = _get_invoice_processor()
         
-        if os.path.exists(fatture_dir):
-            for filename in os.listdir(fatture_dir):
-                if filename.endswith('.pdf'):
-                    file_path = os.path.join(fatture_dir, filename)
-                    stat = os.stat(file_path)
-                    
-                    fatture.append({
-                        'filename': filename,
-                        'size': stat.st_size,
-                        'created': datetime.fromtimestamp(stat.st_ctime),
-                        'modified': datetime.fromtimestamp(stat.st_mtime)
-                    })
+        # Parametri di ricerca e filtri
+        search = request.args.get('search', '')
+        supplier_filter = request.args.get('supplier', '')
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
+        status_filter = request.args.get('status', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
         
-        # Ordina per data di modifica decrescente
-        fatture.sort(key=lambda x: x['modified'], reverse=True)
+        # Ottieni lista fatture
+        invoices = processor.get_invoices_list(
+            search=search,
+            supplier_filter=supplier_filter,
+            date_from=date_from,
+            date_to=date_to,
+            status_filter=status_filter
+        )
         
-        return render_template('ingredients/fatture/index.html', fatture=fatture)
+        # Paginazione manuale
+        total = len(invoices)
+        start = (page - 1) * per_page
+        end = start + per_page
+        invoices_page = invoices[start:end]
+        
+        # Calcola info paginazione
+        has_prev = page > 1
+        has_next = end < total
+        prev_num = page - 1 if has_prev else None
+        next_num = page + 1 if has_next else None
+        
+        pagination = {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page,
+            'has_prev': has_prev,
+            'has_next': has_next,
+            'prev_num': prev_num,
+            'next_num': next_num
+        }
+        
+        return render_template('ingredients/fatture/index.html',
+                             invoices=invoices_page,
+                             pagination=pagination,
+                             search=search,
+                             supplier_filter=supplier_filter,
+                             date_from=date_from,
+                             date_to=date_to,
+                             status_filter=status_filter)
     
     except Exception as e:
         flash(f'Errore nel caricamento delle fatture: {str(e)}', 'error')
-        return redirect(url_for('ingredients.index'))
+        return render_template('ingredients/fatture/index.html', 
+                             invoices=[], pagination=None)
 
 @ingredients_bp.route('/fatture/upload', methods=['GET', 'POST'])
 @login_required
 def fatture_upload():
-    """Upload di nuove fatture PDF"""
+    """Upload di nuove fatture"""
     if request.method == 'POST':
         try:
-            if 'file' not in request.files:
-                flash('Nessun file selezionato', 'error')
-                return render_template('ingredients/fatture/upload.html')
+            processor = _get_invoice_processor()
             
-            file = request.files['file']
+            # Controlla se ci sono file
+            if 'files' not in request.files:
+                return jsonify({'success': False, 'error': 'Nessun file selezionato'})
             
-            if file.filename == '':
-                flash('Nessun file selezionato', 'error')
-                return render_template('ingredients/fatture/upload.html')
+            files = request.files.getlist('files')
+            if not files or all(f.filename == '' for f in files):
+                return jsonify({'success': False, 'error': 'Nessun file selezionato'})
             
-            if not allowed_file(file.filename):
-                flash('Solo file PDF sono consentiti', 'error')
-                return render_template('ingredients/fatture/upload.html')
+            results = []
             
-            # Salva il file
-            filename = secure_filename(file.filename)
+            for file in files:
+                if file and file.filename:
+                    # Verifica che sia un PDF
+                    if not file.filename.lower().endswith('.pdf'):
+                        results.append({
+                            'filename': file.filename,
+                            'success': False,
+                            'error': 'Solo file PDF sono supportati'
+                        })
+                        continue
+                    
+                    # Salva il file
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    safe_filename = f"{timestamp}_{filename}"
+                    
+                    data_dir = os.path.join(current_app.root_path, '..', 'data', 'fatture')
+                    os.makedirs(data_dir, exist_ok=True)
+                    
+                    file_path = os.path.join(data_dir, safe_filename)
+                    file.save(file_path)
+                    
+                    # Processa la fattura
+                    try:
+                        result = processor.process_invoice(file_path, filename)
+                        result['filename'] = filename
+                        results.append(result)
+                        
+                    except Exception as e:
+                        # Se il processing fallisce, rimuovi il file
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                        results.append({
+                            'filename': filename,
+                            'success': False,
+                            'error': str(e)
+                        })
             
-            # Aggiungi timestamp se il file esiste già
-            fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-            os.makedirs(fatture_dir, exist_ok=True)
-            
-            file_path = os.path.join(fatture_dir, filename)
-            if os.path.exists(file_path):
-                base, ext = os.path.splitext(filename)
-                filename = f"{base}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{ext}"
-                file_path = os.path.join(fatture_dir, filename)
-            
-            file.save(file_path)
-            
-            # Processa automaticamente se richiesto
-            auto_process = request.form.get('auto_process') == 'true'
-            
-            if auto_process:
-                processor = PDFInvoiceProcessor()
-                result = processor.process_invoice_pdf(file_path)
-                
-                if result['success']:
-                    flash(f'Fattura caricata e processata con successo! '
-                          f'Fornitore: {result["supplier"]["nome"]}, '
-                          f'Articoli processati: {result["items_processed"]}', 'success')
-                else:
-                    flash(f'Fattura caricata ma errori durante l\'elaborazione: {", ".join(result["errors"])}', 'warning')
-            else:
-                flash(f'Fattura "{filename}" caricata con successo!', 'success')
-            
-            return redirect(url_for('ingredients.fatture_list'))
+            return jsonify({
+                'success': True,
+                'results': results,
+                'message': f'{len([r for r in results if r.get("success")])} fatture processate con successo'
+            })
         
         except Exception as e:
-            flash(f'Errore durante l\'upload: {str(e)}', 'error')
-            logger.error(f"Errore upload fattura: {str(e)}")
+            return jsonify({'success': False, 'error': str(e)})
     
     return render_template('ingredients/fatture/upload.html')
 
-@ingredients_bp.route('/fatture/process/<filename>')
+@ingredients_bp.route('/fatture/<invoice_id>')
 @login_required
-def fatture_process(filename):
-    """Processa una fattura specifica"""
+def fatture_detail(invoice_id):
+    """Dettaglio di una fattura"""
     try:
-        fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-        file_path = os.path.join(fatture_dir, secure_filename(filename))
+        processor = _get_invoice_processor()
+        invoice = processor.get_invoice_detail(invoice_id)
         
-        if not os.path.exists(file_path):
-            flash('File fattura non trovato', 'error')
+        if not invoice:
+            flash('Fattura non trovata', 'error')
             return redirect(url_for('ingredients.fatture_list'))
         
-        processor = PDFInvoiceProcessor()
-        result = processor.process_invoice_pdf(file_path)
-        
-        if result['success']:
-            matching = result['matching_results']
-            flash(f'Fattura processata con successo! '
-                  f'Fornitore: {result["supplier"]["nome"]}, '
-                  f'Ingredienti trovati: {matching["matched"]}, '
-                  f'Ingredienti creati: {matching["created"]}, '
-                  f'Associazioni aggiornate: {matching["updated"]}', 'success')
-        else:
-            flash(f'Errori durante l\'elaborazione: {", ".join(result["errors"])}', 'error')
-        
-        return redirect(url_for('ingredients.fatture_detail', filename=filename))
+        return render_template('ingredients/fatture/detail.html', invoice=invoice)
     
     except Exception as e:
-        flash(f'Errore durante l\'elaborazione: {str(e)}', 'error')
-        logger.error(f"Errore elaborazione fattura {filename}: {str(e)}")
+        flash(f'Errore nel caricamento della fattura: {str(e)}', 'error')
         return redirect(url_for('ingredients.fatture_list'))
 
-@ingredients_bp.route('/fatture/detail/<filename>')
+@ingredients_bp.route('/fatture/<invoice_id>/pdf')
 @login_required
-def fatture_detail(filename):
-    """Mostra dettagli di una fattura e anteprima dei dati estratti"""
+def fatture_pdf(invoice_id):
+    """Serve il PDF della fattura"""
     try:
-        fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-        file_path = os.path.join(fatture_dir, secure_filename(filename))
+        processor = _get_invoice_processor()
+        invoice = processor.get_invoice_detail(invoice_id)
+        
+        if not invoice:
+            return "Fattura non trovata", 404
+        
+        data_dir = os.path.join(current_app.root_path, '..', 'data', 'fatture')
+        file_path = os.path.join(data_dir, invoice['file_path'])
         
         if not os.path.exists(file_path):
-            flash('File fattura non trovato', 'error')
-            return redirect(url_for('ingredients.fatture_list'))
+            return "File PDF non trovato", 404
         
-        # Info file
-        stat = os.stat(file_path)
-        file_info = {
-            'filename': filename,
-            'size': stat.st_size,
-            'created': datetime.fromtimestamp(stat.st_ctime),
-            'modified': datetime.fromtimestamp(stat.st_mtime)
-        }
-        
-        # Estrai dati per anteprima (senza salvare)
-        processor = PDFInvoiceProcessor()
-        
-        # Estrai testo e informazioni fornitore
-        text = processor.extract_text_from_pdf(file_path)
-        supplier_info = processor.extract_supplier_info(text) if text else {}
-        
-        # Estrai tabelle e articoli
-        tables = processor.extract_tables_from_pdf(file_path)
-        items = processor.extract_items_from_tables(tables) if tables else []
-        
-        # Filtra solo gli ingredienti alimentari per l'anteprima
-        food_items = [item for item in items if item.get('is_food_ingredient', False)]
-        
-        return render_template('ingredients/fatture/detail.html',
-                             file_info=file_info,
-                             supplier_info=supplier_info,
-                             items=food_items,
-                             total_items=len(items))
+        return send_file(file_path, 
+                        mimetype='application/pdf',
+                        as_attachment=False,
+                        download_name=invoice['filename'])
     
     except Exception as e:
-        flash(f'Errore nel caricamento dei dettagli: {str(e)}', 'error')
-        logger.error(f"Errore dettagli fattura {filename}: {str(e)}")
-        return redirect(url_for('ingredients.fatture_list'))
+        return f"Errore: {str(e)}", 500
 
-@ingredients_bp.route('/fatture/delete/<filename>', methods=['POST'])
+@ingredients_bp.route('/fatture/<invoice_id>/json')
 @login_required
-@admin_required
-def fatture_delete(filename):
-    """Elimina una fattura"""
+def fatture_json(invoice_id):
+    """Ottiene i dati JSON della fattura"""
     try:
-        fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-        file_path = os.path.join(fatture_dir, secure_filename(filename))
+        processor = _get_invoice_processor()
+        invoice = processor.get_invoice_detail(invoice_id)
         
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            flash(f'Fattura "{filename}" eliminata con successo!', 'success')
-        else:
-            flash('File fattura non trovato', 'error')
-        
-    except Exception as e:
-        flash(f'Errore durante l\'eliminazione: {str(e)}', 'error')
-        logger.error(f"Errore eliminazione fattura {filename}: {str(e)}")
-    
-    return redirect(url_for('ingredients.fatture_list'))
-
-# ===========================================
-# API ENDPOINTS PER FATTURE
-# ===========================================
-
-@ingredients_bp.route('/api/fatture/process', methods=['POST'])
-@login_required
-def api_fatture_process():
-    """API per processare una fattura via AJAX"""
-    try:
-        # Debug: log della richiesta
-        logger.info(f"API fatture/process chiamata - Content-Type: {request.content_type}")
-        
-        # Gestisci sia JSON che form data
-        if request.is_json:
-            data = request.get_json()
-        else:
-            # Fallback per form data
-            data = request.form.to_dict()
-        
-        logger.info(f"Dati ricevuti: {data}")
-        
-        filename = data.get('filename')
-        
-        if not filename:
-            logger.error("Nome file non fornito nella richiesta")
-            return jsonify({'success': False, 'error': 'Nome file non fornito'}), 400
-        
-        # Costruisci il percorso del file
-        fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-        file_path = os.path.join(fatture_dir, secure_filename(filename))
-        
-        logger.info(f"Percorso file: {file_path}")
-        
-        if not os.path.exists(file_path):
-            logger.error(f"File non trovato: {file_path}")
-            return jsonify({'success': False, 'error': 'File non trovato'}), 404
-        
-        # Inizializza il processore
-        try:
-            processor = PDFInvoiceProcessor()
-            logger.info("PDFInvoiceProcessor inizializzato correttamente")
-        except Exception as proc_error:
-            logger.error(f"Errore nell'inizializzazione del processore: {str(proc_error)}")
-            return jsonify({'success': False, 'error': f'Errore processore: {str(proc_error)}'}), 500
-        
-        # Elabora la fattura
-        logger.info(f"Inizio elaborazione fattura: {filename}")
-        result = processor.process_invoice_pdf(file_path)
-        
-        logger.info(f"Risultato elaborazione: success={result.get('success', False)}")
-        if not result.get('success', False):
-            logger.error(f"Errori nell'elaborazione: {result.get('errors', [])}")
-        
-        return jsonify(result)
-    
-    except Exception as e:
-        error_msg = f"Errore API elaborazione fattura: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        return jsonify({'success': False, 'error': error_msg}), 500
-
-@ingredients_bp.route('/api/fatture/preview', methods=['POST'])
-@login_required
-def api_fatture_preview():
-    """API per ottenere anteprima dei dati di una fattura"""
-    try:
-        data = request.get_json()
-        filename = data.get('filename')
-        
-        if not filename:
-            return jsonify({'success': False, 'error': 'Nome file non fornito'}), 400
-        
-        fatture_dir = os.path.join(current_app.root_path, '..', 'UPLOADS', 'fatture')
-        file_path = os.path.join(fatture_dir, secure_filename(filename))
-        
-        if not os.path.exists(file_path):
-            return jsonify({'success': False, 'error': 'File non trovato'}), 404
-        
-        processor = PDFInvoiceProcessor()
-        
-        # Estrai dati senza salvare
-        text = processor.extract_text_from_pdf(file_path)
-        supplier_info = processor.extract_supplier_info(text) if text else {}
-        
-        tables = processor.extract_tables_from_pdf(file_path)
-        items = processor.extract_items_from_tables(tables) if tables else []
-        
-        # Filtra ingredienti alimentari
-        food_items = [item for item in items if item.get('is_food_ingredient', False)]
+        if not invoice:
+            return jsonify({'error': 'Fattura non trovata'}), 404
         
         return jsonify({
             'success': True,
-            'supplier_info': supplier_info,
-            'items': food_items,
-            'total_items': len(items),
-            'food_items_count': len(food_items)
+            'raw_data': invoice.get('raw_data'),
+            'normalized_data': invoice.get('normalized_data')
         })
     
     except Exception as e:
-        logger.error(f"Errore API anteprima fattura: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@ingredients_bp.route('/fatture/<invoice_id>/reprocess', methods=['POST'])
+@login_required
+@admin_required
+def fatture_reprocess(invoice_id):
+    """Riprocessa una fattura"""
+    try:
+        processor = _get_invoice_processor()
+        result = processor.reprocess_invoice(invoice_id)
+        
+        if result['success']:
+            if result.get('duplicate'):
+                flash(f'Attenzione: {result["duplicate"]}', 'warning')
+            else:
+                flash('Fattura riprocessata con successo!', 'success')
+        else:
+            flash(f'Errore nel riprocessamento: {result.get("error")}', 'error')
+        
+        return redirect(url_for('ingredients.fatture_detail', invoice_id=invoice_id))
+    
+    except Exception as e:
+        flash(f'Errore nel riprocessamento: {str(e)}', 'error')
+        return redirect(url_for('ingredients.fatture_detail', invoice_id=invoice_id))
+
+@ingredients_bp.route('/fatture/<invoice_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def fatture_delete(invoice_id):
+    """Elimina una fattura"""
+    try:
+        processor = _get_invoice_processor()
+        success = processor.delete_invoice(invoice_id)
+        
+        if success:
+            flash('Fattura eliminata con successo!', 'success')
+        else:
+            flash('Errore nell\'eliminazione della fattura', 'error')
+        
+        return redirect(url_for('ingredients.fatture_list'))
+    
+    except Exception as e:
+        flash(f'Errore nell\'eliminazione: {str(e)}', 'error')
+        return redirect(url_for('ingredients.fatture_list'))
+
+@ingredients_bp.route('/fatture/<invoice_id>/update', methods=['POST'])
+@login_required
+def fatture_update(invoice_id):
+    """Aggiorna manualmente i dati di una fattura"""
+    try:
+        processor = _get_invoice_processor()
+        invoice = processor.get_invoice_detail(invoice_id)
+        
+        if not invoice:
+            return jsonify({'success': False, 'error': 'Fattura non trovata'}), 404
+        
+        # Ottieni i dati aggiornati dal form
+        updated_data = request.get_json()
+        
+        # Aggiorna il file JSON normalizzato
+        data_dir = os.path.join(current_app.root_path, '..', 'data', 'fatture')
+        file_path = os.path.join(data_dir, invoice['file_path'])
+        base_name = os.path.splitext(file_path)[0]
+        norm_file = f"{base_name}.norm.json"
+        
+        with open(norm_file, 'w', encoding='utf-8') as f:
+            json.dump(updated_data, f, indent=2, ensure_ascii=False)
+        
+        # Aggiorna fornitori e ingredienti se necessario
+        updates_log = processor._update_suppliers_and_ingredients(updated_data, file_path)
+        
+        # Log della modifica manuale
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'user_id': current_user.id,
+            'user_name': current_user.username,
+            'action': 'manual_update',
+            'changes': updated_data,
+            'updates_log': updates_log
+        }
+        
+        log_file = f"{base_name}.log.json"
+        if os.path.exists(log_file):
+            with open(log_file, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        else:
+            logs = {'entries': []}
+        
+        logs['entries'].append(log_entry)
+        
+        with open(log_file, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, indent=2, ensure_ascii=False)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Dati aggiornati con successo',
+            'updates_log': updates_log
+        })
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API per statistiche fatture
+@ingredients_bp.route('/api/fatture/stats')
+@login_required
+def api_fatture_stats():
+    """Statistiche sulle fatture"""
+    try:
+        processor = _get_invoice_processor()
+        invoices = processor.get_invoices_list()
+        
+        stats = {
+            'total_invoices': len(invoices),
+            'processed': len([inv for inv in invoices if inv.get('status') == 'processed']),
+            'errors': len([inv for inv in invoices if inv.get('status') == 'error']),
+            'duplicates': len([inv for inv in invoices if inv.get('status') == 'duplicate']),
+            'suppliers': len(set(inv.get('supplier', {}).get('name') for inv in invoices if inv.get('supplier', {}).get('name'))),
+            'total_amount': sum(inv.get('invoice', {}).get('total', 0) or 0 for inv in invoices),
+            'this_month': len([inv for inv in invoices if inv.get('uploaded_at', '').startswith(datetime.now().strftime('%Y-%m'))])
+        }
+        
+        return jsonify({'success': True, 'stats': stats})
+    
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

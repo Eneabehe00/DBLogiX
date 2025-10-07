@@ -947,20 +947,31 @@ def api_update_ticket_line():
         ticket_line.comportamiento = int(data.get('comportamiento', 0))
         ticket_line.TextoLote = data.get('texto_lote', '')
         
-        # Gestione IVA - aggiorna il prodotto associato se necessario
-        if 'iva' in data and ticket_line.product:
+        # Gestione IVA - aggiorna sia la linea del ticket che il prodotto associato
+        if 'iva' in data:
             iva_value = int(data['iva'])
-            # Converti il valore IVA in IdIva
-            if iva_value == 4:
-                ticket_line.product.IdIva = 1
-            elif iva_value == 10:
-                ticket_line.product.IdIva = 2
-            elif iva_value == 22:
-                ticket_line.product.IdIva = 3
-            elif iva_value == 0:
-                ticket_line.product.IdIva = 4
             
-            current_app.logger.info(f"📊 IVA aggiornata per prodotto {ticket_line.IdArticulo}: {iva_value}% (IdIva: {ticket_line.product.IdIva})")
+            # Aggiorna la linea del ticket direttamente
+            ticket_line.PorcentajeIVA = float(iva_value)
+            
+            # Converti il valore IVA in IdIva per la linea del ticket
+            if iva_value == 0:
+                ticket_line.IdIVA = 4  # Esente IVA
+            elif iva_value == 4:
+                ticket_line.IdIVA = 1  # 4%
+            elif iva_value == 10:
+                ticket_line.IdIVA = 2  # 10%
+            elif iva_value == 22:
+                ticket_line.IdIVA = 3  # 22%
+            else:
+                ticket_line.IdIVA = 1  # Default 4%
+            
+            # Aggiorna anche il prodotto associato se necessario
+            if ticket_line.product:
+                ticket_line.product.IdIva = ticket_line.IdIVA
+                current_app.logger.info(f"📊 IVA aggiornata per prodotto {ticket_line.IdArticulo}: {iva_value}% (IdIva: {ticket_line.product.IdIva})")
+            
+            current_app.logger.info(f"📊 IVA aggiornata per linea ticket {line_id}: {iva_value}% (IdIVA: {ticket_line.IdIVA}, PorcentajeIVA: {ticket_line.PorcentajeIVA})")
         
         # Gestione data di scadenza
         if data.get('fecha_caducidad'):
@@ -983,17 +994,43 @@ def api_update_ticket_line():
         # Salva nel database
         db.session.commit()
         
-        # Calcola il vat_rate attuale per la risposta
+        # Calcola il vat_rate attuale per la risposta - usa i dati dalla linea del ticket
         vat_rate = 0
-        if ticket_line.product and ticket_line.product.IdIva:
-            if ticket_line.product.IdIva == 1:
+        porcentaje_iva = 0
+        id_iva = 1
+        
+        if hasattr(ticket_line, 'PorcentajeIVA') and ticket_line.PorcentajeIVA is not None:
+            porcentaje_iva = float(ticket_line.PorcentajeIVA)
+            vat_rate = porcentaje_iva / 100
+        elif hasattr(ticket_line, 'IdIVA') and ticket_line.IdIVA:
+            id_iva = ticket_line.IdIVA
+            if id_iva == 1:
                 vat_rate = 0.04  # 4%
-            elif ticket_line.product.IdIva == 2:
+                porcentaje_iva = 4
+            elif id_iva == 2:
                 vat_rate = 0.10  # 10%
-            elif ticket_line.product.IdIva == 3:
+                porcentaje_iva = 10
+            elif id_iva == 3:
                 vat_rate = 0.22  # 22%
-            elif ticket_line.product.IdIva == 4:
+                porcentaje_iva = 22
+            elif id_iva == 4:
                 vat_rate = 0     # 0%
+                porcentaje_iva = 0
+        elif ticket_line.product and ticket_line.product.IdIva:
+            # Fallback al prodotto se i campi della linea non sono disponibili
+            id_iva = ticket_line.product.IdIva
+            if id_iva == 1:
+                vat_rate = 0.04  # 4%
+                porcentaje_iva = 4
+            elif id_iva == 2:
+                vat_rate = 0.10  # 10%
+                porcentaje_iva = 10
+            elif id_iva == 3:
+                vat_rate = 0.22  # 22%
+                porcentaje_iva = 22
+            elif id_iva == 4:
+                vat_rate = 0     # 0%
+                porcentaje_iva = 0
         
         # Prepara i dati aggiornati per la risposta
         updated_line = {
@@ -1007,7 +1044,9 @@ def api_update_ticket_line():
             'comportamiento': ticket_line.comportamiento,
             'fecha_caducidad': ticket_line.FechaCaducidad.isoformat() if ticket_line.FechaCaducidad else None,
             'texto_lote': ticket_line.TextoLote,
-            'vat_rate': vat_rate
+            'vat_rate': vat_rate,
+            'porcentaje_iva': porcentaje_iva,
+            'id_iva': id_iva
         }
         
         current_app.logger.info(f"✅ Linea ticket {line_id} del ticket {ticket_id} aggiornata con successo")
@@ -1105,6 +1144,7 @@ def create():
     ddt_causale = request.form.get('causale')
     ddt_aspetto_esteriore = request.form.get('aspetto_esteriore')
     ddt_trasporto_a_cura = request.form.get('trasporto_a_cura')
+    ddt_numero_colli = request.form.get('numero_colli_hidden')
 
     # DEBUG: Log del parametro creation_date ricevuto
     current_app.logger.info(f"🔍 DEBUG CREATION DATE: creation_date_str = '{creation_date_str}'")
@@ -1114,6 +1154,7 @@ def create():
     current_app.logger.info(f"🔍 DEBUG DDT CONFIG: causale = '{ddt_causale}'")
     current_app.logger.info(f"🔍 DEBUG DDT CONFIG: aspetto_esteriore = '{ddt_aspetto_esteriore}'")
     current_app.logger.info(f"🔍 DEBUG DDT CONFIG: trasporto_a_cura = '{ddt_trasporto_a_cura}'")
+    current_app.logger.info(f"🔍 DEBUG DDT NUMERO COLLI: numero_colli = '{ddt_numero_colli}'")
     
     # Gestione task
     from_task = request.form.get('from_task') == 'true'
@@ -1299,6 +1340,9 @@ def create():
             # 🔥 NUOVO: Campi configurabili DDT - priorità assoluta
             ObservacionesCliente=ddt_aspetto_esteriore if ddt_aspetto_esteriore else (client.Observaciones or ""),
             EANCliente=ddt_causale if ddt_causale else (client.EANScanner or ""),
+
+            # 🔥 NUOVO: Numero colli personalizzato
+            IdTarifa=int(ddt_numero_colli) if ddt_numero_colli and ddt_numero_colli.isdigit() else 1,
 
             # Informazioni DDT
             Tipo="A",
@@ -1499,11 +1543,18 @@ def create():
                 base_description = ticket_line.Descripcion or product.Descripcion
                 
                 # Aggiungi informazioni lotto se abilitato
-                from services.utils import format_lot_for_ddt
+                from services.utils import format_lot_for_ddt, extract_lot_from_description
                 lot_text = format_lot_for_ddt(ticket_header, ticket_line)
                 
-                # Combina descrizione base con informazioni lotto
-                albaran_line.Descripcion = base_description + lot_text
+                # Combina descrizione base con informazioni lotto per verifica
+                full_description = base_description + lot_text
+                
+                # Estrai il lotto dalla descrizione completa e salva nel campo dedicato
+                clean_description, lot_number = extract_lot_from_description(full_description)
+                
+                # Imposta la descrizione pulita e il lotto nel campo dedicato
+                albaran_line.Descripcion = clean_description
+                albaran_line.TextoLote = lot_number
                 albaran_line.Descripcion1 = getattr(product_article, 'Descripcion1', '') if product_article else ''
                 albaran_line.Comportamiento = getattr(ticket_line, 'comportamiento', 0)  # Usa il valore dal ticket
                 albaran_line.ComportamientoDevolucion = getattr(ticket_line, 'comportamiento_devolucion', 0)
@@ -2356,10 +2407,13 @@ def create_invoice_only():
                     product_article = Article.query.get(product.IdArticulo)
 
                     # Gestisci descrizione con lotto
-                    from services.utils import format_lot_for_ddt
+                    from services.utils import format_lot_for_ddt, extract_lot_from_description
                     base_description = line.Descripcion or product.Descripcion
                     lot_text = format_lot_for_ddt(ticket_header, line)
                     full_description = base_description + lot_text
+                    
+                    # Estrai il lotto dalla descrizione completa e salva nel campo dedicato
+                    clean_description, lot_number = extract_lot_from_description(full_description)
 
                     albaran_linea = AlbaranLinea()
                     albaran_linea.IdLineaAlbaran = line_count
@@ -2372,7 +2426,9 @@ def create_invoice_only():
 
                     # Dati prodotto
                     albaran_linea.IdArticulo = line.IdArticulo
-                    albaran_linea.Descripcion = full_description[:100] if len(full_description) > 100 else full_description
+                    # Usa la descrizione pulita e limita a 100 caratteri
+                    albaran_linea.Descripcion = clean_description[:100] if len(clean_description) > 100 else clean_description
+                    albaran_linea.TextoLote = lot_number
                     albaran_linea.Descripcion1 = getattr(product_article, 'Descripcion1', '') if product_article else ''
                     albaran_linea.Comportamiento = getattr(line, 'comportamiento', 0)
                     albaran_linea.ComportamientoDevolucion = getattr(line, 'comportamiento_devolucion', 0)
@@ -4245,18 +4301,26 @@ def generate_ddt_pdf(ddt, cliente, empresa, is_muto=False, color_mode='color'):
         elements.append(Spacer(1, 10*mm))
     
     # === COMPACT TRANSPORT CONDITIONS ===
-    # Calculate number of packages (colli) based on system configuration
-    articles_per_package = SystemConfig.get_config('articles_per_package', 5)
-    
-    # Count articles excluding "trasporto" items
-    total_articles = 0
-    for line in lines:
-        description = (line.Descripcion or '').lower()
-        if 'trasporto' not in description:
-            total_articles += 1
-    
-    # Calculate number of packages
-    num_packages = max(1, (total_articles + articles_per_package - 1) // articles_per_package)  # Round up division
+    # 🔥 NUOVO: Usa il numero di colli personalizzato se disponibile, altrimenti calcola automaticamente
+    custom_num_packages = getattr(ddt, 'IdTarifa', None)
+    if custom_num_packages and custom_num_packages > 0:
+        # Usa il numero di colli personalizzato
+        num_packages = int(custom_num_packages)
+        current_app.logger.info(f"📦 Usando numero colli personalizzato: {num_packages}")
+    else:
+        # Calculate number of packages (colli) based on system configuration
+        articles_per_package = SystemConfig.get_config('articles_per_package', 5)
+
+        # Count articles excluding "trasporto" items
+        total_articles = 0
+        for line in lines:
+            description = (line.Descripcion or '').lower()
+            if 'trasporto' not in description:
+                total_articles += 1
+
+        # Calculate number of packages
+        num_packages = max(1, (total_articles + articles_per_package - 1) // articles_per_package)  # Round up division
+        current_app.logger.info(f"📦 Calcolo automatico numero colli: {total_articles} articoli → {num_packages} colli")
     
     # 🔥 NUOVO: Valori configurabili DDT dal database
     causale_trasporto = ddt.EANCliente or "Vendita"
@@ -5102,13 +5166,24 @@ def api_create_manual_ticket():
                 'id_articulo': 999,  # Usa sempre ID 999 per prodotti personalizzati
                 'descripcion': descripcion,
                 'peso': float(peso),
+                'quantita': float(peso),  # Quantity field for ticket table (coerente con modifica DDT)
                 'precio': precio_sin_iva,  # Prezzo senza IVA per coerenza
+                'precio_senza_iva': precio_sin_iva,  # Campo aggiuntivo per coerenza
                 'precio_con_iva': precio_con_iva,  # Mantieni anche il prezzo originale
+                'precio_standard': precio_sin_iva,  # Campo aggiuntivo per coerenza
+                'precio_listino': precio_sin_iva,  # Campo aggiuntivo per coerenza
+                'has_custom_price': False,  # Campo aggiuntivo per coerenza
+                'price_difference': 0,  # Campo aggiuntivo per coerenza
                 'importe': importe,
+                'importe_con_iva': precio_con_iva * peso,  # Importo con IVA per coerenza
                 'fecha_caducidad': fecha_caducidad,
+                'comportamiento': product_data.get('comportamiento', 1),
                 'id_iva': id_iva,
                 'vat_rate': vat_rate,  # Aggiungi aliquota IVA
-                'comportamiento': product_data.get('comportamiento', 1),
+                'porcentaje_iva': int(vat_rate * 100),  # Campo aggiuntivo per coerenza
+                'descuento': float(product_data.get('descuento', 0)),  # Campo sconto per coerenza
+                'texto_lote': product_data.get('texto_lote', ''),  # Campo lotto per coerenza
+                'iva': int(vat_rate * 100),  # Campo aggiuntivo per coerenza con modifica DDT
                 'is_manual': True  # Flag per identificare ticket manuali
             })
         
@@ -5886,6 +5961,8 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
         current_app.logger.info(f"🔍 Tentativo aggiornamento linea DB: ticket={ticket_id}, linea={line_id}, campo={field}, valore={value}")
 
         # SICUREZZA: Controlla se è un ticket manuale (ID negativo) - non dovrebbe mai accadere
+        # Nota: Questo controllo è ridondante ora che filtriamo i ticket negativi prima di chiamare questa funzione
+        # Ma lo manteniamo come backup di sicurezza
         if ticket_id < 0:
             current_app.logger.error(f"❌ SICUREZZA: Tentativo di salvare ticket manuale ({ticket_id}) nel database!")
             return False
@@ -5902,12 +5979,14 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
             'prezzo_totale': 'Importe',  # Importo totale con IVA
             'importo_iva': None,  # Campo virtuale, gestito separatamente
             'data_scadenza': 'FechaCaducidad',
+            'fecha_caducidad': 'FechaCaducidad',  # Campo alternativo per data scadenza
             'id_iva': 'IdIVA',  # Ora gestito direttamente nella linea del ticket
             'porcentaje_iva': 'PorcentajeIVA',  # Ora gestito direttamente nella linea del ticket
             'texto_lote': 'TextoLote',
             'comportamiento': 'comportamiento',
             'precio_sin_iva': 'PrecioSinIVA',  # Prezzo senza IVA nella linea del ticket
-            'ImporteSinIVASinDtoL': 'ImporteSinIVASinDtoL'  # 🔥 NUOVO: Imponibile senza IVA
+            'ImporteSinIVASinDtoL': 'ImporteSinIVASinDtoL',  # 🔥 NUOVO: Imponibile senza IVA
+            'descuento': 'Descuento'  # Campo sconto per linea del ticket
         }
         
         db_field = field_mapping.get(field)
@@ -5966,32 +6045,33 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
                 current_app.logger.error(f"❌ Linea ticket non trovata per PrecioSinIVA: ticket={ticket_id}, linea={line_id}")
                 return False
 
-        # 🔥 Gestione speciale per campo ImporteSinIVASinDtoL - campo che esiste nella tabella
+        # 🔥 Gestione speciale per campo ImporteSinIVASinDtoL - campo che esiste nel ticket header, non nella linea
         if field == 'ImporteSinIVASinDtoL':
             current_app.logger.info(f"💰 GESTIONE SPECIALE IMPONIBILE SENZA IVA: valore={value}")
 
-            # Trova la linea del ticket
-            ticket_line = TicketLine.query.filter_by(
-                IdTicket=ticket_id,
-                IdLineaTicket=line_id
-            ).first()
+            # Trova il ticket header (non la linea del ticket)
+            from app.models import TicketHeader
+            ticket_header = TicketHeader.query.filter_by(IdTicket=ticket_id).first()
 
-            if ticket_line:
+            if ticket_header:
                 try:
-                    # Salva direttamente nel campo ImporteSinIVASinDtoL
-                    old_value = getattr(ticket_line, 'ImporteSinIVASinDtoL', None)
-                    setattr(ticket_line, 'ImporteSinIVASinDtoL', float(value))
+                    # Salva direttamente nel campo ImporteSinIVASinDtoL del ticket header
+                    old_value = getattr(ticket_header, 'ImporteSinIVASinDtoL', None)
+                    setattr(ticket_header, 'ImporteSinIVASinDtoL', float(value))
 
-                    current_app.logger.info(f"💰 AGGIORNAMENTO IMPONIBILE SENZA IVA: {old_value} → {value}")
+                    current_app.logger.info(f"💰 AGGIORNAMENTO IMPONIBILE SENZA IVA nel ticket header: {old_value} → {value}")
 
-                    # Salva immediatamente le modifiche alla linea del ticket
+                    # Salva immediatamente le modifiche al ticket header
                     db.session.commit()
-                    current_app.logger.info(f"💾 ImporteSinIVASinDtoL salvato nella linea ticket: {value}")
+                    current_app.logger.info(f"💾 ImporteSinIVASinDtoL salvato nel ticket header: {value}")
 
+                    # 🔥 CORREZIONE: Restituisci True perché questo campo è SOLO nel ticket header, non nella linea
+                    # Non deve continuare con il flusso normale perché la linea del ticket non ha questo campo
+                    current_app.logger.info(f"✅ Campo ImporteSinIVASinDtoL gestito completamente nel ticket header")
                     return True
 
                 except Exception as e:
-                    current_app.logger.error(f"❌ Errore salvataggio ImporteSinIVASinDtoL: {str(e)}")
+                    current_app.logger.error(f"❌ Errore salvataggio ImporteSinIVASinDtoL nel ticket header: {str(e)}")
                     # Rollback in caso di errore
                     try:
                         db.session.rollback()
@@ -5999,7 +6079,7 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
                         pass
                     return False
             else:
-                current_app.logger.error(f"❌ Linea ticket non trovata per ImporteSinIVASinDtoL: ticket={ticket_id}, linea={line_id}")
+                current_app.logger.error(f"❌ Ticket header non trovato per ImporteSinIVASinDtoL: ticket={ticket_id}")
                 return False
 
         # Gestione speciale per campi IVA - aggiorna anche l'articolo collegato
@@ -6062,8 +6142,9 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
             update_article_iva_from_ticket_line(ticket_id, line_id, field, value)
             current_app.logger.info(f"✅ Articolo aggiornato per consistenza")
 
-            # IMPORTANTE: Ritorna True perché abbiamo già gestito completamente l'IVA
-            return True
+            # 🔥 CORREZIONE: NON restituire True qui! Continua con il flusso normale per aggiornare anche il campo nella linea del ticket
+            # Questo permette di gestire correttamente modifiche multiple che coinvolgono sia IVA che altri campi
+            current_app.logger.info(f"🔄 Continuando con il flusso normale per aggiornare anche il campo {field} nella linea del ticket")
 
         # Gestione speciale per prezzo senza IVA - aggiorna anche l'articolo collegato
         if field == 'precio_sin_iva':
@@ -6095,9 +6176,17 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
         # Aggiorna il campo specificato
         current_app.logger.info(f"🔍 Tentativo aggiornamento campo {db_field} nel modello TicketLine")
         current_app.logger.info(f"🔍 Campo {db_field} esiste nel modello: {hasattr(ticket_line, db_field)}")
+        current_app.logger.info(f"🔍 Tipo di valore ricevuto: {type(value)} per campo {db_field}")
 
         if hasattr(ticket_line, db_field):
             old_value = getattr(ticket_line, db_field)
+
+            # Gestione speciale per il campo TextoLote che deve essere una stringa
+            if db_field == 'TextoLote':
+                if not isinstance(value, str):
+                    value = str(value)
+                    current_app.logger.info(f"🔄 Conversione TextoLote a stringa: {value}")
+
             setattr(ticket_line, db_field, value)
 
             current_app.logger.info(f"💾 AGGIORNAMENTO REALE: {db_field} da {old_value} a {value}")
@@ -6109,6 +6198,10 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
             # Log specifico per campo Importe
             if db_field == 'Importe':
                 current_app.logger.info(f"💰 IMPORTO TOTALE LINEA: {db_field} = {value} (ticket={ticket_id}, linea={line_id})")
+
+            # Log specifico per campo TextoLote
+            if db_field == 'TextoLote':
+                current_app.logger.info(f"📝 TEXTO_LOTE LINEA TICKET: {db_field} = {value} (ticket={ticket_id}, linea={line_id})")
 
             # Salva nel database
             db.session.commit()
@@ -6124,6 +6217,9 @@ def update_ticket_line_in_database(ticket_id, line_id, field, value):
 
             if db_field == 'Importe':
                 current_app.logger.info(f"💰 CONFERMA IMPORTO: {db_field} confermato a {new_value}")
+
+            if db_field == 'TextoLote':
+                current_app.logger.info(f"📝 CONFERMA TEXTO_LOTE: {db_field} confermato a {new_value}")
 
             return True
             
@@ -6441,9 +6537,12 @@ def api_update_ticket_field():
                 'success': False,
                 'message': 'Parametri mancanti: ticket_id, field e value sono richiesti'
             }), 400
+
+        # Log aggiuntivo per line_id
+        current_app.logger.info(f"🔍 DEBUG: line_id ricevuto: {line_id} (type: {type(line_id)})")
         
         # Validate field name
-        allowed_fields = ['descrizione', 'codice', 'peso_quantita', 'prezzo_unitario', 'prezzo_totale', 'importo_iva', 'data_scadenza', 'id_iva', 'porcentaje_iva', 'texto_lote', 'comportamiento', 'precio_sin_iva', 'ImporteSinIVASinDtoL']
+        allowed_fields = ['descrizione', 'codice', 'peso_quantita', 'prezzo_unitario', 'prezzo_totale', 'importo_iva', 'data_scadenza', 'fecha_caducidad', 'id_iva', 'porcentaje_iva', 'texto_lote', 'comportamiento', 'precio_sin_iva', 'ImporteSinIVASinDtoL', 'descuento']
 
         current_app.logger.info(f"🔍 CAMPI PERMESSI: {allowed_fields}")
         current_app.logger.info(f"🔍 CAMPO RICEVUTO: '{field}'")
@@ -6571,7 +6670,22 @@ def api_update_ticket_field():
         if 'ddt_ticket_modifications' not in session:
             session['ddt_ticket_modifications'] = {}
 
-        field_key = f"{ticket_id_int}_{line_id}_{field}" if line_id else f"{ticket_id_int}_{field}"
+        # Migliora generazione chiave: includi sempre line_id (anche se None) per evitare conflitti
+        line_id_str = str(line_id) if line_id is not None else 'None'
+        field_key = f"{ticket_id_int}_{line_id_str}_{field}"
+        current_app.logger.info(f"🔑 DEBUG: Generazione chiave: ticket_id={ticket_id_int}, line_id={line_id} ({line_id_str}), field={field} -> field_key='{field_key}'")
+
+        # Verifica se la chiave esiste già (sovrascrittura)
+        if field_key in session['ddt_ticket_modifications']:
+            current_app.logger.warning(f"⚠️ SOVRASCRITTURA CHIAVE: {field_key} esiste già, verrà sovrascritta!")
+            old_modification = session['ddt_ticket_modifications'][field_key]
+            current_app.logger.warning(f"⚠️ Vecchia modifica: {old_modification}")
+
+        # Debug: mostra tutte le chiavi esistenti nella sessione prima di aggiungere la nuova
+        existing_keys = list(session['ddt_ticket_modifications'].keys())
+        current_app.logger.info(f"🔍 DEBUG: Chiavi esistenti nella sessione PRIMA dell'aggiunta: {existing_keys}")
+        current_app.logger.info(f"🔍 DEBUG: Numero totale di modifiche esistenti: {len(existing_keys)}")
+
         from datetime import datetime as dt
         session['ddt_ticket_modifications'][field_key] = {
             'ticket_id': ticket_id_int,
@@ -6585,7 +6699,13 @@ def api_update_ticket_field():
         }
         session.modified = True
 
+        # Debug: mostra tutte le chiavi esistenti nella sessione DOPO l'aggiunta
+        updated_keys = list(session['ddt_ticket_modifications'].keys())
+        current_app.logger.info(f"🔍 DEBUG: Chiavi esistenti nella sessione DOPO l'aggiunta: {updated_keys}")
+        current_app.logger.info(f"🔍 DEBUG: Numero totale di modifiche dopo aggiunta: {len(updated_keys)}")
+
         current_app.logger.info(f"✅ Campo {field} accumulato in localStorage per ticket {ticket_id_int}, linea {line_id}: {value}")
+        current_app.logger.info(f"📊 DEBUG: Modifiche totali in sessione: {len(session['ddt_ticket_modifications'])}")
 
         return jsonify({
             'success': True,
@@ -6923,6 +7043,13 @@ def modify(ddt_id):
         # 🔥 NUOVO: Estrai valori campi configurabili dal DDT esistente
         # I campi sono ora mappati direttamente sui campi della tabella
         
+        # 🔥 NUOVO: Estrai valori campi configurabili dal DDT esistente
+        # I campi sono ora mappati direttamente sui campi della tabella
+        current_app.logger.info(f"🔍 Valori raw dal database per DDT {ddt_id}:")
+        current_app.logger.info(f"  - EANCliente: '{ddt.EANCliente}'")
+        current_app.logger.info(f"  - ObservacionesCliente: '{ddt.ObservacionesCliente}'")
+        current_app.logger.info(f"  - ObservacionesDocumento: '{ddt.ObservacionesDocumento}'")
+
         ddt_config_values = {
             'causale': ddt.EANCliente or '',
             'aspetto_esteriore': ddt.ObservacionesCliente or '',
@@ -6963,35 +7090,46 @@ def modify(ddt_id):
                 # Get product info
                 product = Article.query.get(line.IdArticulo)
 
-                # Calculate prices
-                line_price_without_vat = float(line.PrecioSinIVA or 0)
-                line_price_with_vat = float(line.PrecioConIVASinDtoL or 0)
-
-                # Calculate VAT rate
+                # Calculate VAT rate first
                 vat_rate = 0
                 if line.PorcentajeIVA:
                     vat_rate = float(line.PorcentajeIVA) / 100
 
-                # If price with VAT is not available, calculate it from price without VAT
-                if line_price_with_vat == 0 and line_price_without_vat > 0:
-                    line_price_with_vat = line_price_without_vat * (1 + vat_rate)
+                # Calculate prices
+                # Use Precio (with VAT) as the original price
+                line_price_with_vat = float(line.Precio or 0)  # Original price with VAT
 
-                # Apply discount to prices
-                discount_rate = float(line.Descuento or 0) / 100
-                if discount_rate > 0:
-                    line_price_without_vat = line_price_without_vat * (1 - discount_rate)
-                    line_price_with_vat = line_price_with_vat * (1 - discount_rate)
+                # Calculate price without VAT from price with VAT
+                if line_price_with_vat > 0:
+                    line_price_without_vat = line_price_with_vat / (1 + vat_rate)
+                else:
+                    line_price_without_vat = float(line.PrecioSinIVA or 0)
 
-                # Calculate amounts
+                # Round to avoid floating point precision issues
+                line_price_without_vat = round(line_price_without_vat, 4)
+
+                # Price with VAT is already set above
+
+                # NOTE: Non applicare sconto qui - mostrare prezzi originali
+                # Lo sconto verrà applicato solo durante il salvataggio
+
+                # Use actual amounts from database (they already include discounts)
                 peso_value = float(line.Peso or 0)
                 comportamiento = getattr(line, 'Comportamiento', 0)
 
-                if comportamiento == 1:  # Weight-based
-                    line_amount = peso_value * line_price_without_vat
-                    line_amount_with_vat = peso_value * line_price_with_vat
-                else:  # Unit-based
-                    line_amount = peso_value * line_price_without_vat
-                    line_amount_with_vat = peso_value * line_price_with_vat
+                # Get actual amounts from database
+                line_amount = float(line.ImporteSinIVASinDtoL or 0)  # Amount without VAT (already discounted)
+                line_amount_with_vat = float(line.ImporteConIVASinDtoL or 0)  # Amount with VAT (already discounted)
+
+                # Fallback calculation if database values are not available
+                if line_amount == 0 or line_amount_with_vat == 0:
+                    # Calculate from original prices (before discount)
+                    if comportamiento == 1:  # Weight-based
+                        line_amount = peso_value * line_price_without_vat
+                        line_amount_with_vat = peso_value * line_price_with_vat
+                    else:  # Unit-based
+                        line_amount = peso_value * line_price_without_vat
+                        line_amount_with_vat = peso_value * line_price_with_vat
 
                 # Add to total
                 total_amount_with_vat += line_amount_with_vat
@@ -7013,13 +7151,14 @@ def modify(ddt_id):
                     'price_difference': 0,
                     'importe': line_amount,
                     'importe_con_iva': line_amount_with_vat,
-                    'desquento': float(line.Descuento or 0),  # Discount field for ticket table
+                    'descuento': float(line.Descuento or 0),  # Discount field for ticket table
                     'fecha_caducidad': line.FechaCaducidad,
                     'comportamiento': comportamiento,
                     'id_iva': line.IdIVA or 1,
                     'vat_rate': vat_rate,
                     'porcentaje_iva': int(float(line.PorcentajeIVA or 0)),
-                    'texto_lote': line.TextoLote
+                    'texto_lote': line.TextoLote,
+                    'iva': int(float(line.PorcentajeIVA or 0))  # Campo aggiuntivo per coerenza
                 }
 
                 ticket_lines_data.append(line_data)
@@ -7091,6 +7230,9 @@ def modify(ddt_id):
         create_form = DDTCreateForm()
 
         # Render preview template with DDT data
+        current_app.logger.info(f"📤 Rendering template con ddt_config_values: {ddt_config_values}")
+        current_app.logger.info(f"📤 Rendering template con ddt_numero_colli: {ddt.IdTarifa if ddt.IdTarifa and ddt.IdTarifa > 0 else None}")
+
         return render_template('ddt/preview.html',
                              cliente=cliente,
                              empresa=empresa,
@@ -7104,7 +7246,8 @@ def modify(ddt_id):
                              listini_enabled=listini_enabled,
                              has_dedicated_listino=has_dedicated_listino,
                              listino_info=listino_info,
-                             ddt_config_values=ddt_config_values)  # 🔥 NUOVO: Valori campi configurabili
+                             ddt_config_values=ddt_config_values,  # 🔥 NUOVO: Valori campi configurabili
+                             ddt_numero_colli=ddt.IdTarifa if ddt.IdTarifa and ddt.IdTarifa > 0 else None)  # 🔥 NUOVO: Numero colli personalizzato
 
     except Exception as e:
         current_app.logger.error(f"❌ Errore caricamento modifica DDT {ddt_id}: {str(e)}")
@@ -7171,7 +7314,7 @@ def api_save_ddt_modifications(ddt_id):
         has_ddt_date = modifications.get('ddt_date') and modifications.get('ddt_date').strip() != ''
 
         # 🔥 NUOVO: Verifica se ci sono campi configurabili DDT modificati
-        has_config_fields = any(key in modifications for key in ['causale', 'aspetto_esteriore', 'trasporto_a_cura'])
+        has_config_fields = any(key in modifications for key in ['causale', 'aspetto_esteriore', 'trasporto_a_cura', 'numero_colli'])
 
         current_app.logger.info(f"🔍 Analisi dati ricevuti: lines={has_lines} ({len(modifications.get('lines', []))}), added_tickets={has_added_tickets} ({len(modifications.get('added_tickets', []))}), ddt_date={has_ddt_date} ({modifications.get('ddt_date', 'N/A')}), config_fields={has_config_fields}")
 
@@ -7233,6 +7376,19 @@ def api_save_ddt_modifications(ddt_id):
                     current_app.logger.info(f"🚚 Aggiornato trasporto_a_cura in ObservacionesDocumento: '{modifications['trasporto_a_cura']}'")
                     config_fields_updated = True
 
+                # 🔥 NUOVO: Aggiorna numero colli
+                if 'numero_colli' in modifications:
+                    try:
+                        numero_colli = int(modifications['numero_colli'])
+                        if numero_colli > 0:
+                            ddt.IdTarifa = numero_colli
+                            current_app.logger.info(f"📦 Aggiornato numero colli in IdTarifa: {numero_colli}")
+                            config_fields_updated = True
+                        else:
+                            current_app.logger.warning(f"⚠️ Numero colli non valido: {modifications['numero_colli']}")
+                    except (ValueError, TypeError) as e:
+                        current_app.logger.error(f"❌ Errore conversione numero colli: {str(e)}")
+
                 # Aggiorna data modifica
                 if config_fields_updated:
                     ddt.FechaModificacion = datetime.now()
@@ -7247,9 +7403,30 @@ def api_save_ddt_modifications(ddt_id):
         # ✅ NUOVO: APPLICA MODIFICHE ACCUMULATE DAL LOCALSTORAGE AL DATABASE
         applied_modifications = 0
         ticket_modifications = session.get('ddt_ticket_modifications', {})
+        current_app.logger.info(f"🔄 INIZIO APPLICAZIONE MODIFICHE: sessione ha chiave 'ddt_ticket_modifications'? {'ddt_ticket_modifications' in session}")
+        current_app.logger.info(f"🔄 SESSION KEYS: {list(session.keys())}")
         if ticket_modifications:
             current_app.logger.info(f"🔄 Applicazione modifiche accumulate dal localStorage: {len(ticket_modifications)} modifiche")
+            current_app.logger.info(f"🔍 DEBUG: Chiavi modifiche presenti: {list(ticket_modifications.keys())}")
 
+            # Log dettagliato di tutte le modifiche presenti nella sessione
+            for i, (field_key, modification) in enumerate(ticket_modifications.items()):
+                current_app.logger.info(f"🔍 DEBUG: Modifica {i+1}: {field_key} -> ticket={modification['ticket_id']}, line={modification['line_id']}, field={modification['field']}, value={modification['value']}, timestamp={modification.get('timestamp', 'N/A')}")
+
+                # Verifica se il campo è valido
+                if modification['field'] not in ['descrizione', 'codice', 'peso_quantita', 'prezzo_unitario', 'prezzo_totale', 'importo_iva', 'data_scadenza', 'fecha_caducidad', 'id_iva', 'porcentaje_iva', 'texto_lote', 'comportamiento', 'precio_sin_iva', 'ImporteSinIVASinDtoL', 'descuento']:
+                    current_app.logger.error(f"❌ Campo non valido: {modification['field']}")
+
+            # Log specifico per il campo texto_lote
+            texto_lote_modifications = [mod for mod in ticket_modifications.values() if mod['field'] == 'texto_lote']
+            if texto_lote_modifications:
+                current_app.logger.info(f"📝 TEXTO_LOTE MODIFICATIONS TROVATE: {len(texto_lote_modifications)}")
+                for mod in texto_lote_modifications:
+                    current_app.logger.info(f"📝 TEXTO_LOTE: ticket={mod['ticket_id']}, line={mod['line_id']}, value={mod['value']}")
+            else:
+                current_app.logger.warning(f"⚠️ Nessuna modifica TEXTO_LOTE trovata nella sessione!")
+            # 🔥 CORREZIONE CRITICA: Il loop deve essere DENTRO il blocco if, non nell'else!
+            # Applica le modifiche solo se ci sono modifiche nella sessione
             for field_key, modification in ticket_modifications.items():
                 try:
                     ticket_id = modification['ticket_id']
@@ -7259,6 +7436,17 @@ def api_save_ddt_modifications(ddt_id):
                     is_manual = modification['is_manual']
 
                     current_app.logger.info(f"💾 Applicazione modifica: ticket={ticket_id}, linea={line_id}, campo={field}, valore={value}")
+
+                    # 🔥 CORREZIONE: Salta i ticket virtuali/manuali con ID negativo
+                    # Questi ticket sono temporanei e non dovrebbero mai essere salvati nel database
+                    if ticket_id < 0:
+                        current_app.logger.warning(f"⚠️ Saltando modifica per ticket virtuale {ticket_id} (ID negativo)")
+                        # Marca comunque come applicata per evitare di riprovare continuamente
+                        modification['saved_to_db'] = True
+                        modification['applied_at'] = datetime.now().isoformat()
+                        modification['skipped_virtual'] = True
+                        applied_modifications += 1
+                        continue
 
                     # Applica la modifica al database
                     if line_id:
@@ -7273,15 +7461,29 @@ def api_save_ddt_modifications(ddt_id):
                         modification['saved_to_db'] = True
                         modification['applied_at'] = datetime.now().isoformat()
                         applied_modifications += 1
-                        current_app.logger.info(f"✅ Modifica applicata: {field_key}")
+                        current_app.logger.info(f"✅ Modifica applicata: {field_key} (campo={field}, valore={value})")
+
+                        # Log specifico per campo TextoLote
+                        if field == 'texto_lote':
+                            current_app.logger.info(f"📝 TEXTO_LOTE APPLICATO CON SUCCESSO: {field_key} = {value}")
+                            current_app.logger.info(f"📝 TEXTO_LOTE - Verifica nel database dopo applicazione...")
                     else:
-                        current_app.logger.error(f"❌ Errore applicazione modifica: {field_key}")
+                        current_app.logger.error(f"❌ Errore applicazione modifica: {field_key} (campo={field}, valore={value})")
+                        # Log aggiuntivo per campo TextoLote fallito
+                        if field == 'texto_lote':
+                            current_app.logger.error(f"📝 ERRORE TEXTO_LOTE: {field_key} = {value}")
+                            current_app.logger.error(f"📝 ERRORE TEXTO_LOTE - Verifica dettagli errore...")
 
                 except Exception as e:
                     current_app.logger.error(f"❌ Errore applicazione modifica {field_key}: {str(e)}")
                     continue
 
             current_app.logger.info(f"🎯 Modifiche applicate dal localStorage: {applied_modifications}/{len(ticket_modifications)}")
+
+        else:
+            current_app.logger.warning(f"⚠️ Nessuna modifica trovata in sessione!")
+            current_app.logger.warning(f"🔍 SESSION CONTENT: {dict(session)}")
+            current_app.logger.warning(f"🔍 SESSION DDT_MODIFICATIONS: {session.get('ddt_ticket_modifications', 'NOT FOUND')}")
 
         # ✅ NUOVO: APPLICA SCONTI TICKET DAL LOCALSTORAGE AL DATABASE
         applied_discounts = 0
@@ -7310,31 +7512,46 @@ def api_save_ddt_modifications(ddt_id):
 
                             # Applica lo sconto a tutte le linee del ticket
                             for line in ticket_lines:
-                                # Salva lo sconto nel campo Descuento
-                                line.Descuento = discount_percent
-                                line.TimeStamp = datetime.now()
-                                line.Modificado = 1
-
                                 # Converti i valori a float per evitare problemi di tipo con decimal.Decimal
                                 precio_sin_iva = float(line.PrecioSinIVA)
                                 peso = float(line.Peso)
                                 porcentaje_iva = float(line.PorcentajeIVA)
 
-                                # Ricalcola gli importi considerando lo sconto
-                                # Lo sconto viene applicato al prezzo senza IVA
+                                # Calcola il prezzo scontato teorico
                                 precio_sin_iva_scontato = precio_sin_iva * (1 - discount_percent / 100)
-                                line.ImporteSinIVASinDtoL = peso * precio_sin_iva_scontato
-                                line.ImporteDelIVAConDtoL = line.ImporteSinIVASinDtoL * (porcentaje_iva / 100)
-                                line.ImporteSinIVAConDtoL = line.ImporteSinIVASinDtoL
-                                line.ImporteDelIVAConDtoLConDtoTotal = line.ImporteDelIVAConDtoL
-                                line.ImporteConIVASinDtoL = line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL
-                                line.ImporteSinIVAConDtoLConDtoTotal = line.ImporteSinIVASinDtoL
-                                line.ImporteDelRE = 0
-                                line.ImporteDelDescuento = peso * precio_sin_iva * (discount_percent / 100)  # Importo dello sconto
-                                line.ImporteConDtoTotal = line.ImporteConIVASinDtoL
-                                line.Importe = line.ImporteConDtoTotal
+                                importe_scontato_teorico = peso * precio_sin_iva_scontato
 
-                                current_app.logger.info(f"✅ Sconto {discount_percent}% applicato alla linea {line.IdLineaAlbaran}: prezzo base €{precio_sin_iva:.2f}, prezzo scontato €{precio_sin_iva_scontato:.2f}, totale €{line.Importe:.2f}")
+                                # Verifica se lo sconto era già stato applicato correttamente
+                                # Gestisci i tipi di dati Decimal
+                                current_descuento = float(line.Descuento) if line.Descuento else 0.0
+                                current_importe = float(line.ImporteSinIVASinDtoL) if line.ImporteSinIVASinDtoL else 0.0
+
+                                # Migliore logica di confronto per evitare ri-applicazione di sconti identici
+                                sconto_cambiato = abs(current_descuento - discount_percent) > 0.1  # 0.1% di tolleranza
+
+                                sconto_gia_applicato = not sconto_cambiato
+
+                                if sconto_gia_applicato:
+                                    current_app.logger.info(f"💰 Sconto {discount_percent}% già applicato correttamente alla linea {line.IdLineaAlbaran} (Descuento={current_descuento}, ImporteSinIVASinDtoL={current_importe}, teorico={importe_scontato_teorico:.3f})")
+                                else:
+                                    # Applica lo sconto solo se necessario
+                                    line.Descuento = discount_percent
+                                    line.TimeStamp = datetime.now()
+                                    line.Modificado = 1
+
+                                    # Ricalcola gli importi considerando lo sconto
+                                    line.ImporteSinIVASinDtoL = importe_scontato_teorico
+                                    line.ImporteDelIVAConDtoL = line.ImporteSinIVASinDtoL * (porcentaje_iva / 100)
+                                    line.ImporteSinIVAConDtoL = line.ImporteSinIVASinDtoL
+                                    line.ImporteDelIVAConDtoLConDtoTotal = line.ImporteDelIVAConDtoL
+                                    line.ImporteConIVASinDtoL = line.ImporteSinIVASinDtoL + line.ImporteDelIVAConDtoL
+                                    line.ImporteSinIVAConDtoLConDtoTotal = line.ImporteSinIVASinDtoL
+                                    line.ImporteDelRE = 0
+                                    line.ImporteDelDescuento = peso * precio_sin_iva * (discount_percent / 100)  # Importo dello sconto
+                                    line.ImporteConDtoTotal = line.ImporteConIVASinDtoL
+                                    line.Importe = line.ImporteConDtoTotal
+
+                                    current_app.logger.info(f"💰 Sconto {discount_percent}% applicato alla linea {line.IdLineaAlbaran}: prezzo base €{precio_sin_iva:.2f}, prezzo scontato €{precio_sin_iva_scontato:.2f}, totale €{line.Importe:.2f}")
 
                             applied_discounts += 1
                         else:
@@ -7397,16 +7614,18 @@ def api_save_ddt_modifications(ddt_id):
 
                     # ✅ CORRECTION: Calculate price WITHOUT VAT from price WITH VAT
                     # The frontend sends price WITH VAT, but we need to store price WITHOUT VAT
+                    # ⚠️ CRITICAL: When discount is applied, precio_con_iva is ALREADY discounted!
+                    # We must preserve the ORIGINAL price without discount in PrecioSinIVA field
                     if porcentaje_iva > 0:
                         # For VAT > 0%, calculate price without VAT: price_with_vat / (1 + vat_rate)
                         vat_rate = porcentaje_iva / 100
-                        precio_sin_iva = precio_con_iva / (1 + vat_rate)
+                        precio_sin_iva_calculated = precio_con_iva / (1 + vat_rate)
                     else:
                         # For VAT = 0% (exempt), price without VAT = price with VAT
-                        precio_sin_iva = precio_con_iva
+                        precio_sin_iva_calculated = precio_con_iva
 
                     # Apply commercial rounding to price without VAT
-                    precio_sin_iva = round(precio_sin_iva, 2)
+                    precio_sin_iva_calculated = round(precio_sin_iva_calculated, 2)
 
                     # ✅ PRESERVA SCONTI: Controlla se c'è uno sconto già applicato per questo ticket
                     discount_percent = 0
@@ -7419,23 +7638,90 @@ def api_save_ddt_modifications(ddt_id):
                         except:
                             pass
 
+                    # Determine if we need to preserve original price or use calculated price
+                    # If discount is applied, precio_con_iva is already discounted, so calculated price is also discounted
+                    # We need to get the ORIGINAL price without discount from existing data
+                    if discount_percent > 0:
+                        # When discount is applied, preserve the original price in PrecioSinIVA
+                        # The calculated price is already discounted, so we need the original
+                        precio_sin_iva = float(line.PrecioSinIVA) if line.PrecioSinIVA else precio_sin_iva_calculated
+                        current_app.logger.info(f"🔄 Sconto attivo: mantenendo prezzo originale €{precio_sin_iva:.2f}, prezzo calcolato scontato €{precio_sin_iva_calculated:.2f}")
+                    else:
+                        # No discount, use the calculated price (which should be the original)
+                        precio_sin_iva = precio_sin_iva_calculated
+
                     # Update line fields with corrected values
+                    # ⚠️ IMPORTANTE: Mantenere sempre il prezzo unitario ORIGINALE nel database
+                    # Il prezzo che arriva dal frontend potrebbe essere già scontato
                     line.Peso = peso
-                    line.Precio = precio_con_iva  # Store price WITH VAT (unit price)
-                    line.PrecioSinIVA = precio_sin_iva  # Store price WITHOUT VAT
+
+                    # ⚠️ CRITICAL FIX: When discount is applied, precio_con_iva is ALREADY discounted!
+                    # We MUST preserve the ORIGINAL price in PrecioSinIVA field, not overwrite it with discounted price
+                    if discount_percent > 0:
+                        # With discount: precio_con_iva is discounted price WITH VAT
+                        # Keep the existing PrecioSinIVA (original price) and don't overwrite it
+                        # Only update if this is the first time setting the price
+                        if not line.PrecioSinIVA or float(line.PrecioSinIVA) == 0:
+                            # First time: calculate original price from discounted price
+                            # discounted_price_with_vat = original_price_with_vat * (1 - discount/100)
+                            # So: original_price_with_vat = discounted_price_with_vat / (1 - discount/100)
+                            precio_con_iva_original = precio_con_iva / (1 - discount_percent / 100)
+                            precio_sin_iva_original = precio_con_iva_original / (1 + porcentaje_iva / 100)
+                            line.PrecioSinIVA = round(precio_sin_iva_original, 2)
+                            current_app.logger.info(f"📈 Primo calcolo con sconto: prezzo scontato €{precio_con_iva:.2f} → prezzo originale €{precio_con_iva_original:.2f} → prezzo sin IVA €{precio_sin_iva_original:.2f}")
+                        else:
+                            # Preserve existing original price
+                            precio_sin_iva_original = float(line.PrecioSinIVA)
+                            current_app.logger.info(f"🔒 Preservando prezzo originale esistente: €{precio_sin_iva_original:.2f}")
+                    else:
+                        # No discount: precio_con_iva is the original price WITH VAT
+                        precio_sin_iva_original = precio_con_iva / (1 + porcentaje_iva / 100) if porcentaje_iva > 0 else precio_con_iva
+                        line.PrecioSinIVA = round(precio_sin_iva_original, 2)
                     line.PorcentajeIVA = porcentaje_iva
 
-                    # ✅ APPLICA SCONTO AI CALCOLI SE PRESENTE
+                    # ✅ AGGIORNA IL CAMPO PRECIO (prezzo unitario con IVA da mostrare)
+                    # Il campo line.Precio deve contenere il prezzo VISUALIZZATO all'utente
                     if discount_percent > 0:
-                        # Applica lo sconto al prezzo senza IVA
-                        precio_sin_iva_scontato = precio_sin_iva * (1 - discount_percent / 100)
-                        line.ImporteSinIVASinDtoL = peso * precio_sin_iva_scontato
-                        line.Descuento = discount_percent  # Salva la percentuale di sconto
-                        line.ImporteDelDescuento = peso * precio_sin_iva * (discount_percent / 100)  # Importo dello sconto
-                        current_app.logger.info(f"💰 Sconto {discount_percent}% preservato: prezzo base €{precio_sin_iva:.2f} → prezzo scontato €{precio_sin_iva_scontato:.2f}")
+                        # Con sconto: usa il prezzo già scontato inviato dal frontend
+                        line.Precio = round(precio_con_iva, 2)
+                        current_app.logger.info(f"💰 Campo Precio aggiornato con prezzo scontato con IVA: €{precio_con_iva:.2f}")
                     else:
-                        # Nessuno sconto
-                        line.ImporteSinIVASinDtoL = peso * precio_sin_iva
+                        # Senza sconto: usa il prezzo originale con IVA
+                        line.Precio = round(precio_con_iva, 2)
+
+                    # ✅ APPLICA SCONTO AI CALCOLI SE PRESENTE (solo se necessario)
+                    if discount_percent > 0:
+                        # Usa il prezzo originale per calcolare lo sconto
+                        precio_sin_iva_original = float(line.PrecioSinIVA)
+                        # Calcola il prezzo scontato teorico basato sul prezzo originale
+                        precio_sin_iva_scontato = precio_sin_iva_original * (1 - discount_percent / 100)
+                        importe_scontato_teorico = peso * precio_sin_iva_scontato
+
+                        # Verifica se lo sconto era già stato applicato correttamente
+                        # Gestisci i tipi di dati Decimal
+                        current_descuento = float(line.Descuento) if line.Descuento else 0.0
+                        current_importe = float(line.ImporteSinIVASinDtoL) if line.ImporteSinIVASinDtoL else 0.0
+
+                        # Migliore logica di confronto: confronta direttamente gli sconti con tolleranza maggiore
+                        sconto_cambiato = abs(current_descuento - discount_percent) > 0.1  # 0.1% di tolleranza
+                        prezzo_cambiato = abs(precio_sin_iva_original - precio_sin_iva_calculated) > 0.01  # 0.01€ di tolleranza
+
+                        # Applica sconto solo se:
+                        # 1. Lo sconto è cambiato significativamente, O
+                        # 2. Il prezzo è cambiato (nuova modifica del prezzo)
+                        if sconto_cambiato or prezzo_cambiato:
+                            # Applica lo sconto solo se necessario
+                            line.ImporteSinIVASinDtoL = importe_scontato_teorico
+                            line.Descuento = discount_percent  # Salva la percentuale di sconto
+                            line.ImporteDelDescuento = peso * precio_sin_iva_original * (discount_percent / 100)  # Importo dello sconto
+                            current_app.logger.info(f"💰 Sconto {discount_percent}% applicato: prezzo originale €{precio_sin_iva_original:.2f} → prezzo scontato €{precio_sin_iva_scontato:.2f}, totale €{importe_scontato_teorico:.2f}")
+                        else:
+                            # Mantieni i valori attuali se sconto e prezzo non sono cambiati significativamente
+                            current_app.logger.info(f"💰 Sconto {discount_percent}% già applicato correttamente alla linea {line.IdLineaAlbaran} (Descuento={current_descuento}, ImporteSinIVASinDtoL={current_importe:.3f}, richiesto={importe_scontato_teorico:.3f})")
+                    else:
+                        # Nessuno sconto: usa il prezzo originale
+                        precio_sin_iva_original = float(line.PrecioSinIVA)
+                        line.ImporteSinIVASinDtoL = peso * precio_sin_iva_original
                         line.Descuento = 0
                         line.ImporteDelDescuento = 0
 
@@ -7471,7 +7757,7 @@ def api_save_ddt_modifications(ddt_id):
                     updated_lines += 1
 
                     if discount_percent > 0:
-                        current_app.logger.info(f"✅ Linea {line.IdLineaAlbaran} aggiornata CON SCONTO {discount_percent}%: peso={line.Peso}, precio_unitario_con_iva={line.Precio:.2f}, precio_sin_iva={line.PrecioSinIVA:.2f}, iva={porcentaje_iva}%, totale_SCONTATO={line.Importe:.2f}")
+                        current_app.logger.info(f"✅ Linea {line.IdLineaAlbaran} aggiornata CON SCONTO {discount_percent}%: peso={line.Peso}, precio_unitario_scontato_con_iva={line.Precio:.2f}, precio_originale_sin_iva={line.PrecioSinIVA:.2f}, iva={porcentaje_iva}%, totale_SCONTATO={line.Importe:.2f}")
                     else:
                         current_app.logger.info(f"✅ Linea {line.IdLineaAlbaran} aggiornata: peso={line.Peso}, precio_unitario_con_iva={line.Precio:.2f}, precio_sin_iva={line.PrecioSinIVA:.2f}, iva={porcentaje_iva}%, totale_con_iva={line.Importe:.2f}")
 
@@ -7541,12 +7827,20 @@ def api_save_ddt_modifications(ddt_id):
                         importe_sin_iva_con_dto_l = importe_sin_iva_sin_dto_l
                         importe_con_iva_sin_dto_l = importe_sin_iva_sin_dto_l + importe_del_iva_con_dto_l
 
+                        # Gestisci descrizione e lotto
+                        from services.utils import extract_lot_from_description
+                        base_description = product.Descripcion or ticket_line.Descripcion
+                        clean_description, extracted_lot_number = extract_lot_from_description(base_description)
+                        
+                        # Usa il lotto estratto o quello presente nel campo TextoLote
+                        final_lot = extracted_lot_number or getattr(ticket_line, 'TextoLote', '') or ''
+                        
                         # Create new AlbaranLinea record
                         new_line = AlbaranLinea(
                             IdAlbaran=ddt_id,
                             IdLineaAlbaran=next_line_id,
                             IdArticulo=ticket_line.IdArticulo,
-                            Descripcion=product.Descripcion or ticket_line.Descripcion,
+                            Descripcion=clean_description,
                             Peso=peso,
                             PrecioSinIVA=precio_sin_iva,
                             PorcentajeIVA=porcentaje_iva,
@@ -7561,7 +7855,7 @@ def api_save_ddt_modifications(ddt_id):
                             ImporteConDtoTotal=importe_con_iva_sin_dto_l,
                             PrecioConIVASinDtoL=precio_con_iva,
                             TipoVenta=ticket_line.TipoVenta or 0,
-                            TextoLote=ticket_line.TextoLote,
+                            TextoLote=final_lot,
                             FechaCaducidad=ticket_line.FechaCaducidad,
                             Comportamiento=ticket_line.comportamiento or 0,  # ✅ CORRETTO: minuscolo
                             IdIVA=ticket_line.IdIVA or 1,

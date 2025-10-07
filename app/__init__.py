@@ -128,6 +128,8 @@ def create_app():
                 app.register_blueprint(chat_bp, url_prefix='/chat')
                 app.register_blueprint(tasks_bp, url_prefix='/tasks')
                 app.register_blueprint(ingredients_bp, url_prefix='/ingredients')
+                from modules.listini import listini_bp
+                app.register_blueprint(listini_bp, url_prefix='/listini')
                 
                 # Add root route that redirects to login (missing in PyInstaller version)
                 from flask import redirect, url_for, render_template, flash

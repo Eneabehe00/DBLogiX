@@ -3,21 +3,23 @@
  * Funzionalità unificate per ricerca e statistiche
  */
 
-class UnifiedSearch {
-    constructor(options = {}) {
-        this.options = {
-            searchInputSelector: '.unified-search-input',
-            searchFormSelector: '#unifiedSearchForm',
-            clearBtnSelector: '.search-clear-btn',
-            filterToggleSelector: '.filter-toggle',
-            advancedFiltersSelector: '.advanced-filters',
-            debounceTime: 800,
-            minSearchLength: 2,
-            ...options
-        };
-        
-        this.init();
-    }
+// Check if UnifiedSearch is already defined to avoid redeclaration
+if (typeof UnifiedSearch === 'undefined') {
+    class UnifiedSearch {
+        constructor(options = {}) {
+            this.options = {
+                searchInputSelector: '.unified-search-input',
+                searchFormSelector: '#unifiedSearchForm',
+                clearBtnSelector: '.search-clear-btn',
+                filterToggleSelector: '.filter-toggle',
+                advancedFiltersSelector: '.advanced-filters',
+                debounceTime: 800,
+                minSearchLength: 2,
+                ...options
+            };
+
+            this.init();
+        }
     
     init() {
         this.bindEvents();
@@ -31,19 +33,21 @@ class UnifiedSearch {
         if (searchInput) {
             let timeout;
             searchInput.addEventListener('input', (e) => {
-                clearTimeout(timeout);
-                const value = e.target.value.trim();
-                
-                if (value.length >= this.options.minSearchLength || value.length === 0) {
-                    timeout = setTimeout(() => {
-                        this.performSearch(value);
-                    }, this.options.debounceTime);
+                if (e && e.target && e.target.value !== undefined) {
+                    clearTimeout(timeout);
+                    const value = e.target.value.trim();
+
+                    if (value.length >= this.options.minSearchLength || value.length === 0) {
+                        timeout = setTimeout(() => {
+                            this.performSearch(value);
+                        }, this.options.debounceTime);
+                    }
                 }
             });
-            
+
             // Enter key per ricerca immediata
             searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
+                if (e && e.target && e.target.value !== undefined && e.key === 'Enter') {
                     e.preventDefault();
                     clearTimeout(timeout);
                     this.performSearch(e.target.value.trim());
@@ -85,7 +89,7 @@ class UnifiedSearch {
         const form = document.querySelector(this.options.searchFormSelector);
         if (form) {
             const searchInput = form.querySelector('input[name="search"], input[name="query"]');
-            if (searchInput) {
+            if (searchInput && searchInput.value !== undefined) {
                 searchInput.value = query;
                 this.showLoading(true);
                 form.submit();

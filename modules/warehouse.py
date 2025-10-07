@@ -1633,4 +1633,421 @@ def api_tickets_search():
             'url': url_for('warehouse.ticket_detail', ticket_id=ticket.IdTicket)
         })
     
-    return jsonify(results) 
+    return jsonify(results)
+
+@warehouse_bp.route('/export_tickets', methods=['POST'])
+@login_required
+def export_tickets():
+    """Esporta tickets in formato personalizzabile (Excel, CSV, PDF)"""
+    try:
+        from flask import make_response
+        import pandas as pd
+        import io
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, or_
+        
+        # Ottieni dati dalla richiesta
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Nessun dato ricevuto'}), 400
+            
+        export_type = data.get('exportType', 'current')
+        selected_columns = data.get('columns', [])
+        export_format = data.get('format', 'xlsx')
+        filters = data.get('filters', {})
+        
+        if not selected_columns:
+            return jsonify({'error': 'Nessuna colonna selezionata'}), 400
+            
+        logger.info(f"Esportazione tickets richiesta: tipo={export_type}, formato={export_format}, colonne={selected_columns}")
+        
+        # Gestisci i due tipi di esportazione
+        if export_type == 'current':
+            return export_current_table(export_format, filters)
+        elif export_type == 'custom':
+            return export_custom_ticket_lines(export_format, selected_columns, filters)
+        else:
+            return jsonify({'error': 'Tipo di esportazione non valido'}), 400
+            
+    except ImportError as e:
+        logger.error(f"Libreria mancante per esportazione: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Libreria mancante: {str(e)}. Installa le dipendenze necessarie.'}), 500
+        
+    except Exception as e:
+        logger.error(f"Errore durante esportazione tickets: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Errore durante esportazione: {str(e)}'}), 500
+
+def export_current_table(export_format, filters):
+    """Esporta la tabella corrente come appare nella pagina"""
+    try:
+        from flask import make_response
+        import pandas as pd
+        import io
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, or_
+        
+        # Costruisci query base usando la stessa logica della pagina tickets
+        query = TicketHeader.query
+        
+        # Applica filtri
+        status_filter = filters.get('status')
+        if status_filter:
+            if status_filter == 'processed':
+                query = query.filter_by(Enviado=1)
+            elif status_filter == 'expired':
+                query = query.filter_by(Enviado=4)
+            elif status_filter == 'expiring':
+                # Logic for expiring tickets - same as in the original route
+                subquery = db.session.query(TicketLine.IdTicket).join(
+                    TicketHeader, TicketLine.IdTicket == TicketHeader.IdTicket
+                ).filter(
+                    TicketHeader.Enviado != 4,
+                    TicketLine.FechaCaducidad.isnot(None),
+                    func.date(TicketLine.FechaCaducidad) <= datetime.now().date() + timedelta(days=5),
+                    func.date(TicketLine.FechaCaducidad) > datetime.now().date()
+                ).distinct().subquery()
+                query = query.filter(TicketHeader.IdTicket.in_(subquery))
+            elif status_filter == 'in_task':
+                query = query.filter_by(Enviado=10)
+                
+        # Filtro date
+        start_date = filters.get('start_date')
+        end_date = filters.get('end_date')
+        
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
+                query = query.filter(TicketHeader.Fecha >= start_date_obj)
+            except ValueError:
+                pass
+                
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+                query = query.filter(TicketHeader.Fecha <= end_date_obj)
+            except ValueError:
+                pass
+                
+        # Filtro ricerca testuale
+        search_query = filters.get('query')
+        if search_query:
+            if search_query.startswith('#'):
+                ticket_number = search_query[1:].strip()
+                if ticket_number.isdigit():
+                    query = query.filter(TicketHeader.NumTicket == int(ticket_number))
+            else:
+                # Ricerca nei codici a barre o prodotti
+                ticket_with_product = db.session.query(TicketHeader.IdTicket).join(
+                    TicketLine, TicketHeader.IdTicket == TicketLine.IdTicket
+                ).outerjoin(
+                    Product, TicketLine.IdArticulo == Product.IdArticulo
+                ).filter(
+                    or_(
+                        TicketHeader.CodigoBarras.ilike(f'%{search_query}%'),
+                        Product.Descripcion.ilike(f'%{search_query}%'),
+                        TicketLine.Descripcion.ilike(f'%{search_query}%')
+                    )
+                ).distinct().subquery()
+                query = query.filter(TicketHeader.IdTicket.in_(ticket_with_product))
+        
+        # Ordina i risultati
+        query = query.order_by(TicketHeader.Fecha.desc())
+        
+        # Esegui query (senza paginazione per export)
+        tickets = query.all()
+        logger.info(f"Trovati {len(tickets)} tickets per esportazione tabella corrente")
+        
+        # Prepara dati per esportazione - usa le colonne fisse della tabella corrente
+        export_data = []
+        ticket_ids = [t.IdTicket for t in tickets]
+        
+        # Recupera informazioni prodotti
+        ticket_products = {}
+        product_info = db.session.query(
+            TicketLine.IdTicket,
+            TicketLine.IdArticulo,
+            TicketLine.Descripcion.label('linea_descripcion'),
+            Product.Descripcion.label('producto_descripcion')
+        ).outerjoin(
+            Product, TicketLine.IdArticulo == Product.IdArticulo
+        ).filter(TicketLine.IdTicket.in_(ticket_ids)).all()
+        
+        for info in product_info:
+            if info.IdTicket not in ticket_products:
+                ticket_products[info.IdTicket] = {
+                    'product_name': info.producto_descripcion or info.linea_descripcion or 'N/A',
+                    'product_id': info.IdArticulo
+                }
+        
+        # Recupera informazioni scadenze
+        ticket_expiry = {}
+        expiry_info = db.session.query(
+            TicketLine.IdTicket,
+            func.min(TicketLine.FechaCaducidad).label('earliest_expiry')
+        ).filter(
+            TicketLine.IdTicket.in_(ticket_ids),
+            TicketLine.FechaCaducidad.isnot(None)
+        ).group_by(TicketLine.IdTicket).all()
+        
+        for info in expiry_info:
+            if info.earliest_expiry:
+                days_remaining = (info.earliest_expiry.date() - datetime.now().date()).days
+                ticket_expiry[info.IdTicket] = {
+                    'expiry_date': info.earliest_expiry,
+                    'days_remaining': days_remaining
+                }
+        
+        # Construisci dati esportazione - replica le colonne della tabella visibile
+        for ticket in tickets:
+            row_data = {
+                'ID Ticket': ticket.IdTicket,
+                'Numero Ticket': ticket.NumTicket,
+                'Data': ticket.formatted_date,
+                'Prodotto': ticket_products.get(ticket.IdTicket, {}).get('product_name', 'N/A'),
+                'Data Scadenza': 'N/A',
+                'Codice a Barre': ticket.CodigoBarras or '',
+                'Numero Linee': ticket.NumLineas or 0,
+                'Stato': ticket.status_text
+            }
+            
+            # Aggiungi scadenza se disponibile
+            expiry_info = ticket_expiry.get(ticket.IdTicket)
+            if expiry_info:
+                row_data['Data Scadenza'] = expiry_info['expiry_date'].strftime('%d/%m/%Y')
+            
+            export_data.append(row_data)
+        
+        return generate_export_file(export_data, export_format, 'tickets_table')
+        
+    except Exception as e:
+        logger.error(f"Errore durante esportazione tabella corrente: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Errore durante esportazione: {str(e)}'}), 500
+
+def export_custom_ticket_lines(export_format, selected_columns, filters):
+    """Esporta le linee dei ticket con colonne personalizzate"""
+    try:
+        from flask import make_response
+        import pandas as pd
+        import io
+        from datetime import datetime, timedelta
+        from sqlalchemy import func, or_
+        
+        # Costruisci query per le linee dei ticket
+        query = db.session.query(TicketLine).join(TicketHeader)
+        
+        # Applica filtri
+        status_filter = filters.get('status')
+        if status_filter:
+            if status_filter == 'processed':
+                query = query.filter(TicketHeader.Enviado == 1)
+            elif status_filter == 'expired':
+                query = query.filter(TicketHeader.Enviado == 4)
+            elif status_filter == 'expiring':
+                query = query.filter(
+                    TicketHeader.Enviado != 4,
+                    TicketLine.FechaCaducidad.isnot(None),
+                    func.date(TicketLine.FechaCaducidad) <= datetime.now().date() + timedelta(days=5),
+                    func.date(TicketLine.FechaCaducidad) > datetime.now().date()
+                )
+            elif status_filter == 'in_task':
+                query = query.filter(TicketHeader.Enviado == 10)
+                
+        # Filtro date
+        start_date = filters.get('start_date')
+        end_date = filters.get('end_date')
+        
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
+                query = query.filter(TicketHeader.Fecha >= start_date_obj)
+            except ValueError:
+                pass
+                
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)
+                query = query.filter(TicketHeader.Fecha <= end_date_obj)
+            except ValueError:
+                pass
+                
+        # Filtro ricerca testuale
+        search_query = filters.get('query')
+        if search_query:
+            if search_query.startswith('#'):
+                ticket_number = search_query[1:].strip()
+                if ticket_number.isdigit():
+                    query = query.filter(TicketHeader.NumTicket == int(ticket_number))
+            else:
+                query = query.outerjoin(Product, TicketLine.IdArticulo == Product.IdArticulo).filter(
+                    or_(
+                        TicketHeader.CodigoBarras.ilike(f'%{search_query}%'),
+                        Product.Descripcion.ilike(f'%{search_query}%'),
+                        TicketLine.Descripcion.ilike(f'%{search_query}%')
+                    )
+                )
+        
+        # Ordina i risultati
+        query = query.order_by(TicketHeader.Fecha.desc(), TicketLine.IdLineaTicket)
+        
+        # Esegui query
+        ticket_lines = query.all()
+        logger.info(f"Trovate {len(ticket_lines)} linee per esportazione personalizzata")
+        
+        # Prepara dati per esportazione
+        export_data = []
+        
+        # Mappa colonne ai nomi user-friendly
+        column_labels = {
+            'IdLineaTicket': 'ID Linea Ticket',
+            'IdTicket': 'ID Ticket',
+            'IdArticulo': 'ID Articolo',
+            'IdEmpresa': 'ID Azienda',
+            'IdTienda': 'ID Negozio',
+            'Descripcion': 'Descrizione',
+            'Peso': 'Peso',
+            'comportamiento': 'Comportamento',
+            'TextoLote': 'Testo Lotto',
+            'Precio': 'Prezzo',
+            'PrecioSinIVA': 'Prezzo senza IVA',
+            'Importe': 'Importo',
+            'FechaCaducidad': 'Data Scadenza',
+            'IdIVA': 'ID IVA',
+            'PorcentajeIVA': 'Percentuale IVA',
+            'TipoVenta': 'Tipo Vendita',
+            'IdBalanzaMaestra': 'ID Bilancia Master',
+            'IdBalanzaEsclava': 'ID Bilancia Slave'
+        }
+        
+        # Construisci dati esportazione
+        for line in ticket_lines:
+            row_data = {}
+            
+            for column in selected_columns:
+                if column in column_labels:
+                    column_label = column_labels[column]
+                    value = getattr(line, column, None)
+                    
+                    # Formattazione speciale per alcuni campi
+                    if column == 'FechaCaducidad' and value:
+                        value = value.strftime('%d/%m/%Y')
+                    elif column == 'Peso' and value:
+                        value = float(value)
+                    elif column == 'Precio' and value:
+                        value = float(value)
+                    elif column == 'PrecioSinIVA' and value:
+                        value = float(value)
+                    elif column == 'Importe' and value:
+                        value = float(value)
+                    elif column == 'PorcentajeIVA' and value:
+                        value = float(value)
+                    elif value is None:
+                        value = ''
+                    
+                    row_data[column_label] = value
+            
+            export_data.append(row_data)
+        
+        return generate_export_file(export_data, export_format, 'ticket_lines')
+        
+    except Exception as e:
+        logger.error(f"Errore durante esportazione personalizzata: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Errore durante esportazione personalizzata: {str(e)}'}), 500
+
+def generate_export_file(export_data, export_format, prefix):
+    """Genera il file di esportazione nel formato richiesto"""
+    try:
+        from flask import make_response
+        import pandas as pd
+        import io
+        from datetime import datetime
+        
+        # Crea DataFrame
+        df = pd.DataFrame(export_data)
+        
+        if df.empty:
+            return jsonify({'error': 'Nessun dato da esportare'}), 404
+        
+        # Genera file in base al formato
+        output = io.BytesIO()
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{prefix}_{timestamp}"
+        
+        if export_format == 'xlsx':
+            df.to_excel(output, index=False, engine='openpyxl')
+            mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            filename += '.xlsx'
+            
+        elif export_format == 'csv':
+            df.to_csv(output, index=False, encoding='utf-8-sig')  # utf-8-sig per Excel italiano
+            mimetype = 'text/csv'
+            filename += '.csv'
+            
+        elif export_format == 'pdf':
+            # Per PDF, usa reportlab (già presente nei requirements)
+            from reportlab.lib.pagesizes import A4
+            from reportlab.lib import colors
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            
+            output = io.BytesIO()
+            doc = SimpleDocTemplate(output, pagesize=A4)
+            elements = []
+            
+            # Titolo
+            styles = getSampleStyleSheet()
+            title = Paragraph(f"<b>Esportazione Tickets - {datetime.now().strftime('%d/%m/%Y %H:%M')}</b>", styles['Title'])
+            elements.append(title)
+            elements.append(Spacer(1, 12))
+            
+            # Tabella
+            table_data = [list(df.columns)] + df.values.tolist()
+            
+            # Limita i dati se troppo grandi per PDF
+            if len(table_data) > 51:  # 50 righe + header
+                table_data = table_data[:51]
+                note = Paragraph("<i>Nota: Mostrate solo le prime 50 righe. Per dati completi, usa Excel o CSV.</i>", styles['Normal'])
+                elements.append(note)
+                elements.append(Spacer(1, 12))
+            
+            table = Table(table_data)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('FONTSIZE', (0, 1), (-1, -1), 7),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            
+            elements.append(table)
+            doc.build(elements)
+            mimetype = 'application/pdf'
+            filename += '.pdf'
+        
+        output.seek(0)
+        
+        # Crea response
+        response = make_response(output.read())
+        response.headers['Content-Type'] = mimetype
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        logger.info(f"Esportazione completata: {filename}, {len(export_data)} righe")
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Errore generazione file: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Errore generazione file: {str(e)}'}), 500 
